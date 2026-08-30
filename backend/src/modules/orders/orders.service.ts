@@ -237,6 +237,7 @@ export class OrdersService {
       p_resolved_plan_id: financialSnapshot.resolved_plan_id,
       p_resolved_plan_code: financialSnapshot.resolved_plan_code,
       p_commercial_snapshot_version: financialSnapshot.commercial_snapshot_version,
+      p_channel: channel,
     });
 
     if (error) throw error;
