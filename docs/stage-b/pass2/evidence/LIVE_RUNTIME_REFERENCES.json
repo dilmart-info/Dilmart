@@ -1,0 +1,2268 @@
+{
+  "store_carts": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-live.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-smoke.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260607100000_m29_store_b2b_cart.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_cart_items": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260607100000_m29_store_b2b_cart.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_linked_profiles": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-smoke.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/implementation_plan-StylAi Store — B2B Barber App Integration Foundation",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100300_federated_logout_all_lock_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stylai_store_delivery_study",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/00_MASTER_SPEC.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/02_ARCHITECTURE_AND_AUTH.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/06_DATA_MODEL_AND_MIGRATIONS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/09_STORE_FOUNDATION_IMPLEMENTATION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601110000_m27_store_linked_profiles.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601120000_m28_orders_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260607100000_m29_store_b2b_cart.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100000_customer_handoff_linked_profiles_ext.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100100_customer_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100200_customer_handoff_session_foundations.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100400_customer_handoff_finalize_and_guards.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100000_barber_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_federated_session_families": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100000_federated_session_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260805100200_customer_handoff_session_foundations.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100500_customer_handoff_redeem_issue_and_reserved_domain.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100000_federated_session_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_federated_refresh_tokens": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100000_federated_session_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260805100200_customer_handoff_session_foundations.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100500_customer_handoff_redeem_issue_and_reserved_domain.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100000_federated_session_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_federated_session_audit_events": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100000_federated_session_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260806100000_federated_session_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_customer_handoffs": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260805100100_customer_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100300_customer_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100400_customer_handoff_finalize_and_guards.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_customer_handoff_audit_events": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260805100100_customer_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100300_customer_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100400_customer_handoff_finalize_and_guards.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_barber_handoffs": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260819100000_barber_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_barber_handoff_audit_events": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260819100000_barber_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_barber_web_sessions": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-dependencies.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "requires_verified_salon": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/tests/db-integration/customer-entry-eligibility.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/marketplace-banners.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/phase6d-search-filters-brands.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/implementation_plan-StylAi Store — B2B Barber App Integration Foundation",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/19_FINAL_SAFETY_PATCH_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-columns.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/product-import/lib/private-catalog-fix-catalog.mjs",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/product-import/private-catalog-fix-execution.test.mjs",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/06_DATA_MODEL_AND_MIGRATIONS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/09_STORE_FOUNDATION_IMPLEMENTATION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601100000_m26_product_segmentation_metadata.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260815075000_m30_marketplace_banners.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "is_b2b_offer": [
+    {
+      "file": "backend/src/modules/marketplace/marketplace-product-detail.contract.ts",
+      "type": "BACKEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/src/modules/marketplace/marketplace.service.ts",
+      "type": "BACKEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/src/modules/products/products.dto.ts",
+      "type": "BACKEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/marketplace-banners.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/implementation_plan-StylAi Store — B2B Barber App Integration Foundation",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/19_FINAL_SAFETY_PATCH_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/product-import/lib/private-catalog-fix-catalog.mjs",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/product-import/private-catalog-fix-execution.test.mjs",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "src/pages/admin/ProductForm.tsx",
+      "type": "FRONTEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/06_DATA_MODEL_AND_MIGRATIONS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/09_STORE_FOUNDATION_IMPLEMENTATION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601100000_m26_product_segmentation_metadata.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_barbershop_id": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-live.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-smoke.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/implementation_plan-StylAi Store — B2B Barber App Integration Foundation",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-columns.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/00_MASTER_SPEC.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/02_ARCHITECTURE_AND_AUTH.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/04_API_CONTRACTS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/06_DATA_MODEL_AND_MIGRATIONS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/09_STORE_FOUNDATION_IMPLEMENTATION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601110000_m27_store_linked_profiles.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601120000_m28_orders_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260609100000_m30_place_order_b2b_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "dilmart_user_id": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-live.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-smoke.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/implementation_plan-StylAi Store — B2B Barber App Integration Foundation",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100000_federated_session_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100200_federated_session_authority_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100300_federated_logout_all_lock_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-columns.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-functions.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/00_MASTER_SPEC.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/02_ARCHITECTURE_AND_AUTH.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/04_API_CONTRACTS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/06_DATA_MODEL_AND_MIGRATIONS.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/09_STORE_FOUNDATION_IMPLEMENTATION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601110000_m27_store_linked_profiles.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601120000_m28_orders_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260609100000_m30_place_order_b2b_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100000_customer_handoff_linked_profiles_ext.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100100_customer_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100200_customer_handoff_session_foundations.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100300_customer_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100400_customer_handoff_finalize_and_guards.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100500_customer_handoff_redeem_issue_and_reserved_domain.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100000_barber_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_cart_id": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-columns.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "store_linked_profile_id": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-live.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/phase5a-checkout-smoke.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/implementation_plan-StylAi Store — B2B Barber App Integration Foundation",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_COLUMNS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DATA_COUNTS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_DEPENDENCIES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_TABLES.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_API_PHASE4B_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STYLAI_STORE_PHASE6B_B2B_ORDERS_API_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-data-counts.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-columns.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "StylAi_Store_Integration_Docs/09_STORE_FOUNDATION_IMPLEMENTATION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260601120000_m28_orders_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260607100000_m29_store_b2b_cart.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260609100000_m30_place_order_b2b_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "place_b2b_cart_order_idempotent": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "finalize_barber_handoff": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "verify_barber_web_session": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "redeem_barber_handoff_and_create_session": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "revoke_barber_web_sessions_for_user": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100200_barber_web_sessions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "reject_barber_handoff_audit_mutation": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100000_barber_handoff_core.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "finalize_customer_handoff": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100400_customer_handoff_finalize_and_guards.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260819100100_barber_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "redeem_customer_handoff": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100300_customer_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100500_customer_handoff_redeem_issue_and_reserved_domain.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "logout_all_federated_sessions": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100200_federated_session_authority_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100300_federated_logout_all_lock_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "logout_federated_session": [
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100200_federated_session_authority_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100300_federated_logout_all_lock_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "provision_dilmart_federated_customer": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100500_customer_handoff_redeem_issue_and_reserved_domain.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "redeem_and_create_federated_session": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100300_federated_logout_all_lock_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR5_DUAL_ACTOR_AND_SESSION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "reject_reserved_federated_email": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100500_customer_handoff_redeem_issue_and_reserved_domain.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "reject_federated_session_audit_mutation": [
+    {
+      "file": "docs/migration-reports/20260806100000_federated_session_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100000_federated_session_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "reject_handoff_audit_mutation": [
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100400_customer_handoff_finalize_and_guards.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "resolve_dilmart_federated_customer": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR3_CUSTOMER_HANDOFF_MIGRATION_SECURITY_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260805100300_customer_handoff_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "revoke_federated_sessions_for_identity": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100200_federated_session_authority_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100300_federated_logout_all_lock_hardening.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100300_federated_logout_all_lock_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "rotate_federated_refresh_token": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "src/lib/auth/session/federated-session-api.ts",
+      "type": "FRONTEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "src/lib/auth/session/federated-session.test.ts",
+      "type": "FRONTEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "validate_federated_session_family": [
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/migration-reports/20260806100100_federated_session_functions.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR4_FEDERATED_SESSION_CORE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR5_DUAL_ACTOR_AND_SESSION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100100_federated_session_functions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260806100200_federated_session_authority_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "place_order": [
+    {
+      "file": "ai/SKILLS/STORE_BACKEND_API_AUTHORITY_SKILL.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/scripts/fetch-canonical-legacy-inventory.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/scripts/verify-security-definer-rpc-hardening.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "backend/src/modules/checkout/checkout.service.ts",
+      "type": "BACKEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/src/modules/orders/orders.service.ts",
+      "type": "BACKEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/p0-checkout-identity-geo.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/batch-m11-marketplace-finance-settlement-implementation-report.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/INTERNAL_PILOT_RUNBOOK.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/JENNI_INTEGRATION_FINAL_CONTRACT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/JENNI_PHASE1_DATA_MODEL_PLAN.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/JENNI_PHASE2_STORE_PROVISIONING_PLAN.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/m13-verification-checklist.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/MARKETPLACE_HARDENING_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/MARKETPLACE_REFACTOR_PLAN.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/order-lifecycle-smoke-checklist.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_BACKEND_FINAL_CLOSURE_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_CART_CHECKOUT_PHASE5A_SMOKE_TEST_RESULT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/STORE_PR5_DUAL_ACTOR_AND_SESSION_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stylai_store_delivery_study",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "governance/phases/LAUNCH_CRITICAL_FLOWS_BASELINE.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "governance/phases/PHASE_1_ANALYSIS_REPORT.md",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "recovered_security.sql",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-functions.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "src/integrations/supabase/types.ts",
+      "type": "FRONTEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260214214500_baseline_public_schema.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260216044949_update_profiles_and_orders_schema.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260216113500_inventory_management.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260216130000_coupons_system.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260220100000_add_location_and_regions.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260220150000_loyalty_system.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260220152000_loyalty_ledger.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260221125000_fix_place_order_overloading.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260421100000_marketplace_foundation.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260422123000_marketplace_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260423133000_m11_1_m11_2_order_financial_snapshot.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260423140000_m11_3_m11_4_payment_collection_cod.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260424010000_m13_advanced_commercial_engine.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260502120000_p0_place_order_server_pricing_atomic_stock.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260608122500_fix_place_order_overloads.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260609100000_m30_place_order_b2b_source_tracking.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260609110000_m31_orders_channel_barber_app_checkout.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260616100000_p3_jenni_stores_only_path_a.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260724160000_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260820170000_security_definer_rpc_acl_hardening.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260828155204_lock_orders_browser_update_privileges.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/rollback/20260820170000_security_definer_rpc_acl_hardening.ROLLBACK.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ],
+  "place_order_idempotent": [
+    {
+      "file": "backend/src/modules/checkout/checkout.service.ts",
+      "type": "BACKEND ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "backend/tests/db-integration/checkout-concurrency.test.mjs",
+      "type": "TEST ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_LEGACY_FUNCTIONS.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "docs/stage-b/pass2/evidence/LIVE_RUNTIME_AUTHORITY.json",
+      "type": "DOC HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "scripts/audit/stage-b/stage-b-live-legacy-functions.sql",
+      "type": "SCRIPT ACTIVE",
+      "isActive": true
+    },
+    {
+      "file": "supabase/migrations/20260724160000_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    },
+    {
+      "file": "supabase/migrations/20260816100000_b2b_checkout_idempotency.sql",
+      "type": "MIGRATION HISTORICAL",
+      "isActive": false
+    }
+  ]
+}

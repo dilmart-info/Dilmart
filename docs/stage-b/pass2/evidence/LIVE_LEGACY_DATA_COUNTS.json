@@ -1,0 +1,110 @@
+[
+  {
+    "object_name": "public.store_carts",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.store_cart_items",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.store_linked_profiles",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.store_federated_session_families",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.store_federated_refresh_tokens",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.store_federated_session_audit_events",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.dilmart_customer_handoffs",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.dilmart_customer_handoff_audit_events",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.dilmart_barber_handoffs",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.dilmart_barber_handoff_audit_events",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "public.dilmart_barber_web_sessions",
+    "object_type": "table",
+    "non_null_or_row_count": 0,
+    "disposition_status": "EMPTY [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.dilmart_barbershop_id",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.dilmart_user_id",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.store_cart_id",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.store_linked_profile_id",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "checkout_attempts.store_cart_id",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "checkout_attempts.store_linked_profile_id",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "products.requires_verified_salon",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ZERO TRUE [CONFIRMED BY LIVE DB QUERY]"
+  }
+]

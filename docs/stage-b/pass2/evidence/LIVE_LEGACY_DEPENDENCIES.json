@@ -1,0 +1,335 @@
+[
+  {
+    "constraint_name": "checkout_attempts_order_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "order_id",
+    "source_table": "checkout_attempts",
+    "target_column": "id",
+    "target_table": "orders"
+  },
+  {
+    "constraint_name": "checkout_attempts_store_cart_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "store_cart_id",
+    "source_table": "checkout_attempts",
+    "target_column": "id",
+    "target_table": "store_carts"
+  },
+  {
+    "constraint_name": "checkout_attempts_store_linked_profile_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "store_linked_profile_id",
+    "source_table": "checkout_attempts",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "checkout_attempts_user_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "user_id",
+    "source_table": "checkout_attempts",
+    "target_column": "id",
+    "target_table": "users"
+  },
+  {
+    "constraint_name": "dilmart_barber_handoffs_linked_profile_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "linked_profile_id",
+    "source_table": "dilmart_barber_handoffs",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "dilmart_barber_web_sessions_linked_profile_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "linked_profile_id",
+    "source_table": "dilmart_barber_web_sessions",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "dilmart_customer_handoffs_linked_profile_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "linked_profile_id",
+    "source_table": "dilmart_customer_handoffs",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "dilmart_customer_handoffs_store_customer_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "store_customer_id",
+    "source_table": "dilmart_customer_handoffs",
+    "target_column": "id",
+    "target_table": "profiles"
+  },
+  {
+    "constraint_name": "orders_agent_id_fkey",
+    "on_delete_action": "a",
+    "on_update_action": "a",
+    "source_column": "agent_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "profiles"
+  },
+  {
+    "constraint_name": "orders_assisted_fee_rule_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "assisted_fee_rule_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "commercial_rules"
+  },
+  {
+    "constraint_name": "orders_cash_collected_by_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "cash_collected_by_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "profiles"
+  },
+  {
+    "constraint_name": "orders_checkout_attempt_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "checkout_attempt_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "checkout_attempts"
+  },
+  {
+    "constraint_name": "orders_commission_rule_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "commission_rule_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "commercial_rules"
+  },
+  {
+    "constraint_name": "orders_coupon_id_fkey",
+    "on_delete_action": "a",
+    "on_update_action": "a",
+    "source_column": "coupon_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "coupons"
+  },
+  {
+    "constraint_name": "orders_delivery_billing_rule_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "delivery_billing_rule_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "commercial_rules"
+  },
+  {
+    "constraint_name": "orders_delivery_company_id_fkey",
+    "on_delete_action": "a",
+    "on_update_action": "a",
+    "source_column": "delivery_company_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "delivery_companies"
+  },
+  {
+    "constraint_name": "orders_governorate_id_fkey",
+    "on_delete_action": "a",
+    "on_update_action": "a",
+    "source_column": "governorate_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "governorates"
+  },
+  {
+    "constraint_name": "orders_merchant_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "merchant_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "merchants"
+  },
+  {
+    "constraint_name": "orders_platform_fee_rule_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "platform_fee_rule_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "commercial_rules"
+  },
+  {
+    "constraint_name": "orders_resolved_plan_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "resolved_plan_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "merchant_plans"
+  },
+  {
+    "constraint_name": "orders_store_cart_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "store_cart_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "store_carts"
+  },
+  {
+    "constraint_name": "orders_store_linked_profile_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "store_linked_profile_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "orders_user_id_fkey",
+    "on_delete_action": "a",
+    "on_update_action": "a",
+    "source_column": "user_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "profiles"
+  },
+  {
+    "constraint_name": "orders_whatsapp_intent_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "whatsapp_intent_id",
+    "source_table": "orders",
+    "target_column": "id",
+    "target_table": "whatsapp_intents"
+  },
+  {
+    "constraint_name": "products_category_id_fkey",
+    "on_delete_action": "a",
+    "on_update_action": "a",
+    "source_column": "category_id",
+    "source_table": "products",
+    "target_column": "id",
+    "target_table": "categories"
+  },
+  {
+    "constraint_name": "products_merchant_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "merchant_id",
+    "source_table": "products",
+    "target_column": "id",
+    "target_table": "merchants"
+  },
+  {
+    "constraint_name": "store_cart_items_cart_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "cart_id",
+    "source_table": "store_cart_items",
+    "target_column": "id",
+    "target_table": "store_carts"
+  },
+  {
+    "constraint_name": "store_cart_items_merchant_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "merchant_id",
+    "source_table": "store_cart_items",
+    "target_column": "id",
+    "target_table": "merchants"
+  },
+  {
+    "constraint_name": "store_cart_items_product_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "product_id",
+    "source_table": "store_cart_items",
+    "target_column": "id",
+    "target_table": "products"
+  },
+  {
+    "constraint_name": "store_carts_merchant_id_fkey",
+    "on_delete_action": "r",
+    "on_update_action": "a",
+    "source_column": "merchant_id",
+    "source_table": "store_carts",
+    "target_column": "id",
+    "target_table": "merchants"
+  },
+  {
+    "constraint_name": "store_carts_store_linked_profile_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "store_linked_profile_id",
+    "source_table": "store_carts",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "store_federated_refresh_tokens_parent_token_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "parent_token_id",
+    "source_table": "store_federated_refresh_tokens",
+    "target_column": "id",
+    "target_table": "store_federated_refresh_tokens"
+  },
+  {
+    "constraint_name": "store_federated_refresh_tokens_replaced_by_token_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "replaced_by_token_id",
+    "source_table": "store_federated_refresh_tokens",
+    "target_column": "id",
+    "target_table": "store_federated_refresh_tokens"
+  },
+  {
+    "constraint_name": "store_federated_refresh_tokens_session_family_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "session_family_id",
+    "source_table": "store_federated_refresh_tokens",
+    "target_column": "id",
+    "target_table": "store_federated_session_families"
+  },
+  {
+    "constraint_name": "store_federated_session_families_linked_profile_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "linked_profile_id",
+    "source_table": "store_federated_session_families",
+    "target_column": "id",
+    "target_table": "store_linked_profiles"
+  },
+  {
+    "constraint_name": "store_federated_session_families_store_customer_id_fkey",
+    "on_delete_action": "c",
+    "on_update_action": "a",
+    "source_column": "store_customer_id",
+    "source_table": "store_federated_session_families",
+    "target_column": "id",
+    "target_table": "profiles"
+  },
+  {
+    "constraint_name": "store_linked_profiles_store_customer_id_fkey",
+    "on_delete_action": "n",
+    "on_update_action": "a",
+    "source_column": "store_customer_id",
+    "source_table": "store_linked_profiles",
+    "target_column": "id",
+    "target_table": "profiles"
+  }
+]
