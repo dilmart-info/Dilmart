@@ -6,13 +6,13 @@
 ## 1. Matrix Overview & Executive Scope
 
 This document provides the high-level Row Level Security (RLS) overview across the core marketplace tables.
-For the complete, un-truncated policy and privilege breakdown across **all 71 active database tables**, see the authoritative companion document:
+For the complete policy and privilege breakdown across **all 71 active database tables**, see the authoritative companion document:
 👉 [`docs/stage-b/STAGE_B_RLS_FULL_MATRIX.md`](file:///d:/DilMart/docs/stage-b/STAGE_B_RLS_FULL_MATRIX.md) `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
 
 ### Dual-State Table Accounting
-- **Live Production Database (`ztplxqlthuqkuktbznbo`):** **71 / 71 active tables have RLS ENABLED** `[CONFIRMED BY LIVE DB QUERY]`.
+- **Live Production Database (`ztplxqlthuqkuktbznbo`):** **70 / 71 active tables have RLS ENABLED** `[CONFIRMED BY LIVE DB QUERY]`.
 - **Repository Migration Replay State:** **70 / 71 active tables have RLS ENABLED** `[CONFIRMED BY REPOSITORY CODE]`.
-- **Schema Drift Item (`F-B-01`):** `public.product_import_sessions` has RLS enabled with 4 active policies in live production, but was created without RLS statements in repository migration `20260426090000_m20_merchant_productivity_layer.sql`.
+- **P0 Finding (`F-B-01`):** `public.product_import_sessions` currently has RLS DISABLED and 0 policies in live production. Remediation migration `20260830210000_lock_product_import_sessions_rls.sql` is prepared on branch `fix/stage-b-p0-product-import-rls` and will achieve 71/71 upon approved execution.
 
 ---
 
@@ -42,22 +42,4 @@ For the complete, un-truncated policy and privilege breakdown across **all 71 ac
 | **`delivery_prices`** | ✅ YES | ✅ Public Read | ✅ Public Read | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
 | **`order_delivery_integrations`**| ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
 | **`audit_logs`** | ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
-| **`product_import_sessions`** | ✅ YES (Live) | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own Merchant Read | ✅ Full | ✅ Full |
-
----
-
-## 3. Key RLS Hardening Findings & Verification
-
-1. **`profiles` Role Escalation Blocked:**
-   - Table-level and column-level `UPDATE` privileges were **revoked from PUBLIC, anon, and authenticated** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`. Profile updates are now strictly mediated by the backend NestJS service with field allowlisting.
-
-2. **`orders` Financial Mutation Blocked:**
-   - `UPDATE` privileges on `public.orders` were **revoked from PUBLIC, anon, and authenticated** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`. Direct modification of order status, cash collected, and settlement state via PostgREST is rejected at the database privilege level.
-
-3. **RLS Helper Schema Isolation:**
-   - RLS helper functions `is_admin()`, `is_platform_admin()`, and `is_merchant_member(uuid)` were relocated to schema `app_private` (in `20260820180000_rls_helper_private_schema.sql`).
-   - PostgREST does not expose `app_private`, preventing direct HTTP RPC probing of administrative helper functions `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
-
-4. **Migration / Schema Drift on `product_import_sessions` (`F-B-01`):**
-   - In repository migration `20260426090000_m20_merchant_productivity_layer.sql`, `product_import_sessions` was created without RLS statements.
-   - In the live production database (`ztplxqlthuqkuktbznbo`), RLS is enabled with 4 active policies. A forward-only alignment migration is documented as Finding `F-B-01` for Stage B Pass 2 cleanup.
+| **`product_import_sessions`** | ❌ **NO (Live P0)** | ⚠️ YES (Default) | ⚠️ YES (Default) | ⚠️ YES (Default) | ⚠️ YES (Default) | ⚠️ YES (Default) | ⚠️ Unisolated | ⚠️ Unisolated | ✅ Full |

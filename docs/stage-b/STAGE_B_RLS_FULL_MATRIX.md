@@ -8,9 +8,9 @@
 This document establishes the exhaustive Row Level Security (RLS) policies and privilege definitions across all **71 active tables**.
 
 ### Dual-State Accounting
-- **A. LIVE PRODUCTION DATABASE (`ztplxqlthuqkuktbznbo`):** **71 / 71 active tables have RLS ENABLED** `[CONFIRMED BY LIVE DB QUERY]`.
+- **A. LIVE PRODUCTION DATABASE (`ztplxqlthuqkuktbznbo`):** **70 / 71 active tables have RLS ENABLED** `[CONFIRMED BY LIVE DB QUERY]`.
 - **B. REPOSITORY MIGRATION REPLAY STATE:** **70 / 71 active tables have RLS ENABLED** `[CONFIRMED BY REPOSITORY CODE]`.
-- **Exact Schema Drift (F-B-01):** `public.product_import_sessions` has RLS enabled with 4 active policies in live production, but was created without RLS statements in repository migration `20260426090000_m20_merchant_productivity_layer.sql`.
+- **P0 Finding (`F-B-01`):** `public.product_import_sessions` currently has RLS DISABLED and 0 policies in live production. Remediation migration `20260830210000_lock_product_import_sessions_rls.sql` is prepared on branch `fix/stage-b-p0-product-import-rls` and will achieve 71/71 upon approved execution.
 
 ---
 
@@ -733,20 +733,15 @@ The following matrix represents the live deparsed policies from `pg_policies` on
 
 ### 59. `public.product_import_sessions`
 
-- **RLS Status (Live):** ✅ ENABLED [CONFIRMED BY LIVE DB QUERY]
+- **RLS Status (Live):** ❌ DISABLED (P0 Finding F-B-01) [CONFIRMED BY LIVE DB QUERY]
 - **RLS Forced:** NO
 - **Table Owner:** `postgres`
-- **Anon Privileges:** `NONE`
-- **Authenticated Privileges:** `SELECT`
+- **Anon Privileges:** `SELECT, INSERT, UPDATE, DELETE (P0 Default Privileges)`
+- **Authenticated Privileges:** `SELECT, INSERT, UPDATE, DELETE (P0 Default Privileges)`
 - **Service Role Privileges:** `SELECT, INSERT, UPDATE, DELETE`
-- **Active Live Policies (4):**
+- **Active Live Policies (0):**
 
-| Policy Name | Command | Target Roles | USING Expression (`pg_policies.qual`) | WITH CHECK Expression (`pg_policies.with_check`) |
-|---|:---:|---|---|---|
-| `Admins can manage product_import_sessions` | **ALL** | `public` | `(app_private.is_platform_admin())` | `(app_private.is_platform_admin())` |
-| `Merchants can view own product_import_sessions` | **SELECT** | `authenticated` | `(app_private.is_merchant_member(merchant_id))` | `-` |
-| `Merchants can insert own product_import_sessions` | **INSERT** | `authenticated` | `-` | `(app_private.is_merchant_member(merchant_id))` |
-| `Merchants can update own product_import_sessions` | **UPDATE** | `authenticated` | `(app_private.is_merchant_member(merchant_id))` | `(app_private.is_merchant_member(merchant_id))` |
+*Table currently has NO RLS policies active (RLS is disabled in live DB). Remediation prepared on `fix/stage-b-p0-product-import-rls`.*
 
 ---
 
@@ -900,9 +895,7 @@ The following matrix represents the live deparsed policies from `pg_policies` on
 ---
 
 
-## 3. Part B: REPOSITORY REPLAY STATE & DRIFT ANALYSIS
+## 3. Part B: REPOSITORY REPLAY STATE & REMEDIATION ROADMAP
 
-When replaying the 169 migration files from a clean state without out-of-band mutations:
-- **Tables with RLS Enabled:** 70 / 71 active tables `[CONFIRMED BY REPOSITORY CODE]`.
-- **Missing Migration DDL:** `product_import_sessions` in `20260426090000_m20_merchant_productivity_layer.sql` does not execute `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` or `CREATE POLICY`.
-- **Remediation Plan:** Author a forward-only idempotency migration in Stage B Pass 2 to codify the 4 live policies in repository history.
+- **Current Repository State:** 70 / 71 active tables have RLS enabled in migration history.
+- **Remediation Target:** Apply forward-only migration `20260830210000_lock_product_import_sessions_rls.sql` on branch `fix/stage-b-p0-product-import-rls` to achieve 71 / 71 RLS enabled across all environments.

@@ -5,7 +5,7 @@
 
 ## 1. Executive Summary & Target Environment Identity
 
-In accordance with the **DILMART Stage B Master Prompt**, a comprehensive, strictly **READ-ONLY** authority audit was conducted across the entire DILMART repository and database architecture.
+In accordance with the **DILMART Stage B Master Prompt**, a comprehensive, strictly **READ-ONLY** authority audit was conducted across the entire DILMART repository and live database architecture (`ztplxqlthuqkuktbznbo`).
 
 ### Target Environment Baseline
 ```text
@@ -36,113 +36,56 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 
 ## 3. Authoritative Finding Index
 
-### P0 Findings (Critical Security / Functional Blockers)
-* **ZERO P0 Vulnerabilities Active:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`
-  - `profiles.role` self-escalation via PostgREST was **CLOSED** in `20260827170552_lock_profiles_browser_update_privileges.sql`.
-  - `orders` direct browser modification of financial state was **CLOSED** in `20260828155204_lock_orders_browser_update_privileges.sql`.
-  - All mutating `SECURITY DEFINER` functions were restricted to `service_role` in `20260820170000_security_definer_rpc_acl_hardening.sql`.
-  - RLS helpers were isolated into `app_private` schema in `20260820180000_rls_helper_private_schema.sql`.
+### P0 Findings (Critical Security / Launch Blockers)
+
+#### `F-B-01` (RECLASSIFIED TO P0) — `public.product_import_sessions` Table Exposed Without RLS
+- **Exact Target Object:** `public.product_import_sessions` in live database `ztplxqlthuqkuktbznbo`.
+- **Live Database Evidence:** `[CONFIRMED BY LIVE DB QUERY]`
+  - `relrowsecurity = false`
+  - `relforcerowsecurity = false`
+  - `Active Policies = 0`
+  - `Table Privileges:` `anon` and `authenticated` hold default `SELECT, INSERT, UPDATE, DELETE` privileges over PostgREST Data API.
+  - `Row Count:` **0 rows** (no customer/merchant data compromised).
+  - `Supabase Security Advisor:` Reports `ERROR — RLS Disabled in Public`.
+- **Root Cause:** Table was created in migration `20260426090000_m20_merchant_productivity_layer.sql` without `ENABLE ROW LEVEL SECURITY` or `REVOKE` statements.
+- **Remediation Status:** Authored forward-only migration `20260830210000_lock_product_import_sessions_rls.sql` and added Universal RLS gate in branch `fix/stage-b-p0-product-import-rls`.
+- **Production Status:** **HOLD** (Awaiting supervisor authorization before applying to linked database).
 
 ---
 
-### P1 Findings (High Priority / Deployment & Schema Consistency)
+### P1 Findings (High Priority / Deployment Gate)
 
 #### `F-B-DEPLOY-01` — Netlify Production Deployment Trust Boundary Pins Legacy Repository Identity
 - **Exact File / Object:** [`.github/workflows/netlify-production-deploy.yml:L100,L118`](file:///d:/DilMart/.github/workflows/netlify-production-deploy.yml#L100-L118)
-- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY CI]`
-  ```yaml
-  if [ "$THIS_REPO" != "cylendralabs-blip/DilMart-Store" ]; then
-    echo "REFUSED: unexpected repository $THIS_REPO"
-    exit 1
-  fi
-  ...
-  if [ "$RUN_REPO" != "cylendralabs-blip/DilMart-Store" ]; then
-    echo "REFUSED: triggering run head repository is '$RUN_REPO'."
-    exit 1
-  fi
-  ```
-- **Impact:** While Launch Critical PR Quality & Security CI and Native Foundation CI succeed, the gated Netlify production deploy workflow refuses execution from `dilmart-info/Dilmart` and exits with failure, preventing automated production release.
-- **Recommended Direction:** In a future remediation phase, update the production deployment trust boundary to validate `dilmart-info/Dilmart` without weakening the gate or removing repository identity verification.
-- **DB Change Required:** **NO**
-
-#### `F-B-01` — Schema Migration Drift on `product_import_sessions`
-- **Exact File / Object:** [`supabase/migrations/20260426090000_m20_merchant_productivity_layer.sql:L6`](file:///d:/DilMart/supabase/migrations/20260426090000_m20_merchant_productivity_layer.sql#L6) and live table `public.product_import_sessions`.
-- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`
-  The repository migration `20260426090000_m20_merchant_productivity_layer.sql` created the table without `ENABLE ROW LEVEL SECURITY` or policy DDL. In the live production database (`ztplxqlthuqkuktbznbo`), RLS is enabled and the following **4 exact policies** exist:
-  1. `Admins can manage product_import_sessions` | Command: `ALL` | Roles: `{public}` | `USING (app_private.is_platform_admin())` | `WITH CHECK (app_private.is_platform_admin())`
-  2. `Merchants can view own product_import_sessions` | Command: `SELECT` | Roles: `{authenticated}` | `USING (app_private.is_merchant_member(merchant_id))`
-  3. `Merchants can insert own product_import_sessions` | Command: `INSERT` | Roles: `{authenticated}` | `WITH CHECK (app_private.is_merchant_member(merchant_id))`
-  4. `Merchants can update own product_import_sessions` | Command: `UPDATE` | Roles: `{authenticated}` | `USING (app_private.is_merchant_member(merchant_id))` | `WITH CHECK (app_private.is_merchant_member(merchant_id))`
-- **Impact:** Clean migration replay in fresh environments leaves `product_import_sessions` without RLS policies unless codified (70/71 in replay vs 71/71 in live).
-- **Recommended Direction:** Author a forward-only idempotency migration reproducing the exact 4 live policies in repository history.
-- **DB Change Required:** **YES** (Forward migration only; no historical rewrite).
+- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY CI]` The workflow checks `THIS_REPO == "cylendralabs-blip/DilMart-Store"` and rejects runs from `dilmart-info/Dilmart`.
+- **Impact:** Blocks automated release of frontend bundles to Netlify production.
+- **Recommended Direction:** Update trust boundary repository identity on a dedicated PR branch.
 
 ---
 
-### P2 Findings (Medium Priority / Legacy Database Residue)
+### P2 Findings (Medium Priority / Legacy Residue & Hardening)
 
 #### `F-B-02` — 11 Legacy Tables from Decoupled Architectures
+- **Exact Objects (Lowercase PostgreSQL Identifiers):**
+  `public.store_carts`, `public.store_cart_items`, `public.store_linked_profiles`, `public.store_federated_session_families`, `public.store_federated_refresh_tokens`, `public.store_federated_session_audit_events`, `public.dilmart_customer_handoffs`, `public.dilmart_customer_handoff_audit_events`, `public.dilmart_barber_handoffs`, `public.dilmart_barber_handoff_audit_events`, `public.dilmart_barber_web_sessions`.
+- **Live Row Count:** **0 rows across all 11 tables** `[CONFIRMED BY LIVE DB QUERY]`.
+- **Proposed Action:** Drop via forward migration using strict topological order and `RESTRICT` semantics.
+
+#### `F-B-03` — Legacy Functions (16+ Candidates) & Column Dependencies
 - **Exact Objects:**
-  `public.store_carts`, `public.store_cart_items`, `public.store_linked_profiles`, `public.store_federated_session_families`, `public.store_federated_refresh_tokens`, `public.store_federated_session_audit_events`, `public.DilMart_customer_handoffs`, `public.DilMart_customer_handoff_audit_events`, `public.DilMart_barber_handoffs`, `public.DilMart_barber_handoff_audit_events`, `public.DilMart_barber_web_sessions`.
-- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]` Full repository audit mapped 0 active runtime callers across frontend, backend, and native mobile apps. Live database queries confirmed 0 active rows across all 11 tables.
-- **Impact:** Database schema bloat and maintenance overhead.
-- **Recommended Direction:** Execute forward-only drop migration following explicit topological ordering with `RESTRICT` semantics (NO blind `CASCADE`).
-- **DB Change Required:** **YES** (Forward `DROP TABLE ... RESTRICT` migration).
+  - Legacy Functions: `finalize_customer_handoff`, `logout_all_federated_sessions`, `provision_dilmart_federated_customer`, `redeem_and_create_federated_session`, `redeem_customer_handoff`, `reject_reserved_federated_email`, `resolve_dilmart_federated_customer`, `revoke_federated_sessions_for_identity`, `rotate_federated_refresh_token`, `validate_federated_session_family`, `finalize_barber_handoff`, `verify_barber_web_session`, `redeem_barber_handoff_and_create_session`, `revoke_barber_web_sessions_for_user`, `reject_barber_handoff_audit_mutation`, `place_b2b_cart_order_idempotent`.
+  - Legacy Columns: `products.requires_verified_salon` (0 rows true), `orders.dilmart_barbershop_id` (0 non-null rows), `orders.dilmart_user_id` (0 non-null rows).
+- **Critical Dependency:** Live `public.place_order` still references `p_store_linked_profile_id`, `p_dilmart_user_id`, and `p_dilmart_barbershop_id`. Orders columns must NOT be dropped until `place_order` is refactored/retired.
 
-#### `F-B-03` — Legacy Database Columns & Obsolete Stored Functions
-- **Exact Objects:**
-  - Columns: `products.requires_verified_salon` (0 active true rows `[CONFIRMED BY LIVE DB QUERY]`), `orders.DilMart_barbershop_id` (0 non-null rows `[CONFIRMED BY LIVE DB QUERY]`), `orders.DilMart_user_id` (0 non-null rows `[CONFIRMED BY LIVE DB QUERY]`).
-  - Functions: `place_b2b_cart_order_idempotent`, `finalize_barber_handoff`, `verify_barber_web_session`, `redeem_barber_handoff_and_create_session`, `revoke_barber_web_sessions_for_user`, `reject_barber_handoff_audit_mutation`.
-- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`
-- **Impact:** Schema residue with no active business purpose in DILMART.
-- **Recommended Direction:** Remove legacy columns and drop unused functions via forward migration using `RESTRICT`.
-- **DB Change Required:** **YES**
+#### `F-B-05` — Supabase Advisor Mutable `search_path` Warnings
+- **Exact Objects:** `increment_coupon_usage`, `get_order_status`, `get_available_points`, `claim_pending_points`, `handle_profile_points_claim`, `handle_order_status_points`, `set_desktop_quick_links_updated_at`, `app_private.is_admin`.
+- **Remediation Direction:** Explicitly pin `search_path = public, pg_temp` in Stage B Pass 2.
 
 ---
 
-### P3 Findings (Low Priority / Maintenance)
+### Safe Areas Confirmed
 
-#### `F-B-04` — Test Suite Mock Data Name Residue
-- **Exact Objects:** `backend/tests/phase5a-checkout-smoke.test.mjs`, `backend/tests/phase5a-checkout-live.test.mjs`.
-- **Evidence:** `[CONFIRMED BY CODE]` Mock fixtures contain string references to legacy table names (`store_carts`, `store_linked_profiles`).
-- **Impact:** Non-functional cosmetic residue in test fixtures.
-- **Recommended Direction:** Clean up mock object keys during test suite maintenance.
-- **DB Change Required:** **NO**
-
----
-
-### Confirmed Safe Areas
-
-1. **Pricing & Total Authority:** `[CONFIRMED BY CODE]` Server-authoritative checkout in NestJS `CheckoutService` resolves catalog prices directly from `products.price` / `products.discount_price`. Client-submitted unit prices and line totals are discarded.
-2. **Atomic Inventory Concurrency:** `[CONFIRMED BY CODE]` Stock decrements occur inside the `place_order_idempotent` transaction. An attempt to order more than available stock raises an exception and rolls back the transaction. Atomic restoration is enforced in `cancel_order_atomic`.
-3. **Tenant & Merchant Isolation:** `[CONFIRMED BY CODE]` No cross-merchant access path was identified in the audited backend services or database RLS policies.
-4. **Secret Boundaries & Credential Hygiene:** `[CONFIRMED BY CODE]` Full repository scanner check of `src/`, `android/`, and `ios/` confirmed zero leaked service-role keys, database passwords, or payment secrets in client-facing bundles.
-
----
-
-## 4. Synthesis of 24 Audit Passes
-
-1. **Pass 1 — Schema Inventory:** 72 tables (71 active, 1 dropped), 82 functions, 21 triggers, 4 views `[CONFIRMED BY CODE]`.
-2. **Pass 2 — Migration History:** 169 sequential migrations categorized by business domain `[CONFIRMED BY CODE]`.
-3. **Pass 3 — Residue Objects:** 11 obsolete tables, 3 legacy columns, and 6 dead functions mapped `[CONFIRMED BY CODE]`.
-4. **Pass 4 — Foreign Key Graph:** Inbound/outbound relational constraints verified intact `[CONFIRMED BY CODE]`.
-5. **Pass 5 — Order & Checkout Integrity:** Full server-side pricing authority and idempotency locks confirmed `[CONFIRMED BY CODE]`.
-6. **Pass 6 — Multi-Merchant Map:** Single-merchant cart verified; multi-merchant transition roadmap documented `[CONFIRMED BY CODE]`.
-7. **Pass 7 — Merchant Isolation:** Scoped access via `ScopeResolverService` and `is_merchant_member` verified `[CONFIRMED BY CODE]`.
-8. **Pass 8 — Admin Authority:** Protected routes and private schema helpers verified `[CONFIRMED BY CODE]`.
-9. **Pass 9 — Customer Auth:** Phone OTP, password authentication, and provisional account protection verified `[CONFIRMED BY CODE]`.
-10. **Pass 10 — Product Catalog:** Triple-state publication workflow confirmed `[CONFIRMED BY CODE]`.
-11. **Pass 11 — Inventory Engine:** Atomic stock ledger and CAS updates verified `[CONFIRMED BY CODE]`.
-12. **Pass 12 — Payment & Finance:** COD snapshots, courier fees, and commission calculations verified `[CONFIRMED BY CODE]`.
-13. **Pass 13 — Delivery Integration:** Automated Jenni dispatch and webhook ingress verified `[CONFIRMED BY CODE]`.
-14. **Pass 14 — Order Lifecycle:** State machine transitions and cancellation workflows verified `[CONFIRMED BY CODE]`.
-15. **Pass 15 — Settlement Engine:** Merchant ledger and batch payout models verified `[CONFIRMED BY CODE]`.
-16. **Pass 16 — Promotions Engine:** Coupon validation and usage tracking verified `[CONFIRMED BY CODE]`.
-17. **Pass 17 — Storage Security:** Bucket path isolation and public/private policies verified `[CONFIRMED BY CODE]`.
-18. **Pass 18 — API Contracts:** 259 backend endpoints audited and verified `[CONFIRMED BY CODE]`.
-19. **Pass 19 — Database Privileges:** Definitive lockdown of browser-facing RPCs confirmed `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
-20. **Pass 20 — RLS Matrix:** Comprehensive dual-state matrix generated (71/71 Live vs 70/71 Replay) `[CONFIRMED BY LIVE DB QUERY]`.
-21. **Pass 21 — Secret Boundaries:** Zero leaks in client and mobile apps `[CONFIRMED BY CODE]`.
-22. **Pass 22 — Test Suite:** 27 test suites in Main CI verified green `[CONFIRMED BY CI]`.
-23. **Pass 23 — Completion Map:** Single-merchant baseline maturity estimated at ~86% `[ENGINEERING ESTIMATE]`.
-24. **Pass 24 — Future Architecture Gaps:** Multi-Merchant and Hub Network roadmap completed `[INFERRED]`.
+1. **Order & Checkout Authority:** Server-side pricing authority in NestJS `CheckoutService` and service-role execution of `place_order_idempotent`.
+2. **RLS Helper Isolation:** `is_admin()`, `is_platform_admin()`, and `is_merchant_member(uuid)` reside exclusively in `app_private` (0 public copies).
+3. **Tenant Isolation:** No cross-merchant access paths in backend controllers or database policies.
+4. **Secret Boundaries:** Zero leaked service-role keys or payment secrets in client bundles.
