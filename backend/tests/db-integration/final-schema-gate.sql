@@ -568,3 +568,73 @@ BEGIN
   END IF;
 END;
 $fra_s5_001$;
+
+-- ── FRA-S-UNIVERSAL-001 — Every public table must have RLS enabled ───────────
+DO $fra_universal_rls$
+DECLARE
+  v_unprotected_tables text;
+  v_bad_table_count    integer;
+BEGIN
+  SELECT count(*), string_agg(c.relname, ', ' ORDER BY c.relname)
+  INTO v_bad_table_count, v_unprotected_tables
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public'
+    AND c.relkind = 'r'
+    AND c.relrowsecurity = false;
+
+  IF v_bad_table_count > 0 THEN
+    RAISE EXCEPTION
+      'UNIVERSAL RLS GATE FAILED: % table(s) in public schema have RLS disabled: %',
+      v_bad_table_count, v_unprotected_tables;
+  END IF;
+END;
+$fra_universal_rls$;
+
+-- ── FRA-S-PIS-001 — public.product_import_sessions lockdown gate ──────────────
+DO $fra_pis_001$
+DECLARE
+  v_rls_enabled boolean;
+BEGIN
+  -- 1. RLS must be enabled
+  SELECT c.relrowsecurity
+  INTO v_rls_enabled
+  FROM pg_catalog.pg_class c
+  JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+  WHERE n.nspname = 'public' AND c.relname = 'product_import_sessions';
+
+  IF v_rls_enabled IS DISTINCT FROM true THEN
+    RAISE EXCEPTION
+      'FRA-S-PIS-001 gate: RLS is not enabled on public.product_import_sessions';
+  END IF;
+
+  -- 2. anon must have NO access
+  IF has_table_privilege('anon', 'public.product_import_sessions', 'SELECT')
+     OR has_table_privilege('anon', 'public.product_import_sessions', 'INSERT')
+     OR has_table_privilege('anon', 'public.product_import_sessions', 'UPDATE')
+     OR has_table_privilege('anon', 'public.product_import_sessions', 'DELETE') THEN
+    RAISE EXCEPTION
+      'FRA-S-PIS-001 gate: anon holds table privileges on public.product_import_sessions';
+  END IF;
+
+  -- 3. authenticated must NOT have direct INSERT/UPDATE/DELETE
+  IF has_table_privilege('authenticated', 'public.product_import_sessions', 'INSERT')
+     OR has_table_privilege('authenticated', 'public.product_import_sessions', 'UPDATE')
+     OR has_table_privilege('authenticated', 'public.product_import_sessions', 'DELETE') THEN
+    RAISE EXCEPTION
+      'FRA-S-PIS-001 gate: authenticated holds direct mutation privileges on public.product_import_sessions';
+  END IF;
+
+  -- 4. service_role must retain full CRUD
+  IF NOT (
+    has_table_privilege('service_role', 'public.product_import_sessions', 'SELECT')
+    AND has_table_privilege('service_role', 'public.product_import_sessions', 'INSERT')
+    AND has_table_privilege('service_role', 'public.product_import_sessions', 'UPDATE')
+    AND has_table_privilege('service_role', 'public.product_import_sessions', 'DELETE')
+  ) THEN
+    RAISE EXCEPTION
+      'FRA-S-PIS-001 gate: service_role lost CRUD on public.product_import_sessions';
+  END IF;
+END;
+$fra_pis_001$;
+
