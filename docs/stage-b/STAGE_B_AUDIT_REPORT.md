@@ -73,7 +73,7 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
   2. `Merchants can view own product_import_sessions` | Command: `SELECT` | Roles: `{authenticated}` | `USING (app_private.is_merchant_member(merchant_id))`
   3. `Merchants can insert own product_import_sessions` | Command: `INSERT` | Roles: `{authenticated}` | `WITH CHECK (app_private.is_merchant_member(merchant_id))`
   4. `Merchants can update own product_import_sessions` | Command: `UPDATE` | Roles: `{authenticated}` | `USING (app_private.is_merchant_member(merchant_id))` | `WITH CHECK (app_private.is_merchant_member(merchant_id))`
-- **Impact:** Clean migration replay in fresh environments leaves `product_import_sessions` without RLS policies unless codified.
+- **Impact:** Clean migration replay in fresh environments leaves `product_import_sessions` without RLS policies unless codified (70/71 in replay vs 71/71 in live).
 - **Recommended Direction:** Author a forward-only idempotency migration reproducing the exact 4 live policies in repository history.
 - **DB Change Required:** **YES** (Forward migration only; no historical rewrite).
 
@@ -87,15 +87,15 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 - **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]` Full repository audit mapped 0 active runtime callers across frontend, backend, and native mobile apps. Live database queries confirmed 0 active rows across all 11 tables.
 - **Impact:** Database schema bloat and maintenance overhead.
 - **Recommended Direction:** Execute forward-only drop migration following explicit topological ordering with `RESTRICT` semantics (NO blind `CASCADE`).
-- **DB Change Required:** **YES** (Forward `DROP TABLE` migration).
+- **DB Change Required:** **YES** (Forward `DROP TABLE ... RESTRICT` migration).
 
 #### `F-B-03` — Legacy Database Columns & Obsolete Stored Functions
 - **Exact Objects:**
-  - Columns: `products.requires_verified_salon` (0 active true rows `[CONFIRMED BY LIVE DB QUERY]`), `orders.DilMart_barbershop_id` (0 non-null rows `[CONFIRMED BY REPOSITORY CODE]`), `orders.DilMart_user_id` (0 non-null rows `[CONFIRMED BY REPOSITORY CODE]`).
+  - Columns: `products.requires_verified_salon` (0 active true rows `[CONFIRMED BY LIVE DB QUERY]`), `orders.DilMart_barbershop_id` (0 non-null rows `[CONFIRMED BY LIVE DB QUERY]`), `orders.DilMart_user_id` (0 non-null rows `[CONFIRMED BY LIVE DB QUERY]`).
   - Functions: `place_b2b_cart_order_idempotent`, `finalize_barber_handoff`, `verify_barber_web_session`, `redeem_barber_handoff_and_create_session`, `revoke_barber_web_sessions_for_user`, `reject_barber_handoff_audit_mutation`.
-- **Evidence:** `[CONFIRMED BY CODE]`
+- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`
 - **Impact:** Schema residue with no active business purpose in DILMART.
-- **Recommended Direction:** Remove legacy columns and drop unused functions via forward migration.
+- **Recommended Direction:** Remove legacy columns and drop unused functions via forward migration using `RESTRICT`.
 - **DB Change Required:** **YES**
 
 ---
@@ -140,8 +140,8 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 16. **Pass 16 — Promotions Engine:** Coupon validation and usage tracking verified `[CONFIRMED BY CODE]`.
 17. **Pass 17 — Storage Security:** Bucket path isolation and public/private policies verified `[CONFIRMED BY CODE]`.
 18. **Pass 18 — API Contracts:** 259 backend endpoints audited and verified `[CONFIRMED BY CODE]`.
-19. **Pass 19 — Database Privileges:** Definitive lockdown of browser-facing RPCs confirmed `[CONFIRMED BY CODE]`.
-20. **Pass 20 — RLS Matrix:** Comprehensive matrix across all 71 active tables generated `[CONFIRMED BY CODE]`.
+19. **Pass 19 — Database Privileges:** Definitive lockdown of browser-facing RPCs confirmed `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
+20. **Pass 20 — RLS Matrix:** Comprehensive dual-state matrix generated (71/71 Live vs 70/71 Replay) `[CONFIRMED BY LIVE DB QUERY]`.
 21. **Pass 21 — Secret Boundaries:** Zero leaks in client and mobile apps `[CONFIRMED BY CODE]`.
 22. **Pass 22 — Test Suite:** 27 test suites in Main CI verified green `[CONFIRMED BY CI]`.
 23. **Pass 23 — Completion Map:** Single-merchant baseline maturity estimated at ~86% `[ENGINEERING ESTIMATE]`.

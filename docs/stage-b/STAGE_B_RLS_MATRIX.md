@@ -9,20 +9,25 @@ This document provides the high-level Row Level Security (RLS) overview across t
 For the complete, un-truncated policy and privilege breakdown across **all 71 active database tables**, see the authoritative companion document:
 👉 [`docs/stage-b/STAGE_B_RLS_FULL_MATRIX.md`](file:///d:/DilMart/docs/stage-b/STAGE_B_RLS_FULL_MATRIX.md) `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
 
+### Dual-State Table Accounting
+- **Live Production Database (`ztplxqlthuqkuktbznbo`):** **71 / 71 active tables have RLS ENABLED** `[CONFIRMED BY LIVE DB QUERY]`.
+- **Repository Migration Replay State:** **70 / 71 active tables have RLS ENABLED** `[CONFIRMED BY REPOSITORY CODE]`.
+- **Schema Drift Item (`F-B-01`):** `public.product_import_sessions` has RLS enabled with 4 active policies in live production, but was created without RLS statements in repository migration `20260426090000_m20_merchant_productivity_layer.sql`.
+
 ---
 
 ## 2. Core Marketplace RLS Summary
 
-| Table Name | RLS Enabled | Anon SELECT | Auth SELECT | Auth INSERT | Auth UPDATE | Auth DELETE | Merchant Access | Admin Access | Service Role |
+| Table Name | RLS Enabled (Live) | Anon SELECT | Auth SELECT | Auth INSERT | Auth UPDATE | Auth DELETE | Merchant Access | Admin Access | Service Role |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **`profiles`** | ✅ YES | ❌ DENIED | ✅ Own (`uid=id`) | ❌ DENIED | ❌ REVOKED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
 | **`customer_profiles`** | ✅ YES | ❌ DENIED | ✅ Own (`uid=user_id`) | ✅ Own (`uid=user_id`) | ✅ Own (`uid=user_id`) | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
 | **`customer_addresses`** | ✅ YES | ❌ DENIED | ✅ Own (`uid=user_id`) | ✅ Own (`uid=user_id`) | ✅ Own (`uid=user_id`) | ✅ Own (`uid=user_id`) | ❌ DENIED | ✅ Full | ✅ Full |
-| **`merchants`** | ✅ YES | ✅ Active Only | ✅ Active Only | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own (`is_merchant_member`) | ✅ Full | ✅ Full |
+| **`merchants`** | ✅ YES | ✅ Active Only | ✅ Active Only | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own (`app_private.is_merchant_member`) | ✅ Full | ✅ Full |
 | **`merchant_users`** | ✅ YES | ❌ DENIED | ✅ Own Merchant | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Owner / Manager | ✅ Full | ✅ Full |
-| **`merchant_settings`** | ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own (`is_merchant_member`) | ✅ Full | ✅ Full |
+| **`merchant_settings`** | ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own (`app_private.is_merchant_member`) | ✅ Full | ✅ Full |
 | **`categories`** | ✅ YES | ✅ Active Only | ✅ Active Only | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
-| **`products`** | ✅ YES | ✅ Published/Active | ✅ Published/Active | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own (`is_merchant_member`) | ✅ Full | ✅ Full |
+| **`products`** | ✅ YES | ✅ Published/Active | ✅ Published/Active | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own (`app_private.is_merchant_member`) | ✅ Full | ✅ Full |
 | **`stock_movements`** | ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own Merchant | ✅ Full | ✅ Full |
 | **`orders`** | ✅ YES | ❌ DENIED | ✅ Own (`uid=customer_id`) | ❌ DENIED | ❌ REVOKED | ❌ REVOKED | ✅ Own Merchant Read | ✅ Full | ✅ Full |
 | **`order_items`** | ✅ YES | ❌ DENIED | ✅ Own Order | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own Merchant Read | ✅ Full | ✅ Full |
@@ -37,7 +42,7 @@ For the complete, un-truncated policy and privilege breakdown across **all 71 ac
 | **`delivery_prices`** | ✅ YES | ✅ Public Read | ✅ Public Read | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
 | **`order_delivery_integrations`**| ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
 | **`audit_logs`** | ✅ YES | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Full | ✅ Full |
-| **`product_import_sessions`** | ⚠️ DRIFT | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own Merchant Read | ✅ Full | ✅ Full |
+| **`product_import_sessions`** | ✅ YES (Live) | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ❌ DENIED | ✅ Own Merchant Read | ✅ Full | ✅ Full |
 
 ---
 
@@ -51,8 +56,8 @@ For the complete, un-truncated policy and privilege breakdown across **all 71 ac
 
 3. **RLS Helper Schema Isolation:**
    - RLS helper functions `is_admin()`, `is_platform_admin()`, and `is_merchant_member(uuid)` were relocated to schema `app_private` (in `20260820180000_rls_helper_private_schema.sql`).
-   - PostgREST does not expose `app_private`, preventing direct HTTP RPC probing of administrative helper functions `[CONFIRMED BY CODE]`.
+   - PostgREST does not expose `app_private`, preventing direct HTTP RPC probing of administrative helper functions `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
 
-4. **Migration / Schema Drift on `product_import_sessions`:**
+4. **Migration / Schema Drift on `product_import_sessions` (`F-B-01`):**
    - In repository migration `20260426090000_m20_merchant_productivity_layer.sql`, `product_import_sessions` was created without RLS statements.
-   - In the live production database, 4 RLS policies exist out-of-band. A forward-only alignment migration is documented as Finding `F-B-01` for Stage B Pass 2 cleanup.
+   - In the live production database (`ztplxqlthuqkuktbznbo`), RLS is enabled with 4 active policies. A forward-only alignment migration is documented as Finding `F-B-01` for Stage B Pass 2 cleanup.

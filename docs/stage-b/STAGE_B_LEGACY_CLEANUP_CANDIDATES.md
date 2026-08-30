@@ -17,17 +17,17 @@ In strict accordance with core architecture governance:
 
 | Object | Type | Current Row Count | Runtime References | FK Dependencies (Inbound / Outbound) | Function / RPC Dependencies | Policy Dependencies | Historical Value | Proposed Action | Risk Level |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **`public.store_cart_items`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `store_carts.id`, `products.id`, `merchants.id` | None | 0 policies | None (Decoupled in Stage A; client uses localStorage) | **DROP TABLE (RESTRICT)** | **LOW** |
-| **`public.store_carts`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `store_cart_items.cart_id`<br>**Outbound:** `store_linked_profiles.id`, `merchants.id` | `place_b2b_cart_order_idempotent` | 0 policies | None | **DROP TABLE (RESTRICT)** (after child items) | **LOW** |
-| **`public.store_federated_refresh_tokens`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** Self (`replaced_by_token_id`)<br>**Outbound:** `store_federated_session_families.id` | None | 0 policies | None (Federated auth replaced by direct Supabase Auth) | **DROP TABLE (RESTRICT)** | **LOW** |
-| **`public.store_federated_session_families`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `store_federated_refresh_tokens`<br>**Outbound:** `profiles.id`, `store_linked_profiles.id` | None | 0 policies | None | **DROP TABLE (RESTRICT)** (after tokens) | **LOW** |
-| **`public.store_federated_session_audit_events`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** None | None | 0 policies | None | **DROP TABLE (RESTRICT)** | **LOW** |
-| **`public.DilMart_customer_handoff_audit_events`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `DilMart_customer_handoffs.id` | None | 0 policies | None | **DROP TABLE (RESTRICT)** | **LOW** |
-| **`public.DilMart_customer_handoffs`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `DilMart_customer_handoff_audit_events`<br>**Outbound:** `store_linked_profiles.id` | None | 0 policies | None | **DROP TABLE (RESTRICT)** (after audit events) | **LOW** |
-| **`public.DilMart_barber_handoff_audit_events`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `DilMart_barber_handoffs.id` | `reject_barber_handoff_audit_mutation` | 0 policies | None | **DROP TABLE (RESTRICT)** | **LOW** |
-| **`public.DilMart_barber_handoffs`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `DilMart_barber_handoff_audit_events`<br>**Outbound:** `store_linked_profiles.id` | `finalize_barber_handoff`, `redeem_barber_handoff_and_create_session` | 0 policies | None | **DROP TABLE (RESTRICT)** (after audit events) | **LOW** |
-| **`public.DilMart_barber_web_sessions`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `store_linked_profiles.id` | `verify_barber_web_session`, `revoke_barber_web_sessions_for_user` | 0 policies | None | **DROP TABLE (RESTRICT)** | **LOW** |
-| **`public.store_linked_profiles`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `store_carts`, `DilMart_customer_handoffs`, `store_federated_session_families`, `DilMart_barber_handoffs`, `DilMart_barber_web_sessions`<br>**Outbound:** `profiles.id` | None | 0 policies | None | **DROP TABLE (RESTRICT)** (after all inbound dependents) | **LOW** |
+| **`public.store_cart_items`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `store_carts.id`, `products.id`, `merchants.id` | None | 0 policies | None (Decoupled in Stage A; client uses localStorage) | **DROP TABLE ... RESTRICT** | **LOW** |
+| **`public.store_carts`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `store_cart_items.cart_id`<br>**Outbound:** `store_linked_profiles.id`, `merchants.id` | `place_b2b_cart_order_idempotent` | 0 policies | None | **DROP TABLE ... RESTRICT** (after child items) | **LOW** |
+| **`public.store_federated_refresh_tokens`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** Self (`replaced_by_token_id`)<br>**Outbound:** `store_federated_session_families.id` | None | 0 policies | None (Federated auth replaced by direct Supabase Auth) | **DROP TABLE ... RESTRICT** | **LOW** |
+| **`public.store_federated_session_families`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `store_federated_refresh_tokens`<br>**Outbound:** `profiles.id`, `store_linked_profiles.id` | None | 0 policies | None | **DROP TABLE ... RESTRICT** (after tokens) | **LOW** |
+| **`public.store_federated_session_audit_events`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** None | None | 0 policies | None | **DROP TABLE ... RESTRICT** | **LOW** |
+| **`public.DilMart_customer_handoff_audit_events`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `DilMart_customer_handoffs.id` | None | 0 policies | None | **DROP TABLE ... RESTRICT** | **LOW** |
+| **`public.DilMart_customer_handoffs`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `DilMart_customer_handoff_audit_events`<br>**Outbound:** `store_linked_profiles.id` | None | 0 policies | None | **DROP TABLE ... RESTRICT** (after audit events) | **LOW** |
+| **`public.DilMart_barber_handoff_audit_events`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `DilMart_barber_handoffs.id` | `reject_barber_handoff_audit_mutation` | 0 policies | None | **DROP TABLE ... RESTRICT** | **LOW** |
+| **`public.DilMart_barber_handoffs`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `DilMart_barber_handoff_audit_events`<br>**Outbound:** `store_linked_profiles.id` | `finalize_barber_handoff`, `redeem_barber_handoff_and_create_session` | 0 policies | None | **DROP TABLE ... RESTRICT** (after audit events) | **LOW** |
+| **`public.DilMart_barber_web_sessions`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** None<br>**Outbound:** `store_linked_profiles.id` | `verify_barber_web_session`, `revoke_barber_web_sessions_for_user` | 0 policies | None | **DROP TABLE ... RESTRICT** | **LOW** |
+| **`public.store_linked_profiles`** | Table | **0 rows** `[CONFIRMED BY LIVE DB QUERY]` | 0 runtime callers `[CONFIRMED BY CODE]` | **Inbound:** `store_carts`, `DilMart_customer_handoffs`, `store_federated_session_families`, `DilMart_barber_handoffs`, `DilMart_barber_web_sessions`<br>**Outbound:** `profiles.id` | None | 0 policies | None | **DROP TABLE ... RESTRICT** (after all inbound dependents) | **LOW** |
 
 ---
 
@@ -35,50 +35,63 @@ In strict accordance with core architecture governance:
 
 | Table Name | Column Name | Type | Active / Non-Null Count | Audit Source & Query Pattern | Proposed Action |
 | :--- | :--- | :---: | :---: | :--- | :--- |
-| **`public.products`** | `requires_verified_salon` | `boolean` | **0 rows** (`true`) | `[CONFIRMED BY LIVE DB QUERY]`<br>`SELECT count(*) FROM products WHERE requires_verified_salon = true` | **DROP COLUMN (RESTRICT)** |
-| **`public.orders`** | `DilMart_barbershop_id` | `uuid` | **0 rows** (non-null) | `[CONFIRMED BY REPOSITORY CODE]`<br>`SELECT count(*) FROM orders WHERE DilMart_barbershop_id IS NOT NULL` | **DROP COLUMN (RESTRICT)** |
-| **`public.orders`** | `DilMart_user_id` | `uuid` | **0 rows** (non-null) | `[CONFIRMED BY REPOSITORY CODE]`<br>`SELECT count(*) FROM orders WHERE DilMart_user_id IS NOT NULL` | **DROP COLUMN (RESTRICT)** |
+| **`public.products`** | `requires_verified_salon` | `boolean` | **0 rows** (`true`) | `[CONFIRMED BY LIVE DB QUERY]`<br>`SELECT count(*) FILTER (WHERE requires_verified_salon = true) FROM public.products;` | **ALTER TABLE ... DROP COLUMN ... RESTRICT** |
+| **`public.orders`** | `DilMart_barbershop_id` | `uuid` | **0 rows** (non-null) | `[CONFIRMED BY LIVE DB QUERY]`<br>`SELECT count(*) FILTER (WHERE "DilMart_barbershop_id" IS NOT NULL) FROM public.orders;` | **ALTER TABLE ... DROP COLUMN ... RESTRICT** |
+| **`public.orders`** | `DilMart_user_id` | `uuid` | **0 rows** (non-null) | `[CONFIRMED BY LIVE DB QUERY]`<br>`SELECT count(*) FILTER (WHERE "DilMart_user_id" IS NOT NULL) FROM public.orders;` | **ALTER TABLE ... DROP COLUMN ... RESTRICT** |
 
 ---
 
-## 4. Proposed Dependency-Safe Removal Sequence (Analysis Only)
+## 4. Authoritative Exact Drop Identities for the 6 Legacy Functions
 
-To guarantee that no `CASCADE` operations are used, the removal must follow strict topological sorting based on foreign keys and procedural dependencies:
+The exact identities derived from \`pg_get_function_identity_arguments()\` for the 6 legacy functions are:
+
+1. **\`public.place_b2b_cart_order_idempotent(uuid, text, uuid, uuid, timestamp with time zone, text, text, uuid, text, numeric, numeric, numeric, jsonb, text, text, numeric, uuid, double precision, double precision, text, uuid, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric, uuid, uuid, uuid, uuid, uuid, text, integer, text, text, uuid, uuid, text, text)\`**
+2. **\`public.finalize_barber_handoff(uuid, text, uuid, text, text, text, text, text, text, text, text, text, text, integer, uuid)\`**
+3. **\`public.verify_barber_web_session(text)\`**
+4. **\`public.redeem_barber_handoff_and_create_session(text, text, text, integer)\`**
+5. **\`public.revoke_barber_web_sessions_for_user(uuid)\`**
+6. **\`public.reject_barber_handoff_audit_mutation()\`**
+
+---
+
+## 5. Proposed Dependency-Safe Removal Sequence (Analysis Only)
+
+To guarantee that no \`CASCADE\` operations are used, the removal must follow strict topological sorting based on foreign keys and procedural dependencies using \`RESTRICT\` semantics:
 
 ```text
 Step 1: Drop Obsolete Stored Functions & Triggers
-  ├── public.reject_barber_handoff_audit_mutation() [Trigger function]
-  ├── public.finalize_barber_handoff(...)
-  ├── public.verify_barber_web_session(...)
-  ├── public.redeem_barber_handoff_and_create_session(...)
-  ├── public.revoke_barber_web_sessions_for_user(...)
-  └── public.place_b2b_cart_order_idempotent(...)
+  ├── DROP FUNCTION public.reject_barber_handoff_audit_mutation() RESTRICT;
+  ├── DROP FUNCTION public.finalize_barber_handoff(uuid, text, uuid, text, text, text, text, text, text, text, text, text, text, integer, uuid) RESTRICT;
+  ├── DROP FUNCTION public.verify_barber_web_session(text) RESTRICT;
+  ├── DROP FUNCTION public.redeem_barber_handoff_and_create_session(text, text, text, integer) RESTRICT;
+  ├── DROP FUNCTION public.revoke_barber_web_sessions_for_user(uuid) RESTRICT;
+  └── DROP FUNCTION public.place_b2b_cart_order_idempotent(uuid, text, uuid, uuid, timestamp with time zone, text, text, uuid, text, numeric, numeric, numeric, jsonb, text, text, numeric, uuid, double precision, double precision, text, uuid, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric, uuid, uuid, uuid, uuid, uuid, text, integer, text, text, uuid, uuid, text, text) RESTRICT;
 
 Step 2: Drop Audit & Event Leaf Tables (No inbound foreign keys)
-  ├── public.store_federated_session_audit_events
-  ├── public.DilMart_customer_handoff_audit_events
-  └── public.DilMart_barber_handoff_audit_events
+  ├── DROP TABLE public.store_federated_session_audit_events RESTRICT;
+  ├── DROP TABLE public."DilMart_customer_handoff_audit_events" RESTRICT;
+  └── DROP TABLE public."DilMart_barber_handoff_audit_events" RESTRICT;
 
 Step 3: Drop Child / Leaf Token & Session Tables
-  ├── public.store_federated_refresh_tokens (References session families)
-  ├── public.store_federated_session_families (References linked profiles)
-  └── public.DilMart_barber_web_sessions (References linked profiles)
+  ├── DROP TABLE public.store_federated_refresh_tokens RESTRICT;
+  ├── DROP TABLE public.store_federated_session_families RESTRICT;
+  └── DROP TABLE public."DilMart_barber_web_sessions" RESTRICT;
 
 Step 4: Drop Handoff Core Tables
-  ├── public.DilMart_customer_handoffs (References linked profiles)
-  └── public.DilMart_barber_handoffs (References linked profiles)
+  ├── DROP TABLE public."DilMart_customer_handoffs" RESTRICT;
+  └── DROP TABLE public."DilMart_barber_handoffs" RESTRICT;
 
 Step 5: Drop Cart Child & Parent Tables
-  ├── public.store_cart_items (References store_carts)
-  └── public.store_carts (References store_linked_profiles)
+  ├── DROP TABLE public.store_cart_items RESTRICT;
+  └── DROP TABLE public.store_carts RESTRICT;
 
 Step 6: Drop Legacy Profile Link Table
-  └── public.store_linked_profiles (References profiles.id)
+  └── DROP TABLE public.store_linked_profiles RESTRICT;
 
 Step 7: Drop Obsolete Table Columns
-  ├── public.products.requires_verified_salon
-  ├── public.orders.DilMart_barbershop_id
-  └── public.orders.DilMart_user_id
+  ├── ALTER TABLE public.products DROP COLUMN requires_verified_salon RESTRICT;
+  ├── ALTER TABLE public.orders DROP COLUMN "DilMart_barbershop_id" RESTRICT;
+  └── ALTER TABLE public.orders DROP COLUMN "DilMart_user_id" RESTRICT;
 ```
 
 > [!CAUTION]
