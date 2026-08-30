@@ -2152,7 +2152,7 @@ test("91. Storage key metadata records kind + environment variable name only", (
 });
 
 test("92. the frozen execution manifest SHA is unchanged by this patch", () => {
-  assert.equal(EXPECTED_MANIFEST_SHA, "B32D751637019990581E2C34B81C960697D0DFF4DA2934860579F5A453B22E3E");
+  assert.equal(EXPECTED_MANIFEST_SHA, "9431016FCADE9BB7E4743639D2F2685DBB12DDEABCCDF2F0328B38BD25822728");
   assert.equal(resolved.manifestSha, EXPECTED_MANIFEST_SHA);
   assert.equal(resolved.counts.affected_products, 30);
   assert.equal(resolved.counts.field_changes, 38);

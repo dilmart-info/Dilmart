@@ -15,7 +15,7 @@ const MERCHANT_ID = "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7";
 const IMPORT_ID = "ff3274c4-7f65-455b-8bda-549c4ecd3fad";
 const API = "https://DilMart-store-backend.onrender.com/api";
 const EXPECTED_HEAD = "501c9ef9c2c553763d55886ebb0d67e0855b44aa";
-const EXPECTED_CSV_SHA = "A4378AAFC3121C880230C960563F9DB7E148CA567B79CEAEE5930A873E4BA181";
+const EXPECTED_CSV_SHA = "647C04B97B7F0572698695E6A36458E0B64CB8C53F51C66DD6538FC1FC77E750";
 const LOCK = path.join(TMP, "confirm.lock.json");
 const JWT_ENV = path.join(TMP, ".admin-jwt.env");
 

@@ -141,9 +141,9 @@ jobs:
         working-directory: android
         run: |
           chmod +x ./gradlew
-          ./gradlew clean --no-daemon
-          ./gradlew assembleDebug --no-daemon
-          ./gradlew bundleRelease --no-daemon
+          ./gradlew clean --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
+          ./gradlew assembleDebug --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
+          ./gradlew bundleRelease --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
 
       - name: Upload Android Debug APK
         uses: actions/upload-artifact@v4
