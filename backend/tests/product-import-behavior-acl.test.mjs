@@ -1,12 +1,14 @@
 /**
- * Product Import Sessions Behavior-Level & Merchant-Isolation ACL Test.
+ * Product Import Sessions Unit Simulation & Backend Tenant-Isolation Test.
+ *
+ * ⚠️ NOTE: This file contains an IN-MEMORY UNIT SIMULATION of the PostgreSQL ACL model
+ * and a direct unit test of ProductImportService merchant scoping.
+ * The authoritative REAL database behavior test runs against the live local Postgres stack
+ * in `backend/tests/db-integration/product-import-sessions-acl.test.mjs` and `final-schema-gate.sql`.
  *
  * Verifies:
- * 1. Table-level behavior simulation:
- *    - anon role is denied SELECT, INSERT, UPDATE, DELETE.
- *    - authenticated browser role is denied SELECT, INSERT, UPDATE, DELETE.
- *    - service_role client has full CRUD authority.
- * 2. Backend ProductImportService Tenant Isolation:
+ * 1. Unit simulation of table ACL rules.
+ * 2. Backend ProductImportService Tenant Scope Isolation:
  *    - Merchant A cannot access Merchant B's import session (throws ForbiddenException).
  *    - Merchant A cannot confirm Merchant B's import session.
  *    - Cross-merchant probe throws without mutating any state.
@@ -17,13 +19,12 @@ import assert from "node:assert/strict";
 
 const { ProductImportService } = await import("../dist/modules/products/product-import.service.js");
 
-// ── 1. Simulated PostgreSQL Table ACL & RLS Engine ───────────────────────────
+// ── 1. Unit Simulation of Table ACL Logic ────────────────────────────────────
 
-function createTableAclSimulator() {
-  const tableData = new Map(); // id -> row
+function createTableAclUnitSimulation() {
+  const tableData = new Map();
   
-  // Effective privileges after 20260830210000_lock_product_import_sessions_rls.sql
-  const tablePrivileges = {
+  const simulatedPrivileges = {
     anon: { SELECT: false, INSERT: false, UPDATE: false, DELETE: false },
     authenticated: { SELECT: false, INSERT: false, UPDATE: false, DELETE: false },
     service_role: { SELECT: true, INSERT: true, UPDATE: true, DELETE: true },
@@ -31,7 +32,7 @@ function createTableAclSimulator() {
 
   return {
     async execute(role, operation, payload = {}) {
-      if (!tablePrivileges[role] || !tablePrivileges[role][operation]) {
+      if (!simulatedPrivileges[role] || !simulatedPrivileges[role][operation]) {
         throw new Error(`permission denied for table product_import_sessions (role: ${role}, operation: ${operation})`);
       }
 
@@ -69,8 +70,8 @@ function createTableAclSimulator() {
   };
 }
 
-test("Database ACL behavior: anon is denied all CRUD on product_import_sessions", async () => {
-  const db = createTableAclSimulator();
+test("Unit Simulation: anon role is simulated as denied all CRUD on product_import_sessions", async () => {
+  const db = createTableAclUnitSimulation();
 
   await assert.rejects(
     () => db.execute("anon", "SELECT"),
@@ -90,8 +91,8 @@ test("Database ACL behavior: anon is denied all CRUD on product_import_sessions"
   );
 });
 
-test("Database ACL behavior: authenticated browser role is denied direct CRUD", async () => {
-  const db = createTableAclSimulator();
+test("Unit Simulation: authenticated browser role is simulated as denied direct CRUD", async () => {
+  const db = createTableAclUnitSimulation();
 
   await assert.rejects(
     () => db.execute("authenticated", "SELECT"),
@@ -111,8 +112,8 @@ test("Database ACL behavior: authenticated browser role is denied direct CRUD", 
   );
 });
 
-test("Database ACL behavior: service_role succeeds with full CRUD operations", async () => {
-  const db = createTableAclSimulator();
+test("Unit Simulation: service_role succeeds with full simulated CRUD operations", async () => {
+  const db = createTableAclUnitSimulation();
 
   // 1. INSERT fixture
   const insertRes = await db.execute("service_role", "INSERT", {
