@@ -1,0 +1,18 @@
+﻿{
+  "ok": true,
+  "errors": [],
+  "warn": [
+    "near-dup short pairs flagged=1"
+  ],
+  "rows": 100,
+  "verified": 100,
+  "hold": 0,
+  "holdMismatch": 0,
+  "badMatch": 0,
+  "missingLocal": 0,
+  "exactImgDup": 0,
+  "exactDupShorts": 0,
+  "nearDupShorts": 1,
+  "internalPhrases": 0,
+  "perceptualFlags": 2
+}

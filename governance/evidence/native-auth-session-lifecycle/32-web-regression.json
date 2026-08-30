@@ -1,0 +1,45 @@
+{
+  "startedAt": "2026-07-27T15:42:00.970Z",
+  "EVIDENCE_STAGE": "PRELIMINARY",
+  "SUPERSEDED_BY": "35-web-role-smoke.json",
+  "FINAL_WEB_ROLE_RESULT": "PASS",
+  "WEB_AUTH_STORAGE": "localStorage",
+  "WEB_SECURE_STORAGE_PLUGIN_USED": false,
+  "roles": {
+    "customer": {
+      "ok": true,
+      "login": true,
+      "reloadAuthenticated": true,
+      "usesLegacyLocalKey": true,
+      "usesNativeSecureKey": false,
+      "logout": true,
+      "reloadRemainsLoggedOut": true,
+      "expectedPathHint": "/profile"
+    },
+    "admin": {
+      "ok": false,
+      "skipped": true,
+      "reason": "no admin creds in .tmp-web-role-creds.env"
+    },
+    "merchant": {
+      "ok": false,
+      "skipped": true,
+      "reason": "no merchant creds in .tmp-web-role-creds.env"
+    },
+    "agent": {
+      "ok": false,
+      "skipped": true,
+      "reason": "no agent creds in .tmp-web-role-creds.env"
+    }
+  },
+  "summary": {
+    "WEB_AUTH_STORAGE": "localStorage",
+    "WEB_SECURE_STORAGE_PLUGIN_USED": false,
+    "customer": true,
+    "admin": "SKIPPED",
+    "merchant": "SKIPPED",
+    "agent": "SKIPPED",
+    "customerUsesLocalStorage": true,
+    "customerNotSecureKey": true
+  }
+}

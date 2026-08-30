@@ -1,0 +1,68 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-mobile
+dist-ssr
+*.local
+*.timestamp-*.mjs
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets — لا ترفع مفاتيح API
+.env
+.env.local
+.env.*.local
+.env.production
+backend/.env.production
+
+# كاش Supabase CLI المحلي
+supabase/.temp/
+
+# ── Test/smoke scripts that may contain credentials ──
+# NEVER commit scripts with hardcoded passwords, tokens, or API keys.
+backend/scripts/smoke_test*.mjs
+backend/scripts/smoke_test*.js
+backend/scripts/smoke_test*.ts
+backend/scripts/*credentials*
+backend/scripts/*secret*
+
+# ── Local/admin database scripts ──
+# NEVER commit scripts with hardcoded connection strings or DB passwords.
+list_migrations.cjs
+add_product_direct.cjs
+*_direct.cjs
+check_constraint.cjs
+test_constraint_via_api.cjs
+scratch/
+
+# ── Local scratch artefacts from device/CI investigations ──
+# Everything under .tmp-* is throwaway: smoke scripts, APK extractions, screenshots and
+# two credential .env files. Phase evidence lives in governance/evidence/, never here.
+.tmp-*
+
+# Local Supabase CLI state
+supabase/.branches/
+supabase/.temp/
+
+# STORE-PR6 §19 — App-Link association files are GENERATED at deploy time from real signing identity
+# (app-links:prepare) and must never be committed. Ignoring them also keeps deploy-build proof tests safe.
+/public/.well-known/assetlinks.json
+/public/.well-known/apple-app-site-association
+

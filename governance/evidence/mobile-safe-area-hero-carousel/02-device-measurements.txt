@@ -1,0 +1,63 @@
+# Live measurements read from the running WebView (Chrome DevTools Protocol)
+
+Device : Android emulator Pixel_10_Pro_XL, emulator-5554
+OS     : Android 17 (API 37)
+Screen : 1344x2992 physical, density 480 (dpr 3), CSS viewport 448px
+Cutout : dumpsys window displays -> mDisplayCutout insets=Rect(0, 159 - 0, 0)
+         159 physical px / 3.0 = 53 CSS px
+
+## Safe area
+
+--safe-area-inset-top   : 53px      <- injected by Capacitor 8 SystemBars
+--app-safe-area-top     : 53px      <- resolved by the new :root fallback chain
+mobile-top-promo-block  : padding-top 53px, applied exactly once
+block getBoundingClientRect().top : 0   <- background still bleeds behind the status bar
+
+state        scrollY   search input top   clears status bar
+expanded         0            105.0             true
+compact       1218             59.5             true
+back to top      0            105.0             true
+
+The search bar never enters the 53px system region, in either header state, and
+returning to the top restores the expanded offset with no jump.
+
+## Hero carousel geometry
+
+                        before (from source)     after (measured on device)
+track margin-left       -16px                    0px
+item padding-left        16px                    0px
+track width             viewport + 16px          414px
+viewport width          414px                    414px
+item widths             -                        414, 414, 414, 414, 414
+gap between items       16px                     0, 0, 0, 0
+
+## Autoplay observation, 40s / 5 advances
+
+t(s)  activeDot  visible slides (index:coverage)  trackX   off-grid
+  0       0      0:1                                   0      0
+  4       4      4:1                                1656      0
+  8       3      3:0.99 , 4:0.01                 1246.16   4.16   <- sampled mid-transition
+ 12       3      3:1                                1242      0
+ 16       2      2:1                                 828      0
+ 20       2      2:1                                 828      0
+ 24       1      1:1                                 414      0
+ 28       1      1:1                                 414      0
+ 32       0      0:1                                   0      0
+ 36       4      0:0.097 , 4:0.903               1696.26  40.26   <- sampled mid-transition
+ 40       4      4:1                                1656      0
+
+Settled trackX is always an exact multiple of the 414px viewport, so no half slide is
+ever left on screen. On the two mid-transition samples the coverage of the two visible
+slides sums to exactly 1.000 - the slides tile the viewport with no gap even in flight.
+The active indicator matches the visible slide in every sample.
+
+## Seam scan (longest contiguous fully dark vertical band inside the hero)
+
+before, mid-drag   : 48 px   <- the 16dp gutter
+after,  mid-drag   : 37 px   <- dark artwork inside the photo, not a gutter
+after,  settled    :  0 px
+after,  at rest    :  0 px
+
+## Vertical gesture over the hero
+
+page scrolled by 123px, carousel horizontal drift 0.00px

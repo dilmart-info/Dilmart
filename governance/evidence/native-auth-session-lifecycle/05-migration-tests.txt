@@ -1,0 +1,12 @@
+MIGRATION_TESTS=PASS
+COMMAND=npx vitest run src/lib/auth/native-secure-auth-storage.test.ts
+COVERAGE=
+- Legacy only → migrated
+- Secure only → no migration
+- Both exist → secure source of truth
+- Malformed legacy JSON → fail safely
+- Secure write failure → legacy retained
+- Read-back mismatch → legacy retained
+- Repeated migration → idempotent
+RESULT=PASS (unit)
+DEVICE_UPGRADE=PENDING_CI_APK

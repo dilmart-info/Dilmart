@@ -1,0 +1,9 @@
+java.exe : openjdk version "21.0.10" 2026-01-20
+At C:\Users\derma\AppData\Local\Temp\ps-script-33f327fe-c8e5-43ba-ba87-496e2a8e61e7.ps1:126 char:3
++   & "$javaHome\bin\java.exe" -version 2>&1 | Tee-Object "$ev/${logfil ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (openjdk version "21.0.10" 2026-01-20:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+OpenJDK Runtime Environment (build 21.0.10+-14961533-b1163.108)
+OpenJDK 64-Bit Server VM (build 21.0.10+-14961533-b1163.108, mixed mode)

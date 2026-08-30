@@ -1,0 +1,30 @@
+PHASE=Native Auth Storage & Session Lifecycle (Phase 3)
+TASK_CLASS=E (Launch Closure)
+BRANCH=feat/native-auth-session-lifecycle
+BASE_SHA=7bd1bbf3580fb12f086677de115b29c2b76d7646
+HEAD_SHA=a233d67f5a6bbc7c127ebdaf88882072a2f9c9d3
+PR=https://github.com/cylendralabs-blip/DilMart-Store/pull/64 (Draft)
+
+## Recent history at branch point
+7bd1bbf feat(mobile): isolate customer app boundary and add device baseline (#63)
+b2b4cf1 chore(mobile): align Capacitor 8 native foundation (#62)
+c1b5c3a audit(mobile): document Capacitor native baseline (#61)
+
+## Toolchain
+NODE=v22.22.3
+NPM=11.17.0
+CAPACITOR_CLI=8.4.2
+HOST_OS=win32 10.0.19045
+SHELL=powershell
+DEVICE=Samsung SM-M315F (R58R14KC1HZ) via adb
+
+## Dependencies (exact)
+@aparajita/capacitor-secure-storage@8.0.0
+@capacitor/preferences@8.0.1
+
+## Scope
+IN_SCOPE=encrypted native auth storage; install/migration bootstrap; unified AuthProvider;
+         single-flight refresh; 401 retry semantics; 403 no-logout; offline session retention;
+         local-scope logout with targeted cache clearing; auth lifecycle boundary guard
+OUT_OF_SCOPE=biometrics; backend changes; Supabase migrations; deep links; push notifications;
+             multi-device session UI; account deletion; production signing; Apple Team; UI redesign

@@ -1,0 +1,5 @@
+﻿PODFILE_LOCK_DECISION:
+- ios/App/Podfile.lock is not ignored.
+- It was generated on the macOS CI environment after successful Capacitor sync and CocoaPods resolution.
+- The lockfile is committed to provide reproducible iOS dependency resolution.
+- ios/App/Pods remains ignored and is not committed.

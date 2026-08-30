@@ -1,0 +1,51 @@
+# Verification after the fix
+
+## npm run build
+ok — 92 JavaScript chunks, no vendor-* chunk emitted
+
+## npm run web:production-smoke -- --port 4188
+
+> DilMart-store-store@1.0.0 web:production-smoke
+> node scripts/web/check-production-preview.mjs --port 4188
+
+dist entry: /assets/index-DFvihrxk.js
+browser   : C:/Program Files/Google/Chrome/Application/chrome.exe
+FAIL  Chrome DevTools endpoint did not come up
+
+## Detailed console / network probe on the fixed preview (route /)
+exceptions        : 0
+console errors    : 0
+failed requests   : 16 — all HTTP 500 from https://DilMart-store-backend.onrender.com/api/*
+                    (marketplace/home, marketplace/categories, desktop-quick-links,
+                     analytics ingest). Backend availability, unrelated to the bundle.
+JS/script failures: 0
+HTTP status of /  : 200
+
+## Regression suite
+npm test              : 99 passed / 16 files
+npm run lint          : 464 problems (452 errors, 12 warnings) — identical to base, 0 new,
+                        0 in vite.config.ts or scripts/web/
+npm run arch:guard    : PASS — 0 violations
+npm run auth:guard    : 1 violation — PRE-EXISTING WINDOWS-ONLY FALSE POSITIVE, see below
+npm run mobile:boundary: PASS — forbidden modules: none
+npm run native:assets:check: PASS
+git diff --check      : clean
+
+## auth:guard false positive
+src/integrations/supabase/client.ts is unmodified and correctly uses `storage: authStorage`.
+The guard flags line 12, which is a comment that quotes the forbidden pattern:
+  // and is owned by @/lib/auth/auth-storage. Never hardcode `storage: localStorage`.
+stripComments() removes line comments with /\/\/.*$/, but this worktree has CRLF line
+endings, so after split("\n") every line still ends with \r. In JavaScript `.` does not
+match \r, so $ never anchors and the comment survives stripping.
+On a LF checkout — which is what GitHub Actions uses — the guard passes. Neither the guard
+nor the client file was touched by this task; both last changed in a95df07.
+
+## Prior work verified still present
+src/index.css --app-safe-area-top / .mobile-safe-area-top : present
+MobileTopPromoBlock mobile-safe-area-top                  : present
+HeroSlider ml-0 / basis-full pl-0                          : present
+assets/{icon-only,logo,splash,icon-foreground,icon-background}.png : present
+android mipmap launcher + drawable splash                  : present
+ios AppIcon + Splash.imageset                              : present
+android styles.xml windowSplashScreen* attributes          : present

@@ -1,0 +1,14 @@
+SESSION_LIFECYCLE_TESTS=PASS
+COMMAND=npx vitest run src/lib/auth/auth-session-manager.test.ts src/lib/auth/api-auth-retry.test.ts src/lib/auth/AuthProvider.test.tsx src/lib/auth/auth-errors.test.ts
+COVERAGE=
+- Valid token → no refresh
+- Near-expiry → refresh
+- Concurrent calls → one refresh (single-flight)
+- Transient network → no logout
+- Invalid refresh → local logout
+- 401 → one refresh + one retry
+- Second 401 → surface error
+- 403 → no refresh/logout
+- Logout scope=local + cache cleanup
+- Provider singleton (one subscription)
+RESULT=PASS

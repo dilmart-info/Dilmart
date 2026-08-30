@@ -1,0 +1,96 @@
+{
+  "_vendor-CwS0tHd0.js": {
+    "file": "assets/vendor-CwS0tHd0.js",
+    "name": "vendor",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-C4bXtQ6h.js"
+    ]
+  },
+  "_vendor-radix-OoXOLJqa.js": {
+    "file": "assets/vendor-radix-OoXOLJqa.js",
+    "name": "vendor-radix",
+    "imports": [
+      "_vendor-react-C4bXtQ6h.js",
+      "_vendor-CwS0tHd0.js"
+    ]
+  },
+  "_vendor-react-C4bXtQ6h.js": {
+    "file": "assets/vendor-react-C4bXtQ6h.js",
+    "name": "vendor-react",
+    "imports": [
+      "_vendor-CwS0tHd0.js"
+    ]
+  },
+  "assets/slide-1.png": {
+    "file": "assets/slide-1-DQINOuFv.png",
+    "src": "assets/slide-1.png"
+  },
+  "assets/slide-2.png": {
+    "file": "assets/slide-2-BBi_KOLJ.png",
+    "src": "assets/slide-2.png"
+  },
+  "index.mobile.html": {
+    "file": "assets/index.mobile-CzWwjtJ6.js",
+    "name": "index.mobile",
+    "src": "index.mobile.html",
+    "isEntry": true,
+    "imports": [
+      "_vendor-CwS0tHd0.js",
+      "_vendor-react-C4bXtQ6h.js",
+      "_vendor-radix-OoXOLJqa.js"
+    ],
+    "dynamicImports": [
+      "_vendor-CwS0tHd0.js",
+      "_vendor-CwS0tHd0.js",
+      "_vendor-CwS0tHd0.js",
+      "src/pages/account/Addresses.tsx",
+      "src/pages/account/Orders.tsx",
+      "src/pages/account/ClaimAccount.tsx",
+      "_vendor-CwS0tHd0.js"
+    ],
+    "css": [
+      "assets/index-CR4ryNOw.css"
+    ],
+    "assets": [
+      "assets/slide-1-DQINOuFv.png",
+      "assets/slide-2-BBi_KOLJ.png"
+    ]
+  },
+  "src/pages/account/Addresses.tsx": {
+    "file": "assets/Addresses-CCaWpC_S.js",
+    "name": "Addresses",
+    "src": "src/pages/account/Addresses.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-C4bXtQ6h.js",
+      "index.mobile.html",
+      "_vendor-CwS0tHd0.js",
+      "_vendor-radix-OoXOLJqa.js"
+    ]
+  },
+  "src/pages/account/ClaimAccount.tsx": {
+    "file": "assets/ClaimAccount-Ci3lAYSl.js",
+    "name": "ClaimAccount",
+    "src": "src/pages/account/ClaimAccount.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-C4bXtQ6h.js",
+      "index.mobile.html",
+      "_vendor-CwS0tHd0.js",
+      "_vendor-radix-OoXOLJqa.js"
+    ]
+  },
+  "src/pages/account/Orders.tsx": {
+    "file": "assets/Orders-DYBMVNRt.js",
+    "name": "Orders",
+    "src": "src/pages/account/Orders.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "_vendor-react-C4bXtQ6h.js",
+      "index.mobile.html",
+      "_vendor-radix-OoXOLJqa.js",
+      "_vendor-CwS0tHd0.js"
+    ]
+  }
+}

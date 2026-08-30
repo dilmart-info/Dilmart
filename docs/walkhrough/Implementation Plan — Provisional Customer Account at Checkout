@@ -1,0 +1,127 @@
+# Implementation Plan — Provisional Customer Account at Checkout
+
+This plan introduces a provisional identity creation flow at checkout for storefront orders. It ensures that every order placed through the storefront is bound to a valid user account (`orders.user_id`), preventing orders from being created with `user_id = null`.
+
+---
+
+## Findings & Architectural Decisions
+
+1. **Supabase Anonymous Sessions:**
+   - **Status:** Disabled (`Anonymous sign-ins are disabled`).
+   
+2. **Email Confirmation Check:**
+   - **Status:** Enabled (signup returns `session: null`, requiring email confirmation).
+
+3. **Backend Provisional Registration:**
+   - Bypasses both limitations by exposing a secure `POST /auth/create-provisional-user` endpoint.
+   - Registers users with `email_confirm: true` using the backend's Supabase service-role client.
+   - Dynamically signs in on the client side using the generated credentials before submitting checkout.
+
+---
+
+## Proposed Changes
+
+### 1. Backend: Auth Controller & Service
+
+#### [NEW] [create-provisional-user.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/auth/create-provisional-user.dto.ts)
+- Define a new DTO `CreateProvisionalUserDto` containing:
+  - `customer_name`: string (required)
+  - `customer_phone`: string (required, validated using `normalizeIraqiPhone`)
+
+#### [MODIFY] [auth.controller.ts](file:///E:/Project/DilMart-Store/backend/src/modules/auth/auth.controller.ts)
+- Add a new endpoint `POST /auth/create-provisional-user` (publicly accessible).
+- Protect with rate limit: `@Throttle({ default: { limit: 5, ttl: 60000 } })`.
+- Decorate to return `Cache-Control: no-store` headers.
+
+#### [MODIFY] [auth.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/auth/auth.service.ts)
+- Implement `createProvisionalUser(payload: CreateProvisionalUserDto)`:
+  1. Validate and normalize phone using `normalizeIraqiPhone`.
+  2. Generate a random email: `provisional_${Date.now()}_${crypto.randomUUID().substring(0, 8)}@provisional.DilMart.com`.
+  3. Generate a secure random password using `crypto.randomBytes(16).toString("hex")`.
+  4. Invoke `auth.admin.createUser()` with:
+     ```ts
+     {
+       email,
+       password,
+       email_confirm: true,
+       user_metadata: {
+         account_type: "provisional_customer",
+         phone_verified: false,
+         signup_source: "checkout",
+         checkout_phone: normalizedPhone
+       },
+       app_metadata: {
+         account_type: "provisional_customer"
+       }
+     }
+     ```
+  5. Return `{ email, password }` to the client. Ensure no password values or user metadata details are printed to the logs.
+
+---
+
+### 2. Backend: Secure Checkout & Loyalty Points Verification
+
+#### [MODIFY] [checkout.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/checkout/checkout.service.ts)
+- Enforce storefront authentication:
+  - Inside `submit()`, if `!actorId` is true, throw `UnauthorizedException("يرجى إنشاء جلسة متابعة مؤقتة قبل إرسال الطلب.")`.
+  - Pass `p_user_id: actorId` directly instead of `actorId ?? null`.
+- Enforce backend loyalty points restriction:
+  - If `points_spent > 0`:
+    - Retrieve the user via the admin auth client (`this.supabaseAdmin.client.auth.admin.getUserById(actorId)`).
+    - Check user `app_metadata` or `user_metadata`. If `account_type === "provisional_customer"` or `phone_verified !== true`, throw a `ForbiddenException("لا يمكن صرف نقاط الولاء باستخدام حساب مؤقت. يرجى توثيق رقم الهاتف أولاً.")`.
+
+---
+
+### 3. Frontend: Checkout Flow Identity Loop
+
+#### [MODIFY] [Checkout.tsx](file:///E:/Project/DilMart-Store/src/pages/Checkout.tsx)
+- Add a helper text block under the checkout layout:
+  > سيتم إنشاء حساب متابعة تلقائي من بيانات التوصيل حتى تتمكن من متابعة طلبك لاحقاً.
+- Disable/hide the points redeem interface in the UI if the user is unauthenticated or has a provisional account (checked by evaluating `profile?.email?.endsWith("@provisional.DilMart.com")` or metadata properties).
+- Modify the checkout submission sequence:
+  - If no `user` is currently logged in:
+    1. Call `POST /auth/create-provisional-user` with `customer_name` and `customer_phone`.
+    2. Retrieve `email` and `password`.
+    3. Authenticate immediately:
+       ```ts
+       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+       if (error || !data.session?.access_token) {
+         throw new Error("تعذر إنشاء حساب مؤقت للمتابعة.");
+       }
+       ```
+    4. Await an explicit context refresh:
+       ```ts
+       await queryClient.fetchQuery({
+         queryKey: ["auth-context", data.session.user.id],
+         queryFn: () => apiClient.getAuthContext(data.session.access_token),
+         staleTime: 0,
+       });
+       ```
+  - Submit the order using `checkoutSubmit`.
+  - On success, if the account was newly created as provisional:
+    - Automatically call `apiClient.updateCustomerProfile()` using the new authenticated session to save the name and phone number.
+    - Save the order's delivery details as their default address via `apiClient.createCustomerAddress()`.
+    - Clear cart and navigate to the thank-you screen.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Run NestJS unit and regression test suite:
+  ```bash
+  cd backend && npm run build
+  cd backend && npm run test:policy
+  cd backend && npm run test:hardening
+  ```
+- Ensure any test mocks of `SupabaseAdminService` are updated to support `auth.admin.createUser` and `auth.admin.getUserById` correctly.
+
+### Manual Verification
+1. Launch storefront, add a product to the cart, and navigate to `/checkout` as a guest.
+2. Verify that the provisional account notice is visible.
+3. Submit the order.
+4. Verify that:
+   - A new provisional customer user exists in `auth.users` with the correct metadata.
+   - The user profile and default address were updated.
+   - The order `user_id` is set to the provisional account ID.
+   - You are redirected to `/thank-you?order=...`.

@@ -1,0 +1,40 @@
+# Git
+
+branch     : fix/web-production-vendor-chunk
+base sha   : 8e60a1a48da7f41fd28aeb3db8b3a930481b835a
+base commit: fix(mobile): respect safe areas and repair rtl hero carousel
+
+Branched from the local HEAD of fix/mobile-safe-area-hero-carousel, which is NOT
+pushed. No checkout of main, no pull, no reset, no clean, no stash, no rebase.
+All previous work (native icon, native splash, safe area, RTL hero carousel,
+governance files) is an ancestor of this branch and was verified still present.
+
+Pre-existing worktree state, untouched: .claude/settings.local.json, 85 .tmp-* files,
+2 git stashes.
+
+# Which build feeds which target
+
+npm run build         -> vite.config.ts        -> dist/          (Netlify web)
+npm run build:mobile  -> vite.mobile.config.ts -> dist-mobile/   (Capacitor APK/IPA)
+
+netlify.toml already declares the correct pair and was NOT modified:
+  [build] command = "npm run build" ; publish = "dist"
+
+# What Netlify is actually serving
+
+https://store.DilMart.org/ returned HTTP 200 and referenced:
+  /assets/index-D8WZyAIR.js
+  /assets/index-DR59cGdG.css
+
+Every chunk was fetched from production and byte-compared against the local build of
+the same commit:
+
+  index-D8WZyAIR.js         identical: true   266779 B
+  vendor-C-dDIgRE.js        identical: true  1033366 B
+  vendor-react-BeDS4LWl.js  identical: true   157730 B
+  vendor-radix-nHqKWmXK.js  identical: true   122150 B
+
+So the correct folder was published. dist-mobile was never uploaded, and the outage
+was caused by the bundle itself, not by a deployment mix-up.
+
+Response headers on /assets/* were application/javascript, HTTP 200, no redirect.

@@ -1,0 +1,6 @@
+
+=== Artifact sizes (post-JBR attempt) ===
+APK_COUNT=1
+11.76 MB	E:\Project\DilMart-Store\android\app\build\outputs\apk\debug\app-debug.apk
+AAB_COUNT=1
+10.21 MB	E:\Project\DilMart-Store\android\app\build\outputs\bundle\release\app-release.aab

@@ -1,0 +1,26 @@
+{
+  "task_id": "DilMart-ARD-AL-KHALEEJ-PRIVATE-CATALOG-FIX-RUNTIME-FINAL-SAFETY-001",
+  "mode": "preflight",
+  "read_only": true,
+  "actual_git_head": "c626d6a51c8ceb6bcc2375e1c57c3fa47c634694",
+  "exit_code": 1,
+  "judgment": "LIVE_PREFLIGHT_UNAVAILABLE",
+  "checked_live": false,
+  "ok": false,
+  "errors": [
+    "FETCH_FAILED:ADMIN_HTTP_403"
+  ],
+  "blocker": "FRESH_PLATFORM_ADMIN_JWT_REQUIRED",
+  "blocker_detail": "Cached Admin JWT was expired (authenticated user token). No non-expired authenticated user JWT was available in local terminals. service_role tokens are rejected by adapter gates. backend/.env has SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY but no Admin JWT source.",
+  "production_storage_writes": false,
+  "production_db_writes": false,
+  "execution_status": "NOT_EXECUTED",
+  "fix_exec_authorization_set": false,
+  "fix_exec_allow_writes_set": false,
+  "resolved_manifest_sha256": "B32D751637019990581E2C34B81C960697D0DFF4DA2934860579F5A453B22E3E",
+  "notes": [
+    "Runtime final-safety patch is implemented and CI-green.",
+    "Re-run: FIX_EXEC_ADMIN_JWT=<fresh platform-admin user JWT> node scripts/product-import/run-readonly-production-preflight.mjs",
+    "Do not set FIX_EXEC_AUTHORIZATION or FIX_EXEC_ALLOW_WRITES for this preflight."
+  ]
+}

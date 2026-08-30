@@ -1,0 +1,6 @@
+SUPERVISOR_MICRO_PATCH_2026-07-26
+1) CLOSURE_REPORT.md restored as index (Merchant Push pointer preserved).
+2) Capacitor closure moved to governance/phases/DilMart_STORE_CAPACITOR_NATIVE_BASELINE_CLOSURE.md
+3) Android signing wording corrected (no Debug/Production claim without cert inspection).
+4) iOS still BLOCKED_BY_ENVIRONMENT on Windows audit host — macOS run still mandatory before Ready.
+5) No Cap dependency bumps / no Phase 1 / no binaries.

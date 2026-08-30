@@ -1,0 +1,45 @@
+RUNNER_OS=macOS
+RUNNER_ARCH=ARM64
+GITHUB_SHA=23e8e5a57b4c9511f91b60f5c1003acc2c4c0fff
+
+ProductName:		macOS
+ProductVersion:		26.4
+BuildVersion:		25E246
+
+Darwin sat12-bq152-e9eac0b6-ca96-4ba5-a964-537dad2efd8e-CE410463E82E.local 25.4.0 Darwin Kernel Version 25.4.0: Thu Mar 19 19:29:33 PDT 2026; root:xnu-12377.101.15~1/RELEASE_ARM64_VMAPPLE arm64
+
+Node:
+v22.23.1
+
+npm:
+10.9.8
+
+Xcode:
+Xcode 26.5
+Build version 17F42
+
+Developer directory:
+/Applications/Xcode_26.5.app/Contents/Developer
+
+CocoaPods:
+1.17.0
+
+Ruby:
+ruby 3.4.10 (2026-06-30 revision 2b0b7728dc) +PRISM [arm64-darwin25]
+
+Available Xcode installations:
+/Applications/Xcode_26.0.1.app
+/Applications/Xcode_26.0.app
+/Applications/Xcode_26.1.1.app
+/Applications/Xcode_26.1.app
+/Applications/Xcode_26.2.0.app
+/Applications/Xcode_26.2.app
+/Applications/Xcode_26.3.0.app
+/Applications/Xcode_26.3.app
+/Applications/Xcode_26.4.1.app
+/Applications/Xcode_26.4.app
+/Applications/Xcode_26.5.0.app
+/Applications/Xcode_26.5.app
+/Applications/Xcode_26.6.0.app
+/Applications/Xcode_26.6.app
+/Applications/Xcode.app

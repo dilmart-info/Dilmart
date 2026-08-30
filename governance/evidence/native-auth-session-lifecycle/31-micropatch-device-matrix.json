@@ -1,0 +1,95 @@
+{
+  "startedAt": "2026-07-27T15:41:27.160Z",
+  "afterLoginProfile": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "loginCta": false,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "afterForceStop": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "loginCta": false,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "offlineCold": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "hash": "#/profile",
+    "offline": true,
+    "authScreen": false,
+    "authedUi": true,
+    "loginCta": false,
+    "textSlice": "حسابي أنت متصل بالحساب دون شبكة الجلسة محفوظة على الجهاز. سيتم تحديث بيانات الحساب تلقائيًا عند عودة الإنترنت. البريد: smoke.phase3.<redacted>@mailinator.com لا يوجد اتصال بالإنترنت ديلمارت ستور DilMart STORE معدات حلاقة و"
+  },
+  "onlineRecover": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "loginCta": false,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "logout": {
+    "ok": false,
+    "reason": "no-btn"
+  },
+  "afterLogout": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "loginCta": false,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "logoutRelaunch": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "loginCta": false,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "freshReinstall": {
+    "legacyPresent": false,
+    "securePresent": false,
+    "markerPresent": true,
+    "hash": "#/auth",
+    "offline": false,
+    "authScreen": true,
+    "authedUi": false,
+    "loginCta": true,
+    "textSlice": "مرحباً بك سجل دخولك أو أنشئ حساباً جديداً للمتابعة تسجيل دخول إنشاء حساب البريد الإلكتروني أو رقم الهاتف كلمة المرور تسجيل الدخول لدي طلب سابق وأريد استلام حسابي نسيت كلمة المرور؟ استعادة بواسطة الهاتف ديلمارت ستور DilMart"
+  },
+  "summary": {
+    "FORCE_STOP_RELAUNCH": true,
+    "OFFLINE_COLDSTART_ROUTE": "#/profile",
+    "OFFLINE_AUTH_SCREEN": false,
+    "OFFLINE_SECURE_SESSION_PRESENT": true,
+    "OFFLINE_OVERLAY": true,
+    "ONLINE_CONTEXT_RECOVERY": true,
+    "LOGOUT_SECURE_KEY_ABSENT": false,
+    "LOGOUT_RELAUNCH": false,
+    "FRESH_REINSTALL": true
+  }
+}

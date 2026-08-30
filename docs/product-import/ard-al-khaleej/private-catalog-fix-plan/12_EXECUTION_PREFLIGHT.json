@@ -1,0 +1,158 @@
+{
+  "prepared_at": "2026-08-04T20:41:11.461Z",
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "mode": "prepare/preflight",
+  "production_writes": false,
+  "production_storage_writes": false,
+  "counts": {
+    "affected_products": 30,
+    "field_changes": 38,
+    "replacement_images": 9
+  },
+  "expected": {
+    "replacement_assets": 9,
+    "affected_products": 30,
+    "field_changes": 38,
+    "field_breakdown": {
+      "image_url": 9,
+      "short_description": 22,
+      "name": 2,
+      "brand": 1,
+      "sizes": 2,
+      "category_slug": 1,
+      "slug": 1
+    }
+  },
+  "field_breakdown": {
+    "short_description": 22,
+    "image_url": 9,
+    "sizes": 2,
+    "name": 2,
+    "brand": 1,
+    "category_slug": 1,
+    "slug": 1
+  },
+  "hold_excluded": [
+    "ARD-4300",
+    "ARD-4750",
+    "ARD-4751",
+    "ARD-4807"
+  ],
+  "ard_1191_excluded": true,
+  "prices_excluded": true,
+  "replacement_assets": [
+    {
+      "merchant_sku": "ARD-2511",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2511.webp",
+      "sha256": "3DB85A32E124DB200154A9BADBAF2C8A7FEA526052812B820E28A66CD0210950",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2511-3DB85A32.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2511-3DB85A32.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2511.webp"
+    },
+    {
+      "merchant_sku": "ARD-2793",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2793.webp",
+      "sha256": "2727DBE666AA59F84799AD31114DE479A5140F5505272711030EA860830DB6C9",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2793-2727DBE6.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2793-2727DBE6.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2793.webp"
+    },
+    {
+      "merchant_sku": "ARD-2797",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2797.webp",
+      "sha256": "82D652273DA94ED0CEE4DB637BE6F429B02C2149A5723892F59B2C4EDEB97024",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2797-82D65227.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2797-82D65227.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2797.webp"
+    },
+    {
+      "merchant_sku": "ARD-2932",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2932.webp",
+      "sha256": "EE63C03520FE4C16AA80DEB0D47122A540074D9B4D123CBC96B0E122741DD119",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2932-EE63C035.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2932-EE63C035.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2932.webp"
+    },
+    {
+      "merchant_sku": "ARD-4564",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-4564.webp",
+      "sha256": "120C9873E53A41EBC70F3AE5E8EF23B33921289539356EF0A0B1E0A0924D0541",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4564-120C9873.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4564-120C9873.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4564.webp"
+    },
+    {
+      "merchant_sku": "ARD-4752",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-4752.webp",
+      "sha256": "E0CF56D25300F722C198FD609F1482D1C956AB6893B091FBD44FB446632650F2",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4752-E0CF56D2.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4752-E0CF56D2.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4752.webp"
+    },
+    {
+      "merchant_sku": "ARD-4792",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-4792.webp",
+      "sha256": "315545ADCF0C8DDF57704E68A8527EBED0C41741988F72E21A6F9065EAD0B89B",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4792-315545AD.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4792-315545AD.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4792.webp"
+    },
+    {
+      "merchant_sku": "ARD-775",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-775.webp",
+      "sha256": "A662A1D1133ACF0BD35AE1A00D5B4FB423FE20E25CD303BD3C63AF33AB16337A",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-775-A662A1D1.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-775-A662A1D1.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-775.webp"
+    },
+    {
+      "merchant_sku": "ARD-823",
+      "local_asset_path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-823.webp",
+      "sha256": "708745168955D575C3F24C30799C5DB0D964B5227AEDB5C3956E21A795706160",
+      "storage_path": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-823-70874516.webp",
+      "public_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-823-70874516.webp",
+      "old_image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-823.webp"
+    }
+  ],
+  "versioned_paths": [
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2511-3DB85A32.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2793-2727DBE6.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2797-82D65227.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2932-EE63C035.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4564-120C9873.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4752-E0CF56D2.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4792-315545AD.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-775-A662A1D1.webp",
+    "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-823-70874516.webp"
+  ],
+  "resolved_manifest_sha256": "B32D751637019990581E2C34B81C960697D0DFF4DA2934860579F5A453B22E3E",
+  "hold_sku_check_ok": true,
+  "hold_sku_errors": [],
+  "live_product_check": {
+    "source": ".tmp-product-import/ard-al-khaleej/private-catalog-qa/products.json",
+    "count": 110,
+    "ok": true,
+    "errors": []
+  },
+  "current_value_match": {
+    "ok": true,
+    "mismatch_count": 0,
+    "samples": []
+  },
+  "target_paths_absent": {
+    "policy": "fail if any versioned path already exists before upload",
+    "paths": [
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2511-3DB85A32.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2793-2727DBE6.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2797-82D65227.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-2932-EE63C035.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4564-120C9873.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4752-E0CF56D2.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-4792-315545AD.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-775-A662A1D1.webp",
+      "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/remediation-20260804/ARD-823-70874516.webp"
+    ],
+    "checked_live": false
+  },
+  "judgment": "EXECUTION_PACKAGE_READY"
+}

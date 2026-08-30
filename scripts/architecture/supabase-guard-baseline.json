@@ -1,0 +1,6 @@
+{
+  "guardVersion": 1,
+  "generatedAt": "2026-04-20T21:26:26.540Z",
+  "notes": "Temporary baseline for existing violations. New violations are blocked; baseline must trend to zero across M0 batches.",
+  "violations": []
+}

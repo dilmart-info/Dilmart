@@ -1,0 +1,24 @@
+{
+  "status": 200,
+  "email": "smoke.phase2.<redacted>@mailinator.com",
+  "password": "***",
+  "userId": "47e3678a-****-****-****-********4990",
+  "hasSession": false,
+  "error": null,
+  "TEST_ACCOUNT_CLEANUP": "PASS",
+  "cleanupNote": "Auth user + profile deleted after Phase 2 smoke; zero orders.",
+  "rawKeys": [
+    "id",
+    "aud",
+    "role",
+    "email",
+    "phone",
+    "confirmation_sent_at",
+    "app_metadata",
+    "user_metadata",
+    "identities",
+    "created_at",
+    "updated_at",
+    "is_anonymous"
+  ]
+}

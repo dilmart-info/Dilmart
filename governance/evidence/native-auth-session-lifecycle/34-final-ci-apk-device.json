@@ -1,0 +1,75 @@
+{
+  "apkSha": "9121364A50D54031137371E41E44EEFE819EE15A29B114EC0D6EFB7FF3D1C318",
+  "installedSha": "9121364A50D54031137371E41E44EEFE819EE15A29B114EC0D6EFB7FF3D1C318",
+  "hashMatch": true,
+  "authed": {
+    "securePresent": true,
+    "legacyPresent": false,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائ"
+  },
+  "forceStop": {
+    "securePresent": true,
+    "legacyPresent": false,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائ"
+  },
+  "offlineCold": {
+    "securePresent": true,
+    "legacyPresent": false,
+    "hash": "#/profile",
+    "offline": true,
+    "authScreen": false,
+    "authedUi": true,
+    "textSlice": "حسابي أنت متصل بالحساب دون شبكة الجلسة محفوظة على الجهاز. سيتم تحديث بيانات الحساب تلقائيًا عند عودة الإنترنت. البريد: smoke.phase3.<redacted>@mailinator.com لا يوجد اتصال بالإنترنت ديلمارت ستور DilMart S"
+  },
+  "online": {
+    "securePresent": true,
+    "legacyPresent": false,
+    "hash": "#/profile",
+    "offline": false,
+    "authScreen": false,
+    "authedUi": true,
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائ"
+  },
+  "logoutRelaunch": {
+    "securePresent": false,
+    "legacyPresent": false,
+    "hash": "#/auth",
+    "offline": false,
+    "authScreen": true,
+    "authedUi": false,
+    "textSlice": "مرحباً بك سجل دخولك أو أنشئ حساباً جديداً للمتابعة تسجيل دخول إنشاء حساب البريد الإلكتروني أو رقم الهاتف كلمة المرور تسجيل الدخول لدي طلب سابق وأريد استلام حسابي نسيت كلمة المرور؟ استعادة بواسطة الهات"
+  },
+  "freshReinstall": {
+    "securePresent": false,
+    "legacyPresent": false,
+    "hash": "#/auth",
+    "offline": false,
+    "authScreen": true,
+    "authedUi": false,
+    "textSlice": "مرحباً بك سجل دخولك أو أنشئ حساباً جديداً للمتابعة تسجيل دخول إنشاء حساب البريد الإلكتروني أو رقم الهاتف كلمة المرور تسجيل الدخول لدي طلب سابق وأريد استلام حسابي نسيت كلمة المرور؟ استعادة بواسطة الهات"
+  },
+  "summary": {
+    "FINAL_CI_APK_SHA256": "9121364A50D54031137371E41E44EEFE819EE15A29B114EC0D6EFB7FF3D1C318",
+    "INSTALLED_APK_SHA256": "9121364A50D54031137371E41E44EEFE819EE15A29B114EC0D6EFB7FF3D1C318",
+    "HASH_MATCH": true,
+    "FORCE_STOP_RELAUNCH": true,
+    "OFFLINE_COLDSTART_ROUTE": "#/profile",
+    "OFFLINE_AUTH_SCREEN": false,
+    "OFFLINE_SECURE_SESSION_PRESENT": true,
+    "ONLINE_CONTEXT_RECOVERY": true,
+    "LOGOUT_RELAUNCH_CLEARED": true,
+    "FRESH_REINSTALL_NO_SESSION": true,
+    "FAIL": 0,
+    "BLOCKED": 0,
+    "NOT_RUN": 0,
+    "FAIL_ITEMS": []
+  }
+}

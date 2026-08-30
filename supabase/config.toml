@@ -1,0 +1,6 @@
+project_id = "ztplxqlthuqkuktbznbo"
+
+# بدون هذا، طلب OPTIONS (CORS preflight) لا يحمل JWT فيُرفض بـ 401 ويظهر خطأ CORS في المتصفح.
+# التحقق من الأدمن يتم داخل الدالة عبر Authorization.
+[functions.create-agent-user]
+verify_jwt = false

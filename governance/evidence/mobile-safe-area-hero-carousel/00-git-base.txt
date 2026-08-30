@@ -1,0 +1,13 @@
+# Git base
+
+branch     : fix/mobile-safe-area-hero-carousel
+base sha   : 28802994b8b3784defb25eb962688c879d92cc0f
+base commit: chore(mobile): update native app icon and splash branding
+
+Branched from the local HEAD of chore/native-brand-assets, which is NOT pushed. No
+checkout of main, no pull, no reset, no clean, no stash, no rebase was run.
+
+Pre-existing worktree state, left untouched:
+- .claude/settings.local.json  (local modification that predates this micro-patch)
+- 85 untracked .tmp-* scratch files from Phase 3
+- 2 pre-existing git stashes

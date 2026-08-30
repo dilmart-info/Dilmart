@@ -1,0 +1,22 @@
+old_sku,action,new_sku,catalog_name_ar,official_product_name,match_status,notes
+ARD-92,A_reidentify,ARD-92,عطر شيخ الشيوخ المركز 80 مل,Sheikh Al Shuyukh Concentrated,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-287,A_reidentify,ARD-287,عطر انا الابيض,Ana Abiyedh,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-308,A_reidentify,ARD-308,عطر اختياري,Ekhtiari,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-309,A_reidentify,ARD-309,عطر وشوشه,Washwashah,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-310,A_reidentify,ARD-310,عطر رغبه رجالي,Raghba for Men,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-311,A_reidentify,ARD-311,عطر رمز لطافه فضي,Ramz Silver,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-312,A_reidentify,ARD-312,عطر اعجازي لطافة,Ejaazi,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-422,B_replace,ARD-4138,عطر اكلاير 100 مل,Eclaire,ACCEPTED_TRANSLITERATION,no reliable Khashabi image; replaced with aligned Eclaire SKU
+ARD-463,A_reidentify,ARD-463,عطر روعة العود,Rouat Al Oud,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-465,A_reidentify,ARD-465,عطر قمة النساء,Qimmah for Women,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-466,A_reidentify,ARD-466,عطر رغبه للنساء,Raghba,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-468,B_replace,ARD-2511,عطر انا الابيض بودري,Ana Abiyedh Poudree,ACCEPTED_TRANSLITERATION,no reliable Khaltaat image; replaced with aligned Poudree SKU
+ARD-479,A_reidentify,ARD-479,عطر قمة رجالي,Qimmah for Men,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-663,A_reidentify,ARD-663,عطر انا الابيض روج,Ana Abiyedh Rouge,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-715,A_reidentify,ARD-715,عطر رمز لطافه ذهبي,Ramz Gold,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-766,A_reidentify,ARD-766,عطر اوراق العود,Awraq Al Oud,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-823,A_reidentify,ARD-823,عطر شيخ الشيوخ,Sheikh Al Shuyukh,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-957,A_reidentify,ARD-957,عطر 24 قيراط ذهبي,24 Carat Pure Gold,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-958,A_reidentify,ARD-958,عطر 24 قيراط سلفر,24 Carat White Gold,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-959,A_reidentify,ARD-959,عطر نجدية,Najdia,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image
+ARD-970,A_reidentify,ARD-970,عطر قائد الفرسان,Qaed Al Fursan,ACCEPTED_TRANSLITERATION,restored catalog scent identity+image

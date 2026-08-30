@@ -1,0 +1,497 @@
+# Gated Netlify Production deployment.
+#
+# Production is published ONLY for a commit that is currently the tip of main AND has already passed
+# the required push CI for that exact SHA. Pushing does not publish; passing CI does not publish on its
+# own either. Every publish is a workflow run pinned to one commit, which is what makes the deployed
+# artifact auditable back to Git.
+#
+# Why this exists: Netlify's Git continuous deployment for this site is non-functional despite retained
+# Git configuration (repo, branch `main`, build command and publish dir are all still set, and
+# `stop_builds` is false), and the precise GitHub App / linkage failure was NOT proven. Production has
+# therefore been moved by hand through API, CLI and drag-and-drop uploads — the last of which carry no
+# commit at all and cannot be traced to any Git state. This workflow replaces that with a path where the
+# artifact GitHub verified is the artifact that gets uploaded.
+#
+# ROLLOUT ORDER IS MANDATORY — see docs/deployment/netlify-gated-production-deploy.md. In particular
+# Netlify site builds must be STOPPED before this is enabled, otherwise a recovered GitHub App
+# connection could publish a future push outside this gate and both paths would be live at once.
+name: Netlify Production Deploy
+
+on:
+  # Fires when either required workflow finishes. Whichever finishes second is the one that finds the
+  # gate satisfied; the earlier one exits at the CI check. Both are `completed`, not `success`, because
+  # a failed run must still reach the gate and be recorded as a refusal rather than silently vanish.
+  workflow_run:
+    workflows:
+      - "DilMart Store Launch Critical PR Quality & Security CI"
+      - "Native Foundation CI"
+    types:
+      - completed
+  # Controlled initial rollout and recovery. It does NOT bypass anything: the dispatched SHA goes
+  # through the identical gate, so a commit that has not passed CI cannot be published this way either.
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: "Exact 40-character commit SHA to publish. Must be the current tip of main."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+# Per-SHA at the WORKFLOW level: both required workflows can complete near-simultaneously and produce
+# two workflow_run events for the same commit, so the second observes the first's result instead of
+# racing it. Different commits get different groups here on purpose — gate evaluation is cheap,
+# credential-free and should not queue.
+#
+# The publish itself is serialised GLOBALLY at the job level instead (see the deploy job). Per-SHA
+# alone would let an older commit's publish run concurrently with a newer commit's, which is exactly
+# the race that can roll Production backwards.
+concurrency:
+  group: >-
+    netlify-production-${{
+      github.event_name == 'workflow_dispatch'
+        && inputs.target_sha
+        || github.event.workflow_run.head_sha
+    }}
+  cancel-in-progress: false
+
+env:
+  NETLIFY_SITE_ID: e9925590-a4cb-4e31-a97b-141f45264f24
+  LAUNCH_CRITICAL_WORKFLOW: "DilMart Store Launch Critical PR Quality & Security CI"
+  NATIVE_FOUNDATION_WORKFLOW: "Native Foundation CI"
+  PRODUCTION_URL: https://store.DilMart.org
+  # Pinned deliberately. A floating version tag would let the tool that performs the publish change
+  # underneath a reviewed pipeline without any commit to this repository.
+  NETLIFY_CLI_VERSION: "17.38.1"
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────────────────────────────────
+  # Every refusal lives here. This job holds no credentials it needs to protect beyond GITHUB_TOKEN,
+  # checks out nothing, and decides a single boolean the deploy job depends on.
+  # ────────────────────────────────────────────────────────────────────────────────────────────────
+  gate:
+    name: Verify deployment gate
+    runs-on: ubuntu-latest
+    outputs:
+      should_deploy: ${{ steps.decide.outputs.should_deploy }}
+      target_sha: ${{ steps.target.outputs.sha }}
+      launch_run_id: ${{ steps.ci.outputs.launch_run_id }}
+      native_run_id: ${{ steps.ci.outputs.native_run_id }}
+      native_status: ${{ steps.ci.outputs.native_status }}
+    steps:
+      # ── Trust boundary ──────────────────────────────────────────────────────────────────────────
+      # workflow_run runs in the context of the DEFAULT branch with access to repository secrets, so
+      # the triggering run must be proven to be a push to main in this repository before anything else
+      # is considered. A workflow_run raised by a pull_request event carries a contributor-controlled
+      # head; it must never reach a job that can publish.
+      - name: Enforce trust boundary
+        id: trust
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_EVENT: ${{ github.event.workflow_run.event }}
+          RUN_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          RUN_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
+          RUN_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if [ "$THIS_REPO" != "cylendralabs-blip/DilMart-Store" ]; then
+            echo "REFUSED: unexpected repository $THIS_REPO"
+            exit 1
+          fi
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "Manual dispatch — the same CI and freshness gates below still apply."
+            exit 0
+          fi
+
+          if [ "$RUN_EVENT" != "push" ]; then
+            echo "REFUSED: triggering run event is '$RUN_EVENT', not 'push'."
+            exit 1
+          fi
+          if [ "$RUN_BRANCH" != "main" ]; then
+            echo "REFUSED: triggering run branch is '$RUN_BRANCH', not 'main'."
+            exit 1
+          fi
+          if [ "$RUN_REPO" != "cylendralabs-blip/DilMart-Store" ]; then
+            echo "REFUSED: triggering run head repository is '$RUN_REPO'."
+            exit 1
+          fi
+          echo "Triggering run: push to main in this repository (conclusion: $RUN_CONCLUSION)."
+
+      # ── Target SHA ──────────────────────────────────────────────────────────────────────────────
+      # Taken from the event or the dispatch input and never from repository content, so nothing a
+      # commit contains can influence which commit is published.
+      - name: Resolve target SHA
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_SHA: ${{ inputs.target_sha }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            SHA="$INPUT_SHA"
+          else
+            SHA="$RUN_SHA"
+          fi
+          if ! printf '%s' "$SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "REFUSED: target SHA '$SHA' is not a full 40-character commit SHA."
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "Target SHA: $SHA"
+
+      # ── main freshness ──────────────────────────────────────────────────────────────────────────
+      # A superseded commit must not be published. If main advanced while CI was running, this run
+      # stands down; the newer commit gets its own CI and its own deployment opportunity.
+      - name: Require target SHA to be the current tip of main
+        id: freshness
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          MAIN_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          echo "current main: $MAIN_SHA"
+          if [ "$MAIN_SHA" != "$TARGET_SHA" ]; then
+            echo "SKIP: target $TARGET_SHA is not the current tip of main ($MAIN_SHA) — superseded."
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "fresh=true" >> "$GITHUB_OUTPUT"
+
+      # ── Exact-SHA CI evidence ───────────────────────────────────────────────────────────────────
+      # Only push runs for THIS exact SHA count. A PR run, an older run, a branch run or a run for a
+      # different commit is not evidence that this commit passed.
+      - name: Require exact-SHA push CI success
+        id: ci
+        if: steps.freshness.outputs.fresh == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+
+          runs_for() {
+            gh api "repos/${GITHUB_REPOSITORY}/actions/runs?event=push&head_sha=${TARGET_SHA}&per_page=100" \
+              --jq "[.workflow_runs[] | select(.name == \"$1\")] | sort_by(.run_number) | last"
+          }
+
+          LAUNCH="$(runs_for "$LAUNCH_CRITICAL_WORKFLOW")"
+          if [ -z "$LAUNCH" ] || [ "$LAUNCH" = "null" ]; then
+            echo "REFUSED: no push run of '$LAUNCH_CRITICAL_WORKFLOW' exists for $TARGET_SHA."
+            echo "ci_ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LAUNCH_ID="$(printf '%s' "$LAUNCH" | jq -r '.id')"
+          LAUNCH_STATUS="$(printf '%s' "$LAUNCH" | jq -r '.status')"
+          LAUNCH_CONCLUSION="$(printf '%s' "$LAUNCH" | jq -r '.conclusion')"
+          echo "launch_run_id=$LAUNCH_ID" >> "$GITHUB_OUTPUT"
+          echo "Launch Critical run $LAUNCH_ID: $LAUNCH_STATUS/$LAUNCH_CONCLUSION"
+          if [ "$LAUNCH_STATUS" != "completed" ] || [ "$LAUNCH_CONCLUSION" != "success" ]; then
+            echo "SKIP: Launch Critical has not succeeded for $TARGET_SHA."
+            echo "ci_ok=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Native Foundation is path-filtered, so a main push that touches none of its paths produces
+          # no run at all. Absence is therefore NOT REQUIRED rather than a failure — but a run that
+          # exists and did not succeed blocks the deployment.
+          NATIVE="$(runs_for "$NATIVE_FOUNDATION_WORKFLOW")"
+          if [ -z "$NATIVE" ] || [ "$NATIVE" = "null" ]; then
+            echo "native_status=NOT REQUIRED (no push run for this commit)" >> "$GITHUB_OUTPUT"
+            echo "native_run_id=none" >> "$GITHUB_OUTPUT"
+            echo "Native Foundation: NOT REQUIRED for $TARGET_SHA (path filter did not match)."
+          else
+            NATIVE_ID="$(printf '%s' "$NATIVE" | jq -r '.id')"
+            NATIVE_STATUS="$(printf '%s' "$NATIVE" | jq -r '.status')"
+            NATIVE_CONCLUSION="$(printf '%s' "$NATIVE" | jq -r '.conclusion')"
+            echo "native_run_id=$NATIVE_ID" >> "$GITHUB_OUTPUT"
+            echo "native_status=$NATIVE_STATUS/$NATIVE_CONCLUSION" >> "$GITHUB_OUTPUT"
+            echo "Native Foundation run $NATIVE_ID: $NATIVE_STATUS/$NATIVE_CONCLUSION"
+            if [ "$NATIVE_STATUS" != "completed" ] || [ "$NATIVE_CONCLUSION" != "success" ]; then
+              echo "SKIP: Native Foundation exists for $TARGET_SHA and has not succeeded."
+              echo "ci_ok=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+
+          echo "ci_ok=true" >> "$GITHUB_OUTPUT"
+
+      # ── Idempotency ─────────────────────────────────────────────────────────────────────────────
+      # Two required workflows produce two events for one commit. If the first already published it,
+      # the second must succeed without publishing again rather than upload a duplicate.
+      - name: Check whether Production already serves this commit
+        id: already
+        if: steps.ci.outputs.ci_ok == 'true'
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          LIVE_SHA="$(curl -fsSL --max-time 20 "${PRODUCTION_URL}/deploy-meta.json" 2>/dev/null | jq -r '.git_sha // empty' || true)"
+          if [ -n "$LIVE_SHA" ]; then echo "live marker: $LIVE_SHA"; else echo "live marker: absent"; fi
+          if [ "$LIVE_SHA" = "$TARGET_SHA" ]; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "Production already serves $TARGET_SHA — nothing to publish."
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Kill switch and credential ──────────────────────────────────────────────────────────────
+      # The variable defaults to OFF by being absent, so this workflow can merge and be exercised
+      # before Production deployment is authorised. The token is checked for presence only; its value
+      # is never printed or otherwise exposed.
+      - name: Check deployment enablement and credential presence
+        id: enabled
+        env:
+          DEPLOY_ENABLED: ${{ vars.NETLIFY_PRODUCTION_DEPLOY_ENABLED }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "${DEPLOY_ENABLED:-}" != "true" ]; then
+            echo "DISABLED: NETLIFY_PRODUCTION_DEPLOY_ENABLED is not exactly 'true' — gate only, no publish."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ -z "${NETLIFY_AUTH_TOKEN:-}" ]; then
+            echo "REFUSED: NETLIFY_PRODUCTION_DEPLOY_ENABLED is true but NETLIFY_AUTH_TOKEN is absent."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Decide
+        id: decide
+        env:
+          FRESH: ${{ steps.freshness.outputs.fresh }}
+          CI_OK: ${{ steps.ci.outputs.ci_ok }}
+          ALREADY: ${{ steps.already.outputs.already }}
+          ENABLED: ${{ steps.enabled.outputs.enabled }}
+        run: |
+          set -euo pipefail
+          if [ "$FRESH" = "true" ] && [ "$CI_OK" = "true" ] && [ "$ALREADY" = "false" ] && [ "$ENABLED" = "true" ]; then
+            echo "should_deploy=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_deploy=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Gate summary
+        if: always()
+        env:
+          TARGET_SHA: ${{ steps.target.outputs.sha }}
+          FRESH: ${{ steps.freshness.outputs.fresh }}
+          LAUNCH_ID: ${{ steps.ci.outputs.launch_run_id }}
+          NATIVE_ID: ${{ steps.ci.outputs.native_run_id }}
+          NATIVE_STATUS: ${{ steps.ci.outputs.native_status }}
+          ALREADY: ${{ steps.already.outputs.already }}
+          ENABLED: ${{ steps.enabled.outputs.enabled }}
+          DECISION: ${{ steps.decide.outputs.should_deploy }}
+        run: |
+          {
+            echo "## Netlify production gate"
+            echo ""
+            echo "| check | value |"
+            echo "|---|---|"
+            echo "| target SHA | \`${TARGET_SHA:-unresolved}\` |"
+            echo "| target is current main | ${FRESH:-n/a} |"
+            echo "| Launch Critical run | ${LAUNCH_ID:-n/a} |"
+            echo "| Native Foundation run | ${NATIVE_ID:-n/a} (${NATIVE_STATUS:-n/a}) |"
+            echo "| already live | ${ALREADY:-n/a} |"
+            echo "| deployment enabled | ${ENABLED:-false} |"
+            echo "| **decision** | **${DECISION:-false}** |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # ────────────────────────────────────────────────────────────────────────────────────────────────
+  # Unreachable unless the gate said yes. Builds the exact commit and uploads that artifact — Netlify
+  # is never asked to build a second one, so the artifact GitHub verified is the artifact published.
+  # ────────────────────────────────────────────────────────────────────────────────────────────────
+  deploy:
+    name: Build and publish to Netlify
+    needs: gate
+    if: needs.gate.outputs.should_deploy == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    # GLOBAL, not per-SHA. Only one Production publish may be inside the build/upload critical path at
+    # a time, so a newer deployment can never race an older one to the same site. Never
+    # cancel-in-progress: cancelling a run that may already be uploading is worse than queueing.
+    concurrency:
+      group: netlify-production
+      cancel-in-progress: false
+    steps:
+      - name: Checkout the exact target commit
+        uses: actions/checkout@v4
+        with:
+          # The resolved SHA, never `main` — main could move between the gate and this checkout.
+          ref: ${{ needs.gate.outputs.target_sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Fail closed BEFORE building: a build is only useful if it is pointed at the real Production
+      # backend. Blindly consuming whatever the VITE_* secrets contain would let a mis-set value ship a
+      # Production bundle aimed at localhost, a Render URL or another Supabase project.
+      - name: Validate the Production frontend target
+        env:
+          VITE_STORE_API_BASE_URL: ${{ secrets.VITE_STORE_API_BASE_URL }}
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          # Read-only preflight against the live API. Confirms the backend this bundle will talk to is
+          # actually bound to the expected Supabase project.
+          VERIFY_STORE_BACKEND_BINDING: "true"
+        run: node scripts/ci/verify-store-production-build-env.mjs
+
+      - name: Build production artifact
+        env:
+          VITE_STORE_API_BASE_URL: ${{ secrets.VITE_STORE_API_BASE_URL }}
+          VITE_SUPABASE_PROJECT_ID: ${{ secrets.VITE_SUPABASE_PROJECT_ID }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          # App Link signing identity is intentionally absent for the current non-rollout build.
+          # build:deploy skips association generation when NEITHER is set and fails closed when only
+          # one is — that behaviour is inherited unchanged, not reimplemented here.
+        run: npm run build:deploy
+
+      - name: Write deployment provenance marker
+        env:
+          TARGET_SHA: ${{ needs.gate.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          # A direct CLI upload does not populate Netlify's commit_ref the way a native Git build does,
+          # so the live artifact carries its own commit identity. Non-secret by construction: repository,
+          # commit and run identifiers only — no tokens, no environment values, no user identity, no PII.
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg git_sha "$TARGET_SHA" \
+            --arg github_run_id "$GITHUB_RUN_ID" \
+            --arg github_run_attempt "$GITHUB_RUN_ATTEMPT" \
+            '{repository: $repository, git_sha: $git_sha, github_run_id: $github_run_id, github_run_attempt: $github_run_attempt}' \
+            > dist/deploy-meta.json
+          cat dist/deploy-meta.json
+
+      # THE decisive check. Everything above — runner wait, environment approval, npm ci, validation,
+      # build, provenance — takes real time, and main can advance during any of it. The gate job's
+      # freshness check is an early optimisation; this one is the guarantee. It is deliberately the
+      # last thing before the upload, with nothing but the upload between them.
+      - name: Re-verify main immediately before upload
+        id: final_freshness
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: ${{ needs.gate.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          MAIN_SHA="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          echo "current_main=$MAIN_SHA" >> "$GITHUB_OUTPUT"
+          if [ "$MAIN_SHA" != "$TARGET_SHA" ]; then
+            # Superseded, not broken. The newer commit has its own CI and its own deployment
+            # opportunity; publishing this one now would roll Production backwards.
+            echo "SUPERSEDED: main advanced to $MAIN_SHA while this run was preparing $TARGET_SHA."
+            echo "Nothing will be uploaded."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "main is still $TARGET_SHA — proceeding to upload."
+          echo "proceed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Netlify
+        id: publish
+        if: steps.final_freshness.outputs.proceed == 'true'
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          TARGET_SHA: ${{ needs.gate.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          # Uploads the artifact this workflow already built and verified. `netlify deploy` does NOT run
+          # a build unless `--build` is passed, so simply omitting it is what keeps the published bytes
+          # identical to the ones GitHub checked. The pinned CLI has no opt-out flag for building —
+          # passing an invented one is a hard error, which is how it broke run 32893495527.
+          npx --yes "netlify-cli@${NETLIFY_CLI_VERSION}" deploy \
+            --prod \
+            --dir=dist \
+            --site="$NETLIFY_SITE_ID" \
+            --message="GitHub Actions ${GITHUB_REPOSITORY}@${TARGET_SHA} run ${GITHUB_RUN_ID}" \
+            --json > netlify-deploy.json
+          DEPLOY_ID="$(jq -r '.deploy_id // .deployId // empty' netlify-deploy.json)"
+          DEPLOY_URL="$(jq -r '.deploy_url // .url // empty' netlify-deploy.json)"
+          echo "deploy_id=$DEPLOY_ID" >> "$GITHUB_OUTPUT"
+          echo "deploy_url=$DEPLOY_URL" >> "$GITHUB_OUTPUT"
+          echo "Netlify deploy id: ${DEPLOY_ID:-unknown}"
+
+      - name: Verify the live deployment marker
+        id: verify
+        if: steps.final_freshness.outputs.proceed == 'true'
+        env:
+          TARGET_SHA: ${{ needs.gate.outputs.target_sha }}
+        run: |
+          set -euo pipefail
+          # Propagation is not instant; poll rather than assume, and fail if it never matches.
+          LIVE_SHA=""
+          for attempt in $(seq 1 20); do
+            LIVE_SHA="$(curl -fsSL --max-time 20 "${PRODUCTION_URL}/deploy-meta.json" 2>/dev/null | jq -r '.git_sha // empty' || true)"
+            if [ "$LIVE_SHA" = "$TARGET_SHA" ]; then break; fi
+            sleep 15
+          done
+          if [ "$LIVE_SHA" != "$TARGET_SHA" ]; then
+            echo "FAILED: live marker is '${LIVE_SHA:-absent}', expected $TARGET_SHA."
+            exit 1
+          fi
+          echo "Live marker matches $TARGET_SHA."
+
+          # The document root must serve HTML, and the bundle it references must actually be fetchable —
+          # a published-but-broken asset graph is not a successful deployment.
+          curl -fsS --max-time 20 "${PRODUCTION_URL}/" -o index.live.html
+          grep -qi "<!doctype html" index.live.html || { echo "FAILED: / did not return HTML."; exit 1; }
+          ASSET="$(grep -oE 'assets/index-[A-Za-z0-9_-]+\.js' index.live.html | head -1 || true)"
+          if [ -z "$ASSET" ]; then
+            echo "FAILED: no main bundle referenced by the live index.html."
+            exit 1
+          fi
+          curl -fsS --max-time 30 -o /dev/null "${PRODUCTION_URL}/${ASSET}"
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+          echo "Live asset reachable: $ASSET"
+
+      - name: Deployment summary
+        if: always()
+        env:
+          TARGET_SHA: ${{ needs.gate.outputs.target_sha }}
+          LAUNCH_ID: ${{ needs.gate.outputs.launch_run_id }}
+          NATIVE_ID: ${{ needs.gate.outputs.native_run_id }}
+          NATIVE_STATUS: ${{ needs.gate.outputs.native_status }}
+          DEPLOY_ID: ${{ steps.publish.outputs.deploy_id }}
+          ASSET: ${{ steps.verify.outputs.asset }}
+          PROCEED: ${{ steps.final_freshness.outputs.proceed }}
+          CURRENT_MAIN: ${{ steps.final_freshness.outputs.current_main }}
+        run: |
+          {
+            echo "## Netlify production deployment"
+            echo ""
+            if [ "${PROCEED:-}" != "true" ]; then
+              echo "**SKIPPED — superseded.** Nothing was uploaded."
+              echo ""
+              echo "| item | value |"
+              echo "|---|---|"
+              echo "| target SHA | \`${TARGET_SHA}\` |"
+              echo "| current main SHA | \`${CURRENT_MAIN:-unknown}\` |"
+              echo "| reason | main advanced while this run was preparing the artifact |"
+              echo "| outcome | success (no-op) — the newer commit gets its own deployment |"
+            else
+              echo "| item | value |"
+              echo "|---|---|"
+              echo "| commit | \`${TARGET_SHA}\` |"
+              echo "| Launch Critical run | ${LAUNCH_ID:-n/a} |"
+              echo "| Native Foundation run | ${NATIVE_ID:-n/a} (${NATIVE_STATUS:-n/a}) |"
+              echo "| Netlify deploy id | ${DEPLOY_ID:-n/a} |"
+              echo "| live marker SHA | \`${TARGET_SHA}\` |"
+              echo "| live asset | ${ASSET:-n/a} |"
+              echo "| production URL | ${PRODUCTION_URL} |"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,92 @@
+
+> DilMart-store-store@1.0.0 build
+> vite build
+
+[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+Browserslist: browsers data (caniuse-lite) is 13 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[32m✓[39m 3580 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                                     [39m[1m[2m    1.18 kB[22m[1m[22m[2m │ gzip:   0.64 kB[22m
+[2mdist/[22m[2massets/[22m[32mslide-1-DQINOuFv.png                    [39m[1m[2m1,897.63 kB[22m[1m[22m
+[2mdist/[22m[2massets/[22m[32mslide-2-BBi_KOLJ.png                    [39m[1m[2m2,046.80 kB[22m[1m[22m
+[2mdist/[22m[2massets/[22m[35mindex-DRq_ix5l.css                      [39m[1m[2m  108.90 kB[22m[1m[22m[2m │ gzip:  18.15 kB[22m
+[2mdist/[22m[2massets/[22m[36mdata-scope-Cmo_Zmu8.js                  [39m[1m[2m    0.35 kB[22m[1m[22m[2m │ gzip:   0.22 kB[22m
+[2mdist/[22m[2massets/[22m[36mfinance-ui-CasMj3Wb.js                  [39m[1m[2m    0.36 kB[22m[1m[22m[2m │ gzip:   0.33 kB[22m
+[2mdist/[22m[2massets/[22m[36mUsers-GRbn2R2H.js                       [39m[1m[2m    0.38 kB[22m[1m[22m[2m │ gzip:   0.28 kB[22m
+[2mdist/[22m[2massets/[22m[36mseparator-Demv5V86.js                   [39m[1m[2m    0.41 kB[22m[1m[22m[2m │ gzip:   0.29 kB[22m
+[2mdist/[22m[2massets/[22m[36mCoupons-BVTCrRoW.js                     [39m[1m[2m    0.43 kB[22m[1m[22m[2m │ gzip:   0.32 kB[22m
+[2mdist/[22m[2massets/[22m[36mOrders-Bi4WYemg.js                      [39m[1m[2m    0.44 kB[22m[1m[22m[2m │ gzip:   0.32 kB[22m
+[2mdist/[22m[2massets/[22m[36mProducts-CEXURBp6.js                    [39m[1m[2m    0.45 kB[22m[1m[22m[2m │ gzip:   0.32 kB[22m
+[2mdist/[22m[2massets/[22m[36mCustomers-lANJ-ER-.js                   [39m[1m[2m    0.63 kB[22m[1m[22m[2m │ gzip:   0.46 kB[22m
+[2mdist/[22m[2massets/[22m[36mCoupons-BT6locl-.js                     [39m[1m[2m    0.68 kB[22m[1m[22m[2m │ gzip:   0.49 kB[22m
+[2mdist/[22m[2massets/[22m[36mOrders-L2B4LjwI.js                      [39m[1m[2m    0.69 kB[22m[1m[22m[2m │ gzip:   0.49 kB[22m
+[2mdist/[22m[2massets/[22m[36mProducts-BT10sxpD.js                    [39m[1m[2m    0.70 kB[22m[1m[22m[2m │ gzip:   0.49 kB[22m
+[2mdist/[22m[2massets/[22m[36mscroll-area-NyyUhi11.js                 [39m[1m[2m    0.85 kB[22m[1m[22m[2m │ gzip:   0.45 kB[22m
+[2mdist/[22m[2massets/[22m[36mmerchant-rejection-reasons-CnDEZYsu.js  [39m[1m[2m    0.88 kB[22m[1m[22m[2m │ gzip:   0.57 kB[22m
+[2mdist/[22m[2massets/[22m[36mswitch-BP5WgBcw.js                      [39m[1m[2m    0.90 kB[22m[1m[22m[2m │ gzip:   0.47 kB[22m
+[2mdist/[22m[2massets/[22m[36muse-current-merchant-BDk9SC1X.js        [39m[1m[2m    0.92 kB[22m[1m[22m[2m │ gzip:   0.46 kB[22m
+[2mdist/[22m[2massets/[22m[36mcommercial-policy-profiles-C4DfJ2Gi.js  [39m[1m[2m    0.95 kB[22m[1m[22m[2m │ gzip:   0.56 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceLayout-C6C-vaQg.js               [39m[1m[2m    1.13 kB[22m[1m[22m[2m │ gzip:   0.62 kB[22m
+[2mdist/[22m[2massets/[22m[36mtable-BDlWEGn6.js                       [39m[1m[2m    1.52 kB[22m[1m[22m[2m │ gzip:   0.54 kB[22m
+[2mdist/[22m[2massets/[22m[36mscoped-queries-CxqNK_yJ.js              [39m[1m[2m    1.56 kB[22m[1m[22m[2m │ gzip:   0.59 kB[22m
+[2mdist/[22m[2massets/[22m[36mMerchantCreate-rmlKkOlR.js              [39m[1m[2m    1.99 kB[22m[1m[22m[2m │ gzip:   0.92 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceEvents-ZkyVGFWA.js               [39m[1m[2m    2.00 kB[22m[1m[22m[2m │ gzip:   1.00 kB[22m
+[2mdist/[22m[2massets/[22m[36museFinanceQueries-CFiA-fCf.js           [39m[1m[2m    2.05 kB[22m[1m[22m[2m │ gzip:   0.61 kB[22m
+[2mdist/[22m[2massets/[22m[36malert-dialog-DhqJw6ad.js                [39m[1m[2m    2.05 kB[22m[1m[22m[2m │ gzip:   0.75 kB[22m
+[2mdist/[22m[2massets/[22m[36mdialog-rwrQewMC.js                      [39m[1m[2m    2.25 kB[22m[1m[22m[2m │ gzip:   0.88 kB[22m
+[2mdist/[22m[2massets/[22m[36mLogin-CFpKdMIJ.js                       [39m[1m[2m    2.60 kB[22m[1m[22m[2m │ gzip:   1.39 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceMerchants-DBxgvCu1.js            [39m[1m[2m    2.62 kB[22m[1m[22m[2m │ gzip:   1.11 kB[22m
+[2mdist/[22m[2massets/[22m[36mMerchantPlanAssignments-D0Q4TYo0.js     [39m[1m[2m    2.93 kB[22m[1m[22m[2m │ gzip:   1.22 kB[22m
+[2mdist/[22m[2massets/[22m[36mInventory-XlcsZ6aS.js                   [39m[1m[2m    3.04 kB[22m[1m[22m[2m │ gzip:   1.31 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceOrders-DNiq0q5B.js               [39m[1m[2m    3.10 kB[22m[1m[22m[2m │ gzip:   1.32 kB[22m
+[2mdist/[22m[2massets/[22m[36mmerchant-push-Dn7-CiAM.js               [39m[1m[2m    3.35 kB[22m[1m[22m[2m │ gzip:   1.71 kB[22m
+[2mdist/[22m[2massets/[22m[36mCustomersPage-BvCC3WxZ.js               [39m[1m[2m    3.38 kB[22m[1m[22m[2m │ gzip:   1.57 kB[22m
+[2mdist/[22m[2massets/[22m[36mLogin-Cx0EKTmJ.js                       [39m[1m[2m    3.51 kB[22m[1m[22m[2m │ gzip:   1.92 kB[22m
+[2mdist/[22m[2massets/[22m[36mMerchantPlans-BfOpT8mC.js               [39m[1m[2m    3.58 kB[22m[1m[22m[2m │ gzip:   1.46 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceOverview-R1N8sZcp.js             [39m[1m[2m    3.64 kB[22m[1m[22m[2m │ gzip:   1.14 kB[22m
+[2mdist/[22m[2massets/[22m[36mDesktopQuickLinks-B6o9y78I.js           [39m[1m[2m    3.94 kB[22m[1m[22m[2m │ gzip:   1.52 kB[22m
+[2mdist/[22m[2massets/[22m[36mDeliveryOps-2p7en_z1.js                 [39m[1m[2m    4.15 kB[22m[1m[22m[2m │ gzip:   1.56 kB[22m
+[2mdist/[22m[2massets/[22m[36mRegister-B4hNJ2VS.js                    [39m[1m[2m    4.16 kB[22m[1m[22m[2m │ gzip:   1.41 kB[22m
+[2mdist/[22m[2massets/[22m[36mPending-CzKcc-ri.js                     [39m[1m[2m    4.42 kB[22m[1m[22m[2m │ gzip:   1.68 kB[22m
+[2mdist/[22m[2massets/[22m[36mProductImport-vKAMsbh-.js               [39m[1m[2m    4.46 kB[22m[1m[22m[2m │ gzip:   1.86 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceAdjustments-DLRrrnsV.js          [39m[1m[2m    4.55 kB[22m[1m[22m[2m │ gzip:   1.50 kB[22m
+[2mdist/[22m[2massets/[22m[36mDeliveryIntelligence-BmcfqOgc.js        [39m[1m[2m    4.59 kB[22m[1m[22m[2m │ gzip:   1.60 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceCouriers-KF4cZ1EL.js             [39m[1m[2m    4.90 kB[22m[1m[22m[2m │ gzip:   1.55 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinanceReversals-C-mC8WMh.js            [39m[1m[2m    4.98 kB[22m[1m[22m[2m │ gzip:   1.62 kB[22m
+[2mdist/[22m[2massets/[22m[36mCommercialRules-Ci8VRC9R.js             [39m[1m[2m    5.00 kB[22m[1m[22m[2m │ gzip:   1.86 kB[22m
+[2mdist/[22m[2massets/[22m[36mLoyalty-Kw7eL2xv.js                     [39m[1m[2m    5.05 kB[22m[1m[22m[2m │ gzip:   2.03 kB[22m
+[2mdist/[22m[2massets/[22m[36mOverview-C11UJG6X.js                    [39m[1m[2m    5.13 kB[22m[1m[22m[2m │ gzip:   1.32 kB[22m
+[2mdist/[22m[2massets/[22m[36mAddresses-B_N19U5f.js                   [39m[1m[2m    5.24 kB[22m[1m[22m[2m │ gzip:   1.83 kB[22m
+[2mdist/[22m[2massets/[22m[36mOrders-COgCRZJC.js                      [39m[1m[2m    5.93 kB[22m[1m[22m[2m │ gzip:   2.44 kB[22m
+[2mdist/[22m[2massets/[22m[36mClaimAccount-DfqH_Us8.js                [39m[1m[2m    5.93 kB[22m[1m[22m[2m │ gzip:   2.27 kB[22m
+[2mdist/[22m[2massets/[22m[36mAgents-DpwaWh4j.js                      [39m[1m[2m    6.71 kB[22m[1m[22m[2m │ gzip:   2.63 kB[22m
+[2mdist/[22m[2massets/[22m[36mMerchants-c6bf2u9g.js                   [39m[1m[2m    6.88 kB[22m[1m[22m[2m │ gzip:   2.36 kB[22m
+[2mdist/[22m[2massets/[22m[36mCouponsPage-CfWKeUxg.js                 [39m[1m[2m    7.09 kB[22m[1m[22m[2m │ gzip:   2.51 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinance-B_hU5xAp.js                     [39m[1m[2m    7.34 kB[22m[1m[22m[2m │ gzip:   2.54 kB[22m
+[2mdist/[22m[2massets/[22m[36mFinancePayouts-C7RftSZW.js              [39m[1m[2m    7.51 kB[22m[1m[22m[2m │ gzip:   2.01 kB[22m
+[2mdist/[22m[2massets/[22m[36mAdminLayout-CK74YonD.js                 [39m[1m[2m    8.56 kB[22m[1m[22m[2m │ gzip:   3.22 kB[22m
+[2mdist/[22m[2massets/[22m[36mExecutive-oVMlEqJX.js                   [39m[1m[2m    8.61 kB[22m[1m[22m[2m │ gzip:   3.16 kB[22m
+[2mdist/[22m[2massets/[22m[36mSettings-CewM9zHC.js                    [39m[1m[2m    9.39 kB[22m[1m[22m[2m │ gzip:   3.39 kB[22m
+[2mdist/[22m[2massets/[22m[36mDelivery-Cm17bGsS.js                    [39m[1m[2m    9.84 kB[22m[1m[22m[2m │ gzip:   3.56 kB[22m
+[2mdist/[22m[2massets/[22m[36mCategories-CxSHGMjh.js                  [39m[1m[2m   10.70 kB[22m[1m[22m[2m │ gzip:   3.51 kB[22m
+[2mdist/[22m[2massets/[22m[36mProductsPage-C4e7bNuI.js                [39m[1m[2m   11.27 kB[22m[1m[22m[2m │ gzip:   3.64 kB[22m
+[2mdist/[22m[2massets/[22m[36mReconciliation-C06pqurT.js              [39m[1m[2m   12.06 kB[22m[1m[22m[2m │ gzip:   2.98 kB[22m
+[2mdist/[22m[2massets/[22m[36mMerchantDetail-C8GpHX4w.js              [39m[1m[2m   13.75 kB[22m[1m[22m[2m │ gzip:   3.90 kB[22m
+[2mdist/[22m[2massets/[22m[36mOrdersPage-GKABGDEb.js                  [39m[1m[2m   14.07 kB[22m[1m[22m[2m │ gzip:   4.93 kB[22m
+[2mdist/[22m[2massets/[22m[36mDashboard-2dRcB8sn.js                   [39m[1m[2m   16.28 kB[22m[1m[22m[2m │ gzip:   4.83 kB[22m
+[2mdist/[22m[2massets/[22m[36mOrderDetail-Cm67sEdA.js                 [39m[1m[2m   18.54 kB[22m[1m[22m[2m │ gzip:   4.89 kB[22m
+[2mdist/[22m[2massets/[22m[36mMerchantLayout-DNhfA9_Y.js              [39m[1m[2m   23.76 kB[22m[1m[22m[2m │ gzip:   7.20 kB[22m
+[2mdist/[22m[2massets/[22m[36mJenniIntegration-BXjCKN_c.js            [39m[1m[2m   23.94 kB[22m[1m[22m[2m │ gzip:   6.94 kB[22m
+[2mdist/[22m[2massets/[22m[36mProductForm-CQgZNXWe.js                 [39m[1m[2m   35.06 kB[22m[1m[22m[2m │ gzip:  10.35 kB[22m
+[2mdist/[22m[2massets/[22m[36mOrderDetail-UoEQwT15.js                 [39m[1m[2m   52.29 kB[22m[1m[22m[2m │ gzip:  11.82 kB[22m
+[2mdist/[22m[2massets/[22m[36mvendor-radix-B66HTNTV.js                [39m[1m[2m  105.66 kB[22m[1m[22m[2m │ gzip:  30.67 kB[22m
+[2mdist/[22m[2massets/[22m[36mvendor-react-D9Ie8oh4.js                [39m[1m[2m  157.87 kB[22m[1m[22m[2m │ gzip:  50.96 kB[22m
+[2mdist/[22m[2massets/[22m[36mindex-CI2AjTPD.js                       [39m[1m[2m  235.83 kB[22m[1m[22m[2m │ gzip:  59.41 kB[22m
+[2mdist/[22m[2massets/[22m[36mvendor-ixgCorFR.js                      [39m[1m[2m  971.80 kB[22m[1m[22m[2m │ gzip: 265.96 kB[22m
+[32m✓ built in 8.92s[39m
+
+EXIT_CODE=0

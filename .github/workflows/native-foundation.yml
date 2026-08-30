@@ -1,0 +1,322 @@
+name: Native Foundation CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.ts"
+      - "vite.mobile.config.ts"
+      - "index.mobile.html"
+      - "scripts/mobile/**"
+      - "scripts/auth/**"
+      - "src/**"
+      - "public/**"
+      - "vite-capacitor-fix.js"
+      - "android/**"
+      - "ios/**"
+      - ".github/workflows/native-foundation.yml"
+  push:
+    branches:
+      - main
+      - "chore/**"
+      - "feat/**"
+    paths:
+      - "package.json"
+      - "package-lock.json"
+      - "capacitor.config.ts"
+      - "vite.mobile.config.ts"
+      - "index.mobile.html"
+      - "scripts/mobile/**"
+      - "scripts/auth/**"
+      - "src/**"
+      - "public/**"
+      - "vite-capacitor-fix.js"
+      - "android/**"
+      - "ios/**"
+      - ".github/workflows/native-foundation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-foundation:
+    name: Android Foundation
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Temurin JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Frontend unit tests
+        run: npm test
+
+      - name: Auth lifecycle guard
+        run: npm run auth:guard
+
+      - name: Native brand asset guard
+        run: npm run native:assets:check
+
+      - name: Upload auth storage boundary report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-storage-boundary-report-${{ github.run_id }}
+          path: |
+            scripts/auth/check-auth-lifecycle-boundary.mjs
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Build mobile customer bundle
+        env:
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Public production endpoints (never bake local .env / quoted secrets into device APKs).
+          VITE_SUPABASE_URL="https://ztplxqlthuqkuktbznbo.supabase.co"
+          VITE_SUPABASE_PROJECT_ID="ztplxqlthuqkuktbznbo"
+          VITE_STORE_API_BASE_URL="https://DilMart-store-backend.onrender.com/api"
+          KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-}"
+          KEY="${KEY//$'\r'/}"
+          KEY="${KEY%\"}"; KEY="${KEY#\"}"
+          KEY="${KEY%\'}"; KEY="${KEY#\'}"
+          KEY="$(printf '%s' "$KEY" | xargs)"
+          if [ -z "$KEY" ]; then
+            echo "::error::Repository secret VITE_SUPABASE_PUBLISHABLE_KEY is required for Native CI mobile builds."
+            exit 1
+          fi
+          export VITE_SUPABASE_URL VITE_SUPABASE_PROJECT_ID VITE_STORE_API_BASE_URL
+          export VITE_SUPABASE_PUBLISHABLE_KEY="$KEY"
+          echo "Mobile build API base: $VITE_STORE_API_BASE_URL"
+          echo "Mobile build Supabase host: ztplxqlthuqkuktbznbo.supabase.co"
+          npm run build:mobile
+
+      - name: Mobile boundary guard
+        run: npm run mobile:boundary
+
+      - name: Upload mobile boundary report
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-boundary-report-${{ github.run_id }}
+          path: |
+            dist-mobile/mobile-boundary-report.txt
+            dist-mobile/mobile-boundary-report.json
+            dist-mobile/.vite/manifest.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Cap sync android
+        run: npx cap sync android
+
+      - name: Verify secure storage plugins registered (Android)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat android/app/src/main/assets/capacitor.plugins.json
+          grep -qi "securestorage\|SecureStorage" android/app/src/main/assets/capacitor.plugins.json
+          grep -qi "preferences\|Preferences" android/app/src/main/assets/capacitor.plugins.json
+          echo "SECURE_STORAGE_PLUGIN_REGISTERED=PASS"
+          echo "PREFERENCES_PLUGIN_REGISTERED=PASS"
+
+      - name: Gradle clean / assembleDebug / bundleRelease
+        working-directory: android
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean --no-daemon
+          ./gradlew assembleDebug --no-daemon
+          ./gradlew bundleRelease --no-daemon
+
+      - name: Upload Android Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-debug-apk-${{ github.run_id }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload Android Release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-aab-${{ github.run_id }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-foundation:
+    name: iOS Foundation
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install frontend deps
+        run: npm ci
+
+      - name: Frontend unit tests
+        run: npm test
+
+      - name: Auth lifecycle guard
+        run: npm run auth:guard
+
+      - name: Native brand asset guard
+        run: npm run native:assets:check
+
+      - name: Build mobile customer bundle
+        env:
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          VITE_SUPABASE_URL="https://ztplxqlthuqkuktbznbo.supabase.co"
+          VITE_SUPABASE_PROJECT_ID="ztplxqlthuqkuktbznbo"
+          VITE_STORE_API_BASE_URL="https://DilMart-store-backend.onrender.com/api"
+          KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-}"
+          KEY="${KEY//$'\r'/}"
+          KEY="${KEY%\"}"; KEY="${KEY#\"}"
+          KEY="${KEY%\'}"; KEY="${KEY#\'}"
+          KEY="$(printf '%s' "$KEY" | xargs)"
+          if [ -z "$KEY" ]; then
+            echo "::error::Repository secret VITE_SUPABASE_PUBLISHABLE_KEY is required for Native CI mobile builds."
+            exit 1
+          fi
+          export VITE_SUPABASE_URL VITE_SUPABASE_PROJECT_ID VITE_STORE_API_BASE_URL
+          export VITE_SUPABASE_PUBLISHABLE_KEY="$KEY"
+          echo "Mobile build API base: $VITE_STORE_API_BASE_URL"
+          echo "Mobile build Supabase host: ztplxqlthuqkuktbznbo.supabase.co"
+          npm run build:mobile
+
+      - name: Mobile boundary guard
+        run: npm run mobile:boundary
+
+      - name: Cap sync ios
+        run: npx cap sync ios
+
+      - name: CocoaPods install
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      - name: Verify secure storage plugins registered (iOS)
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -qi "AparajitaCapacitorSecureStorage\|SecureStorage" ios/App/Podfile.lock
+          grep -qi "CapacitorPreferences\|Preferences" ios/App/Podfile.lock
+          echo "IOS_SECURE_STORAGE_PLUGIN_COMPILE=PASS"
+          echo "IOS_PREFERENCES_PLUGIN_COMPILE=PASS"
+
+      - name: Upload Podfile lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-podfile-lock-${{ github.run_id }}
+          path: ios/App/Podfile.lock
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: List workspace schemes
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -list
+
+      - name: Simulator Debug build (no signing)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Generic iOS Release build (no signing)
+        run: |
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            clean build
+
+      - name: Archive attempt (signing may fail; capture only)
+        id: ios_archive
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/DilMartStore.xcarchive" \
+            clean archive | tee "$RUNNER_TEMP/ios-archive-attempt.txt"
+          code=${PIPESTATUS[0]}
+          echo "EXIT_CODE=$code" | tee -a "$RUNNER_TEMP/ios-archive-attempt.txt"
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload archive attempt log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-archive-attempt-${{ github.run_id }}
+          path: ${{ runner.temp }}/ios-archive-attempt.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Classify archive result
+        if: always()
+        shell: bash
+        run: |
+          code="${{ steps.ios_archive.outputs.exit_code }}"
+          log="$RUNNER_TEMP/ios-archive-attempt.txt"
+          if [ -z "$code" ]; then
+            echo "::error::Archive exit code was not captured."
+            cat "$log" 2>/dev/null || true
+            exit 1
+          fi
+          if [ "$code" = "0" ]; then
+            echo "Archive succeeded."
+            exit 0
+          fi
+          if grep -Eqi \
+            'requires a development team|requires a provisioning profile|No profiles for|Signing for .* requires|No signing certificate' \
+            "$log"; then
+            echo "::warning::Archive is blocked only by Apple signing/provisioning."
+            exit 0
+          fi
+          echo "::error::Archive failed for a non-signing reason."
+          cat "$log"
+          exit 1

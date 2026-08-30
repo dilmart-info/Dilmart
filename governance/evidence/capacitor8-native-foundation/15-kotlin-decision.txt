@@ -1,0 +1,5 @@
+﻿KOTLIN_DECISION:
+- No android/**/*.kt or *.kts found.
+- No kotlin-gradle-plugin / kotlin_version references under android/.
+- Removed resolutionStrategy.force for kotlin-stdlib 1.8.22 from android/build.gradle.
+- Did NOT add Kotlin Gradle Plugin (not required).

@@ -1,0 +1,40 @@
+{
+  "summary": {
+    "WEB_ADMIN_SMOKE": "PASS",
+    "WEB_MERCHANT_SMOKE": "PASS",
+    "WEB_AGENT_SMOKE": "PASS",
+    "WEB_ROLE_TEST_ACCOUNT_CLEANUP": "PASS",
+    "contextApiReachable": true
+  },
+  "roles": {
+    "admin": {
+      "loginOk": true,
+      "expectedRoleOk": true,
+      "reloadAuthenticated": true,
+      "logoutCleared": true,
+      "activeRole": "admin",
+      "contextStatus": 200
+    },
+    "merchant": {
+      "loginOk": true,
+      "expectedRoleOk": true,
+      "membershipOk": true,
+      "reloadAuthenticated": true,
+      "logoutCleared": true,
+      "activeRole": "merchant_owner",
+      "contextStatus": 200
+    },
+    "agent": {
+      "loginOk": true,
+      "expectedRoleOk": true,
+      "reloadAuthenticated": true,
+      "logoutCleared": true,
+      "activeRole": "agent",
+      "contextStatus": 200
+    }
+  },
+  "error": null,
+  "emailPattern": "smoke.phase3.<role>.<redacted>@mailinator.com",
+  "apiBase": "https://DilMart-store-backend.onrender.com/api",
+  "provisionPath": "supabase-mcp-sql-service-role-equivalent"
+}

@@ -1,0 +1,198 @@
+# إضافة دعم خرائط Waze لتطبيق الزبون
+
+تطبيق الزبون حالياً يفتح الخرائط حصراً عبر خرائط جوجل (Android) أو خرائط آبل (iOS). بما أن غالبية المستخدمين في العراق يعتمدون على تطبيق **Waze** للملاحة، يجب دعمه كخيار أول (Priority) مع الحفاظ على التوافق مع التطبيقات الأخرى كبديل احتياطي.
+
+## الملفات المتأثرة — ملخص سريع
+
+| الملف | نوع الاستخدام | كيف يفتح الخرائط حالياً |
+|---|---|---|
+| [helpers.tsx](file:///e:/Project/DilMart-main/apps/customer-app/src/components/barbershop/utils/helpers.tsx) | دالة `openMaps()` المركزية | `google.navigation:` / `maps://` + ويب |
+| [BarbershopLocationMap.tsx](file:///e:/Project/DilMart-main/apps/customer-app/src/components/barbershop/components/BarbershopLocationMap.tsx#L161-L167) | نقر العنوان النصي | `Linking.openURL(google.com/maps)` مباشرة |
+| [useBookingDetailsScreenState.ts](file:///e:/Project/DilMart-main/apps/customer-app/src/features/bookings/details/hooks/useBookingDetailsScreenState.ts#L174-L183) | زر "الاتجاهات" في صفحة تفاصيل الحجز | `maps:` / `geo:` + ويب |
+| [success.tsx](file:///e:/Project/DilMart-main/apps/customer-app/app/(app)/book/success.tsx#L386-L394) | زر "الاتجاهات" في شاشة نجاح الحجز | `maps:` / `geo:` + ويب |
+| [app.config.js](file:///e:/Project/DilMart-main/apps/customer-app/app.config.js) | إعدادات iOS | لا يتضمن `LSApplicationQueriesSchemes` لـ Waze |
+
+---
+
+## Proposed Changes
+
+### 1. المكون المركزي — دالة الخرائط الموحدة
+
+#### [MODIFY] [helpers.tsx](file:///e:/Project/DilMart-main/apps/customer-app/src/components/barbershop/utils/helpers.tsx)
+
+تحديث الدالة `openMaps()` لتدعم الترتيب التالي عند فتح الخرائط:
+
+```
+1. Waze  →  waze://?ll={lat},{lng}&navigate=yes
+2. خرائط جوجل (Android) / خرائط آبل (iOS)  →  الحالي
+3. رابط ويب (Fallback)  →  google.com/maps
+```
+
+إضافة دالة مساعدة جديدة `openMapsSmart()` تُستخدم في جميع الأماكن بدلاً من كتابة الروابط يدوياً في كل ملف:
+
+```typescript
+/**
+ * فتح الخرائط بالترتيب: Waze → خرائط النظام → Google Maps ويب
+ * يدعم وضعين: navigate (اتجاهات) و search (بحث عن مكان)
+ */
+export const openMaps = async (lat: number, lng: number, label: string) => {
+  // 1. حاول Waze أولاً (الأكثر شعبية في العراق)
+  const wazeUrl = `waze://?ll=${lat},${lng}&navigate=yes`;
+  try {
+    const canOpenWaze = await Linking.canOpenURL(wazeUrl);
+    if (canOpenWaze) {
+      await Linking.openURL(wazeUrl);
+      return;
+    }
+  } catch (_) { /* fallthrough */ }
+
+  // 2. حاول خرائط النظام (Google Maps على Android / Apple Maps على iOS)
+  const encodedLabel = encodeURIComponent(label);
+  const deepLink = Platform.select({
+    ios: `maps://app?daddr=${lat},${lng}&q=${encodedLabel}`,
+    android: `google.navigation:q=${lat},${lng}`,
+  });
+  if (deepLink) {
+    try {
+      const canOpen = await Linking.canOpenURL(deepLink);
+      if (canOpen) {
+        await Linking.openURL(deepLink);
+        return;
+      }
+    } catch (_) { /* fallthrough */ }
+  }
+
+  // 3. Fallback — Google Maps ويب
+  const webUrl = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+  await Linking.openURL(webUrl);
+};
+
+/**
+ * فتح موقع للعرض فقط (بدون اتجاهات) — يُستخدم عند النقر على العنوان
+ * الترتيب: Waze → خرائط جوجل ويب
+ */
+export const openMapLocation = async (lat: number, lng: number) => {
+  const wazeUrl = `waze://?ll=${lat},${lng}&z=10`;
+  try {
+    const canOpenWaze = await Linking.canOpenURL(wazeUrl);
+    if (canOpenWaze) {
+      await Linking.openURL(wazeUrl);
+      return;
+    }
+  } catch (_) { /* fallthrough */ }
+  
+  await Linking.openURL(`https://www.google.com/maps?q=${lat},${lng}`);
+};
+```
+
+---
+
+### 2. توحيد جميع نقاط فتح الخرائط
+
+#### [MODIFY] [BarbershopLocationMap.tsx](file:///e:/Project/DilMart-main/apps/customer-app/src/components/barbershop/components/BarbershopLocationMap.tsx)
+
+**السطر 161-167 (نقر العنوان النصي):** استبدال `Linking.openURL(google.com/maps)` المباشر بـ `openMapLocation()` الجديدة.
+
+```diff
+- Linking.openURL(`https://www.google.com/maps?q=${lat},${lng}`);
++ openMapLocation(lat, lng);
+```
+
+سيتم أيضاً استيراد `openMapLocation` بدلاً من `openMaps` فقط.
+
+---
+
+#### [MODIFY] [useBookingDetailsScreenState.ts](file:///e:/Project/DilMart-main/apps/customer-app/src/features/bookings/details/hooks/useBookingDetailsScreenState.ts)
+
+**السطر 174-183 (دالة `openMap`):** استبدال المنطق المكتوب يدوياً بالدالة المركزية `openMaps()`.
+
+```diff
+  const openMap = () => {
+    const lat = (booking?.barbershops as any)?.latitude || 33.3152;
+    const lng = (booking?.barbershops as any)?.longitude || 44.3661;
+    const label = booking?.barbershops?.name || 'الصالون';
+-   const url = Platform.select({
+-     ios: `maps:0,0?q=${label}@${lat},${lng}`,
+-     android: `geo:${lat},${lng}?q=${lat},${lng}(${label})`,
+-   }) || `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+-   Linking.openURL(url).catch(() => Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`));
++   openMaps(lat, lng, label);
+  };
+```
+
+---
+
+#### [MODIFY] [success.tsx](file:///e:/Project/DilMart-main/apps/customer-app/app/(app)/book/success.tsx)
+
+**السطر 386-394 (زر "الاتجاهات"):** استبدال المنطق المكتوب يدوياً بالدالة المركزية `openMaps()`.
+
+```diff
+  onPress={() => {
+-   const url = Platform.select({
+-     ios: `maps:0,0?q=${encodeURIComponent(params.barbershopName || 'Barbershop')}`,
+-     android: `geo:0,0?q=${encodeURIComponent(params.barbershopName || 'Barbershop')}`,
+-   }) || `https://www.google.com/maps/search/${encodeURIComponent(params.barbershopName || 'Barbershop')}`;
+-   Linking.openURL(url).catch(() => {});
++   // يستخدم إحداثيات بغداد كبديل إذا لم تكن الإحداثيات متوفرة
++   openMaps(33.3152, 44.3661, params.barbershopName || 'الصالون');
+  }}
+```
+
+> [!IMPORTANT]
+> شاشة النجاح لا تستقبل حالياً `latitude` و `longitude` كـ params. هل ترغب بإضافتهما إلى params الحجز لتكون الإحداثيات دقيقة؟ أم يكفي استخدام اسم الصالون فقط للبحث؟
+
+---
+
+### 3. إعدادات iOS — السماح بالاستعلام عن Waze
+
+#### [MODIFY] [app.config.js](file:///e:/Project/DilMart-main/apps/customer-app/app.config.js)
+
+إضافة `LSApplicationQueriesSchemes` تحت `ios.infoPlist` للسماح لآبل بالكشف عن وجود Waze وخرائط جوجل:
+
+```diff
+  infoPlist: {
+    ITSAppUsesNonExemptEncryption: false,
++   LSApplicationQueriesSchemes: ['waze', 'comgooglemaps'],
+    NSCalendarsUsageDescription: '...',
+    ...
+  }
+```
+
+> [!WARNING]
+> بدون هذا الإعداد، لن تعمل `Linking.canOpenURL('waze://...')` على iOS وسيرجع `false` دائماً حتى لو كان Waze مثبتاً في الجهاز. هذا متطلب إلزامي من آبل منذ iOS 9.
+
+> [!NOTE]
+> على Android لا نحتاج أي إعداد إضافي — `canOpenURL` يعمل تلقائياً مع أي URI scheme.
+
+---
+
+## ملخص التغييرات
+
+```mermaid
+flowchart TD
+    A["الزبون يضغط على الموقع / الاتجاهات"] --> B{"هل Waze مثبت؟"}
+    B -->|نعم| C["فتح Waze مع الإحداثيات<br/>waze://?ll=lat,lng&navigate=yes"]
+    B -->|لا| D{"هل خرائط النظام متوفرة؟"}
+    D -->|نعم iOS| E["فتح Apple Maps"]
+    D -->|نعم Android| F["فتح Google Maps"]
+    D -->|لا| G["فتح Google Maps في المتصفح"]
+    
+    style C fill:#33ccff,color:#000
+    style E fill:#34d399,color:#000
+    style F fill:#34d399,color:#000
+    style G fill:#fbbf24,color:#000
+```
+
+---
+
+## Verification Plan
+
+### Manual Verification
+1. **بناء التطبيق على جهاز Android فيه Waze:** النقر على الموقع يجب أن يفتح Waze مباشرة
+2. **بناء التطبيق على جهاز Android بدون Waze:** النقر على الموقع يفتح خرائط جوجل
+3. **التحقق من أن جميع نقاط فتح الخرائط الأربعة تعمل بنفس المنطق:**
+   - زر الموقع في بطاقة الصالون
+   - النقر على الخريطة المصغرة
+   - النقر على نص العنوان
+   - زر "الاتجاهات" في شاشة النجاح وتفاصيل الحجز
+4. **فحص `app.config.js`** والتأكد من إضافة `LSApplicationQueriesSchemes` بشكل صحيح

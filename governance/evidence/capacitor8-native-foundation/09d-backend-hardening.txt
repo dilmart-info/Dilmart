@@ -1,0 +1,263 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> DilMart-store-backend@0.1.0 test:hardening
+> npm run build && node --test tests/hardening-regression.test.mjs
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` 
+for supported config options.
+
+> DilMart-store-backend@0.1.0 build
+> nest build
+
+TAP version 13
+# Γ£à All hardening regression tests defined.
+# Subtest: load phone validators
+ok 1 - load phone validators
+  ---
+  duration_ms: 413.9451
+  type: 'test'
+  ...
+# Subtest: normalizeIraqiPhone: 07XXXXXXXXX passthrough
+ok 2 - normalizeIraqiPhone: 07XXXXXXXXX passthrough
+  ---
+  duration_ms: 0.2641
+  type: 'test'
+  ...
+# Subtest: normalizeIraqiPhone: +9647XXXXXXXXX ΓåÆ 07...
+ok 3 - normalizeIraqiPhone: +9647XXXXXXXXX ΓåÆ 07...
+  ---
+  duration_ms: 0.1297
+  type: 'test'
+  ...
+# Subtest: normalizeIraqiPhone: 009647XXXXXXXXX ΓåÆ 07...
+ok 4 - normalizeIraqiPhone: 009647XXXXXXXXX ΓåÆ 07...
+  ---
+  duration_ms: 0.1241
+  type: 'test'
+  ...
+# Subtest: normalizeIraqiPhone: already normalized stays unchanged
+ok 5 - normalizeIraqiPhone: already normalized stays unchanged
+  ---
+  duration_ms: 0.233
+  type: 'test'
+  ...
+# Subtest: phone validator: valid 07... accepted
+ok 6 - phone validator: valid 07... accepted
+  ---
+  duration_ms: 0.1944
+  type: 'test'
+  ...
+# Subtest: phone validator: valid +964... accepted
+ok 7 - phone validator: valid +964... accepted
+  ---
+  duration_ms: 0.2456
+  type: 'test'
+  ...
+# Subtest: phone validator: valid 00964... accepted
+ok 8 - phone validator: valid 00964... accepted
+  ---
+  duration_ms: 0.1111
+  type: 'test'
+  ...
+# Subtest: phone validator: random string rejected
+ok 9 - phone validator: random string rejected
+  ---
+  duration_ms: 0.3238
+  type: 'test'
+  ...
+# Subtest: phone validator: US number rejected
+ok 10 - phone validator: US number rejected
+  ---
+  duration_ms: 0.3852
+  type: 'test'
+  ...
+# Subtest: phone validator: too short rejected
+ok 11 - phone validator: too short rejected
+  ---
+  duration_ms: 0.1757
+  type: 'test'
+  ...
+# Subtest: load NoHtmlTagsConstraint
+ok 12 - load NoHtmlTagsConstraint
+  ---
+  duration_ms: 2.7401
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: plain Arabic text passes
+ok 13 - NoHtmlTags: plain Arabic text passes
+  ---
+  duration_ms: 0.2481
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: <script> rejected
+ok 14 - NoHtmlTags: <script> rejected
+  ---
+  duration_ms: 0.1857
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: <div> rejected
+ok 15 - NoHtmlTags: <div> rejected
+  ---
+  duration_ms: 0.1275
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: <img src=...> rejected
+ok 16 - NoHtmlTags: <img src=...> rejected
+  ---
+  duration_ms: 0.1265
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: normal special chars allowed
+ok 17 - NoHtmlTags: normal special chars allowed
+  ---
+  duration_ms: 0.1778
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: non-string returns true (other validators handle type)
+ok 18 - NoHtmlTags: non-string returns true (other validators handle type)
+  ---
+  duration_ms: 0.1263
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: empty closing tag rejected
+ok 19 - NoHtmlTags: empty closing tag rejected
+  ---
+  duration_ms: 0.1051
+  type: 'test'
+  ...
+# Subtest: NoHtmlTags: self-closing tag rejected
+ok 20 - NoHtmlTags: self-closing tag rejected
+  ---
+  duration_ms: 0.1001
+  type: 'test'
+  ...
+# Subtest: load search-utils
+ok 21 - load search-utils
+  ---
+  duration_ms: 2.0734
+  type: 'test'
+  ...
+# Subtest: escapePostgrestSearch: plain text unchanged
+ok 22 - escapePostgrestSearch: plain text unchanged
+  ---
+  duration_ms: 0.1518
+  type: 'test'
+  ...
+# Subtest: escapePostgrestSearch: % wildcard escaped
+ok 23 - escapePostgrestSearch: % wildcard escaped
+  ---
+  duration_ms: 0.097
+  type: 'test'
+  ...
+# Subtest: escapePostgrestSearch: _ wildcard escaped
+ok 24 - escapePostgrestSearch: _ wildcard escaped
+  ---
+  duration_ms: 0.0875
+  type: 'test'
+  ...
+# Subtest: escapePostgrestSearch: comma removed (prevents filter injection)
+ok 25 - escapePostgrestSearch: comma removed (prevents filter injection)
+  ---
+  duration_ms: 0.0762
+  type: 'test'
+  ...
+# Subtest: escapePostgrestSearch: parentheses removed
+ok 26 - escapePostgrestSearch: parentheses removed
+  ---
+  duration_ms: 0.0784
+  type: 'test'
+  ...
+# Subtest: escapePostgrestSearch: dots removed
+ok 27 - escapePostgrestSearch: dots removed
+  ---
+  duration_ms: 0.0742
+  type: 'test'
+  ...
+# Subtest: sanitizeSearchTerm: null returns empty
+ok 28 - sanitizeSearchTerm: null returns empty
+  ---
+  duration_ms: 0.2362
+  type: 'test'
+  ...
+# Subtest: sanitizeSearchTerm: trims whitespace
+ok 29 - sanitizeSearchTerm: trims whitespace
+  ---
+  duration_ms: 1.2243
+  type: 'test'
+  ...
+# Subtest: sanitizeSearchTerm: enforces maxLen
+ok 30 - sanitizeSearchTerm: enforces maxLen
+  ---
+  duration_ms: 0.1532
+  type: 'test'
+  ...
+# Subtest: buildSafeOrFilter: generates correct ilike filter
+ok 31 - buildSafeOrFilter: generates correct ilike filter
+  ---
+  duration_ms: 0.115
+  type: 'test'
+  ...
+# Subtest: load OrdersService
+ok 32 - load OrdersService
+  ---
+  duration_ms: 753.2759
+  type: 'test'
+  ...
+# Subtest: merchant-scoped select string excludes customer_name and customer_phone
+ok 33 - merchant-scoped select string excludes customer_name and customer_phone
+  ---
+  duration_ms: 0.6905
+  type: 'test'
+  ...
+# Subtest: merchant-scoped search uses only order_number column
+ok 34 - merchant-scoped search uses only order_number column
+  ---
+  duration_ms: 0.3778
+  type: 'test'
+  ...
+# Subtest: load AdminService
+ok 35 - load AdminService
+  ---
+  duration_ms: 44.9931
+  type: 'test'
+  ...
+# Subtest: merchant getScopedCustomers uses RPC, not orders.select with customer fields
+ok 36 - merchant getScopedCustomers uses RPC, not orders.select with customer fields
+  ---
+  duration_ms: 1.0376
+  type: 'test'
+  ...
+# Subtest: merchant getScopedCustomers response has paginated structure
+ok 37 - merchant getScopedCustomers response has paginated structure
+  ---
+  duration_ms: 0.5124
+  type: 'test'
+  ...
+# Subtest: merchant getScopedCustomers search passes p_search to RPC (masked search only)
+ok 38 - merchant getScopedCustomers search passes p_search to RPC (masked search only)
+  ---
+  duration_ms: 0.5387
+  type: 'test'
+  ...
+# Subtest: SQL: merchant_customer_summary does NOT search on raw customer_name or customer_phone
+ok 39 - SQL: merchant_customer_summary does NOT search on raw customer_name or customer_phone
+  ---
+  duration_ms: 3.2241
+  type: 'test'
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1386.7731

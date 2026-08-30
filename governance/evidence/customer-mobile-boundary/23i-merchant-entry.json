@@ -1,0 +1,29 @@
+{
+  "NATIVE_MERCHANT_ENTRY_COUNT": 0,
+  "out": {
+    "#/": {
+      "join": false,
+      "login": false,
+      "hrefs": [],
+      "c": 0
+    },
+    "#/stores": {
+      "join": false,
+      "login": false,
+      "hrefs": [],
+      "c": 0
+    },
+    "#/offers": {
+      "join": false,
+      "login": false,
+      "hrefs": [],
+      "c": 0
+    },
+    "#/wishlist": {
+      "join": false,
+      "login": false,
+      "hrefs": [],
+      "c": 0
+    }
+  }
+}

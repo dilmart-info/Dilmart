@@ -1,0 +1,29 @@
+# Root cause 1 - search bar behind the status bar
+
+Header is `sticky top-0` and the WebView runs edge-to-edge, so the header's own top
+edge sits at physical y=0, underneath the status bar and the display cutout.
+MobileTopPromoBlock reserved nothing for that region, so its first row and the
+SearchBar were painted under the system icons.
+
+src/index.css already had a `.safe-top` helper, but it is hardcoded to
+`max(env(safe-area-inset-top), 24px)` and was only used by AdminLayout and
+AgentOrders - never by the customer mobile header.
+
+# Root cause 2 - hero carousel seam in RTL
+
+src/components/ui/carousel.tsx implements slide gutters with the standard LTR idiom:
+  CarouselContent -> -ml-4      (track is pulled 1rem past the viewport's left edge)
+  CarouselItem    -> pl-4       (each slide carries a 1rem left padding)
+
+Under `direction: "rtl"` both land on the same trailing edge instead of straddling the
+slides. The track therefore measures one gutter wider than its viewport, and that
+1rem strip is transparent, so the near-black card behind it shows through as a
+vertical seam whenever two slides are on screen during a transition.
+
+Measured on the device before the fix: a fully dark vertical band exactly 48 physical
+px wide (16 CSS px x devicePixelRatio 3) between the outgoing and incoming slides.
+See screenshots/02-before-hero-seam-mid-transition.png.
+
+HeroSlider is the only consumer of the shared carousel in the whole codebase
+(verified with a repo-wide search for <Carousel, <CarouselContent, <CarouselItem),
+but the shared defaults were still left untouched so nothing else can regress.

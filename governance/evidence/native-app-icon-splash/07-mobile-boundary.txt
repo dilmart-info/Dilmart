@@ -1,0 +1,40 @@
+
+FORBIDDEN_MODULE_COUNT=0
+BOUNDARY_RESULT=PASS
+MANIFEST_ENTRIES=1
+MANIFEST_CHUNKS=9
+DYNAMIC_IMPORTS=11
+TOTAL_JS_CSS_BYTES=1085936
+CONTENT_MARKER_HITS=0
+
+## Entries
+- index.mobile.html -> assets/index.mobile-Kjghepyz.js
+
+## Dynamic imports
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- src/pages/account/Addresses.tsx
+- src/pages/account/Orders.tsx
+- src/pages/account/ClaimAccount.tsx
+- _vendor-B9izNjXC.js
+
+## Largest 20 assets
+- 451403	assets/vendor-B9izNjXC.js
+- 246676	assets/index.mobile-Kjghepyz.js
+- 157600	assets/vendor-react-Dun8IUFe.js
+- 108587	assets/index-CR4ryNOw.css
+- 101120	assets/vendor-radix-JOLpi9Ky.js
+- 8303	assets/Orders-Bp7mtIKb.js
+- 6653	assets/ClaimAccount-BqtZJV4P.js
+- 5594	assets/Addresses-DnWbqASl.js
+
+## Forbidden modules
+- (none)
+
+## Content marker hits (informational)
+- (none)

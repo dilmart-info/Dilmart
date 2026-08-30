@@ -1,0 +1,4 @@
+﻿iOS Simulator: PENDING_CI
+iOS Generic Release: PENDING_CI
+iOS Archive classifier: PENDING_CI (expect SIGNING-ONLY PASS)
+iOS real device: DEVICE VALIDATION BLOCKED — APPLE SIGNING

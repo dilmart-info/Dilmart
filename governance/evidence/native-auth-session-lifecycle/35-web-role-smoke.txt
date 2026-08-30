@@ -1,0 +1,12 @@
+WEB_ROLE_SMOKE
+PROVISION=supabase-mcp-sql-service-role-equivalent (NOT public signup)
+API=https://DilMart-store-backend.onrender.com/api
+EMAIL_PATTERN=smoke.phase3.<role>.<redacted>@mailinator.com
+
+WEB_ADMIN_SMOKE=PASS
+WEB_MERCHANT_SMOKE=PASS
+WEB_AGENT_SMOKE=PASS
+WEB_ROLE_TEST_ACCOUNT_CLEANUP=PASS
+
+Details: governance/evidence/native-auth-session-lifecycle/35-web-role-smoke.json
+Merchant schema used: merchants.status=active, merchant_users.role=owner, profiles.role=merchant_owner

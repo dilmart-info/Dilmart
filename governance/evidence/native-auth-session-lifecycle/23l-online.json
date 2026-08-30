@@ -1,0 +1,17 @@
+{
+  "startedAt": "2026-07-27T12:42:24.112Z",
+  "href": "https://localhost/#/profile",
+  "storageProbe": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "securePlugin": true,
+    "prefsPlugin": true,
+    "authedUi": true,
+    "authScreen": false,
+    "storageError": false,
+    "offline": false,
+    "hash": "#/profile",
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  }
+}

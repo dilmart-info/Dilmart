@@ -1,0 +1,11 @@
+id,slug,name,parent_slug,missing_image,missing_icon,fallback_strategy
+40b4649b-c017-41c0-b477-426cd8f6e7a0,perfumes,العطور,fragrances-and-scents,true,true,parent image then neutral gradient placeholder
+afcbc5ce-5b3a-4378-883c-be6567dbda16,mini-travel-perfume,العطور الصغيرة والميني,fragrances-and-scents,true,true,parent image then neutral gradient placeholder
+9801c297-53c7-4a36-bd45-127e752df1aa,body-mist-splash,معطرات الجسم والبودي مست,fragrances-and-scents,true,true,parent image then neutral gradient placeholder
+2729f2e5-2ffc-411e-a581-efb2d810852c,home-linen-air,معطرات المنزل والمفارش والجو,fragrances-and-scents,true,true,parent image then neutral gradient placeholder
+587335d2-efc1-4cf8-8d24-0429e7e14a73,incense-maamoul,البخور والمعمول,fragrances-and-scents,true,true,parent image then neutral gradient placeholder
+be97afca-51e7-451a-8695-578b24cdf344,musk-oils-mukhammaria,المسك والمخمريات والعطور الزيتية,fragrances-and-scents,true,true,parent image then neutral gradient placeholder
+b67bcc56-866f-44c8-b70b-979dc2d6cbb9,skin-care,العناية بالبشرة,personal-care-beauty,true,true,parent image then neutral gradient placeholder
+5ee0b9eb-722f-4f34-8141-2b4744168f64,body-bath-care,العناية بالجسم والاستحمام,personal-care-beauty,true,true,parent image then neutral gradient placeholder
+7857a89f-1089-41ea-92bb-cf7d942030cc,hair-care-fragrance,العناية بالشعر وعطور الشعر,personal-care-beauty,true,true,parent image then neutral gradient placeholder
+b03f54f2-07cf-4ffa-963e-1394a234614b,powder-makeup,البودرة ومنتجات التجميل,personal-care-beauty,true,true,parent image then neutral gradient placeholder

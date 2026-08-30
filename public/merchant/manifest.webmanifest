@@ -1,0 +1,27 @@
+{
+  "name": "ديلمارت ستور — لوحة التاجر",
+  "short_name": "لوحة التاجر",
+  "description": "لوحة تاجر ديلمارت ستور — تنبيهات الطلبات الجديدة",
+  "start_url": "/merchant/",
+  "scope": "/merchant/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "dir": "rtl",
+  "lang": "ar",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/merchant/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/merchant/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

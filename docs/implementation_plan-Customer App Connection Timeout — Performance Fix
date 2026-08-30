@@ -1,0 +1,88 @@
+# Customer App Connection Timeout — Performance Fix
+
+## Problem
+
+The **Customer App** shows "Connection Error" on production because the `GET /barbershops` endpoint takes **16+ seconds** to respond, causing the mobile app's HTTP timeout to expire (499 status in Render logs).
+
+**Root Cause:** The `findAll` method in `barbershop-search.service.ts` loads **ALL 331 barbershops** from the database regardless of the `limit` parameter, then runs 6+ additional queries for promotions, availability, and commercial validity on **all of them**, before finally slicing the result in memory.
+
+## Impact
+
+| Metric | Current | Target |
+|--------|---------|--------|
+| Response time (limit=5) | **16,367ms** | < 2,000ms |
+| Response time (limit=1) | **15,357ms** | < 1,000ms |
+| Total barbershops loaded per request | 331 (ALL) | ≤ limit (pagination in SQL) |
+| Additional queries per request | 6-8 sequential | 2-3 parallel |
+
+## Proposed Fix — Two-Phase Approach
+
+### Phase 1: Parallelize Expensive Queries (Immediate Fix)
+
+Currently `getActivePromotionMap` and `getAvailableNowBarbershops` run **sequentially**. Running them in parallel via `Promise.all` cuts time nearly in half.
+
+#### [MODIFY] [barbershop-search.service.ts](file:///f:/Project/DilMart-main/backend/src/modules/barbershops/services/barbershop-search.service.ts)
+
+**Line ~295-302:** Change sequential to parallel:
+```diff
+-    const promoMap = await getActivePromotionMap(this.supabase, ids);
+-    ...
+-    const availableSet = await getAvailableNowBarbershops(this.supabase, ids);
++    const [promoMap, availableSet] = await Promise.all([
++      getActivePromotionMap(this.supabase, ids),
++      getAvailableNowBarbershops(this.supabase, ids),
++    ]);
+```
+
+### Phase 2: Add SQL-Level Limit + Offset (Main Fix)
+
+Currently the Supabase query fetches ALL matching rows, then slices in JS. Adding `.range()` to the query pushes pagination to PostgreSQL.
+
+**Line ~201:** Add range before the query executes:
+```diff
+-    const { data, error } = await query.order('name', { ascending: true });
++    const offset = (page - 1) * cappedLimit;
++    const { data, error } = await query
++      .order('name', { ascending: true })
++      .range(offset, offset + cappedLimit - 1);
+```
+
+> [!IMPORTANT]
+> Phase 2 changes behavior: promotions and availability will only be checked for the page's barbershops (not all). This is actually more correct and much faster, but means the `total` count won't reflect filtered results (cashback_only, available_now). These filters would need to move to SQL or be approximate.
+
+### Phase 2b: Cap Enrichment IDs
+
+For filters that can't move to SQL (cashback_only, available_now), cap the number of IDs passed to enrichment functions:
+
+```diff
++    // Cap enrichment to avoid loading data for hundreds of shops
++    const MAX_ENRICH = 100;
++    const enrichIds = ids.slice(0, MAX_ENRICH);
+-    const [promoMap, availableSet] = await Promise.all([
+-      getActivePromotionMap(this.supabase, ids),
+-      getAvailableNowBarbershops(this.supabase, ids),
++    const [promoMap, availableSet] = await Promise.all([
++      getActivePromotionMap(this.supabase, enrichIds),
++      getAvailableNowBarbershops(this.supabase, enrichIds),
+     ]);
+```
+
+## Open Questions
+
+> [!IMPORTANT]
+> **Should we apply both phases immediately?** Phase 1 (parallel) is risk-free. Phase 2 (SQL pagination) changes behavior for cashback/available filters — they'll only apply to the current page, not globally.
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Before fix: measure baseline
+curl -w "%{time_total}s" "https://DilMart-backend.onrender.com/barbershops?city=بغداد&limit=5"
+
+# After fix: verify < 3s 
+curl -w "%{time_total}s" "https://DilMart-backend.onrender.com/barbershops?city=بغداد&limit=5"
+```
+
+### Manual Verification
+- Open Customer App on iOS/Android → verify barbershops load without "Connection Error"
+- Confirm Barber App still works

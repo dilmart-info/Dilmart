@@ -1,0 +1,22 @@
+id,name,slug,parent_id,is_active,sort_order,direct_product_count,direct_public_product_count,child_count,has_image,has_icon
+992688cd-6bee-4ca6-9f5f-2552f85ff3c2,ماكينات حلاقة ومشابك كهربائية,barber-clippers,,true,1,63,51,0,true,false
+a8b6af06-84fb-4beb-a3da-60ed2a267b75,مقصات وشفرات وموس احترافي,shears-razors,,true,2,39,36,0,true,false
+87784336-d4d1-46d8-ae52-533764d596c5,عناية باللحية والشارب,beard-mustache-care,,true,3,10,3,0,true,false
+cc609fc4-202d-4b9f-a154-d2cd69f66924,تجهيزات صالون حلاقة رجالي,men-barber-furniture,,true,4,387,127,0,true,false
+70abb92c-61f5-43d9-a079-aa39e5cea884,أدوات تصفيف — صالون نسائي,women-salon-styling,,true,5,102,71,0,true,false
+36607754-3476-4f83-aa08-b14576092002,تعقيم وقفازات ومناشف ولابس صحي,sanitation-disposables,,true,6,3,0,0,true,false
+17e8e0ff-ef94-4817-b4da-e4742445dbc0,مجففات ومكاوي وفُرش احترافية,hair-dryers-tools,,true,7,6,3,0,true,false
+281367b1-126a-429a-9753-2a724fffd614,صبغة ومستلزمات صالون للشعر,pro-hair-color-care,,true,8,28,23,0,true,false
+2cdccf51-f829-4d36-b4d7-30cc9543a482,ملحقات صالون — بخاخات وروب وعبوات,salon-accessories,,true,9,5,2,0,true,false
+fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,العطور والمعطرات,fragrances-and-scents,,true,10,1,0,6,true,false
+d7df20e8-011c-430e-a8a7-77b9506936ac,العناية الشخصية والتجميل,personal-care-beauty,,true,11,0,0,4,true,false
+40b4649b-c017-41c0-b477-426cd8f6e7a0,العطور,perfumes,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,true,1,10,0,0,false,false
+afcbc5ce-5b3a-4378-883c-be6567dbda16,العطور الصغيرة والميني,mini-travel-perfume,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,true,2,0,0,0,false,false
+9801c297-53c7-4a36-bd45-127e752df1aa,معطرات الجسم والبودي مست,body-mist-splash,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,true,3,0,0,0,false,false
+2729f2e5-2ffc-411e-a581-efb2d810852c,معطرات المنزل والمفارش والجو,home-linen-air,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,true,4,0,0,0,false,false
+587335d2-efc1-4cf8-8d24-0429e7e14a73,البخور والمعمول,incense-maamoul,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,true,5,0,0,0,false,false
+be97afca-51e7-451a-8695-578b24cdf344,المسك والمخمريات والعطور الزيتية,musk-oils-mukhammaria,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,true,6,0,0,0,false,false
+b67bcc56-866f-44c8-b70b-979dc2d6cbb9,العناية بالبشرة,skin-care,d7df20e8-011c-430e-a8a7-77b9506936ac,true,1,0,0,0,false,false
+5ee0b9eb-722f-4f34-8141-2b4744168f64,العناية بالجسم والاستحمام,body-bath-care,d7df20e8-011c-430e-a8a7-77b9506936ac,true,2,0,0,0,false,false
+7857a89f-1089-41ea-92bb-cf7d942030cc,العناية بالشعر وعطور الشعر,hair-care-fragrance,d7df20e8-011c-430e-a8a7-77b9506936ac,true,3,0,0,0,false,false
+b03f54f2-07cf-4ffa-963e-1394a234614b,البودرة ومنتجات التجميل,powder-makeup,d7df20e8-011c-430e-a8a7-77b9506936ac,true,4,0,0,0,false,false

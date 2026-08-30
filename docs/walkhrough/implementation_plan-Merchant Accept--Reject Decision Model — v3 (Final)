@@ -1,0 +1,357 @@
+# Merchant Accept/Reject Decision Model — v3 (Final)
+
+## التقسيم
+
+| PR | المحتوى | الحالة |
+|---|---|---|
+| **PR 1** | Migration + Backend + إزالة dropdown + قبول/رفض + أسباب الرفض + عرض القرار في أدمن | هذا PR |
+| **PR 2** | Modal وسط الشاشة + Queue + فحص pending عند الدخول + تحسين موبايل | PR لاحق |
+
+---
+
+## PR 1 — الأساس الإجباري
+
+### Phase 1 — DB Migration
+
+#### [NEW] `supabase/migrations/XXXXXX_merchant_decision_fields.sql`
+
+```sql
+-- Add merchant decision tracking fields
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS merchant_decision_status TEXT
+    CHECK (merchant_decision_status IN ('pending', 'accepted', 'rejected')),
+  ADD COLUMN IF NOT EXISTS merchant_rejection_reason_code TEXT NULL,
+  ADD COLUMN IF NOT EXISTS merchant_decision_at TIMESTAMPTZ NULL,
+  ADD COLUMN IF NOT EXISTS merchant_decision_by UUID NULL;
+
+-- Backfill existing orders safely:
+-- Orders still 'new' → pending (awaiting merchant decision)
+-- All other orders → accepted (already processed)
+UPDATE public.orders
+SET merchant_decision_status =
+  CASE
+    WHEN status = 'new' THEN 'pending'
+    ELSE 'accepted'
+  END
+WHERE merchant_decision_status IS NULL;
+
+-- Set default for new orders
+ALTER TABLE public.orders
+  ALTER COLUMN merchant_decision_status SET DEFAULT 'pending';
+
+-- Index for merchant filtering
+CREATE INDEX IF NOT EXISTS idx_orders_merchant_decision_status
+  ON public.orders(merchant_id, merchant_decision_status);
+```
+
+> [!IMPORTANT]
+> **Backfill آمن:** الطلبات القديمة بحالة `delivered`, `preparing`, `shipped`, `returned` تصبح `accepted` تلقائياً. فقط الطلبات التي `status = 'new'` تبقى `pending`.
+
+---
+
+### Phase 2 — Backend: Accept/Reject Endpoints + Guard
+
+#### [MODIFY] [orders.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.dto.ts)
+
+إضافة DTOs جديدة:
+
+```ts
+export class MerchantAcceptOrderDto {
+  @IsOptional()
+  @IsUUID()
+  merchant_id?: string;
+}
+
+export class MerchantRejectOrderDto {
+  @IsString()
+  @IsIn([
+    'out_of_stock',
+    'insufficient_quantity',
+    'variant_unavailable',
+    'product_discontinued',
+    'product_damaged_or_not_ready',
+    'wrong_price',
+    'wrong_product_info',
+    'cannot_prepare_in_time',
+    'temporary_store_issue',
+    'duplicate_or_suspicious',
+    'order_needs_admin_review',
+  ])
+  reason_code!: string;
+
+  @IsOptional()
+  @IsUUID()
+  merchant_id?: string;
+}
+```
+
+---
+
+#### [MODIFY] [orders.controller.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.controller.ts)
+
+إضافة endpointين:
+
+```ts
+@Post(":id/merchant-accept")
+@Roles("merchant_owner", "merchant_manager")
+merchantAccept(@Param("id") id: string, @Body() payload: MerchantAcceptOrderDto, @CurrentActor() actor: ActorContext) {
+  return this.ordersService.merchantAcceptOrder(id, payload, actor);
+}
+
+@Post(":id/merchant-reject")
+@Roles("merchant_owner", "merchant_manager")
+merchantReject(@Param("id") id: string, @Body() payload: MerchantRejectOrderDto, @CurrentActor() actor: ActorContext) {
+  return this.ordersService.merchantRejectOrder(id, payload, actor);
+}
+```
+
+---
+
+#### [MODIFY] [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts)
+
+**1. منع التاجر من `updateOrderStatus` نهائياً:**
+
+```diff
+  async updateOrderStatus(id, payload) {
+    const blockedForAll = ["delivered", "returned", "cancelled"];
++   // Merchants cannot use generic status update — must use merchant-accept/merchant-reject
++   if (this.isMerchantRole(payload.actor_role)) {
++     throw new ForbiddenException("Merchants must use merchant-accept or merchant-reject endpoints.");
++   }
+    if (blockedForAll.includes(String(payload.status ?? ""))) { ... }
+```
+
+**2. `merchantAcceptOrder(id, payload, actor)`:**
+
+1. Resolve merchant scope → تأكد أن الطلب تابع للتاجر.
+2. تحقق أن `merchant_decision_status = 'pending'` (و `status = 'new'`).
+3. حدّث:
+   - `merchant_decision_status = 'accepted'`
+   - `merchant_decision_at = now()`
+   - `merchant_decision_by = actor.actorId`
+   - `status = 'preparing'`
+4. اطلق `orderFinanceService.handleOrderStatusTransition()` مع `previousStatus: 'new'`, `nextStatus: 'preparing'`.
+5. Return `{ ok: true }`.
+
+**3. `merchantRejectOrder(id, payload, actor)`:**
+
+1. Resolve merchant scope → تأكد أن الطلب تابع للتاجر.
+2. تحقق أن `reason_code` ضمن القائمة المسموحة (server-side validation).
+3. تحقق أن `merchant_decision_status = 'pending'`.
+4. حدّث:
+   - `merchant_decision_status = 'rejected'`
+   - `merchant_rejection_reason_code = payload.reason_code`
+   - `merchant_decision_at = now()`
+   - `merchant_decision_by = actor.actorId`
+5. **لا يغيّر `status`** — يبقى `new`.
+6. أدخل إشعار في `admin_notifications`:
+   - type: `'order'`
+   - title: `رفض التاجر الطلب #ORDER_NUMBER`
+   - message: `السبب: [label عربي من القائمة]`
+   - link: `/admin/orders/ORDER_ID`
+7. Return `{ ok: true }`.
+
+**4. تعديل `getOrderDetailForMerchant` — إضافة الحقول:**
+
+```diff
+  `id, order_number, merchant_id, status, channel, created_at, updated_at,
+   subtotal, discount, delivery_cost, total, payment_method, merchant_notes,
++  merchant_decision_status, merchant_rejection_reason_code, merchant_decision_at,
+   delivery_company_id, delivery_status, ...`
+```
+
+**5. تعديل `listOrdersForMerchant` — إضافة `merchant_decision_status`:**
+
+```diff
+  `id, order_number, merchant_id, status, total, created_at,
++  merchant_decision_status,
+   order_items(product_name, quantity)`
+```
+
+---
+
+### Phase 3 — Frontend: إزالة Dropdown + قبول/رفض
+
+#### [NEW] `src/lib/merchant-rejection-reasons.ts`
+
+```ts
+export const merchantRejectionReasons = [
+  { code: "out_of_stock", label: "المنتج غير متوفر حالياً" },
+  { code: "insufficient_quantity", label: "الكمية المطلوبة غير متوفرة" },
+  { code: "variant_unavailable", label: "اللون أو النوع أو الموديل المطلوب غير متوفر" },
+  { code: "product_discontinued", label: "المنتج متوقف أو لم يعد متوفراً" },
+  { code: "product_damaged_or_not_ready", label: "المنتج غير جاهز أو غير صالح للبيع" },
+  { code: "wrong_price", label: "السعر غير صحيح ويحتاج مراجعة" },
+  { code: "wrong_product_info", label: "معلومات المنتج غير دقيقة وتحتاج مراجعة" },
+  { code: "cannot_prepare_in_time", label: "لا يمكن تجهيز الطلب بالوقت المطلوب" },
+  { code: "temporary_store_issue", label: "المتجر غير قادر على تجهيز الطلب حالياً" },
+  { code: "duplicate_or_suspicious", label: "الطلب مكرر أو غير واضح" },
+  { code: "order_needs_admin_review", label: "الطلب يحتاج مراجعة من الإدارة" },
+] as const;
+
+export type RejectionReasonCode = typeof merchantRejectionReasons[number]["code"];
+
+export function getRejectionLabel(code: string): string {
+  return merchantRejectionReasons.find(r => r.code === code)?.label ?? code;
+}
+```
+
+---
+
+#### [MODIFY] [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx)
+
+**حذف:**
+- `fulfillmentStatuses` array (سطر 42)
+- `allowedStatuses` useMemo (سطر 119-126)
+- `statusSelectValue`, `shouldShowReadonlyCurrentStatus` (سطر 114-117)
+- `updateStatus` mutation (سطر 67-80)
+- الـ `<Card>` + `<select>` كاملة (سطر 329-366)
+
+**إضافة:**
+
+1. **`acceptOrder` mutation:**
+   ```ts
+   const acceptOrder = useMutation({
+     mutationFn: () => apiClient.merchantAcceptOrder(id!, merchantId),
+     onSuccess: () => { queryClient.invalidateQueries(...); toast.success("تم قبول الطلب"); },
+   });
+   ```
+
+2. **`rejectOrder` mutation:**
+   ```ts
+   const rejectOrder = useMutation({
+     mutationFn: (reasonCode: string) => apiClient.merchantRejectOrder(id!, reasonCode, merchantId),
+     onSuccess: () => { queryClient.invalidateQueries(...); toast.success("تم رفض الطلب"); },
+   });
+   ```
+
+3. **Card بديلة حسب `merchant_decision_status`:**
+
+   | الحالة | العرض |
+   |---|---|
+   | `pending` + `status=new` | زران: ✅ **قبول الطلب** (أخضر) + ❌ **رفض الطلب** (أحمر) |
+   | `accepted` | Badge أخضر: "تم قبول الطلب — قيد التجهيز" |
+   | `rejected` | Badge أحمر: "تم رفض الطلب — بانتظار مراجعة الإدارة" + سبب الرفض بالعربي |
+   | أي حالة أخرى (`shipped`, `delivered`, ...) | Badge قراءة فقط بالحالة الحالية |
+
+4. **AlertDialog للرفض:**
+   - عند ضغط "رفض الطلب" → يفتح AlertDialog
+   - داخله: قائمة أسباب (radio buttons) من `merchantRejectionReasons`
+   - يجب اختيار سبب قبل تفعيل زر "تأكيد الرفض"
+   - زران: "تأكيد الرفض" (أحمر) + "رجوع"
+
+---
+
+#### [MODIFY] [OrdersPage.tsx](file:///E:/Project/DilMart-Store/src/components/scoped/OrdersPage.tsx)
+
+**تعديل عمود الحالة — مشروط بـ `context.scope`:**
+
+```diff
+- <select value={o.status} onChange={...}>
+-   {statusOptions.map(...)}
+- </select>
++ {context.scope === "merchant" ? (
++   <Badge className={statusColorMap[o.status]}>{statusLabels[o.status] ?? o.status}</Badge>
++ ) : (
++   <select ...> {/* admin dropdown يبقى كما هو */} </select>
++ )}
+```
+
+الأدمن يحتفظ بالـ dropdown الكامل بدون تغيير.
+
+---
+
+#### [MODIFY] `src/lib/api/orders.ts`
+
+إضافة methods جديدة:
+
+```ts
+merchantAcceptOrder(id: string, merchantId?: string) {
+  return request<{ ok: boolean }>(`/orders/${id}/merchant-accept`, "POST", {
+    merchant_id: merchantId,
+  });
+},
+
+merchantRejectOrder(id: string, reasonCode: string, merchantId?: string) {
+  return request<{ ok: boolean }>(`/orders/${id}/merchant-reject`, "POST", {
+    reason_code: reasonCode,
+    merchant_id: merchantId,
+  });
+},
+```
+
+---
+
+### Phase 4 — عرض قرار التاجر في أدمن
+
+#### [MODIFY] [admin/OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/admin/OrderDetail.tsx)
+
+إضافة بلوك صغير في صفحة تفاصيل الطلب (الأدمن) يعرض:
+
+- **قرار التاجر:** مقبول / مرفوض / بانتظار القرار
+- **سبب الرفض** (إذا `rejected`) — بالعربي من `getRejectionLabel()`
+
+لا نضيف فلتر في جدول الطلبات الآن — PR لاحق.
+
+---
+
+## ملخص ملفات PR 1
+
+| الملف | نوع | الوصف |
+|---|---|---|
+| `supabase/migrations/XXXXXX_merchant_decision_fields.sql` | NEW | حقول القرار + backfill آمن |
+| `src/lib/merchant-rejection-reasons.ts` | NEW | أسباب الرفض الثابتة (11 سبب) |
+| [orders.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.dto.ts) | MODIFY | DTOs جديدة |
+| [orders.controller.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.controller.ts) | MODIFY | إضافة merchant-accept + merchant-reject |
+| [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts) | MODIFY | Logic + guard + select fields |
+| [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx) | MODIFY | إزالة dropdown → قبول/رفض |
+| [OrdersPage.tsx](file:///E:/Project/DilMart-Store/src/components/scoped/OrdersPage.tsx) | MODIFY | Badge بدل dropdown (merchant) |
+| [orders.ts](file:///E:/Project/DilMart-Store/src/lib/api/orders.ts) | MODIFY | API methods جديدة |
+| [admin/OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/admin/OrderDetail.tsx) | MODIFY | عرض قرار التاجر |
+
+---
+
+## PR 2 — تجربة الإشعار المتقدمة (مؤجل)
+
+| الملف | نوع | الوصف |
+|---|---|---|
+| `src/components/merchant/NewOrderDecisionModal.tsx` | NEW | Modal وسط الشاشة + شاشة رفض داخلية |
+| [NotificationHub.tsx](file:///E:/Project/DilMart-Store/src/components/NotificationHub.tsx) | MODIFY | Queue بدل toast |
+| `src/hooks/use-pending-orders.ts` | NEW | فحص pending عند الدخول |
+| [MerchantLayout.tsx](file:///E:/Project/DilMart-Store/src/components/MerchantLayout.tsx) | MODIFY | عرض banner/modal عند pending |
+
+> [!NOTE]
+> PR 2 يعتمد على PR 1. Modal يستخدم `GET /orders/:id/detail?merchant_id=...` لجلب تفاصيل الطلب. أزرار القبول/الرفض تستدعي نفس endpoints من PR 1.
+
+---
+
+## Verification Plan (PR 1)
+
+### Automated Tests
+```bash
+cd backend && npm run build
+cd backend && npm run test:policy
+cd backend && npm run test:hardening
+cd .. && npm run build
+npm run arch:guard
+```
+
+### Manual Verification
+
+| السيناريو | النتيجة المتوقعة |
+|---|---|
+| طلب `new` + `pending` → تاجر يرى قبول/رفض | ✅ |
+| تاجر يقبل → status `preparing` + decision `accepted` | ✅ |
+| تاجر يرفض → dialog أسباب → reason_code يُحفظ → decision `rejected` | ✅ |
+| تاجر يرفض بدون اختيار سبب → زر "تأكيد" معطّل | ✅ |
+| طلب مقبول → badge أخضر "تم القبول" | ✅ |
+| طلب مرفوض → badge أحمر + سبب بالعربي | ✅ |
+| جدول الطلبات (تاجر) → badge بدل dropdown | ✅ |
+| جدول الطلبات (أدمن) → dropdown كامل بدون تغيير | ✅ |
+| API: merchant → `POST /orders/:id/status` → 403 | ✅ |
+| API: merchant → reject بدون reason_code → 400 | ✅ |
+| API: merchant → accept طلب `accepted` مسبقاً → 403 | ✅ |
+| عند رفض → إشعار أدمن في `admin_notifications` | ✅ |
+| أدمن يفتح تفاصيل طلب → يرى قرار التاجر + سبب الرفض | ✅ |
+| أدمن يستطيع إرسال طلب `preparing` إلى Jenni | ✅ |
+| طلبات قديمة `delivered` → decision `accepted` (backfill) | ✅ |

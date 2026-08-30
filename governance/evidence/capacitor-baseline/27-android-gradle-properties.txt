@@ -1,0 +1,11 @@
+
+Unable to download toolchain matching the requirements ({languageVersion=21, vendor=JetBrains, 
+implementation=vendor-specific}) from 'null', due to: No defined toolchain download url for WINDOWS on x86_64 
+architecture.
+> Learn more about toolchain auto-detection and auto-provisioning at 
+https://docs.gradle.org/8.13/userguide/toolchains.html#sec:auto_detection.
+> Learn more about toolchain repositories at 
+https://docs.gradle.org/8.13/userguide/toolchains.html#sub:download_repositories.
+> Get more help at https://help.gradle.org.
+
+

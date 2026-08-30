@@ -1,0 +1,17 @@
+{
+  "label": "24i-fresh-reinstall",
+  "startedAt": "2026-07-27T12:59:25.218Z",
+  "storageProbe": {
+    "legacyPresent": false,
+    "securePresent": false,
+    "markerPresent": true,
+    "securePlugin": true,
+    "prefsPlugin": true,
+    "authedUi": false,
+    "authScreen": true,
+    "storageError": false,
+    "offline": false,
+    "hash": "#/auth",
+    "textSlice": "مرحباً بك سجل دخولك أو أنشئ حساباً جديداً للمتابعة تسجيل دخول إنشاء حساب البريد الإلكتروني أو رقم الهاتف كلمة المرور تسجيل الدخول لدي طلب سابق وأريد استلام حسابي نسيت كلمة المرور؟ استعادة بواسطة الهاتف ديلمارت ستور DilMart"
+  }
+}

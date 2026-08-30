@@ -1,0 +1,295 @@
+priority,source_row,merchant_sku,product_name,brand,size,category,current_image_status,source_product_url,image_source_url,source_type,acquisition_status,review_notes
+1,1136,ARD-4855,عطر فواح مكس فروت جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+2,1137,ARD-4856,عطر فواح بطيخ جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+3,1138,ARD-4857,عطر فواح ستروبري جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+4,1139,ARD-4858,عطر فواح باربي جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+5,1140,ARD-4859,عطر فواح شيلة سكريت جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+6,1141,ARD-4860,عطر فواح كاندي جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+7,1142,ARD-4861,عطر فواح مود جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+8,1143,ARD-4862,عطر فواح باريس جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+9,1144,ARD-4863,عطر فواح لافندر جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+10,1145,ARD-4864,عطر فواح مالديف جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+11,1146,ARD-4865,عطر فواح كام سنت جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+12,1147,ARD-4866,عطر فواح خوخ جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+13,1148,ARD-4867,عطر فواح بلاك ستون جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+14,1149,ARD-4868,عطر فواح جيري جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+15,1150,ARD-4869,عطر فواح عود جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+16,1151,ARD-4870,عطر فواح فري نايس اوركيد جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+17,1152,ARD-4871,عطر فواح باتشولي جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+18,1153,ARD-4873,عطر فواح لندن جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+19,1154,ARD-4874,عطر فواح هملايا جديد,دار المسك,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+20,1155,ARD-686,بخور اميري 50 غرام,أرض الخليج,50 غرام,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+21,1156,ARD-687,بخور سلطان 50 غرام,أرض الخليج,50 غرام,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+22,1157,ARD-688,بخور الشيوخ 50 غرام,أرض الخليج,50 غرام,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+23,1158,ARD-207,شاور غلاها زايد,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+24,1159,ARD-208,شاور للصبايا فقط,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+25,1160,ARD-209,شاور فاطمه,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+26,1161,ARD-2006,شاور عروسة,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+27,1162,ARD-2007,شاور فقط للنساء,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+28,1163,ARD-2009,شاور مكياج,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+29,1164,ARD-2010,شاور انوثة,أرض الخليج,,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+30,1165,ARD-550,مخمريه الانوثه,أرض الخليج,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+31,1166,ARD-1395,مخمريه كاردينيا,أرض الخليج,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+32,1167,ARD-2751,مخمرية الملكة,أرض الخليج,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+33,1168,ARD-2771,مخمرية لجين,أرض الخليج,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+34,1169,ARD-564,بودره مربعه فقط لنساء,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+35,1170,ARD-565,بودره مربعه مكياج وردي,أرض الخليج,,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+36,1171,ARD-566,بودره مربعه غلاها زايد,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+37,1172,ARD-567,بودره مربعه الانوثه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+38,1173,ARD-568,بودره مربعه لصبايا,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+39,1174,ARD-569,بودره مربعه فاطمه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+40,1175,ARD-570,بودره مربعه عطر العروسه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+41,1176,ARD-595,بودره بوري فقط لنساء,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+42,1177,ARD-597,بودره بوري غلاها زايد,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+43,1178,ARD-598,بودره بوري عطر العروسه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+44,1179,ARD-599,بودره بوري الانوثة,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+45,1180,ARD-600,بودره بوري فاطمه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+46,1181,ARD-601,بودره بوري للصبايا,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+47,1182,ARD-3425,بودره مربعه جمال,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+48,1183,ARD-3426,بودره مربعه ماريا,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+49,1184,ARD-3427,بودره مربعه نيشان,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+50,1185,ARD-3553,بودره بوري جمال,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+51,1186,ARD-3554,بودره بوري نيشان,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+52,1187,ARD-3555,بودره بوري ماريا,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+53,1188,ARD-84,عطر احلى النساء 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+54,1189,ARD-86,عطر الشيخ 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+55,1190,ARD-88,عطر المثير 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+56,1191,ARD-96,عطر شيخ زايد اصدار محدود 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+57,1192,ARD-97,عطر شيخ زايد خصوصي 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+58,1193,ARD-98,عطر شيخ زايد ذهبي 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+59,1194,ARD-100,عطر شيخ زايد فخامه 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+60,1195,ARD-103,عطر للصبايا فقط 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+61,1196,ARD-104,عطر غرام الليل,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+62,1197,ARD-110,عطر غلا زايد فخامه ذهبي 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+63,1198,ARD-113,عطر فاطمه 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+64,1199,ARD-114,عطر فاطمه ذهبي 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+65,1200,ARD-115,عطر فقط للنساء 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+66,1201,ARD-119,عطر مكياج 100 مل,أرض الخليج,100 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+67,1202,ARD-120,عطر مكياج بنفسجي 100 مل,أرض الخليج,100 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+68,1203,ARD-160,عطر ترف,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+69,1204,ARD-165,عطر تو الليل,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+70,1205,ARD-166,عطر تو النهار,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+71,1206,ARD-219,عطر زهور باريس,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+72,1207,ARD-265,عطر غلا زايد فخامه سلفر,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+73,1208,ARD-266,عطر شيخ زايد ابيض,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+74,1209,ARD-286,عطر لجين,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+75,1210,ARD-294,عطر سطور,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+76,1211,ARD-345,عطر الانوثه ابيض,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+77,1212,ARD-356,عطر غلا زايد 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+78,1213,ARD-365,عطر الخيال الذهبي,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+79,1214,ARD-366,عطر العروسه 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+80,1215,ARD-375,عطر حروف,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+81,1216,ARD-421,عطر فكره,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+82,1217,ARD-454,عطر شهره لنساء,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+83,1218,ARD-457,عطر اعجازي أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+84,1219,ARD-520,عطر الانوثه احمر,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+85,1220,ARD-553,عطر غلا خليفه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+86,1221,ARD-563,عطر المثير اصدار محدود,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+87,1222,ARD-614,عطر غلا زايد فخامة صاحب السمو,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+88,1223,ARD-643,عطر غلا زايد فخامه رويال,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+89,1224,ARD-660,عطر اصيل,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+90,1225,ARD-661,عطر كلمات,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+91,1226,ARD-712,عطر انتريج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+92,1227,ARD-822,عطر كادي روبي احمر,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+93,1228,ARD-1126,عطر جميلة,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+94,1229,ARD-1177,عطر ماريا,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+95,1230,ARD-1190,عطر روائع العود,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+96,1231,ARD-1216,عطر فخامه,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+97,1232,ARD-1225,سيت عطور أرض الخليج 25 مل,أرض الخليج,25 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+98,1233,ARD-1432,عطر الخيال سلفر,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+99,1234,ARD-1827,عطر غلا زايد فخامة روج 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+100,1235,ARD-1855,عطر لك حبيبتي 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+101,1236,ARD-1895,عطر ميلادك حبيبي,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+102,1237,ARD-1909,عطر كادي ازرق,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+103,1238,ARD-1911,عطر الحر / أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+104,1239,ARD-1915,عطر ثمين / أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+105,1240,ARD-1969,عطر ترانيم 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+106,1241,ARD-1970,عطر زين الشباب 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+107,1242,ARD-1996,عطر دانتيل 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+108,1243,ARD-2033,سيت مجموعة الانوثة 3قطعة,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+109,1244,ARD-2051,سيت مجموعة سيكرت,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+110,1245,ARD-2052,عطر فاطمة وردي 80 مل,أرض الخليج,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+111,1246,ARD-2084,عطر شيخ زايد فخامة 100 مل / اجيال,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+112,1247,ARD-2088,عطر شيخ زايد ملكي 100 مل / مجموعة اجيال,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+113,1248,ARD-2089,عطر كنوز المملكة لوكس 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+114,1249,ARD-2091,عطر كنوز المملكة فلورا 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+115,1250,ARD-2425,سيت مجموعة فاطمة,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+116,1251,ARD-2435,عطر وهم,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+117,1252,ARD-2470,عطر شيلة وعباية الانوثة 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+118,1253,ARD-2861,عطر جميلة روج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+119,1254,ARD-3064,عطر زجل / مملكة العود,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+120,1255,ARD-3266,عطر موناكو توباكو روج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+121,1256,ARD-3529,عطر داي نايت 50 مل (ريد بلو ) 2ق,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+122,1257,ARD-4141,عطر ديلارا / أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+123,1258,ARD-4142,عطر لورا / أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+124,1259,ARD-4143,عطر لورنس / أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+125,1260,ARD-4709,عطر هاتان / أرض الخليج,أرض الخليج,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+126,1261,ARD-4996,عطر مكتوم 100 مل / أرض الخليج,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+127,1262,ARD-5000,عطر لصبايا فقط سينست كيس 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+128,1263,ARD-5003,عطر طيف 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+129,1264,ARD-5004,عطر عساف 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+130,1265,ARD-5005,عطر غلاها زايد اترنال بلوسوم 100 مل,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+131,1266,ARD-5006,عطر مكياج رومانسي 100 مل,أرض الخليج,100 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+132,1267,ARD-5007,عطر هيا جلامور 100 مل (24),أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+133,1268,ARD-5008,عطر هيا ديفا 100 مل (24),أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+134,1269,ARD-5009,عطر خالد 100 مل / أرض الخليج,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+135,1270,ARD-5010,عطر هيا الجانت 100 مل (24),أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+136,1271,ARD-5011,عطر هيا شيك 100 مل (24),أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+137,1272,ARD-5043,عطر شهرة مارشميلو 100 مل / أرض الخليج,أرض الخليج,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+138,1273,ARD-334,عطر شيخ زايد ذهبي 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+139,1274,ARD-335,عطر شيخ زايد ابيض 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+140,1275,ARD-336,عطر العروسه 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+141,1276,ARD-337,عطر غلاها زايد 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+142,1277,ARD-338,عطر فاطمه 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+143,1278,ARD-339,عطر فقط للنساء 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+144,1279,ARD-340,عطر مكياج 50 مل,أرض الخليج,50 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+145,1280,ARD-341,عطر الشيخ 50 مل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+146,1281,ARD-519,عطر 50 مل للصبايا فقط,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+147,1282,ARD-1931,عطر 50 مل شهرة نسائي,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+148,1283,ARD-1934,عطر 50 مل المثير,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+149,1284,ARD-1936,عطر 50 مل فزاع,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+150,1285,ARD-1938,عطر 50 مل خلاخيل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+151,1286,ARD-1939,عطر 50 مل الخيال,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+152,1287,ARD-1941,عطر 50 مل غرام الليل,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+153,1288,ARD-1942,عطر 50 مل جميلة,أرض الخليج,50 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+154,1289,ARD-124,معطر احلى النساء,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+155,1290,ARD-126,معطر الانوثه,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+156,1291,ARD-128,معطر الشيخ,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+157,1292,ARD-130,معطر ايهم,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+158,1293,ARD-132,معطر حروف,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+159,1294,ARD-134,معطر دلع البنات,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+160,1295,ARD-138,معطر شيخ زايد ابيض,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+161,1296,ARD-141,معطر شيخ زايد ذهبي,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+162,1297,ARD-144,معطر عطر العروسه,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+163,1298,ARD-146,معطر غلا راشد,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+164,1299,ARD-147,معطر غلا زايد,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+165,1300,ARD-148,معطر غلاها زايد,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+166,1301,ARD-149,معطر فاطمه,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+167,1302,ARD-152,معطر كاردينيا,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+168,1303,ARD-154,معطر لصبايا فقط,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+169,1304,ARD-313,معطر فزاع,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+170,1305,ARD-376,معطر المثير,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+171,1306,ARD-377,معطر جسم الخيال,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+172,1307,ARD-378,معطر جسم فخامه,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+173,1308,ARD-379,معطر جسم شهره رجالي,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+174,1309,ARD-380,معطر جسم شهره نسائي,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+175,1310,ARD-518,معطر جسم مكياج وردي,أرض الخليج,,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+176,1311,ARD-664,معطر جسم عشق الممنوع,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+177,1312,ARD-711,معطر جسم أرض الخليج / انتريج,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+178,1313,ARD-832,معطر جسم شغف,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+179,1314,ARD-833,معطر جسم كلمات,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+180,1315,ARD-868,معطر غرام الليل,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+181,1316,ARD-965,معطر جسم اعجازي أرض الخليج,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+182,1317,ARD-966,معطر جسم خاص للنساء,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+183,1318,ARD-1128,معطر كادي اخضر,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+184,1319,ARD-1135,معطر انوثة احمر,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+185,1320,ARD-1138,معطر جسم جود,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+186,1321,ARD-1332,معطر جميلة,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+187,1322,ARD-1333,معطر زهور باريس,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+188,1323,ARD-1832,معطر نيو سيكرت,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+189,1324,ARD-1848,معطر نيشان,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+190,1325,ARD-3765,معطر جسم 200 مل / ادم,أرض الخليج,200 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+191,1326,ARD-3,سبلاش شهره للنساء,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+192,1327,ARD-4,سبلاش فاطمه,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+193,1328,ARD-5,سبلاش لصبايا فقط,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+194,1329,ARD-456,سبلاش عطر العروسه,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+195,1330,ARD-523,سبلاش مكياج وردي,أرض الخليج,,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+196,1331,ARD-525,سبلاش فقط للنساء,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+197,1332,ARD-963,سبلاش المثير,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+198,1333,ARD-964,سبلاش الخيال,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+199,1334,ARD-1435,سبلاش الاسطورة,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+200,1335,ARD-1437,سبلاش الانوثة ابيض,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+201,1336,ARD-2112,سبلاش نيشان,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+202,1337,ARD-3066,سبلاش احلى النساء اكسكلوسف,أرض الخليج,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+203,1338,ARD-361,معطر فراش شمس الخليج,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+204,1339,ARD-362,معطر فراش المثير,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+205,1340,ARD-363,معطر فراش فلكلور,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+206,1341,ARD-418,معطر فراش جميله,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+207,1342,ARD-551,معطر فراش زهور باريس,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+208,1343,ARD-646,معطر فراش مكياج وردي القديم,أرض الخليج,,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+209,1344,ARD-650,معطر فراش فاطمه اسود,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+210,1345,ARD-651,معطر فراش عطر العروسه,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+211,1346,ARD-653,معطر فراش للصبايا فقط,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+212,1347,ARD-1285,معطر فراش فخامه,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+213,1348,ARD-1286,معطر فراش كاردينيا,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+214,1349,ARD-1517,معطر فراش عام زايد,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+215,1350,ARD-2049,معطر فراش سيكرت,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+216,1351,ARD-3166,معطر فراش جميله روج,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+217,1352,ARD-3248,معطر فراش احلى النساء,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+218,1353,ARD-3252,معطر فراش نيشان,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+219,1354,ARD-4335,معطر فراش شهرة نسائي قديم,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+220,1355,ARD-197,معطر جو فقط للنساء,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+221,1356,ARD-198,معطر جو للصبايا فقط,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+222,1357,ARD-669,معطر جو فاطمه,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+223,1358,ARD-670,معطر جو كلمات,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+224,1359,ARD-672,معطر جو العروسه,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+225,1360,ARD-673,معطر جو المثير,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+226,1361,ARD-674,معطر جو الخيال,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+227,1362,ARD-675,معطر جو شغف,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+228,1363,ARD-782,معطر جو اعجازي / أرض الخليج,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+229,1364,ARD-841,معطر جو غلاها,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+230,1365,ARD-843,معطر جو مكياج,أرض الخليج,,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+231,1366,ARD-1710,معطر جو احلى النساء,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+232,1367,ARD-1863,معطر جو غلا زايد,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+233,1368,ARD-1865,معطر جو نيشان,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+234,1369,ARD-1866,معطر جو غرور,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+235,1370,ARD-1867,معطر جو كادي,أرض الخليج,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+236,1371,ARD-2478,معطر جو جميلة 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+237,1372,ARD-5059,معطر جو شهره نسائي 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+238,1373,ARD-1244,مسك الطهاره المثير,أرض الخليج,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+239,1374,ARD-2090,مسك الطهارة كنوز المملكة لوكس 100 مل,أرض الخليج,100 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+240,1375,ARD-2092,مسك الطهارة كنوز المملكة فلورا 100 مل,أرض الخليج,100 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+241,1376,ARD-1257,عطر شعر الانوثه احمر 50 مل,أرض الخليج,50 مل,hair-care-fragrance,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+242,1377,ARD-1670,عطر شعر 50 مل مكياج,أرض الخليج,50 مل,hair-care-fragrance,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+243,1385,ARD-1796,بخور نيشان,Niche,,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+244,1388,ARD-1745,مسك طهارة 50 مل فاطمة,أرض الخليج,50 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+245,1389,ARD-1746,مسك طهارة 50 مل مكياج,أرض الخليج,50 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+246,1390,ARD-1777,مسك الطهارة 50 مل الانوثة,أرض الخليج,50 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+247,1391,ARD-1778,مسك الطهارة 50 مل العروسة,أرض الخليج,50 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+248,1392,ARD-1810,مسك طهارة 50 مل غلاها زايد,أرض الخليج,50 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+249,1393,ARD-1811,مسك طهارة 50 مل فقط للنساء,أرض الخليج,50 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+250,1394,ARD-1812,مسك الطهارة 50 مل صبايا,أرض الخليج,50 مل,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+251,1401,ARD-2130,عطر ماركوينا,Masterpiece,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+252,1402,ARD-2131,عطر روزا دي ماريسا,Masterpiece,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+253,1403,ARD-2133,عطر فيولا ليفانتي,Masterpiece,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+254,1404,ARD-2134,عطر ازورتي بلو,Masterpiece,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+255,1405,ARD-2135,عطر فيردي اندو,Masterpiece,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+256,1406,ARD-2212,عطر بلو داماسكو 100 مل,Masterpiece,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+257,1407,ARD-2215,عطر روجو اليكانتي,Masterpiece,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+258,1408,ARD-2129,معطر فراش احلى النساء كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+259,1409,ARD-2136,معطر فراش الاسطورة كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+260,1410,ARD-2138,معطر فراش غلا راشد كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+261,1411,ARD-2139,معطر فراش صدفة كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+262,1412,ARD-2140,معطر فراش قوارير كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+263,1413,ARD-2141,معطر فراش عود شيخ زايد كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+264,1414,ARD-2152,معطر فراش فزاع كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+265,1415,ARD-2217,معطر فراش عليا مركز كبير 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+266,1416,ARD-2362,معطر فراش مملكة العود ميرا 500 مل,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+267,1417,ARD-2422,معطر فراش كيان جوزي 500 مل كبير,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+268,1418,ARD-2590,معطر فراش معالي 500 مل / مجموعة الثمين,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+269,1419,ARD-2603,معطر فراش فخر 500 مل / مجموعة الثمين,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+270,1420,ARD-2605,معطر فراش شموخ 500 مل / مجموعة الثمين,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+271,1421,ARD-2622,معطر فراش ثراء 500 مل / مجموعة الثمين,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+272,1422,ARD-2649,معطر فراش نشوة 500 مل جديد,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+273,1423,ARD-2650,معطر فراش ذرات الذهب 500 مل جديد,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+274,1424,ARD-2661,معطر فراش كيان نسائي 500 مل كبير,أرض الخليج,500 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+275,1425,ARD-2442,بودي مست مدنايت انجل 250 مل,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+276,1426,ARD-2220,معطر فراش مكياج 300 مل جديد,أرض الخليج,300 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+277,1427,ARD-2525,معطر فراش غلا زايد 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+278,1428,ARD-2526,معطر فراش للصبايا فقط 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+279,1429,ARD-2530,معطر فراش غلاها زايد 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+280,1430,ARD-2531,معطر فراش عطر العروسة 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+281,1431,ARD-2582,معطر فراش فاطمه اسود 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+282,1432,ARD-2610,معطر فراش فقط للنساء 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+283,1433,ARD-2647,معطر فراش كيان جوزي 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+284,1434,ARD-2653,معطر فراش الانوثة 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+285,1435,ARD-2654,معطر فراش عليا مركز 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+286,1436,ARD-2659,معطر فراش قدوة 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+287,1437,ARD-2663,معطر فراش شهرة نسائي 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+288,1438,ARD-2664,معطر فراش ثمين 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+289,1439,ARD-2665,معطر فراش غرور 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+290,1440,ARD-2666,معطر فراش نشوة 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+291,1441,ARD-2679,معطر فراش كيان نسائي 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+292,1442,ARD-2685,معطر فراش وهم 300 مل,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+293,1443,ARD-3301,معطر فراش جميلة 300 مل جديد,أرض الخليج,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+294,1444,ARD-3418,بودي مست شهرة 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING

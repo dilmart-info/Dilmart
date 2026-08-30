@@ -1,0 +1,8 @@
+SECURE_STORAGE=@aparajita/capacitor-secure-storage@8.0.0
+PREFERENCES=@capacitor/preferences@8.0.1
+INSTALL=npm install --save-exact (exact versions pinned in package.json)
+NPM_LS=PASS
+CAP_SYNC_ANDROID=PASS (Found 6 plugins incl. SecureStorage + Preferences)
+CAP_SYNC_IOS=PASS (plugins registered; CocoaPods skipped on Windows host)
+ANDROID_PLUGINS_JSON=SecureStorage + PreferencesPlugin present
+AUDIT_NOTE=npm audit reports pre-existing advisories in broader tree; new deps accepted at pinned exact versions for Capacitor 8.

@@ -1,0 +1,20 @@
+﻿# Logcat error scan — Customer Mobile Boundary Android smoke
+
+Source: `11-logcat-final.txt` (recent buffer after full smoke)
+
+## Required absences
+```text
+CORS / Access-Control: NONE
+FATAL EXCEPTION / Fatal signal: NONE
+Uncaught WebView / uncaught exception in Capacitor console: NONE
+d is not a function: NONE
+```
+
+## Non-blocking noise observed
+- Capacitor Network status logs (`connected:true/false`)
+- Android `NullBinder` / `TransactionTooLargeException` for `RECOMMEND_NETWORKS` (system Chrome/GMS noise, unrelated to app crash)
+
+## Verdict
+```text
+Logcat fatal errors: NONE
+```

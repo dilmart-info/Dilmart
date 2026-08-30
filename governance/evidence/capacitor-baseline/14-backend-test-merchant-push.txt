@@ -1,0 +1,46 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> DilMart-store-backend@0.1.0 test:merchant-push
+> npm run build && node --test tests/merchant-push-alerts.test.mjs
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` 
+for supported config options.
+
+> DilMart-store-backend@0.1.0 build
+> nest build
+
+TAP version 13
+# file:///E:/Project/DilMart-Store/backend/tests/merchant-push-alerts.test.mjs:20
+#   throw new Error("SUPABASE_SERVICE_ROLE_KEY is required");
+#         ^
+# Error: SUPABASE_SERVICE_ROLE_KEY is required
+#     at file:///E:/Project/DilMart-Store/backend/tests/merchant-push-alerts.test.mjs:20:9
+# Node.js v22.22.3
+# Subtest: tests\\merchant-push-alerts.test.mjs
+not ok 1 - tests\\merchant-push-alerts.test.mjs
+  ---
+  duration_ms: 1249.5947
+  type: 'test'
+  location: 'E:\\Project\\DilMart-Store\\backend\\tests\\merchant-push-alerts.test.mjs:1:1'
+  failureType: 'testCodeFailure'
+  exitCode: 1
+  signal: ~
+  error: 'test failed'
+  code: 'ERR_TEST_FAILURE'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1262.6414

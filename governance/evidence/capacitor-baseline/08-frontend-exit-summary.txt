@@ -1,0 +1,2 @@
+
+EXIT_SUMMARY lint=1 test=0 build=0 arch=0 doctor=1

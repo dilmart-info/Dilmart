@@ -1,0 +1,301 @@
+priority,source_row,merchant_sku,product_name,brand,size,category,current_image_status,source_product_url,image_source_url,source_type,acquisition_status,review_notes
+1,1445,ARD-3419,بودي مست غلاها زايد 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+2,1446,ARD-3420,بودي مست فاطمة 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+3,1447,ARD-3421,بودي مست صبايا 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+4,1448,ARD-3423,بودي مست العروسه 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+5,1449,ARD-3424,بودي مست الانوثه ابيض 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+6,1450,ARD-3429,بودي مست مكياج 250 مل / أرض الخليج,أرض الخليج,250 مل,powder-makeup,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+7,1451,ARD-3472,بودي مست فقط لنساء 250 مل / أرض الخليج,أرض الخليج,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+8,1452,ARD-183,عطر دلع البنات,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+9,1453,ARD-216,عطر كهرمانه,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+10,1454,ARD-234,عطر راشد,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+11,1455,ARD-236,عطر عليا مركز,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+12,1456,ARD-240,عطر صدفه,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+13,1457,ARD-241,عطر قوارير,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+14,1458,ARD-243,عطر فزاع اصدار محدود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+15,1459,ARD-244,عطر الباشا,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+16,1460,ARD-245,عطر الاسطوره رجالي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+17,1461,ARD-250,عطر ايهم,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+18,1462,ARD-251,عطر مينا,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+19,1463,ARD-347,عطر غلا راشد,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+20,1464,ARD-358,عطر ملك / مملكه العود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+21,1465,ARD-461,عطر كيان / رجالي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+22,1466,ARD-589,عطر كيان نسائي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+23,1467,ARD-616,عطر جود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+24,1468,ARD-1001,عطر الافندي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+25,1469,ARD-1147,عطر نخبة العود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+26,1470,ARD-1313,عطر الحفرة,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+27,1471,ARD-1347,عطر شهلة,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+28,1472,ARD-1364,عطر شجاع,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+29,1473,ARD-1718,عطر ميرا,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+30,1474,ARD-1862,عطر مهرة,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+31,1475,ARD-1994,عطر نشوة 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+32,1476,ARD-2011,عطر القدوة,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+33,1477,ARD-2087,عطر قسم 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+34,1478,ARD-2093,عطر لواء 80 مل,مملكة العود,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+35,1479,ARD-2102,عطر الكوخ رجال,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+36,1480,ARD-2103,عطر الكوخ نسائي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+37,1481,ARD-2244,سيت مملكة العود ابيض 6ق 35 مل,مملكة العود,35 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+38,1482,ARD-2431,عطر العراب 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+39,1483,ARD-2434,عطر لولو,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+40,1484,ARD-2678,عطر نيشان احمر,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+41,1485,ARD-2731,عطر فزاع احمر 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+42,1486,ARD-2821,عطر اكنان 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+43,1487,ARD-2871,عطر نشمي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+44,1488,ARD-2872,عطر قهار,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+45,1489,ARD-2893,عطر شمم 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+46,1490,ARD-2894,عطر يارا 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+47,1491,ARD-2931,عطر لين,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+48,1492,ARD-2934,عطر اسمى,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+49,1493,ARD-2935,عطر افق,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+50,1494,ARD-2936,عطر امارة,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+51,1495,ARD-2937,عطر حور,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+52,1496,ARD-2938,عطر تسنيم,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+53,1497,ARD-2939,عطر تالا,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+54,1498,ARD-2940,عطر رواد,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+55,1499,ARD-2941,عطر منار,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+56,1500,ARD-2942,عطر ذهب,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+57,1501,ARD-2943,عطر شاهين,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+58,1502,ARD-2968,عطر العراب ذهبي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+59,1503,ARD-2977,عطر انس,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+60,1504,ARD-3021,عطر زين,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+61,1505,ARD-3087,عطر لاجيري لمار وردي 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+62,1506,ARD-3088,عطر لا امور لمار اخضر 80 مل,مملكة العود,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+63,1507,ARD-3120,عطر بينات,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+64,1508,ARD-3478,عطر قسور 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+65,1509,ARD-3480,عطر ملهم 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+66,1510,ARD-3552,عطر ميقات 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+67,1511,ARD-3556,عطر صميم 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+68,1512,ARD-3650,عطر مقدام 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+69,1513,ARD-3696,عطر نوح 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+70,1514,ARD-3703,عطر الدرة 100 مل مملكة العود / موافي,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+71,1515,ARD-3704,عطر الدرة 100 مل مملكة العود / بيرل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+72,1516,ARD-3705,عطر الدرة 100 مل مملكة العود / بينك,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+73,1517,ARD-3706,عطر الدرة 100 مل مملكة العود / تيفاني,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+74,1518,ARD-3708,عطر الاجهر 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+75,1519,ARD-3895,عطر الشهم 100 مل الابيض / مملكه العود,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+76,1520,ARD-3901,عطر ماغنايت جديد,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+77,1521,ARD-3958,عطر تيماء 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+78,1522,ARD-3965,عطر مها 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+79,1523,ARD-3966,عطر رزان 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+80,1524,ARD-4204,عطر كاريزما 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+81,1525,ARD-4259,عطر روعه رجال 200 مل,مملكة العود,200 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+82,1526,ARD-4260,عطر روعه نساء 200 مل,مملكة العود,200 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+83,1527,ARD-4263,عطر الحان 210 مل,مملكة العود,210 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+84,1528,ARD-4264,عطر الحان نوير 210 مل,مملكة العود,210 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+85,1529,ARD-4274,عطر افراح اكسكلوسف 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+86,1530,ARD-4276,عطر افراح جيري 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+87,1531,ARD-4277,عطر افراح سنشوال 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+88,1532,ARD-4280,عطر قرطبة كلوري 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+89,1533,ARD-4281,عطر قرطبة اصيل 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+90,1534,ARD-4282,عطر قرطبة روج 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+91,1535,ARD-4308,عطر حمزة 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+92,1536,ARD-4309,عطر ثريا روزا 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+93,1537,ARD-4310,عطر جاذبية ازرق 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+94,1538,ARD-4312,عطر جاذبية بلوش 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+95,1539,ARD-4314,عطر ثريا 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+96,1540,ARD-4325,عطر سدرة 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+97,1541,ARD-4339,عطر قصر العود انفنتي 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+98,1542,ARD-4340,عطر قصر العود ميراج 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+99,1543,ARD-4341,عطر اوج ازوري 90 مل,مملكة العود,90 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+100,1544,ARD-4354,عطر البدلة 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+101,1545,ARD-4364,عطر ريم 100 مل / اصداف,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+102,1546,ARD-4366,عطر سراب 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+103,1547,ARD-4384,عطر روح,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+104,1548,ARD-4386,عطر سحاب 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+105,1549,ARD-4458,عطر دانة 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+106,1550,ARD-4478,عطر اصحاب فانيلا 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+107,1551,ARD-4479,عطر اصحاب كراميل 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+108,1552,ARD-4488,عطر غنى 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+109,1553,ARD-4507,عطر لوتس 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+110,1554,ARD-4517,عطر ميرال 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+111,1555,ARD-4518,عطر ايلاف 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+112,1556,ARD-4612,عطر افق بريز 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+113,1557,ARD-4613,عطر افق دلكايت 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+114,1558,ARD-4614,عطر افق ديفاين 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+115,1559,ARD-4615,عطر افق هارموني 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+116,1560,ARD-4616,عطر افق اوبسشن 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+117,1561,ARD-4629,عطر سيرتي امورا 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+118,1562,ARD-4630,عطر سيرتي لونايري 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+119,1563,ARD-4631,عطر سيرتي اونلي يو 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+120,1564,ARD-4633,عطر سيرتي فالي مست 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+121,1565,ARD-4673,عطر رويال قطن وردي / مملكه العود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+122,1566,ARD-4674,عطر رويال قطن روج / مملكه العود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+123,1567,ARD-4675,عطر رويال قطن ملكي / مملكه العود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+124,1568,ARD-4676,عطر رويال قطن ابيض / مملكه العود,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+125,1569,ARD-4915,عطر ريو توباكو 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+126,1570,ARD-4916,عطر كوهيبا توباكو 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+127,1571,ARD-4917,عطر باريسيان توباكو 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+128,1572,ARD-4922,عطر فانيلا مادنس كورماند كولكشن 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+129,1573,ARD-4923,عطر مارشميلو كلايز كورماند كولكشن 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+130,1574,ARD-4924,عطر كوكي بايت كورماند كولكشن 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+131,1575,ARD-4925,عطر ميلت مارشميلو كيز 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+132,1576,ARD-4926,عطر ميلت كافيه بلس 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+133,1577,ARD-4927,عطر ميلت كريم كراميل 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+134,1578,ARD-4928,عطر ميلت فلفت بريز 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+135,1579,ARD-4957,عطر شهلة ليتشي بلوم,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+136,1580,ARD-4958,عطر كهرمانة انتنس ذهبي,مملكة العود,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+137,1581,ARD-4959,عطر ساهارا توباكو 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+138,1582,ARD-4960,عطر افراح سندريم 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+139,1583,ARD-4962,عطر جواهر كريمسون 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+140,1584,ARD-4963,عطر جواهر تيرا 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+141,1585,ARD-4964,عطر جواهر ازوري 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+142,1586,ARD-4965,عطر جواهر ارديسنت 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+143,1587,ARD-4966,عطر الق 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+144,1588,ARD-4967,عطر فلفت لوش كورماند كولكشن 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+145,1589,ARD-5024,عطر اوج اكستراكت 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+146,1590,ARD-5068,عطر هلال 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+147,1591,ARD-5069,عطر محق 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+148,1592,ARD-5070,عطر افراح بارادايس 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+149,1593,ARD-5075,عطر فهد 80 مل / لطافة,مملكة العود,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+150,1594,ARD-5162,عطر زهراء ليلك دريم 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+151,1595,ARD-5163,عطر زهراء بيتال كيز 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+152,1596,ARD-5164,عطر زهراء فلفت افاير 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+153,1597,ARD-5166,عطر سلطان رمال 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+154,1598,ARD-5167,عطر سلطان بوادي 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+155,1599,ARD-5168,عطر سلطان خيمة 100 مل,مملكة العود,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+156,1600,ARD-156,معطر مينا,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+157,1601,ARD-381,معطر جسم صدفه,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+158,1602,ARD-315,سبلاش فزاع,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+159,1603,ARD-806,سبلاش راكان,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+160,1604,ARD-808,سبلاش الباشا,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+161,1605,ARD-809,سبلاش رحال,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+162,1606,ARD-1736,سبلاش ايهم,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+163,1607,ARD-1951,معطر فراش احلى النساء 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+164,1608,ARD-1952,معطر فراش جود 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+165,1609,ARD-1955,معطر فراش كادي 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+166,1610,ARD-1956,معطر فراش غلا راشد 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+167,1611,ARD-1957,معطر فراش الاسطورة نسائي 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+168,1612,ARD-1959,معطر فراش ملك 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+169,1613,ARD-1961,معطر فراش هوس 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+170,1614,ARD-1962,معطر فراش قوارير 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+171,1615,ARD-2004,معطر فراش 300 مل فزاع,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+172,1616,ARD-2036,معطر فراش شهلة,مملكة العود,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+173,1617,ARD-2050,معطر فراش نشوة,مملكة العود,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+174,1618,ARD-2213,معطر فراش امجاد 300 مل,مملكة العود,300 مل,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+175,1619,ARD-842,معطر جو الاسطورة,مملكة العود,,home-linen-air,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+176,1620,ARD-2107,بودي مست سما مع لمعة,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+177,1621,ARD-2108,بودي مست صدفة مع لمعة,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+178,1622,ARD-2110,بودي مست ميرا,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+179,1623,ARD-2111,بودي مست كيان للنساء مع لمعة,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+180,1624,ARD-2114,بودي مست ملك,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+181,1625,ARD-2115,بودي مست عليا مركز,مملكة العود,,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+182,1626,ARD-2095,بخور عود معطر امجاد,مملكة العود,,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+183,1627,ARD-2096,بخور عود معطر فزاع,مملكة العود,,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+184,1628,ARD-2097,بخور عود معطر غلا راشد,مملكة العود,,incense-maamoul,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+185,1629,ARD-3392,بودي مست القدوة 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+186,1630,ARD-3393,بودي مست كادي ازرق 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+187,1631,ARD-3394,بودي مست كيان نسائي 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+188,1632,ARD-3395,بودي مست الاسطورة نسائي 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+189,1633,ARD-3401,بودي مست ميرا 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+190,1634,ARD-3402,بودي مست ملك 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+191,1635,ARD-3403,بودي مست يارا 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+192,1636,ARD-3406,بودي مست كادي اخضر 250 مل,مملكة العود,250 مل,body-mist-splash,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+193,1637,ARD-4520,بودي مست مسك طهارة مملكة العود كاندي,مملكة العود,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+194,1638,ARD-4521,بودي مست مسك طهارة مملكة العود بلو بيري,مملكة العود,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+195,1639,ARD-4522,بودي مست مسك طهارة مملكة العود فانيلا,مملكة العود,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+196,1640,ARD-4523,بودي مست مسك طهارة مملكة العود تروبكال مسك,مملكة العود,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+197,1641,ARD-4524,بودي مست مسك طهارة مملكة العودلافندر,مملكة العود,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+198,1642,ARD-4534,بودي مست مسك طهارة مملكة العود بوميغرانتي موسك,مملكة العود,,musk-oils-mukhammaria,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+199,1643,ARD-3295,عطر هيريرو رجالي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+200,1644,ARD-3296,عطر نانسيا فور هير 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+201,1645,ARD-3298,عطر افانسي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+202,1646,ARD-3300,عطر فلورال نارسوس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+203,1647,ARD-3344,عطر انفنتف 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+204,1648,ARD-3356,عطر انفنتف فكتوري 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+205,1649,ARD-3357,عطر فرانتك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+206,1650,ARD-3358,عطر انفنتف لجند 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+207,1651,ARD-3359,عطر برافيرلي مان 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+208,1652,ARD-3363,عطر اينامور اوبرو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+209,1653,ARD-3364,عطر لنتيمو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+210,1654,ARD-3367,عطر انتنسف لجن 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+211,1655,ARD-3368,عطر اينامور روج 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+212,1656,ARD-3369,عطر ماجستي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+213,1657,ARD-3370,عطر ال هوم بلو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+214,1658,ARD-3373,عطر كاردن فلورا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+215,1659,ARD-3374,عطر تمبتايشن 111 بور فيم 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+216,1660,ARD-3375,عطر دير كيل 90 مل,Volare,90 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+217,1661,ARD-3377,عطر دارلين بور فيم 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+218,1662,ARD-3381,عطر ميلينا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+219,1663,ARD-3382,عطر فيراكت بينك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+220,1664,ARD-3383,عطر فورتي مين 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+221,1665,ARD-3387,عطر اوفيارا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+222,1666,ARD-3388,عطر نانسيا بودري 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+223,1667,ARD-3455,عطر بيلا فيتا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+224,1668,ARD-3456,عطر جاستي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+225,1669,ARD-3457,عطر اي يودي بلو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+226,1670,ARD-3458,عطر اينامور سينتو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+227,1671,ARD-3459,عطر جست فور يو ومن 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+228,1672,ARD-3460,عطر لا ناييج بور هوم 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+229,1673,ARD-3461,عطر لا فانتو اوركيد 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+230,1674,ARD-3462,عطر موسيل اورا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+231,1675,ARD-3464,عطر نوير لذر 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+232,1676,ARD-3465,عطر اوبس نويت,Volare,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+233,1677,ARD-3466,عطر رومنتك روز VIP ومن 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+234,1678,ARD-3468,عطر فيراكت نوير 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+235,1679,ARD-3469,عطر فيراكت بلو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+236,1680,ARD-3470,عطر فيراكت روج 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+237,1681,ARD-3668,عطر لذر انسنس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+238,1682,ARD-3669,عطر ميغادوس 80 مل,Volare,80 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+239,1683,ARD-3670,عطر ميلودك ليدي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+240,1684,ARD-3671,عطر ميلودك الكسير 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+241,1685,ARD-3673,عطر نوبلنس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+242,1686,ARD-3674,عطر افينوير برفومو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+243,1687,ARD-3675,عطر بوتيك اكستراكت 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+244,1688,ARD-3676,عطر بوتيك روج 540 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+245,1689,ARD-3677,عطر بوتيك سيلك عود 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+246,1690,ARD-3678,عطر جيري بلوسوم 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+247,1691,ARD-3679,عطر فلوريان 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+248,1692,ARD-3680,عطر جوردي بروفندو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+249,1693,ARD-3681,عطر جوردي بروفومو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+250,1694,ARD-3682,عطر كلانسي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+251,1695,ARD-3683,عطر عود انتريور 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+252,1696,ARD-3684,عطر عود ماجستك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+253,1697,ARD-3685,عطر بيج ابسلو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+254,1698,ARD-3686,عطر بيور سيدكشن سيكرت 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+255,1699,ARD-3687,عطر بيور سيدكشن سيكرت انتنس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+256,1700,ARD-3688,عطر روز ماجستك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+257,1701,ARD-3690,عطر سيرين 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+258,1702,ARD-3692,عطر توباكو انسنس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+259,1703,ARD-3693,عطر وود انتنسف 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+260,1704,ARD-3694,عطر ميلودك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+261,1705,ARD-3789,عطر سيلين بور فيم 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+262,1706,ARD-3902,عطر نيش كولكشن اماراناث 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+263,1707,ARD-3903,عطر نيش كولكشن امارا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+264,1708,ARD-3904,عطر نيش كولكشن اموري 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+265,1709,ARD-3905,عطر نيش كولكشن اركتك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+266,1710,ARD-3906,عطر نيش كولكشن سيلينا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+267,1711,ARD-3907,عطر نيش كولكشن جولت 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+268,1712,ARD-3908,عطر نيش كولكشن اونيكس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+269,1713,ARD-3909,عطر نيش كولكشن سسيون 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+270,1714,ARD-3910,عطر نيش كولكشن سوان 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+271,1715,ARD-3911,عطر نيش كولكشن فنتورو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+272,1716,ARD-3912,عطر سكنجر ازوري سكايز 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+273,1717,ARD-3913,عطر سكنجر سكارليت سونك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+274,1718,ARD-3914,عطر سكنجر تركواز ايز 55 مل,Volare,55 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+275,1719,ARD-3915,عطر سوشايتي بيرفوم 971 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+276,1720,ARD-3916,عطر سوشايتي بيرفوم 974 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+277,1721,ARD-3917,عطر سوشايتي بيرفوم 991 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+278,1722,ARD-3918,عطر ماغنيتود 020 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+279,1723,ARD-3919,عطر اوثينتك بلاك 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+280,1724,ARD-3920,عطر جينسز 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+281,1725,ARD-3921,عطر هايدين 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+282,1726,ARD-3922,عطر انفنتف اكستراكت 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+283,1727,ARD-3923,عطر كيمورا سيكرت 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+284,1728,ARD-3924,عطر كرستال 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+285,1729,ARD-3925,عطر لافيفا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+286,1730,ARD-3926,عطر ليندلي 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+287,1731,ARD-3927,عطر ماغنفك بيور عود 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+288,1732,ARD-3928,عطر نوبلنس 100ذا وايلد مل,Volare,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+289,1733,ARD-3929,عطر زورا 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+290,1734,ARD-3977,عطربلاك لوسيد دريمس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+291,1735,ARD-3978,عطرمايستكال واندرلوست 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+292,1736,ARD-3979,عطربروميسينك تريشور 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+293,1737,ARD-3980,عطر باراكون اوف فيرتو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+294,1738,ARD-3982,عطر امبشن مان اديشن 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+295,1739,ARD-3985,عطر بوتيك ايسنس 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+296,1740,ARD-3986,عطر ديب بلاك,Volare,,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+297,1741,ARD-3987,عطر فانتاستك اكستراكت 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+298,1742,ARD-3988,عطر انتميت لوف 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+299,1743,ARD-3989,عطر جون الين ابسلو 100 مل,Volare,100 مل,perfumes,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING
+300,1744,ARD-3990,عطر جون الين الوشن 100 مل,Volare,100 مل,body-bath-care,PENDING_ACQUISITION,,,merchant_backfill_required,QUEUED_FOR_BACKFILL,Staged as metadata-only IMAGE_PENDING

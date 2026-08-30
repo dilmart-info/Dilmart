@@ -1,0 +1,23 @@
+FAIL_CLOSED_LEGACY_READ_UNIT_EVIDENCE
+CODE_HEAD_SHA=80e4a0f1a624f66c3c8b171b6666fd9a8eab0757
+COMMAND=npx vitest run src/lib/auth/native-secure-auth-storage.test.ts
+RESULT=22 PASS
+
+G_MARKER_ABSENT_LEGACY_GETITEM_THROWS=PASS
+- ready() rejects AuthStorageUnavailableError
+- marker absent
+- secure removeItem not called
+- secure session retained
+- retry after repair migrates successfully
+
+H_MARKER_PRESENT_LEGACY_GETITEM_THROWS=PASS
+- ready() rejects
+- secure source of truth retained
+- marker retained
+- no silent success
+
+I_LOGOUT_LEGACY_VERIFY_GETITEM_THROWS=PASS
+- clearPersistedSession rejects AuthStorageUnavailableError
+- storage_error path (no success toast)
+
+TRANSACTION_TESTS_A_THROUGH_I=PASS (22 tests in file include A–I + supporting cases)

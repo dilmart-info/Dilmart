@@ -1,0 +1,48 @@
+{
+  "startedAt": "2026-07-27T20:01:07.780Z",
+  "phase2Before": {
+    "legacyPresent": true,
+    "securePlugin": false,
+    "securePresent": false,
+    "hash": ""
+  },
+  "phase2AfterReload": {
+    "legacyPresent": true,
+    "hash": "",
+    "textSlice": ""
+  },
+  "upgradeInstallR": "PASS",
+  "phase3AfterUpgrade": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "authedUi": true,
+    "authScreen": false,
+    "hash": "#/profile",
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "buildProvenance": {
+    "PRELIMINARY_PHASE2_BUILD": "FAILED_NO_APK",
+    "FINAL_PHASE2_CLEAN_BUILD": "PASS",
+    "FINAL_PHASE2_APK_USED_FOR_UPGRADE": true,
+    "SIGNER_MATCH": "PASS",
+    "ADB_INSTALL_R": "PASS",
+    "PHASE2_SIGNER_SHA256": "8400c8daa3996d830f95a220c1c7114dc6945fbc8f10e4c81f39787c1d386939",
+    "PHASE3_SIGNER_SHA256": "8400c8daa3996d830f95a220c1c7114dc6945fbc8f10e4c81f39787c1d386939",
+    "PHASE2_APK_SHA256": "DCF69D8A0E63C6F9816A15B6269271F8E281B4D07996DC82569A8FDAC243B437",
+    "PHASE3_APK_SHA256": "7A4D5B6E089308EF394901D0B4BAD63F28DBD9FBFC9198C28E68A209D8C544FE"
+  },
+  "summary": {
+    "UPGRADE_INSTALL_R": "PASS",
+    "PHASE2_LEGACY_PRESENT": true,
+    "PHASE2_SECURE_PLUGIN": false,
+    "SESSION_PRESERVED": true,
+    "LEGACY_AUTH_KEY_PRESENT": false,
+    "SECURE_AUTH_KEY_PRESENT": true,
+    "INSTALL_MARKER_PRESENT": true,
+    "AUTH_CONTEXT_RESTORED": true,
+    "SIGNER_MATCH": "PASS",
+    "ADB_INSTALL_R": "PASS",
+    "FINAL_PHASE2_APK_USED_FOR_UPGRADE": true
+  }
+}

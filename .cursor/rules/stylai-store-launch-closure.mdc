@@ -1,0 +1,32 @@
+---
+description: DilMart-Store launch closure and production hardening rule.
+alwaysApply: false
+---
+
+# Launch Closure Rule
+
+Apply this rule when working on checkout, auth, orders, delivery, finance, Supabase access, staging/prod, or launch readiness.
+
+## P0 Must Not Regress
+
+- Checkout identity cannot be spoofed.
+- Loyalty/points cannot be spent for another user.
+- Delivery geo/address data must be persisted.
+- Merchant scoping must be server-side.
+- Admin routes/actions must be guarded.
+- Direct Supabase business bypasses must not be introduced.
+- One merchant per cart/order must hold.
+- Financial transitions must be auditable.
+
+## Required Commands When Relevant
+
+```bash
+npm run build
+npm run arch:guard
+npm run test
+cd backend && npm run build
+cd backend && npm run test:policy
+cd backend && npm run test:commercial
+```
+
+Document failures; do not hide them.

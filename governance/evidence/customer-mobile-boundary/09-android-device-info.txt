@@ -1,0 +1,12 @@
+﻿Device manufacturer: samsung
+Device model: SM-M315F
+Android version: 12
+API level: 31
+RAM: ~5.7 GB (MemTotal 5706216 kB)
+Screen size/resolution: 1080x2340
+APK SHA-256: 6980B76AEF72A3020FC3DFA6F045551014A752374F6F7D0DA144F3C41E5C3D99
+Install source: adb install -r local debug APK (Phase 2 branch build)
+Test date: 2026-07-26
+Tester: Cursor agent (automated + device-connected baseline)
+ADB serial: R58R14KC1HZ
+Package: com.DilMart.store

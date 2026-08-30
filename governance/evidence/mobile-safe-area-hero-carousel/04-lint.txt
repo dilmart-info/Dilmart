@@ -1,0 +1,8 @@
+# ESLint
+
+Baseline at base sha 2880299 : 464 problems (452 errors, 12 warnings) - all pre-existing in src/**
+After this micro-patch       : 464 problems (452 errors, 12 warnings)
+Delta                        : 0
+Findings in the touched files: 0  (HeroSlider.tsx, MobileTopPromoBlock.tsx, index.css, both new tests)
+
+npm run lint already fails on main and is not wired into any workflow. No unrelated file was touched.

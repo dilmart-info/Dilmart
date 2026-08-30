@@ -1,0 +1,30 @@
+- index.mobile.html -> assets/index.mobile-CCovGaJw.js
+
+## Dynamic imports
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- _vendor-B9izNjXC.js
+- src/pages/account/Addresses.tsx
+- src/pages/account/Orders.tsx
+- src/pages/account/ClaimAccount.tsx
+- _vendor-B9izNjXC.js
+
+## Largest 20 assets
+- 451403	assets/vendor-B9izNjXC.js
+- 246980	assets/index.mobile-CCovGaJw.js
+- 157600	assets/vendor-react-Dun8IUFe.js
+- 108893	assets/index-DR59cGdG.css
+- 101120	assets/vendor-radix-JOLpi9Ky.js
+- 8303	assets/Orders-V9rBmUBf.js
+- 6653	assets/ClaimAccount-DqBkgv3f.js
+- 5594	assets/Addresses-C7CiWMGU.js
+
+## Forbidden modules
+- (none)
+
+## Content marker hits (informational)
+- (none)

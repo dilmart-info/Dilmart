@@ -1,0 +1,41 @@
+# Netlify artifact to publish
+
+Folder : E:\Project\DilMart-Store\dist
+Total  : 8.1 MB
+
+dist/index.html
+  sha256 b8f4b44480ee83fb4130ee3c7ec693114d289ec7ef79162e9669f4e9c16c6efe
+  1389 B
+
+References, all verified present on disk:
+  /assets/index-DFvihrxk.js
+  /assets/index-DR59cGdG.css
+  /DilMart-store-icon-only.png
+
+index.html contains no reference to dist-mobile or index.mobile.
+
+Largest emitted chunks:
+  index-DFvihrxk.js       963603 B   (entry, self-contained)
+  PieChart-BSBjzZjJ.js    411357 B   (lazy, admin charts)
+  Agents-Cl_qrJNs.js       94996 B   (lazy)
+  ProductForm-CyIj6ukN.js  75276 B   (lazy)
+  OrderDetail-9paV2TrZ.js  56551 B   (lazy)
+  Executive-fiv9kg6R.js    32749 B   (lazy)
+
+No vendor-*.js chunk is emitted any more.
+
+# Redeploy
+
+Netlify already builds this correctly from netlify.toml:
+  command = "npm run build"
+  publish = "dist"
+
+So the supported path is simply to deploy the commit — Netlify runs npm ci and
+npm run build itself and produces this same dist.
+
+If a manual upload is wanted instead, the folder to upload is exactly:
+  E:\Project\DilMart-Store\dist
+and the CLI form is:
+  npx netlify-cli deploy --prod --dir dist
+
+Neither was executed. No deploy was performed.

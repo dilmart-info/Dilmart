@@ -1,0 +1,175 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> DilMart-store-backend@0.1.0 test:whatsapp-otp
+> npm run build && node --test tests/whatsapp-otp-delivery.test.mjs
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` 
+for supported config options.
+
+> DilMart-store-backend@0.1.0 build
+> nest build
+
+TAP version 13
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [OtpDeliveryService] [OTP] OTP_PROVIDER=disabled ΓÇö refusing silent success purpose=claim_account correlationId=corr-missing
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [OtpDeliveryService] [OTP] OTP_PROVIDER=fake is forbidden in production
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [OtpDeliveryService] [OTP] OTP_PROVIDER=test is forbidden in production
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [WhatsAppOtpProvider] [WHATSAPP][CONFIG_ERROR] OTP_WHATSAPP_TEMPLATE_TYPE is unknown: NOT_A_REAL_TYPE
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [WhatsAppOtpProvider] [WHATSAPP][CONFIG_ERROR] OTP_WHATSAPP_PHONE_NUMBER_ID not configured
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [OtpDeliveryService] [OTP] WhatsApp submission failed purpose=claim_account correlationId=corr-cfg phone=*******4567 errorCode=OTP_WHATSAPP_CONFIG_ERROR class=CONFIG_ERROR
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [WhatsAppOtpProvider] [WHATSAPP][FAILED] HTTP 401 to=+*********4567 code=190 type=OAuthException
+# [Nest] 501476  - 07/26/2026, 11:05:10 AM   ERROR [WhatsAppOtpProvider] [WHATSAPP][FAILED] HTTP 400 to=+*********4567 code=132000 type=OAuthException
+# Subtest: OTP phone util: 07 ΓåÆ +9647 and masking
+ok 1 - OTP phone util: 07 ΓåÆ +9647 and masking
+  ---
+  duration_ms: 1.5296
+  type: 'test'
+  ...
+# Subtest: WhatsApp OTP delivery suite
+    # Subtest: missing OTP_PROVIDER does not fake-succeed
+    ok 1 - missing OTP_PROVIDER does not fake-succeed
+      ---
+      duration_ms: 14.2634
+      type: 'test'
+      ...
+    # Subtest: OTP_PROVIDER=fake forbidden in production
+    ok 2 - OTP_PROVIDER=fake forbidden in production
+      ---
+      duration_ms: 4.897
+      type: 'test'
+      ...
+    # Subtest: OTP_PROVIDER=test forbidden in production
+    ok 3 - OTP_PROVIDER=test forbidden in production
+      ---
+      duration_ms: 4.047
+      type: 'test'
+      ...
+    # Subtest: fake mode never issues HTTP (test env)
+    ok 4 - fake mode never issues HTTP (test env)
+      ---
+      duration_ms: 3.9232
+      type: 'test'
+      ...
+    # Subtest: whatsapp mode builds AUTH_COPY_CODE payload and converts 07ΓåÆ964
+    ok 5 - whatsapp mode builds AUTH_COPY_CODE payload and converts 07ΓåÆ964
+      ---
+      duration_ms: 4.4385
+      type: 'test'
+      ...
+    # Subtest: token stays in Authorization header only
+    ok 6 - token stays in Authorization header only
+      ---
+      duration_ms: 5.9392
+      type: 'test'
+      ...
+    # Subtest: unknown template type is CONFIG_ERROR (no silent fallback)
+    ok 7 - unknown template type is CONFIG_ERROR (no silent fallback)
+      ---
+      duration_ms: 2.0408
+      type: 'test'
+      ...
+    # Subtest: missing config fails clearly without fake success
+    ok 8 - missing config fails clearly without fake success
+      ---
+      duration_ms: 4.0605
+      type: 'test'
+      ...
+    # Subtest: Meta 200 + messages[0].id = accepted (not delivered)
+    ok 9 - Meta 200 + messages[0].id = accepted (not delivered)
+      ---
+      duration_ms: 2.9002
+      type: 'test'
+      ...
+    # Subtest: Meta auth error = failure
+    ok 10 - Meta auth error = failure
+      ---
+      duration_ms: 2.0968
+      type: 'test'
+      ...
+    # Subtest: Meta template error = failure
+    ok 11 - Meta template error = failure
+      ---
+      duration_ms: 1.5703
+      type: 'test'
+      ...
+# [Nest] 501476  - 07/26/2026, 11:05:11 AM   ERROR [WhatsAppOtpProvider] [WHATSAPP][ERROR] Timeout to=+*********4567 (+1005ms)
+# [Nest] 501476  - 07/26/2026, 11:05:11 AM   ERROR [WhatsAppOtpProvider] [WHATSAPP][FAILED] HTTP 400 to=+*********4567 code=132001 type=n/a
+# [Nest] 501476  - 07/26/2026, 11:05:11 AM   ERROR [OtpDeliveryService] [OTP] WhatsApp submission failed purpose=claim_account correlationId=corr-no-leak phone=*******4567 errorCode=META_132001 class=TEMPLATE_ERROR
+# [Nest] 501476  - 07/26/2026, 11:05:11 AM   ERROR [OtpChallengeService] [OTP][CRITICAL] Failed to expire undelivered challenge id=633042d3-b8ec-4029-bb19-389456b7b4d0: expire failed
+# [Nest] 501476  - 07/26/2026, 11:05:11 AM   ERROR [PasswordRecoveryService] [PASSWORD_RESET] OTP delivery failed (swallowed): code=OTP_DELIVERY_FAILED
+# [Nest] 501476  - 07/26/2026, 11:05:11 AM   ERROR [AccountClaimService] [ACCOUNT_CLAIM_RECOVER] OTP delivery failed (swallowed): code=OTP_DELIVERY_FAILED
+    # Subtest: timeout = failure
+    ok 12 - timeout = failure
+      ---
+      duration_ms: 1007.9654
+      type: 'test'
+      ...
+    # Subtest: raw OTP is not present in ServiceUnavailableException response body
+    ok 13 - raw OTP is not present in ServiceUnavailableException response body
+      ---
+      duration_ms: 3.3334
+      type: 'test'
+      ...
+    # Subtest: delivery failure expires challenge
+    ok 14 - delivery failure expires challenge
+      ---
+      duration_ms: 4.6244
+      type: 'test'
+      ...
+    # Subtest: expire cleanup failure falls back to delete
+    ok 15 - expire cleanup failure falls back to delete
+      ---
+      duration_ms: 1.4753
+      type: 'test'
+      ...
+    1..15
+ok 2 - WhatsApp OTP delivery suite
+  ---
+  duration_ms: 1072.5997
+  type: 'test'
+  ...
+# Subtest: PasswordRecoveryService anti-enumeration on provider failure
+ok 3 - PasswordRecoveryService anti-enumeration on provider failure
+  ---
+  duration_ms: 4.1934
+  type: 'test'
+  ...
+# Subtest: AccountClaimService recover anti-enumeration on provider failure
+ok 4 - AccountClaimService recover anti-enumeration on provider failure
+  ---
+  duration_ms: 2.8996
+  type: 'test'
+  ...
+# Subtest: Authenticated claim request surfaces provider failure
+ok 5 - Authenticated claim request surfaces provider failure
+  ---
+  duration_ms: 1.6922
+  type: 'test'
+  ...
+# Subtest: Production missing OTP_TOKEN_SECRET fails closed in completePasswordReset
+ok 6 - Production missing OTP_TOKEN_SECRET fails closed in completePasswordReset
+  ---
+  duration_ms: 2.1091
+  type: 'test'
+  ...
+# Subtest: Identical OTP_HMAC_SECRET and OTP_TOKEN_SECRET rejected on createChallenge
+ok 7 - Identical OTP_HMAC_SECRET and OTP_TOKEN_SECRET rejected on createChallenge
+  ---
+  duration_ms: 1.1904
+  type: 'test'
+  ...
+1..7
+# tests 22
+# suites 0
+# pass 22
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2649.7402

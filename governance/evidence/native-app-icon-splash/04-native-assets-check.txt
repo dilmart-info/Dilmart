@@ -1,0 +1,5 @@
+
+> DilMart-store-store@1.0.0 native:assets:check
+> node scripts/mobile/check-native-brand-assets.mjs
+
+Native brand asset check PASS — icon and splash resources present for Android and iOS

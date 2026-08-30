@@ -1,0 +1,203 @@
+# PR 3 — `GET /customer/home` — Single Fast Home Endpoint
+
+## Background
+
+Currently, the customer app home screen (`useHomeRecommendations.ts`) sends **4 parallel requests** to `/barbershops`:
+
+```typescript
+// Current: 4 × /barbershops (each processes ALL 331 shops server-side)
+api.barbershops.list({ city, sort_by: 'rating', limit: 10 })     // top rated
+api.barbershops.list({ city, sort_by: 'distance', limit: 5 })    // nearest
+api.barbershops.list({ city, available_now: true, limit: 5 })    // open now
+api.barbershops.list({ city, cashback_only: true, limit: 5 })    // cashback
+```
+
+Each request independently fetches ALL barbershops, computes availability, promotions, commercial visibility, then slices. This causes **~64 seconds of CPU** per home page load and frequent 499 timeouts.
+
+**PR 2 built the solution**: `barbershop_discovery_index` with 331 pre-computed rows. Now we need one endpoint that reads from it.
+
+## Proposed Changes
+
+### Backend
+
+---
+
+#### [NEW] [customer-home.service.ts](file:///f:/Project/DilMart-main/backend/src/modules/customer/customer-home.service.ts)
+
+Service that queries `barbershop_discovery_index` once and returns 5 sections:
+
+```typescript
+interface HomeSection {
+  featured: DiscoveryShopItem[];     // is_featured=true OR top relevance, limit 5
+  top_rated: DiscoveryShopItem[];    // ORDER BY rating DESC, limit 10
+  near_you: DiscoveryShopItem[];     // ORDER BY distance(lat,lng), limit 5
+  open_now: DiscoveryShopItem[];     // WHERE is_open_now=true, limit 5
+  cashback: DiscoveryShopItem[];     // WHERE has_active_cashback=true, limit 5
+}
+
+interface DiscoveryShopItem {
+  id: string;               // barbershop_id
+  name: string;
+  city: string;
+  business_type: string;
+  is_vip: boolean;
+  is_open: boolean;          // mapped from is_open_now
+  image: string | null;      // mapped from cover_image_url
+  rating: number;
+  distance_km: number | null; // computed if lat/lng provided
+  has_active_cashback: boolean;
+  max_cashback_percent: number;
+  latitude: number | null;
+  longitude: number | null;
+}
+```
+
+**Query strategy**: Single query with `WHERE status='APPROVED' AND is_commercially_visible=true` + city filter. Fetch enough rows to fill all sections from one result set OR use parallel indexed queries (5 fast SELECTs against pre-indexed columns).
+
+**Recommendation**: 5 parallel indexed queries — each hits a partial index, returns <10 rows, completes in <10ms. Total <50ms.
+
+**Logging**: Every request logs:
+- `endpoint`: `/customer/home`
+- `city`: the requested city
+- `business_type`: filter if provided
+- `db_ms`: database query duration
+- `total_ms`: full endpoint duration
+- `counts`: `{ featured, top_rated, near_you, open_now, cashback }`
+
+---
+
+#### [MODIFY] [customer.controller.ts](file:///f:/Project/DilMart-main/backend/src/modules/customer/customer.controller.ts)
+
+Add `GET /customer/home` endpoint:
+
+```typescript
+@Get('home')
+async getHome(
+  @Query('city') city?: string,
+  @Query('business_type') businessType?: string,
+  @Query('latitude') latitude?: string,
+  @Query('longitude') longitude?: string,
+) { ... }
+```
+
+> [!IMPORTANT]
+> This endpoint does NOT require authentication (`@Roles(CUSTOMER)` on controller). The `/barbershops` endpoint is also public. Should `/customer/home` remain under the `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(CUSTOMER)` that the whole controller has? Or should we create a separate public controller?
+> 
+> **Recommendation**: Keep it under `CustomerController` with auth guard — same as current behavior where `useHomeRecommendations` calls the authenticated `api.barbershops.list()`.
+
+---
+
+#### [MODIFY] [customer.module.ts](file:///f:/Project/DilMart-main/backend/src/modules/customer/customer.module.ts)
+
+Import `BarbershopsModule` to access `BarbershopDiscoveryIndexService`, and add `CustomerHomeService` as provider.
+
+---
+
+### API Client (shared package)
+
+---
+
+#### [MODIFY] [barbershops.ts](file:///f:/Project/DilMart-main/packages/api-client/src/domains/barbershops.ts)
+
+Add `customer.home()` method:
+
+```typescript
+customer: {
+  home: (params?: {
+    city?: string;
+    business_type?: BusinessType;
+    latitude?: number;
+    longitude?: number;
+  }) => http.request<CustomerHomeResponse>('GET', `/customer/home?${sp}`),
+}
+```
+
+---
+
+#### [MODIFY] [types.ts](file:///f:/Project/DilMart-main/packages/api-client/src/types.ts)
+
+Add `CustomerHomeResponse` and `DiscoveryShopItem` types.
+
+---
+
+### Customer App
+
+---
+
+#### [MODIFY] [useHomeRecommendations.ts](file:///f:/Project/DilMart-main/apps/customer-app/src/hooks/useHomeRecommendations.ts)
+
+**Before** (4 requests):
+```typescript
+const [topResult, nearestResult, openResult, promoResult] = await Promise.allSettled([
+  api.barbershops.list({ city, sort_by: 'rating', limit: 10 }),
+  api.barbershops.list({ city, sort_by: 'distance', limit: 5 }),
+  api.barbershops.list({ city, available_now: true, limit: 5 }),
+  api.barbershops.list({ city, cashback_only: true, limit: 5 }),
+]);
+```
+
+**After** (1 request):
+```typescript
+const response = await api.customer.home({ city, latitude, longitude });
+setFeaturedShop(response.featured?.[0] || null);
+setTopRatedShops(response.top_rated || []);
+setNearestShops(response.near_you || []);
+setOpenNowShops(response.open_now || []);
+setCashbackShops(response.cashback || []);
+```
+
+> [!IMPORTANT]
+> **No fallback to 4 old requests in production.** On failure → graceful empty state (already handled by `HomeEmptyState` component).
+
+---
+
+#### [NO CHANGE] [HomeLayout.tsx](file:///f:/Project/DilMart-main/apps/customer-app/src/components/home/HomeLayout.tsx)
+
+No changes needed — it consumes `useHomeRecommendations` output which keeps the same shape.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **Auth requirement**: Should `GET /customer/home` require authentication? Currently the whole `CustomerController` requires `CUSTOMER` role. The `/barbershops` list endpoint is also auth-guarded. Keeping auth seems correct.
+> 
+> 2. **`near_you` without coordinates**: If the customer app doesn't pass `latitude/longitude`, should `near_you` section be empty or fall back to `relevance_score` sort?
+> 
+> 3. **`business_type` filter**: Should it apply to ALL sections or only some? E.g., featured might want to show all types regardless.
+
+## Scope Boundaries
+
+| Included ✅ | Excluded ❌ |
+|------------|------------|
+| `GET /customer/home` backend endpoint | Redis |
+| `CustomerHomeService` | Cron jobs |
+| API client `customer.home()` | `/customer/explore` |
+| `useHomeRecommendations.ts` rewrite | `/customer/map-markers` |
+| Request logging (db_ms, total_ms, counts) | Modify `/barbershops` |
+| Graceful empty state on error | |
+
+## Verification Plan
+
+### Automated Tests
+```bash
+# Backend build
+npx tsc --noEmit --project tsconfig.build.json
+
+# Test on staging
+POST /admin/discovery-index/rebuild  # ensure index is fresh
+GET /customer/home?city=بغداد        # should return < 500ms
+```
+
+### Staging Smoke Test
+1. Call `GET /customer/home?city=بغداد` — expect 200 with 5 sections
+2. Verify response time < 500ms
+3. Verify each section has correct data
+4. Open customer app → home page should load with 1 request instead of 4
+5. Verify no 499 errors in Render logs
+
+### Production Criteria
+- `GET /customer/home?city=بغداد` < 500ms
+- Home page doesn't trigger 4 `/barbershops` requests
+- No "حدث خطأ في الاتصال" on home screen
+- No 499 in Render logs

@@ -1,0 +1,72 @@
+old_sku,replacement_sku,reason,category_before,category_after
+ARD-1796,ARD-2793,replace_private_or_unverified_brand; Niche bakhoor → Lattafa home air freshener (no ready incense outside batch),incense-maamoul,home-linen-air
+ARD-3306,ARD-2797,replace_private_or_unverified_brand; Boutique bakhoor → Lattafa Fakhar women air freshener,incense-maamoul,home-linen-air
+ARD-3310,ARD-4807,replace_private_or_unverified_brand; Boutique bakhoor → Lattafa Pride Nebras air freshener,incense-maamoul,home-linen-air
+ARD-2006,ARD-2323,replace_private_or_unverified_brand; private shower → Lattafa Yara body spray (closest personal-care scenting),body-bath-care,body-mist-splash
+ARD-2007,ARD-871,replace_private_or_unverified_brand; private shower → Lattafa Raghba body spray,body-bath-care,body-mist-splash
+ARD-2009,ARD-562,replace_private_or_unverified_brand; private shower → Lattafa Ana Abiyedh body spray,body-bath-care,body-mist-splash
+ARD-1708,ARD-3262,replace_private_or_unverified_brand; VERT hair mist → Lattafa Yara Moi body spray,hair-care-fragrance,body-mist-splash
+ARD-1709,ARD-4707,replace_private_or_unverified_brand; VERT hair mist → Lattafa Angham body spray,hair-care-fragrance,body-mist-splash
+ARD-1414,ARD-2322,replace_private_or_unverified_brand; Sublime hair mist → Lattafa Fakhar Women body spray,hair-care-fragrance,body-mist-splash
+ARD-3425,ARD-1858,replace_private_or_unverified_brand; private powder → Lattafa Yara EDP (verified iconic identity + image),powder-makeup,perfumes
+ARD-3426,ARD-3709,replace_private_or_unverified_brand; private powder → Lattafa Khamrah Qahwa EDP,powder-makeup,perfumes
+ARD-2497,ARD-4273,replace_private_or_unverified_brand; خلطة لطافة lacks clean official isolation → Lattafa Angham,perfumes,perfumes
+ARD-2116,ARD-92,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-2519,ARD-970,image_unresolved_enrichment_replace|reimage_unique,perfumes,perfumes
+ARD-2971,ARD-287,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3247,ARD-308,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3276,ARD-309,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3348,ARD-310,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3354,ARD-311,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3533,ARD-312,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3534,ARD-422,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3535,ARD-463,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3537,ARD-465,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3699,ARD-466,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3700,ARD-468,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-2668,ARD-479,image_unresolved_enrichment_replace,body-mist-splash,perfumes
+ARD-2670,ARD-663,image_unresolved_enrichment_replace,body-mist-splash,perfumes
+ARD-2672,ARD-715,image_unresolved_enrichment_replace,body-mist-splash,perfumes
+ARD-2675,ARD-766,image_unresolved_enrichment_replace,body-mist-splash,perfumes
+ARD-3259,ARD-823,image_unresolved_enrichment_replace,musk-oils-mukhammaria,perfumes
+ARD-4193,ARD-957,image_unresolved_enrichment_replace,musk-oils-mukhammaria,perfumes
+ARD-2623,ARD-958,image_unresolved_enrichment_replace,incense-maamoul,perfumes
+ARD-2768,ARD-959,image_unresolved_enrichment_replace,perfumes,perfumes
+ARD-3701,ARD-249,image_longest_side_below_600_replace,perfumes,perfumes
+ARD-2323,ARD-3117,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-3262,ARD-4336,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4482,ARD-4637,image_duplicate_conflict,musk-oils-mukhammaria,perfumes
+ARD-871,ARD-3711,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-3900,ARD-5058,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-1924,ARD-4680,image_duplicate_conflict,mini-travel-perfume,perfumes
+ARD-2667,ARD-2436,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4565,ARD-775,image_duplicate_conflict,home-linen-air,musk-oils-mukhammaria
+ARD-562,ARD-3714,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-2669,ARD-4660,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4239,ARD-2583,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4296,ARD-4286,image_duplicate_conflict,home-linen-air,perfumes
+ARD-4553,ARD-1480,image_duplicate_conflict,home-linen-air,perfumes
+ARD-4293,ARD-3347,image_duplicate_conflict,home-linen-air,perfumes
+ARD-4157,ARD-4685,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4551,ARD-5036,image_duplicate_conflict,home-linen-air,perfumes
+ARD-4297,ARD-4686,image_duplicate_conflict,home-linen-air,perfumes
+ARD-4158,ARD-1369,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4295,ARD-4214,image_duplicate_conflict,home-linen-air,perfumes
+ARD-4707,ARD-4256,image_duplicate_conflict,body-mist-splash,perfumes
+ARD-4483,ARD-4255,image_identity_mismatch_size_or_format,musk-oils-mukhammaria,perfumes
+ARD-249,ARD-249,catalog_identity_mismatch; restored Qaaed Al Shabaab for catalog عطر قائد; unique webp image,,
+ARD-2322,ARD-4215,image_size_or_format_mismatch,body-mist-splash,perfumes
+ARD-2671,ARD-2126,image_size_or_format_mismatch,body-mist-splash,perfumes
+ARD-3263,ARD-1430,image_size_or_format_mismatch,body-mist-splash,perfumes
+ARD-4159,ARD-467,image_size_or_format_mismatch,musk-oils-mukhammaria,musk-oils-mukhammaria
+ARD-3277,ARD-4770,image_size_or_format_mismatch,body-mist-splash,perfumes
+ARD-4156,ARD-4246,image_size_or_format_mismatch,body-mist-splash,perfumes
+ARD-1919,ARD-3710,image_size_or_format_mismatch,mini-travel-perfume,perfumes
+ARD-1921,ARD-2512,image_size_or_format_mismatch,mini-travel-perfume,perfumes
+ARD-1922,ARD-3897,image_size_or_format_mismatch,mini-travel-perfume,perfumes
+ARD-1925,ARD-4664,image_size_or_format_mismatch,mini-travel-perfume,perfumes
+ARD-1926,ARD-4792,image_size_or_format_mismatch,mini-travel-perfume,perfumes
+ARD-249,ARD-3712,duplicate_identity_qaaed_conflict,perfumes,perfumes
+ARD-4792,ARD-4792,image_duplicate_conflict_musamam,perfumes,perfumes
+ARD-422,ARD-4138,catalog_identity_mismatch_reconcile,perfumes,perfumes
+ARD-468,ARD-2511,catalog_identity_mismatch_reconcile,perfumes,perfumes

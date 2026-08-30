@@ -1,0 +1,18 @@
+NATIVE_CI_RUN=30200058584
+ANDROID_JOB=PASS
+IOS_JOB=PASS
+LAUNCH_CI_RUN=30200058581
+VERIFIED_HEAD_SHA=4ad84dcff562d438bacb3c62c49a3b877514cc5a
+IOS_SYNC=PASS
+IOS_POD=PASS
+IOS_WORKSPACE_LIST=PASS (App scheme present)
+IOS_SIMULATOR_DEBUG=PASS
+IOS_GENERIC_RELEASE_NOSIGN=PASS
+IOS_ARCHIVE=EXIT_CODE=65
+ARCHIVE_ROOT_CAUSE=Signing for App requires a development team. Select a development team in the Signing & Capabilities editor.
+ARCHIVE_CLASSIFIER=SIGNING-ONLY PASS (job remains green)
+CLASSIFICATION=PASS WITH SIGNING BLOCKER
+PODFILE_LOCK=committed (ios/App/Podfile.lock)
+CAP_MIGRATE_EXIT_CODE=4294967295
+NATIVE_CI_URL=https://github.com/cylendralabs-blip/DilMart-Store/actions/runs/30200058584
+LAUNCH_CI_URL=https://github.com/cylendralabs-blip/DilMart-Store/actions/runs/30200058581

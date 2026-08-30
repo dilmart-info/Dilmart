@@ -1,0 +1,18 @@
+{
+  "ok": true,
+  "errors": [],
+  "import_id": "ff3274c4-7f65-455b-8bda-549c4ecd3fad",
+  "http_status": 201,
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "total": 100,
+  "valid": 100,
+  "invalid": 0,
+  "status": "previewed",
+  "sku_count": 100,
+  "category_distribution": {
+    "mini-travel-perfume": 3,
+    "perfumes": 87,
+    "home-linen-air": 8,
+    "musk-oils-mukhammaria": 2
+  }
+}

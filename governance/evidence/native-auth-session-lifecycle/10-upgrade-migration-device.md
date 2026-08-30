@@ -1,0 +1,33 @@
+# Upgrade migration device test (same-key)
+
+## Generation A
+
+```text
+SIGNER_SHA256=b89f76ab477b39aa7fbce99e6b8820be5ce361bd46019fb505a158ff50267030
+SIGNER_MATCH=PASS
+NOTE=Historical pair
+```
+
+## Generation B
+
+```text
+SIGNER_SHA256=8400c8daa3996d830f95a220c1c7114dc6945fbc8f10e4c81f39787c1d386939
+SIGNER_MATCH=PASS
+NOTE=Historical pair (transaction-safety test before fail-closed legacy read patch)
+```
+
+## Generation C — authoritative final
+
+```text
+PHASE2_APK_SHA256=DCF69D8A0E63C6F9816A15B6269271F8E281B4D07996DC82569A8FDAC243B437
+PHASE3_APK_SHA256=7A4D5B6E089308EF394901D0B4BAD63F28DBD9FBFC9198C28E68A209D8C544FE
+SIGNER_SHA256=8400c8daa3996d830f95a220c1c7114dc6945fbc8f10e4c81f39787c1d386939
+SIGNER_MATCH=PASS
+ADB_INSTALL_R=PASS
+SESSION_PRESERVED=PASS
+MARKER_PRESENT=true
+SECURE_PRESENT=true
+LEGACY_PRESENT=false
+```
+
+`adb install -r` validity is based on the clean Phase2 APK used for the authoritative pair above.

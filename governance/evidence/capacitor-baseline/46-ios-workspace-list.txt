@@ -1,0 +1,6 @@
+Command line invocation:
+    /Applications/Xcode_26.5.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/App/App.xcworkspace -list
+
+There are no schemes in workspace "App".
+
+EXIT_CODE=0

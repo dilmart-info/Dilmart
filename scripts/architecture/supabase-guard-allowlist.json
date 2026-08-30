@@ -1,0 +1,26 @@
+{
+  "description": "Tightly scoped temporary allowlist for auth/session-only Supabase access in frontend.",
+  "allowedImports": [
+    { "file": "src/integrations/supabase/client.ts", "source": "@/integrations/supabase/client" },
+    {
+      "file": "src/lib/auth/auth-session-manager.ts",
+      "source": "@/integrations/supabase/client",
+      "reason": "auth-only: single owner of getSession/refreshSession/signOut/onAuthStateChange. No table reads."
+    },
+    {
+      "file": "src/lib/auth/auth-actions.ts",
+      "source": "@/integrations/supabase/client",
+      "reason": "auth-only: signInWithPassword/signUp/resend wrappers for UI. No table reads."
+    },
+    {
+      "file": "src/lib/realtime/notification-subscriptions.ts",
+      "source": "@/integrations/supabase/client"
+    }
+  ],
+  "allowedRuntimeCalls": [
+    {
+      "file": "src/lib/realtime/notification-subscriptions.ts",
+      "rule": "supabase.channel"
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+   Capacitor Doctor   
+
+Latest Dependencies:
+
+  @capacitor/cli: 8.4.2
+  @capacitor/core: 8.4.2
+  @capacitor/android: 8.4.2
+  @capacitor/ios: 8.4.2
+
+Installed Dependencies:
+
+  @capacitor/android: 8.4.2
+  @capacitor/core: 8.4.2
+  @capacitor/ios: 8.4.2
+  @capacitor/cli: 8.4.2
+
+[success] Android looking great! ≡ƒæî
+[error] Xcode is not installed

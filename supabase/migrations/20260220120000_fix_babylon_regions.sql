@@ -1,0 +1,50 @@
+-- Update Governorates name to exact match used in Checkout
+UPDATE public.governorates SET name = 'بابل' WHERE name LIKE 'بابل%';
+
+-- Clear existing regions for Babylon to avoid duplicates/conflicts before re-seeding
+DELETE FROM public.regions WHERE governorate_id IN (SELECT id FROM public.governorates WHERE name = 'بابل');
+
+-- Re-Insert Regions for Babylon (Focus on Hashimiya)
+INSERT INTO public.regions (governorate_id, name, sort_order)
+SELECT id, name, sort_order FROM (
+  VALUES 
+    -- الهاشمية (The Store Location - High Priority)
+    ('الهاشمية - مركز القضاء', 1),
+    ('الهاشمية - السوق الكبير', 2),
+    ('الهاشمية - الحي العصري', 3),
+    ('الهاشمية - حي الزهراء', 4),
+    ('الهاشمية - حي الشهداء', 5),
+    ('الهاشمية - حي المعلمين', 6),
+    ('الهاشمية - المدحتية (الحمزة الغربي)', 10),
+    ('الهاشمية - القاسم', 11),
+    ('الهاشمية - الطليعة', 12),
+    ('الهاشمية - الشوملي', 13),
+    ('الهاشمية - قرية عنانة', 14),
+
+    -- الحلة (Hilla - Babylon Center)
+    ('الحلة - حي بابل', 30),
+    ('الحلة - شارع 40 (حي المرتضى)', 31),
+    ('الحلة - شارع 60', 32),
+    ('الحلة - حي الجمعية', 33),
+    ('الحلة - حي الجزائر', 34),
+    ('الحلة - حي الاسكان', 35),
+    ('الحلة - حي المهندسين', 36),
+    ('الحلة - حي الأمير', 37),
+    ('الحلة - حي الكرامة', 38),
+    ('الحلة - نادر الاولى', 39),
+    ('الحلة - نادر الثانية', 40),
+    ('الحلة - الجمعية', 41),
+    ('الحلة - باب المشهد', 42),
+
+    -- Other Key Areas in Babylon
+    ('المحاويل', 60),
+    ('المسيب', 61),
+    ('الاسكندرية', 62),
+    ('جبلة (المشروع)', 63),
+    ('سدة الهندية', 64),
+    ('الكفل', 65),
+    ('النيل', 66),
+    ('ابي غرق', 67)
+) AS v(name, sort_order),
+(SELECT id FROM public.governorates WHERE name = 'بابل') as g(id)
+ON CONFLICT DO NOTHING;

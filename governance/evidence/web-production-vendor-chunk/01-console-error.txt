@@ -1,0 +1,36 @@
+# Reported symptom
+
+https://store.DilMart.org renders a black screen.
+
+# Reproduced in headless Chrome against production
+
+TypeError: Cannot read properties of undefined (reading 'forwardRef')
+    at https://store.DilMart.org/assets/vendor-C-dDIgRE.js:25:15
+
+DOM after load: {"root":0,"sw":false}
+  -> #root has zero children, document body has zero visible text, no service worker.
+
+Script request order observed on production:
+  1 /assets/index-D8WZyAIR.js
+  4 /assets/vendor-react-BeDS4LWl.js
+  5 /assets/vendor-radix-nHqKWmXK.js
+  6 /assets/vendor-C-dDIgRE.js
+
+No failed network request. No 404. The bundle downloaded completely and then threw
+while evaluating its own modules.
+
+# Reproduced locally against the same artifact
+
+npm run web:production-smoke -- --port 4188
+
+  route /          rootChildren=0 bodyText=0  exceptions=2
+  route /products  rootChildren=0 bodyText=0  exceptions=2
+  route /auth      rootChildren=0 bodyText=0  exceptions=2
+  FAIL  /: #root rendered nothing — black screen
+  FAIL  /: uncaught exception — TypeError: Cannot read properties of undefined (reading 'forwardRef')
+  Production preview smoke FAILED   (exit 1)
+
+Note on the first attempt: an unrelated `vite preview` from another project
+(D:\madhmun\app) was already bound to port 4173, so the guard smoke-tested a foreign
+bundle and reported PASS. The guard now refuses to run unless the served document
+references the entry file that is actually on disk.

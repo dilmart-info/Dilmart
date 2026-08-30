@@ -1,0 +1,4 @@
+AUTH_GUARD=PASS
+COMMAND=npm run auth:guard
+RESULT=Auth lifecycle boundary guard passed. Session lifecycle is owned by src/lib/auth only.
+FORBIDDEN_STORAGE_LOCALSTORAGE_IN_CLIENT=none

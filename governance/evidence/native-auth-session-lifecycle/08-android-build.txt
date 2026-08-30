@@ -1,0 +1,4 @@
+ANDROID_BUILD=PENDING_NATIVE_CI
+LOCAL_CAP_SYNC_ANDROID=PASS
+PLUGINS_REGISTERED=SecureStorage + Preferences
+NOTE=assembleDebug/bundleRelease executed by Native Foundation CI after push

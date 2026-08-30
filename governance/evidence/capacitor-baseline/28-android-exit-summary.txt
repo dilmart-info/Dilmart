@@ -1,0 +1,16 @@
+ANDROID_EXIT_SUMMARY
+prebuild=0
+cap_sync_android=0
+# Strict baseline with JAVA_HOME=Oracle JDK 21.0.11:
+gradle_clean=1
+assembleDebug=1
+bundleRelease=1
+# Root cause: android/gradle/gradle-daemon-jvm.properties requires toolchainVendor=jetbrains
+# Supplemental (env only, no repo edits) using Android Studio JBR 21.0.10 (java.vendor=JetBrains s.r.o.):
+gradle_clean_jbr=0
+assembleDebug_jbr=0
+bundleRelease_jbr=0
+APK_DEBUG_SIZE_MB=11.76
+AAB_RELEASE_SIZE_MB=10.21
+APK_PATH=android/app/build/outputs/apk/debug/app-debug.apk
+AAB_PATH=android/app/build/outputs/bundle/release/app-release.aab

@@ -1,0 +1,96 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> DilMart-store-store@1.0.0 build
+> vite build
+
+vite v5.4.21 building for production...
+transforming...
+Γ£ô 3589 modules transformed.
+Circular chunk: vendor -> vendor-react -> vendor. Please adjust the manual chunk logic for these chunks.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         1.20 kB Γöé gzip:   0.66 kB
+dist/assets/slide-1-DQINOuFv.png                    1,897.63 kB
+dist/assets/slide-2-BBi_KOLJ.png                    2,046.80 kB
+dist/assets/index-CR4ryNOw.css                        108.59 kB Γöé gzip:  18.16 kB
+dist/assets/data-scope-Cmo_Zmu8.js                      0.35 kB Γöé gzip:   0.22 kB
+dist/assets/finance-ui-CasMj3Wb.js                      0.36 kB Γöé gzip:   0.33 kB
+dist/assets/Users-8Pq5n8Yz.js                           0.38 kB Γöé gzip:   0.28 kB
+dist/assets/separator-Dp0zXw1q.js                       0.41 kB Γöé gzip:   0.29 kB
+dist/assets/Coupons-Chbtx7uv.js                         0.43 kB Γöé gzip:   0.32 kB
+dist/assets/Orders-wFBr3jtc.js                          0.44 kB Γöé gzip:   0.32 kB
+dist/assets/Products-CU3yLT2R.js                        0.45 kB Γöé gzip:   0.32 kB
+dist/assets/Customers-V30lvZL6.js                       0.63 kB Γöé gzip:   0.46 kB
+dist/assets/Coupons-BJ8Qd_iy.js                         0.68 kB Γöé gzip:   0.49 kB
+dist/assets/Orders-CktM5MX9.js                          0.69 kB Γöé gzip:   0.49 kB
+dist/assets/Products-CAMumRAi.js                        0.70 kB Γöé gzip:   0.49 kB
+dist/assets/scroll-area-DAKBy0w7.js                     0.85 kB Γöé gzip:   0.44 kB
+dist/assets/merchant-rejection-reasons-CnDEZYsu.js      0.88 kB Γöé gzip:   0.58 kB
+dist/assets/switch-CRUU9bPg.js                          0.90 kB Γöé gzip:   0.47 kB
+dist/assets/use-current-merchant-BNAfl3D6.js            0.92 kB Γöé gzip:   0.46 kB
+dist/assets/commercial-policy-profiles-BPpnseZo.js      0.95 kB Γöé gzip:   0.56 kB
+dist/assets/FinanceLayout-BFkmhMBw.js                   1.13 kB Γöé gzip:   0.62 kB
+dist/assets/table-Ci6kPmut.js                           1.52 kB Γöé gzip:   0.54 kB
+dist/assets/scoped-queries-D4e-Rc82.js                  1.56 kB Γöé gzip:   0.59 kB
+dist/assets/MerchantCreate-DEnAIVYM.js                  1.99 kB Γöé gzip:   0.92 kB
+dist/assets/FinanceEvents-yzCmPdN2.js                   2.00 kB Γöé gzip:   1.01 kB
+dist/assets/useFinanceQueries--aFshEVr.js               2.05 kB Γöé gzip:   0.61 kB
+dist/assets/alert-dialog-DajibeMo.js                    2.05 kB Γöé gzip:   0.75 kB
+dist/assets/dialog-MIFn_9fx.js                          2.24 kB Γöé gzip:   0.87 kB
+dist/assets/Login-C8_PBsYd.js                           2.60 kB Γöé gzip:   1.40 kB
+dist/assets/FinanceMerchants-CqgVJsEU.js                2.62 kB Γöé gzip:   1.11 kB
+dist/assets/MerchantPlanAssignments-MUHodNtW.js         2.93 kB Γöé gzip:   1.22 kB
+dist/assets/Inventory-BrLp3las.js                       3.03 kB Γöé gzip:   1.32 kB
+dist/assets/FinanceOrders-CSvo8dKv.js                   3.10 kB Γöé gzip:   1.33 kB
+dist/assets/CustomersPage-DF8zOS2f.js                   3.34 kB Γöé gzip:   1.57 kB
+dist/assets/merchant-push-Dn7-CiAM.js                   3.35 kB Γöé gzip:   1.73 kB
+dist/assets/Login-DETGOnIO.js                           3.51 kB Γöé gzip:   1.95 kB
+dist/assets/MerchantPlans-BN4PzOOA.js                   3.58 kB Γöé gzip:   1.47 kB
+dist/assets/FinanceOverview-lC7CGtqS.js                 3.64 kB Γöé gzip:   1.14 kB
+dist/assets/DesktopQuickLinks-BP2aV4T-.js               3.94 kB Γöé gzip:   1.54 kB
+dist/assets/DeliveryOps-ZLGIbLNV.js                     4.15 kB Γöé gzip:   1.57 kB
+dist/assets/Register-C-E1UpPt.js                        4.16 kB Γöé gzip:   1.41 kB
+dist/assets/Pending-D0pVT3Sa.js                         4.42 kB Γöé gzip:   1.70 kB
+dist/assets/ProductImport-C0zI_lIF.js                   4.46 kB Γöé gzip:   1.88 kB
+dist/assets/FinanceAdjustments-BmCRrUhT.js              4.55 kB Γöé gzip:   1.51 kB
+dist/assets/DeliveryIntelligence-CqYkPI31.js            4.59 kB Γöé gzip:   1.61 kB
+dist/assets/FinanceCouriers-CLMIpA1N.js                 4.90 kB Γöé gzip:   1.55 kB
+dist/assets/FinanceReversals-DS5Z3Q59.js                4.98 kB Γöé gzip:   1.63 kB
+dist/assets/CommercialRules-DpAcIuNR.js                 5.00 kB Γöé gzip:   1.89 kB
+dist/assets/Loyalty-D4dyVlGF.js                         5.05 kB Γöé gzip:   2.05 kB
+dist/assets/Overview-DqONW_6V.js                        5.13 kB Γöé gzip:   1.32 kB
+dist/assets/Addresses-ByLSrLtM.js                       5.24 kB Γöé gzip:   1.84 kB
+dist/assets/Orders-CGQb68l3.js                          5.93 kB Γöé gzip:   2.48 kB
+dist/assets/ClaimAccount-B5dnm3sr.js                    5.93 kB Γöé gzip:   2.29 kB
+dist/assets/Agents-DJWivTHZ.js                          6.71 kB Γöé gzip:   2.65 kB
+dist/assets/Merchants-CFdTXAL9.js                       6.88 kB Γöé gzip:   2.38 kB
+dist/assets/CouponsPage-CqBUC_jq.js                     7.09 kB Γöé gzip:   2.54 kB
+dist/assets/Finance-BJsfEXPp.js                         7.34 kB Γöé gzip:   2.57 kB
+dist/assets/FinancePayouts-DABcZ0KM.js                  7.51 kB Γöé gzip:   2.02 kB
+dist/assets/AdminLayout-DS6Mk3lD.js                     8.56 kB Γöé gzip:   3.26 kB
+dist/assets/Executive-Bg8M-OTn.js                       8.61 kB Γöé gzip:   3.19 kB
+dist/assets/Settings-DJKA0_5W.js                        9.39 kB Γöé gzip:   3.42 kB
+dist/assets/Delivery-BGhOYPAP.js                        9.85 kB Γöé gzip:   3.61 kB
+dist/assets/Categories-BVP9zp-z.js                     10.70 kB Γöé gzip:   3.54 kB
+dist/assets/ProductsPage-C269SCIR.js                   11.27 kB Γöé gzip:   3.67 kB
+dist/assets/Reconciliation-FZiGmhpl.js                 12.06 kB Γöé gzip:   3.01 kB
+dist/assets/MerchantDetail-H_NqFn2Z.js                 13.75 kB Γöé gzip:   3.92 kB
+dist/assets/OrdersPage-CC_wz9A5.js                     14.07 kB Γöé gzip:   4.98 kB
+dist/assets/Dashboard-DItAGU6h.js                      16.28 kB Γöé gzip:   4.88 kB
+dist/assets/OrderDetail-BEjnEl_V.js                    18.54 kB Γöé gzip:   4.94 kB
+dist/assets/MerchantLayout-Ch4Oz_Yq.js                 23.73 kB Γöé gzip:   7.26 kB
+dist/assets/JenniIntegration-CJQY55Dr.js               23.94 kB Γöé gzip:   6.98 kB
+dist/assets/ProductForm-BqF0PJmJ.js                    35.06 kB Γöé gzip:  10.43 kB
+dist/assets/OrderDetail-D3oR_i6Z.js                    52.29 kB Γöé gzip:  11.87 kB
+dist/assets/vendor-radix-Cgc4MKNW.js                  122.15 kB Γöé gzip:  35.34 kB
+dist/assets/vendor-react-DOyjZwbM.js                  158.21 kB Γöé gzip:  51.14 kB
+dist/assets/index-DwVB03fG.js                         235.94 kB Γöé gzip:  59.79 kB
+dist/assets/vendor-zwIouiFc.js                      1,024.44 kB Γöé gzip: 280.67 kB
+Γ£ô built in 14.08s

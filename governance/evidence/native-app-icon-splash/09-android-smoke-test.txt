@@ -1,0 +1,63 @@
+# Android visual smoke test
+
+Device : Android emulator (AVD Pixel_10_Pro_XL), emulator-5554
+OS     : Android 17, API 37  (i.e. the Android 12+ splash screen API path)
+Screen : 1344x2992
+APK    : android/app/build/outputs/apk/debug/app-debug.apk  (adb install -r -> Success)
+
+## Cold launch timing
+adb shell am start -W -n com.DilMart.store/.MainActivity
+  Status: ok
+  LaunchState: COLD
+  TotalTime: 5354 ms
+  WaitTime : 5372 ms
+
+## Frame-by-frame capture of a cold launch (mean RGB of the whole frame)
+frame-01  rgb(55,55,62)  white%=5.4   launcher home screen, before the activity appears
+frame-02  rgb(18,16,13)  white%=0.0   splash - brand background #0F0D0B + app icon
+frame-03  rgb(18,16,13)  white%=0.0   splash
+frame-04  rgb(18,16,13)  white%=0.0   splash
+frame-05  rgb(18,16,13)  white%=0.0   splash
+frame-06  rgb(48,43,38)  white%=1.5   customer shell painting
+frame-07+ rgb(56,51,45)  white%=4.8   customer home screen
+
+No frame anywhere in the sequence is white or light. white% never rises above 0.0 while the
+splash is on screen.
+
+## Light mode cold launch (adb shell cmd uimode night no)
+light-1   rgb(76,79,93)  white%=15.8  launcher home screen
+light-2   rgb(18,16,13)  white%=0.0   splash - identical brand background, no white flash
+light-3   rgb(56,51,45)  white%=4.8   customer home screen
+
+## Checklist
+ 1. Launcher icon                          PASS  screenshots/01-android-launcher-icon.png
+ 2. Rounded-square mask                    PASS  verified from the generated adaptive layers
+ 3. Circle mask                            PASS  launcher renders the adaptive icon circle-masked
+ 4. Gold frame not cropped                 PASS  full frame visible under the circle mask
+ 5. Shopping bag not lost                  PASS
+ 6. logo.png not used as the icon          PASS  icon derives from icon-only.png only
+ 7. Tap the icon                           PASS
+ 8. Splash appears                         PARTIAL - see the Android 12+ note below
+ 9. icon-only not used inside the splash   PASS on the drawable splash set; the Android 12+
+                                                 system splash is icon-based by platform design
+10. Logo/text not cropped                  PASS  full lockup fits the generated splash drawables
+11. No stretch                             PASS  contain-fit composition, aspect ratio preserved
+12. No white flash                         PASS  measured above, both light and dark mode
+13. Smooth splash -> app transition        PASS
+14. Second cold launch after force-stop    PASS  two independent cold launches captured
+15. Light mode and dark mode               PASS  identical branded splash in both
+
+## Android 12+ note (platform constraint, not a defect in this change)
+Capacitor 8 calls androidx core-splashscreen installSplashScreen() on every API level and only
+falls back to the legacy ImageView splash if that call throws. On API 31+ the platform draws the
+system splash from the theme: windowSplashScreenBackground plus a centre-masked
+windowSplashScreenAnimatedIcon. The platform clips that icon to a circle, so a 3:1 wordmark
+cannot be shown there. The launch screen therefore shows the brand background with the brand app
+icon. The full logo lockup from assets/logo.png is what ships in every drawable*/splash.png (the
+legacy fallback path) and in the iOS Splash.imageset, where LaunchScreen.storyboard renders it in
+full.
+
+## Not tested here
+- Physical Android hardware (emulator only)
+- API 24/25 devices, where ic_launcher_round.png is circle-masked at full bleed
+- iOS runtime - Windows host, no Xcode

@@ -1,0 +1,222 @@
+# DilMart-Store Hardening — Implementation Plan
+
+## Rules (per Supervisor)
+- Do not rewrite business logic
+- Do not remove existing features
+- Preserve merchant/customer privacy rules
+- One PR per phase
+- Each PR must include: files changed, risk notes, test/build result, manual QA steps, rollback notes
+
+---
+
+## PR-H1 — API Security Bootstrap
+
+### Scope
+Add `helmet` + `@nestjs/throttler` with route-specific rate limits.
+
+### Proposed Changes
+
+#### [MODIFY] [main.ts](file:///e:/Project/DilMart-Store/backend/src/main.ts)
+- Add `import helmet from 'helmet'`
+- Add `app.use(helmet({ ... }))` **before** body parser (preserve `12mb` limit)
+- Keep existing CORS allowlist behavior unchanged
+
+#### [MODIFY] [app.module.ts](file:///e:/Project/DilMart-Store/backend/src/app.module.ts)
+- Import `ThrottlerModule.forRoot()` with global defaults (e.g. 60 req/min)
+- Add `APP_GUARD` for `ThrottlerGuard`
+
+#### [MODIFY] [checkout.controller.ts](file:///e:/Project/DilMart-Store/backend/src/modules/checkout/checkout.controller.ts)
+- Add `@Throttle({ default: { limit: 10, ttl: 60000 } })` on `submit`
+
+#### [MODIFY] [auth.controller.ts](file:///e:/Project/DilMart-Store/backend/src/modules/auth/auth.controller.ts)
+- Add `@Throttle({ default: { limit: 10, ttl: 60000 } })` on auth endpoints
+
+#### [MODIFY] [catalog files] — `@SkipThrottle()` on high-traffic public catalog/search endpoints
+
+### Acceptance Criteria
+- `npm run build` passes
+- Login/checkout rate-limited
+- Public catalog usable
+- No CORS regression
+- No upload/body-size regression
+
+---
+
+## PR-H2 — Checkout Input Validation
+
+### Scope
+Harden DTO with Iraqi phone validation, max lengths, and HTML/script rejection.
+
+### Proposed Changes
+
+#### [MODIFY] [checkout.dto.ts](file:///e:/Project/DilMart-Store/backend/src/modules/checkout/checkout.dto.ts)
+- Add `@Matches(/^(07\d{9}|\+9647\d{9})$/)` on `customer_phone`
+- Add `@MaxLength(100)` on `customer_name`
+- Add `@MaxLength(200)` on `area`
+- Add `@MaxLength(300)` on `nearest_landmark`
+- Add `@MaxLength(1000)` on `notes`
+- Add custom `@NoHtmlTags()` validator for text fields
+
+#### [MODIFY] [checkout.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/checkout/checkout.service.ts)
+- Normalize phone in `submit()`: strip `+964` prefix → `0` prefix before passing to RPC
+- This ensures Jenni dispatch always receives `07XXXXXXXXX`
+
+### Acceptance Criteria
+- `abc` or `123` as phone → 400
+- `07501234567` → accepted
+- `+964751234567` → accepted and normalized to `0751234567`
+- Long notes (>1000 chars) → 400
+- `<script>alert(1)</script>` in name → 400
+- Existing checkout flow still works
+- Price calculation and RPC unchanged
+
+---
+
+## PR-H3 — Safe Admin Search
+
+### Scope
+Fix unsafe `.or()` filter construction in admin service.
+
+### Proposed Changes
+
+#### [MODIFY] [admin.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/admin/admin.service.ts)
+- Replace raw `.or()` string interpolation with escaped search:
+  - Escape PostgREST special chars: `%`, `,`, `.`, `(`, `)`, `:`
+  - Add `@MaxLength(80)` on search DTO
+  - Trim + normalize search input
+- Apply same fix to all other `.or()` / `.ilike()` calls that take user input
+
+#### [NEW] [search-utils.ts](file:///e:/Project/DilMart-Store/backend/src/common/search-utils.ts)
+- Shared `escapePostgrestSearch(input: string): string` utility
+- Used by admin.service.ts, orders.service.ts, any other search
+
+### Acceptance Criteria
+- Normal name/email/phone search works
+- `%`, `,`, `.`, `(`, `)`, `:` in search → safe (no query alteration)
+- No 500 errors from malformed search
+
+---
+
+## PR-P1 — Orders Pagination + DB Search
+
+### Scope
+Move orders list to paginated DB query with server-side search.
+
+### Proposed Changes
+
+#### [MODIFY] [orders.dto.ts](file:///e:/Project/DilMart-Store/backend/src/modules/orders/orders.dto.ts)
+- Add `ListOrdersDto` with: `page`, `limit`, `status`, `merchant_id`, `search`, `date_from`, `date_to`
+
+#### [MODIFY] [orders.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts)
+- `listOrders()`: use `.range(from, to)` based on page/limit
+- Move search to DB: `.or()` with escaped search (using `search-utils.ts`)
+- Add date range filter: `.gte('created_at', date_from)` / `.lte('created_at', date_to)`
+- Return `{ items, page, limit, total, hasMore }`
+- **Preserve** merchant-scoped privacy (no customer fields for merchant role)
+
+#### [MODIFY] [orders.controller.ts](file:///e:/Project/DilMart-Store/backend/src/modules/orders/orders.controller.ts)
+- Accept pagination query params
+
+#### Frontend updates (if needed)
+- Update admin orders page to pass `page`/`limit` params
+- Add pagination controls
+
+### Acceptance Criteria
+- Admin browses orders page by page
+- Merchant list still hides `customer_phone`/`customer_name`
+- Search doesn't load all rows
+- Order detail unchanged
+
+---
+
+## PR-P2 — Analytics Aggregation
+
+### Scope
+Replace in-memory analytics with SQL RPC aggregation.
+
+### Proposed Changes
+
+#### [NEW] Migration: `20260608_analytics_rpc.sql`
+- Create `analytics_overview` RPC that returns aggregated metrics:
+  - Total/today/month revenue + order counts
+  - Top products (by quantity sold)
+  - Top governorates (by revenue)
+  - Status distribution
+  - 7-day trend
+  - Monthly stats
+- Add indexes: `orders(created_at)`, `orders(status)`, `orders(merchant_id)`, `order_items(order_id)`
+
+#### [MODIFY] [admin.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/admin/admin.service.ts)
+- `getAnalyticsOverview()`: call RPC instead of loading all data
+- Keep response contract identical for frontend compatibility
+
+### Acceptance Criteria
+- No `select("*")` for all orders/items
+- Works fast with 10K+ orders
+- Dashboard UI unchanged
+- Build passes
+
+---
+
+## PR-F1 — Regions Migration
+
+### Scope
+Build regions endpoint and connect Checkout dropdown.
+
+### Proposed Changes
+
+#### [NEW] Migration: `20260608_regions.sql`
+- Create `regions` table: `id UUID PK, governorate_id UUID FK, name TEXT, sort_order INT, is_active BOOLEAN`
+- Seed initial regions data for major governorates
+- Add RLS: public read
+
+#### Backend
+- Add regions endpoint: `GET /api/shipping/regions?governorate_id=...`
+- Add to shipping module
+
+#### Frontend
+- [MODIFY] [Checkout.tsx](file:///e:/Project/DilMart-Store/src/pages/Checkout.tsx) — enable regions query, show dropdown when data available, keep manual area fallback
+
+### Acceptance Criteria
+- Governorate selection loads regions
+- Manual area still possible if regions unavailable
+- No checkout regression
+
+---
+
+## PR-Q1 — Minimal Regression Tests
+
+### Scope
+Add smoke/contract tests for critical paths.
+
+### Proposed Changes
+
+#### [NEW] Backend test files
+- `checkout.validation.spec.ts` — phone/length/HTML rejection
+- `admin-search.spec.ts` — filter escaping
+- `orders.pagination.spec.ts` — pagination metadata
+- `merchant-privacy.spec.ts` — merchant cannot see customer contact
+- `store-integration.spec.ts` — token verification
+
+### Acceptance Criteria
+- Tests run locally via `npm test`
+- Document how to run them
+- All pass
+
+---
+
+## Execution Order
+
+```
+PR-H1 → PR-H2 → PR-H3 → PR-P1 → PR-P2 → PR-F1 → PR-Q1
+```
+
+> [!IMPORTANT]
+> سأبدأ بـ PR-H1 فوراً بعد الموافقة. كل PR سيتم commit + push بشكل منفصل.
+
+## Open Questions
+
+> [!NOTE]
+> 1. **Throttler storage**: هل نستخدم in-memory (default) أو Redis؟ In-memory كافي لـ single Render instance. إذا كان هناك scaling أفقي لاحقاً سنحتاج Redis.
+> 2. **Regions data**: هل يوجد بيانات مناطق جاهزة أم أحتاج إنشاء seed data للمحافظات الرئيسية؟
+> 3. **Analytics date window**: هل نريد default window للـ analytics (مثلاً آخر 90 يوم) أم يختار الأدمن الفترة؟

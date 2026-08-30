@@ -1,0 +1,336 @@
+{
+  "generated_from": "single_final_dataset_v2_corrections_powder_restored",
+  "excel_path": "E:\\Project\\DilMart-Store\\.tmp-product-import\\ard-al-khaleej\\Ard_Al_Khaleej_Catalog_Stage3_Pilot_Batches_AB_v4.xlsx",
+  "excel_sha256": "44064E6B38FED755A9A860111AFFD200C1A59B1A88877980C662C970C2B3A239",
+  "excel_bytes": 936956,
+  "base_sha": "60a21413ad92e1114d8ea5626fd009fa3a4228f0",
+  "old_head_sha": "50dec8ff2ac21651f1ec4d8a132956581af5b96d",
+  "reviewed_at": "2026-08-02T07:33:46Z",
+  "total_rows": 2204,
+  "ready": 2168,
+  "merchant_confirmation": 34,
+  "duplicate_primary": 1,
+  "duplicate_hold": 1,
+  "status_totals_reconciliation": "PASS",
+  "confidence_high": 1998,
+  "confidence_medium": 205,
+  "confidence_low": 1,
+  "original_focus350_rows_reviewed": 350,
+  "original_focus350_approved": 270,
+  "original_focus350_corrected": 80,
+  "original_focus350_unresolved": 0,
+  "focus_file_rows": 465,
+  "focus_approved": 364,
+  "focus_corrected": 101,
+  "focus_unresolved": 0,
+  "powder_makeup_leaf": "RESTORED for true powder only (17)",
+  "true_cosmetics_unresolved": 0,
+  "final_category_counts": {
+    "العناية بالجسم والاستحمام": 17,
+    "العطور": 1435,
+    "المسك والمخمريات والعطور الزيتية": 72,
+    "معطرات الجسم والبودي مست": 289,
+    "معطرات المنزل والمفارش والجو": 248,
+    "العطور الصغيرة والميني": 67,
+    "البخور والمعمول": 41,
+    "العناية بالشعر وعطور الشعر": 17,
+    "صبغة ومستلزمات صالون للشعر": 1,
+    "البودرة ومنتجات التجميل": 17
+  },
+  "recommended_option": "C",
+  "legacy_parent_product_strategy": "grandfather_until_separate_task",
+  "pilot10_leaf": "perfumes",
+  "categories": {
+    "العناية بالجسم والاستحمام": {
+      "total": 17,
+      "ready": 17,
+      "confirmation": 0,
+      "slug": "body-bath-care",
+      "examples": [
+        {
+          "sku": "ARD-3812",
+          "name": "لوشن سيف الفارس بابايا ليمون 500 مل"
+        },
+        {
+          "sku": "ARD-3813",
+          "name": "لوشن سيف الفارس كاكاو وصويا 500 مل"
+        },
+        {
+          "sku": "ARD-3814",
+          "name": "لوشن سيف الفارس ألوفيرا بلو بيري 500 مل"
+        },
+        {
+          "sku": "ARD-3815",
+          "name": "لوشن سيف الفارس رمان عنب 500 مل"
+        },
+        {
+          "sku": "ARD-3816",
+          "name": "لوشن سيف الفارس ماء ورد لوز 500 مل"
+        }
+      ]
+    },
+    "العطور": {
+      "total": 1435,
+      "ready": 1428,
+      "confirmation": 7,
+      "slug": "perfumes",
+      "examples": [
+        {
+          "sku": "ARD-3825",
+          "name": "بيرغموت"
+        },
+        {
+          "sku": "ARD-3826",
+          "name": "كراس و ساكا"
+        },
+        {
+          "sku": "ARD-3828",
+          "name": "عطر اكوا شهامه الورد 100 مل"
+        },
+        {
+          "sku": "ARD-3829",
+          "name": "عطر اكوا شهامه الليل 100 مل"
+        },
+        {
+          "sku": "ARD-3830",
+          "name": "عطر اكوا شهامه الروح 100 مل"
+        }
+      ]
+    },
+    "المسك والمخمريات والعطور الزيتية": {
+      "total": 72,
+      "ready": 72,
+      "confirmation": 0,
+      "slug": "musk-oils-mukhammaria",
+      "examples": [
+        {
+          "sku": "ARD-3835",
+          "name": "عطر اكوا اصالة مسك 100 مل"
+        },
+        {
+          "sku": "ARD-467",
+          "name": "عطر مسك مود"
+        },
+        {
+          "sku": "ARD-775",
+          "name": "عطر مسك السلامه"
+        },
+        {
+          "sku": "ARD-3259",
+          "name": "عطر صفوان عطر المسك 100 مل"
+        },
+        {
+          "sku": "ARD-4193",
+          "name": "عطر فلفت مسك 100 مل"
+        }
+      ]
+    },
+    "معطرات الجسم والبودي مست": {
+      "total": 289,
+      "ready": 278,
+      "confirmation": 11,
+      "slug": "body-mist-splash",
+      "examples": [
+        {
+          "sku": "ARD-561",
+          "name": "معطر جسم وشوشه"
+        },
+        {
+          "sku": "ARD-562",
+          "name": "معطر جسم انا الابيض"
+        },
+        {
+          "sku": "ARD-869",
+          "name": "معطر جسم شيخ الشيوخ"
+        },
+        {
+          "sku": "ARD-870",
+          "name": "معطر جسم محاسن كرستال"
+        },
+        {
+          "sku": "ARD-871",
+          "name": "معطر جسم رغبة"
+        }
+      ]
+    },
+    "معطرات المنزل والمفارش والجو": {
+      "total": 248,
+      "ready": 245,
+      "confirmation": 3,
+      "slug": "home-linen-air",
+      "examples": [
+        {
+          "sku": "ARD-2969",
+          "name": "معطر جو اميرة العرب / اصداف"
+        },
+        {
+          "sku": "ARD-2788",
+          "name": "معطر جو لطافة جديد وشوشة"
+        },
+        {
+          "sku": "ARD-2789",
+          "name": "معطر جو لطافة جديد بديع العود"
+        },
+        {
+          "sku": "ARD-2790",
+          "name": "معطر جو لطافة جديد رائد لوكس"
+        },
+        {
+          "sku": "ARD-2792",
+          "name": "معطر جو لطافة جديد قائد"
+        }
+      ]
+    },
+    "العطور الصغيرة والميني": {
+      "total": 67,
+      "ready": 62,
+      "confirmation": 3,
+      "slug": "mini-travel-perfume",
+      "examples": [
+        {
+          "sku": "ARD-1919",
+          "name": "عطر رغبة 30 مل"
+        },
+        {
+          "sku": "ARD-1921",
+          "name": "عطر رمز لطافة 30 مل سلفر"
+        },
+        {
+          "sku": "ARD-1922",
+          "name": "عطر شيخ الشيوخ لوكس 30 مل"
+        },
+        {
+          "sku": "ARD-1924",
+          "name": "عطر شيخ الشيوخ 30 مل"
+        },
+        {
+          "sku": "ARD-1925",
+          "name": "عطر نجدية 30 مل"
+        }
+      ]
+    },
+    "البخور والمعمول": {
+      "total": 41,
+      "ready": 32,
+      "confirmation": 9,
+      "slug": "incense-maamoul",
+      "examples": [
+        {
+          "sku": "ARD-2623",
+          "name": "بخور عود معطر النادر"
+        },
+        {
+          "sku": "ARD-2248",
+          "name": "بخور الخلطة الذهبية"
+        },
+        {
+          "sku": "ARD-2249",
+          "name": "بخور الخلطة الفضية"
+        },
+        {
+          "sku": "ARD-2250",
+          "name": "بخور وجاهة"
+        },
+        {
+          "sku": "ARD-2254",
+          "name": "بخور هوامير"
+        }
+      ]
+    },
+    "العناية بالشعر وعطور الشعر": {
+      "total": 17,
+      "ready": 17,
+      "confirmation": 0,
+      "slug": "hair-care-fragrance",
+      "examples": [
+        {
+          "sku": "ARD-1708",
+          "name": "عطر شعر 50 مل دارك دزاير"
+        },
+        {
+          "sku": "ARD-1709",
+          "name": "عطر شعر 50 مل سنسير"
+        },
+        {
+          "sku": "ARD-1992",
+          "name": "عطر شعر 50 مل بيور كولد"
+        },
+        {
+          "sku": "ARD-2454",
+          "name": "عطر شعر خلطتي ابيض 50 مل"
+        },
+        {
+          "sku": "ARD-2455",
+          "name": "عطر شعر خلطتي اسود 50 مل"
+        }
+      ]
+    },
+    "صبغة ومستلزمات صالون للشعر": {
+      "total": 1,
+      "ready": 0,
+      "confirmation": 1,
+      "slug": "pro-hair-color-care",
+      "examples": [
+        {
+          "sku": "ARD-2575",
+          "name": "كريم سحب لون"
+        }
+      ]
+    },
+    "البودرة ومنتجات التجميل": {
+      "total": 17,
+      "ready": 17,
+      "confirmation": 0,
+      "slug": "powder-makeup",
+      "examples": [
+        {
+          "sku": "ARD-564",
+          "name": "بودره مربعه فقط لنساء"
+        },
+        {
+          "sku": "ARD-565",
+          "name": "بودره مربعه مكياج وردي"
+        },
+        {
+          "sku": "ARD-566",
+          "name": "بودره مربعه غلاها زايد"
+        },
+        {
+          "sku": "ARD-567",
+          "name": "بودره مربعه الانوثه"
+        },
+        {
+          "sku": "ARD-568",
+          "name": "بودره مربعه لصبايا"
+        }
+      ]
+    }
+  },
+  "option_counts": {
+    "A_one_broad_root": {
+      "العطور": 1435,
+      "العطور الصغيرة والميني": 67,
+      "معطرات الجسم والبودي مست": 289,
+      "معطرات المنزل والمفارش والجو": 248,
+      "البخور والمعمول": 41,
+      "المسك والمخمريات والعطور الزيتية": 72,
+      "العناية بالجسم والاستحمام": 17,
+      "العناية بالشعر وعطور الشعر": 17,
+      "البودرة ومنتجات التجميل": 17
+    },
+    "B_narrow_fragrance_root": {
+      "fragrance_root_children_sum": 2152,
+      "personal_via_other_roots": {
+        "العناية بالجسم والاستحمام": 17,
+        "العناية بالشعر وعطور الشعر": 17,
+        "البودرة ومنتجات التجميل": 17
+      },
+      "pro_hair_color_existing": 1
+    },
+    "C_two_roots": {
+      "العطور_والمعطرات": 2152,
+      "العناية_الشخصية_والتجميل": 51,
+      "existing_pro_hair_color": 1
+    }
+  }
+}

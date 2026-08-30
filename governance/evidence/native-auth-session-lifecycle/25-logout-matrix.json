@@ -1,0 +1,50 @@
+{
+  "startedAt": "2026-07-27T13:00:42.793Z",
+  "beforeLogout": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "authedUi": true,
+    "authScreen": false,
+    "hash": "#/profile",
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "logoutClick": {
+    "ok": false,
+    "reason": "no-logout-btn",
+    "bodyHasLogout": false,
+    "buttons": [
+      "الأقسام",
+      "حسابي",
+      "السلة",
+      "طلباتي",
+      "إعدادات الحساب",
+      "تصفح المنتجات الآن"
+    ]
+  },
+  "afterLogout": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "authedUi": true,
+    "authScreen": false,
+    "hash": "#/profile",
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "afterRelaunch": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "authedUi": true,
+    "authScreen": false,
+    "hash": "#/profile",
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  },
+  "summary": {
+    "wasAuthed": true,
+    "logoutUiOk": false,
+    "secureCleared": false,
+    "legacyCleared": true,
+    "stayedLoggedOut": false
+  }
+}

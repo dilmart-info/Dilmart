@@ -1,0 +1,59 @@
+# Android debug build (Windows, gradlew.bat assembleDebug --no-daemon)
+
+BUILD SUCCESSFUL
+APK: android/app/build/outputs/apk/debug/app-debug.apk
+-rw-r--r-- 1 derma 197609 12792633 Jul 30 23:10 android/app/build/outputs/apk/debug/app-debug.apk
+
+## Launcher + splash resources packaged in the APK
+      636  1981-01-01 01:01   res/mipmap-anydpi-v26/ic_launcher.xml
+      636  1981-01-01 01:01   res/mipmap-anydpi-v26/ic_launcher_round.xml
+    41055  1981-01-01 01:01   res/drawable-land-hdpi-v4/splash.png
+     9000  1981-01-01 01:01   res/drawable-land-ldpi-v4/splash.png
+    17533  1981-01-01 01:01   res/drawable-land-mdpi-v4/splash.png
+    41055  1981-01-01 01:01   res/drawable-land-night-hdpi-v8/splash.png
+     9000  1981-01-01 01:01   res/drawable-land-night-ldpi-v8/splash.png
+    17533  1981-01-01 01:01   res/drawable-land-night-mdpi-v8/splash.png
+    89702  1981-01-01 01:01   res/drawable-land-night-xhdpi-v8/splash.png
+   136938  1981-01-01 01:01   res/drawable-land-night-xxhdpi-v8/splash.png
+   197114  1981-01-01 01:01   res/drawable-land-night-xxxhdpi-v8/splash.png
+    89702  1981-01-01 01:01   res/drawable-land-xhdpi-v4/splash.png
+   136938  1981-01-01 01:01   res/drawable-land-xxhdpi-v4/splash.png
+   197114  1981-01-01 01:01   res/drawable-land-xxxhdpi-v4/splash.png
+     9000  1981-01-01 01:01   res/drawable-night-v8/splash.png
+    41412  1981-01-01 01:01   res/drawable-port-hdpi-v4/splash.png
+     9252  1981-01-01 01:01   res/drawable-port-ldpi-v4/splash.png
+    17258  1981-01-01 01:01   res/drawable-port-mdpi-v4/splash.png
+    41412  1981-01-01 01:01   res/drawable-port-night-hdpi-v8/splash.png
+     9252  1981-01-01 01:01   res/drawable-port-night-ldpi-v8/splash.png
+    17258  1981-01-01 01:01   res/drawable-port-night-mdpi-v8/splash.png
+    91175  1981-01-01 01:01   res/drawable-port-night-xhdpi-v8/splash.png
+   135258  1981-01-01 01:01   res/drawable-port-night-xxhdpi-v8/splash.png
+   196116  1981-01-01 01:01   res/drawable-port-night-xxxhdpi-v8/splash.png
+    91175  1981-01-01 01:01   res/drawable-port-xhdpi-v4/splash.png
+   135258  1981-01-01 01:01   res/drawable-port-xxhdpi-v4/splash.png
+   196116  1981-01-01 01:01   res/drawable-port-xxxhdpi-v4/splash.png
+    17258  1981-01-01 01:01   res/drawable/splash.png
+     7547  1981-01-01 01:01   res/mipmap-hdpi-v4/ic_launcher.png
+      298  1981-01-01 01:01   res/mipmap-hdpi-v4/ic_launcher_background.png
+     8679  1981-01-01 01:01   res/mipmap-hdpi-v4/ic_launcher_foreground.png
+    10157  1981-01-01 01:01   res/mipmap-hdpi-v4/ic_launcher_round.png
+     1414  1981-01-01 01:01   res/mipmap-ldpi-v4/ic_launcher.png
+      159  1981-01-01 01:01   res/mipmap-ldpi-v4/ic_launcher_background.png
+     2808  1981-01-01 01:01   res/mipmap-ldpi-v4/ic_launcher_foreground.png
+     3196  1981-01-01 01:01   res/mipmap-ldpi-v4/ic_launcher_round.png
+     2958  1981-01-01 01:01   res/mipmap-mdpi-v4/ic_launcher.png
+      210  1981-01-01 01:01   res/mipmap-mdpi-v4/ic_launcher_background.png
+     4455  1981-01-01 01:01   res/mipmap-mdpi-v4/ic_launcher_foreground.png
+     5106  1981-01-01 01:01   res/mipmap-mdpi-v4/ic_launcher_round.png
+    14087  1981-01-01 01:01   res/mipmap-xhdpi-v4/ic_launcher.png
+      425  1981-01-01 01:01   res/mipmap-xhdpi-v4/ic_launcher_background.png
+    14358  1981-01-01 01:01   res/mipmap-xhdpi-v4/ic_launcher_foreground.png
+    17112  1981-01-01 01:01   res/mipmap-xhdpi-v4/ic_launcher_round.png
+    32558  1981-01-01 01:01   res/mipmap-xxhdpi-v4/ic_launcher.png
+      833  1981-01-01 01:01   res/mipmap-xxhdpi-v4/ic_launcher_background.png
+    29831  1981-01-01 01:01   res/mipmap-xxhdpi-v4/ic_launcher_foreground.png
+    35260  1981-01-01 01:01   res/mipmap-xxhdpi-v4/ic_launcher_round.png
+    58307  1981-01-01 01:01   res/mipmap-xxxhdpi-v4/ic_launcher.png
+     1147  1981-01-01 01:01   res/mipmap-xxxhdpi-v4/ic_launcher_background.png
+    50210  1981-01-01 01:01   res/mipmap-xxxhdpi-v4/ic_launcher_foreground.png
+    59974  1981-01-01 01:01   res/mipmap-xxxhdpi-v4/ic_launcher_round.png

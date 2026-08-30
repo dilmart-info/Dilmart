@@ -1,0 +1,17 @@
+﻿COMMAND:
+npx cap migrate --noprompt
+RESULT:
+PARTIAL EXECUTION — ABNORMAL EXIT
+EXIT_CODE:
+4294967295
+OBSERVED COMPLETED ACTIONS:
+- Capacitor migration modules/install phase executed.
+- iOS deployment target migration to 15.0 was applied.
+- Podfile migration was applied.
+- Capacitor sync was invoked.
+- AndroidManifest configChanges density migration was applied.
+- The process stopped after the mono-repo advisory and did not complete normally.
+DECISION:
+The migration result was inspected file-by-file.
+Remaining Capacitor 8 Native Foundation requirements were completed manually.
+No migration step was assumed complete without diff inspection and native build validation.

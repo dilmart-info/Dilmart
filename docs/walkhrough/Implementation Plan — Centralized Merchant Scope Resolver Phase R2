@@ -1,0 +1,74 @@
+# Implementation Plan — Centralized Merchant Scope Resolver (Phase R2)
+
+This plan details the centralization of the `resolveMerchantScope` security helper to eliminate duplicate logic and enforce consistent authorization across NestJS services.
+
+## Proposed Changes
+
+We will centralize the scope resolver logic inside `ScopeResolverService` and refactor all six services to use it.
+
+---
+
+### 1. Centralized Service Implementation
+
+#### [MODIFY] [scope-resolver.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/scope-resolver/scope-resolver.service.ts)
+* Add public `resolveMerchantScope(requestedMerchantId, actorRole, actorId)` to `ScopeResolverService`.
+
+---
+
+### 2. Service Refactoring & Dependency Injections
+
+#### [MODIFY] [products.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/products/products.service.ts)
+* Inject `ScopeResolverService` in constructor.
+* Remove duplicate private `resolveMerchantScope` and `isAdminRole`/`isMerchantRole` methods.
+* Update all references to call `this.scopeResolver.resolveMerchantScope`.
+
+#### [MODIFY] [orders.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts)
+* Remove duplicate private `resolveMerchantScope` and `isAdminRole`/`isMerchantRole` methods.
+* Update all references to call `this.scopeResolver.resolveMerchantScope`.
+
+#### [MODIFY] [merchants.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/merchants/merchants.service.ts)
+* Inject `ScopeResolverService` in constructor.
+* Remove duplicate private `resolveMerchantScope` and `isAdminRole`/`isMerchantRole` methods.
+* Update all references to call `this.scopeResolver.resolveMerchantScope`.
+
+#### [MODIFY] [inventory.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/inventory/inventory.service.ts)
+* Inject `ScopeResolverService` in constructor.
+* Remove duplicate private `resolveMerchantScope` and `isAdminRole`/`isMerchantRole` methods.
+* Update all references to call `this.scopeResolver.resolveMerchantScope`.
+
+#### [MODIFY] [coupons.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/coupons/coupons.service.ts)
+* Inject `ScopeResolverService` in constructor.
+* Remove duplicate private `resolveMerchantScope` and `isAdminRole`/`isMerchantRole` methods.
+* Update all references to call `this.scopeResolver.resolveMerchantScope`.
+
+#### [MODIFY] [admin.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/admin/admin.service.ts)
+* Inject `ScopeResolverService` in constructor.
+* Remove duplicate private `resolveMerchantScope` and `isAdminRole`/`isMerchantRole` methods.
+* Update all references to call `this.scopeResolver.resolveMerchantScope`.
+
+---
+
+### 3. Module Import Cleanup
+
+#### [MODIFY] [products.module.ts](file:///e:/Project/DilMart-Store/backend/src/modules/products/products.module.ts)
+* Import `ScopeResolverModule` in `imports`.
+
+#### [MODIFY] [merchants.module.ts](file:///e:/Project/DilMart-Store/backend/src/modules/merchants/merchants.module.ts)
+* Import `ScopeResolverModule` in `imports`.
+
+#### [MODIFY] [inventory.module.ts](file:///e:/Project/DilMart-Store/backend/src/modules/inventory/inventory.module.ts)
+* Import `ScopeResolverModule` in `imports`.
+
+#### [MODIFY] [coupons.module.ts](file:///e:/Project/DilMart-Store/backend/src/modules/coupons/coupons.module.ts)
+* Import `ScopeResolverModule` in `imports`.
+
+#### [MODIFY] [admin.module.ts](file:///e:/Project/DilMart-Store/backend/src/modules/admin/admin.module.ts)
+* Import `ScopeResolverModule` in `imports`.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+* Run `npm run test:policy` and `npm run test:hardening` to ensure all scoping tests pass without issues.
+* Run `npm run build` inside backend to verify compile-time correctness of dependency injections.

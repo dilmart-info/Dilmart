@@ -1,0 +1,42 @@
+[
+  {
+    "merchant_sku": "ARD-2313",
+    "reason": "incorrect identity; Qaed Al Fursan image was previously matched to قائد",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-3717",
+    "reason": "'امير ذهبي' identity is ambiguous",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-2789",
+    "reason": "shared Sublime identity was rejected for this SKU",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-4300",
+    "reason": "preserved historical hold",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-4750",
+    "reason": "preserved historical hold",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-4751",
+    "reason": "preserved historical hold",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-4807",
+    "reason": "preserved historical hold",
+    "status": "HOLD_REVIEW"
+  },
+  {
+    "merchant_sku": "ARD-1191",
+    "reason": "preserved historical hold",
+    "status": "HOLD_REVIEW"
+  }
+]

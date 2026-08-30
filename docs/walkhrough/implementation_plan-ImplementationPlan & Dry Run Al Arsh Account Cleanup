@@ -1,0 +1,127 @@
+# Implementation Plan & Dry Run: Al Arsh Account Cleanup (Updated)
+
+This document contains the finalized **Dry Run** and cleanup plan for the merchant **شركة العرش (Al Arsh)** (ID: `65575f7c-4204-44d0-99a0-fc1902e2ed91`). No data mutations have been executed; they will be run only after your approval.
+
+---
+
+## 1. Dry Run: Order Analysis & Status Verification
+
+There are currently **27 orders** in total under Al Arsh.
+
+### A) The 3 Exempted Orders (To remain unchanged)
+These three orders will **not** be modified or neutralized:
+1. `DUK-260630-0591` (Status: `delivered`, Net: `11,280 IQD`, Comm: `720 IQD`) - Delivered order
+   * *Finance Note:* Its ledger entries were historically recorded under the primary merchant (`DilMart-primary` - ID: `a3e3b17d-450f-4ccf-81dd-72cc4d4172d4`). Therefore, it does **not** contribute to Al Arsh's ledger balance or accrued payable calculations.
+2. `DUK-260627-9163` (Status: `contacted`, Delivery Status: `in_transit`, Net: `4,700 IQD`, Comm: `300 IQD`)
+   * *Status Verification:* This order's actual delivery status is indeed `in_transit` and provider step is `NEW_IN_TRANSIT`. Since it has not been marked `delivered`, it has **not** triggered any finance accruals (`settlement_status = 'not_accrued'`). We will keep its status as `contacted` based on the actual operational reality. It has zero active financial impact.
+3. `DUK-260430-2387` (Status: `returned`, Delivery Status: `returned`, Net: `10,000 IQD`, Comm: `0 IQD`)
+   * *Finance Note:* It has `settlement_status = 'not_accrued'` and zero active financial impact.
+
+### B) Classification of the 24 Orders to Neutralize
+These 24 orders will be transitioned to `status = 'cancelled'` and `delivery_status = 'cancelled'`. We will append a cleanup note to the existing `notes` using `concat_ws`.
+
+* **جديد (new) - 16 orders**:
+  * `DUK-260705-2463`, `DUK-260705-4134`, `DUK-260705-5935`, `DUK-260704-3244`
+  * `DUK-260630-1432`, `DUK-260630-3698`, `DUK-260630-5302`, `DUK-260616-1153`
+  * `DUK-260609-4915`, `DUK-260609-2982`, `DUK-260609-0381`, `DUK-260609-3949`
+  * `DUK-260608-1099`, `DUK-260608-2891`, `DUK-260608-9121`, `DUK-260430-8438`
+* **قيد التجهيز (preparing) - 4 orders**:
+  * `DUK-260706-4291`, `DUK-260706-5735`, `DUK-260705-3970`, `DUK-260705-6817`
+* **تم الشحن (shipped) - 2 orders**:
+  * `DUK-260705-2161`, `DUK-260630-6308`
+* **تم التوصيل (delivered) - 1 order**:
+  * `DUK-260630-8029` (Test delivered order to neutralize)
+* **ملغي (cancelled) - 1 order**:
+  * `DUK-260706-2424` (Previous test order, already cancelled and stock restored)
+
+---
+
+## 2. Stock Restoration Plan
+
+Among the 24 orders to neutralize, **23 orders** (excluding `DUK-260706-2424` which is already cancelled and has its stock restored) have decremented inventory. We will increment the product stock values back to their pre-order state.
+
+Here is the exact stock to restore per product ID:
+
+| Product ID | Product Name | Qty to Restore | Current Stock | New Stock |
+|---|---|---|---|---|
+| `a3f79166-54de-47f2-a7e3-1cd488c32a05` | ماكنة صفر تعلاكة 981 | **3** | 47 | **50** |
+| `66cdcc19-411a-4c6e-8a59-6e9608051cc8` | ماكنة أنف كيمي 6619 | **1** | 48 | **49** |
+| `b2d94bcf-bae4-43d6-8e2c-d744c19a31aa` | مكينة تدريج VGR-270 | **1** | 49 | **50** |
+| `792af3a0-1cbc-4334-bcbe-a10546f7557c` | مكينة متعددة VGR-316 | **1** | 49 | **50** |
+| `57ab3341-7905-4c5a-991e-d4c345f25c0e` | سيت كيمي مكينتين تدريج وصفر 8536 | **1** | 49 | **50** |
+| `dfa78a6c-4a86-4736-8533-72916da993bb` | مكينة صفر VGR-992 | **1** | 49 | **50** |
+| `6c8a724a-872e-4cb1-8a1b-52ad0f354a0f` | ماكنة شفاف كيمي 204 | **5** | 44 | **49** |
+| `f267ce88-c133-42a0-b772-c1f6682d40ed` | مجفف الشعر (العرش - ARSH) استشوار | **1** | 40 | **41** |
+| `95707d5b-0532-40b9-be96-57b2dc8ad887` | ماكنه موس كامل للحلاقة اليومية | **5** | 95 | **100** |
+| `852b7118-c1d5-4f9f-81e6-211846ae103c` | سيت كيمي مكينتين تدريج وصفر 2217 | **1** | 49 | **50** |
+| `3aed34f6-3f96-4b5a-beb0-fcc701f0ff54` | كيمي مكينة صفر 999 | **4** | 49 | **53** |
+| `f281fc29-f627-4ca7-8d50-bff93a7cf50e` | شامبو صبغ Argan - لون أسود | **4** | 96 | **100** |
+| `6963d139-d746-4ef8-830c-b0bf3fc3c62f` | مكينة تدريج GAVARO الاحترافي | **1** | 99 | **100** |
+
+---
+
+## 3. Financial Reconciliation & Ledger Neutralization
+
+* **Ledger Entries:** Only **1 neutralized order** (`DUK-260630-8029`) has active ledger entries (`status = 'accrued'`). We will mark these ledger entries as `status = 'reversed'` to ensure they do not contribute to the merchant's accrued/payable balance.
+* **Payout Batches:** No payout batches exist for Al Arsh, so there are no locked payouts to reconcile or reverse.
+* **Shipments:** None of the 24 neutralized orders have active shipments with Jenni (their delivery integrations are draft/empty).
+
+### Balance Impact:
+* **Current Total Balance (All 27 orders):**
+  * Merchant Net Amount: `620,120.00 IQD`
+  * Platform Commission: `47,880.00 IQD`
+* **Cleaned Target Balance (3 kept orders only):**
+  * Merchant Net Amount: **`0.00 IQD`**
+  * Platform Commission: **`0.00 IQD`**
+  * *Rationale:* The 3 kept orders have no active ledger entries under Al Arsh in `merchant_ledger_entries` (`DUK-260630-0591` is under `DilMart-primary` ledger, and the other two are not accrued). Consequently, when we reverse the entries of `DUK-260630-8029`, Al Arsh's ledger will have **exactly 0 accrued, payable, or in_payout entries**. This satisfies the target `outstanding_balance = 0`.
+
+---
+
+## 4. Proposed SQL Mutations
+
+We will execute the following SQL transaction to clean up the records safely:
+
+```sql
+BEGIN;
+
+-- 1. Restore product stock values
+UPDATE public.products SET stock = stock + 3 WHERE id = 'a3f79166-54de-47f2-a7e3-1cd488c32a05';
+UPDATE public.products SET stock = stock + 1 WHERE id = '66cdcc19-411a-4c6e-8a59-6e9608051cc8';
+UPDATE public.products SET stock = stock + 1 WHERE id = 'b2d94bcf-bae4-43d6-8e2c-d744c19a31aa';
+UPDATE public.products SET stock = stock + 1 WHERE id = '792af3a0-1cbc-4334-bcbe-a10546f7557c';
+UPDATE public.products SET stock = stock + 1 WHERE id = '57ab3341-7905-4c5a-991e-d4c345f25c0e';
+UPDATE public.products SET stock = stock + 1 WHERE id = 'dfa78a6c-4a86-4736-8533-72916da993bb';
+UPDATE public.products SET stock = stock + 5 WHERE id = '6c8a724a-872e-4cb1-8a1b-52ad0f354a0f';
+UPDATE public.products SET stock = stock + 1 WHERE id = 'f267ce88-c133-42a0-b772-c1f6682d40ed';
+UPDATE public.products SET stock = stock + 5 WHERE id = '95707d5b-0532-40b9-be96-57b2dc8ad887';
+UPDATE public.products SET stock = stock + 1 WHERE id = '852b7118-c1d5-4f9f-81e6-211846ae103c';
+UPDATE public.products SET stock = stock + 4 WHERE id = '3aed34f6-3f96-4b5a-beb0-fcc701f0ff54';
+UPDATE public.products SET stock = stock + 4 WHERE id = 'f281fc29-f627-4ca7-8d50-bff93a7cf50e';
+UPDATE public.products SET stock = stock + 1 WHERE id = '6963d139-d746-4ef8-830c-b0bf3fc3c62f';
+
+-- 2. Neutralize the 24 test orders (appending the cleanup reason code to notes)
+UPDATE public.orders
+SET status = 'cancelled',
+    delivery_status = 'cancelled',
+    settlement_status = 'reversed',
+    notes = CONCAT_WS(E'\n', notes, '[CLEANUP-TEST-VOID] Test order neutralized during Al Arsh account cleanup.')
+WHERE merchant_id = '65575f7c-4204-44d0-99a0-fc1902e2ed91'
+  AND order_number NOT IN ('DUK-260630-0591', 'DUK-260627-9163', 'DUK-260430-2387');
+
+-- 3. Reverse the ledger entries of the neutralized delivered order DUK-260630-8029
+UPDATE public.merchant_ledger_entries
+SET status = 'reversed',
+    reversal_reason_code = 'MANUAL_REVIEW_REVERSAL',
+    description = '[CLEANUP-TEST-VOID] Reversed ledger entry during Al Arsh account cleanup.'
+WHERE order_id = '024c0224-89e8-4502-a936-c4cbae2eabdb';
+
+COMMIT;
+```
+
+## Verification Plan
+
+After execution, we will:
+1. Verify the current stock values of the modified products.
+2. Query the Al Arsh orders count and ensure only the 3 exempt orders remain non-cancelled.
+3. Query Al Arsh's ledger entries and ensure none have a status other than `reversed`.
+4. Verify the merchant finance summary endpoint returns `outstanding_balance = 0`.

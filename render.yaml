@@ -1,0 +1,79 @@
+services:
+  - type: web
+    name: DilMart-store-backend
+    env: node
+    rootDir: backend
+    plan: starter
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: node dist/main.js
+    healthCheckPath: /api/health
+    domains:
+      - api.store.DilMart.org
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # ── Required secrets (set in Render dashboard, never committed) ──────────
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+      # Comma-separated allowed CORS origins, e.g.:
+      # https://DilMart-store-frontend.onrender.com,https://your-custom-domain.com
+      - key: FRONTEND_ORIGINS
+        sync: false
+
+      # ── Optional — outbound alert webhooks ───────────────────────────────────
+      - key: OUTBOUND_ALERT_WEBHOOK_URL
+        sync: false
+      - key: OUTBOUND_ALERT_EMAIL_WEBHOOK_URL
+        sync: false
+
+      # ── Optional — defaults are safe for production ──────────────────────────
+      - key: OUTBOUND_ALERT_CHANNEL_ORDER
+        value: webhook,email
+      - key: OUTBOUND_ALERT_WEBHOOK_MAX_RETRIES
+        value: "2"
+      - key: OUTBOUND_REPLAY_WINDOW_MINUTES
+        value: "60"
+      - key: OUTBOUND_REPLAY_MAX_ATTEMPTS_PER_WINDOW
+        value: "5"
+      - key: OUTBOUND_REPLAY_SIGNATURE_COOLDOWN_MINUTES
+        value: "15"
+
+  - type: web
+    name: DilMart-store-frontend
+    env: static
+    rootDir: .
+    # STORE-PR6 §7 — build:deploy runs app-links:prepare (generate+validate .well-known when both signing
+    # identities are set; fail closed on partial; skip when neither). Local `npm run build` is unaffected.
+    buildCommand: npm ci && npm run build:deploy
+    staticPublishPath: dist
+    routes:
+      # STORE-PR6 §20 — the App-Link association documents at /.well-known/apple-app-site-association
+      # and /.well-known/assetlinks.json are real static files (produced at deploy time by
+      # app-links:generate). Render serves an existing static resource before applying any rewrite
+      # rule, so they are already exempt from the SPA "/*" catch-all below without an explicit
+      # identity rewrite — which Render's current Blueprint schema rejects as invalid
+      # (source cannot equal destination).
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      # ── Required secrets (set in Render dashboard, never committed) ──────────
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_SUPABASE_PROJECT_ID
+        sync: false
+
+      # Backend URL — set after backend service is deployed, e.g.:
+      # https://DilMart-store-backend.onrender.com/api
+      - key: VITE_STORE_API_BASE_URL
+        sync: false
+
+      # ── Optional — defaults to false ─────────────────────────────────────────
+      - key: VITE_ENABLE_LOCAL_FALLBACKS
+        value: "false"

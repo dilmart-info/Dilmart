@@ -1,0 +1,240 @@
+# Merchant Accept/Reject Decision Model
+
+## Background
+
+حالياً واجهة التاجر تعرض dropdown لتغيير حالة الطلب يشمل **جميع الحالات** اللوجستية:
+`new → contacted → preparing → shipped → delivered → cancelled → returned`
+
+هذا خاطئ لأن:
+- التاجر لا يشحن ولا يوصّل — هذه مسؤولية Jenni / الأدمن / المندوب.
+- التاجر دوره الوحيد: **قبول الطلب** أو **رفضه مع سبب**.
+
+---
+
+## نتائج الدراسة
+
+### أين يتم تغيير حالة الطلب من بوابة التاجر؟
+
+| الموقع | الملف | نوع التعديل | المكان |
+|---|---|---|---|
+| **صفحة تفاصيل الطلب** | [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx#L329-L366) | `<select>` dropdown → يستدعي `updateStatus.mutate()` | سطر 347-358 |
+| **جدول قائمة الطلبات** | [OrdersPage.tsx](file:///E:/Project/DilMart-Store/src/components/scoped/OrdersPage.tsx#L152-L162) | `<select>` inline → يستدعي `updateStatus2.mutate()` | سطر 152-162 |
+
+> [!IMPORTANT]
+> **`OrdersPage.tsx` مكوّن مشترك** — يُستخدم من بوابة التاجر (`scope=merchant`) **وبوابة الأدمن** (`scope=platform`). أي تعديل يجب أن يكون مشروطاً بالـ `context.scope`.
+
+### Backend Guard الحالي
+
+في [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts#L400-L428):
+
+```ts
+const blockedForAll = ["delivered", "returned", "cancelled"];
+```
+
+- يمنع **الجميع** (بما فيهم الأدمن) من إرسال `delivered`, `returned`, `cancelled` عبر `POST /orders/:id/status`.
+- لكنه **يسمح** لـ merchant بإرسال `shipped` حالياً — وهذا خاطئ.
+- لا يوجد حارس يميّز بين merchant و admin على الحالات المتوسطة (`contacted`, `preparing`, `shipped`).
+
+### هل نحتاج migration لـ `merchant_decision_status`؟
+
+**لا** — يمكننا استخدام الحقول الموجودة:
+- **قبول** = تحريك status إلى `preparing`
+- **رفض** = كتابة سبب في `merchant_notes` + إبقاء status كـ `new` أو تحريكه إلى حالة خاصة
+- عمود `merchant_notes` موجود فعلاً في جدول `orders`
+
+> [!WARNING]
+> **Phase 3 بدون migration** — نستخدم `status + merchant_notes` مؤقتاً. إذا أردنا لاحقاً حقل `merchant_decision_status` منفصل يمكننا إضافته كـ phase مستقبلية.
+
+---
+
+## Proposed Changes
+
+### Phase 1 — UI Restriction (Frontend فقط)
+
+#### [MODIFY] [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx)
+
+**إزالة dropdown الحالي واستبداله بنظام قبول/رفض:**
+
+- إذا `status === "new"` → يظهر **زران**:
+  - ✅ **قبول الطلب** — يحرّك إلى `preparing`
+  - ❌ **رفض الطلب** — يفتح dialog يطلب سبب الرفض
+
+- إذا `status === "preparing"` أو `"contacted"` → يظهر **badge فقط** ("تم القبول — قيد التجهيز")
+
+- إذا `status` في `["shipped", "delivered", "cancelled", "returned"]` → يظهر **badge قراءة فقط** بالحالة اللوجستية الحالية
+
+- **حذف كامل** لـ:
+  - `fulfillmentStatuses` array
+  - `allowedStatuses` useMemo
+  - `statusSelectValue` logic
+  - `shouldShowReadonlyCurrentStatus` logic
+  - الـ `<select>` element (سطر 347-358)
+
+- **إضافة**:
+  - `acceptOrder` mutation — `POST /orders/:id/status` → `{ status: "preparing" }`
+  - `rejectOrder` mutation — `POST /orders/:id/merchant-reject` (endpoint جديد في Phase 2)
+  - مؤقتاً Phase 1 يمكنه استدعاء `POST /orders/:id/notes` لكتابة السبب
+  - AlertDialog لتأكيد الرفض مع حقل نص للسبب
+
+---
+
+#### [MODIFY] [OrdersPage.tsx](file:///E:/Project/DilMart-Store/src/components/scoped/OrdersPage.tsx)
+
+**تعديل inline status في جدول الطلبات — فقط لـ scope merchant:**
+
+```diff
+- {statusOptions.map((s) => (
+-   <option key={s} value={s}>{statusLabels[s] ?? s}</option>
+- ))}
++ {context.scope === "merchant" ? (
++   <Badge className={...}>{statusLabels[o.status] ?? o.status}</Badge>
++ ) : (
++   <select ...> {/* admin يبقى كما هو */} </select>
++ )}
+```
+
+- الأدمن يحتفظ بالـ dropdown الكامل (لا تغيير).
+- التاجر يرى badge فقط — لا يغيّر من القائمة.
+
+---
+
+### Phase 2 — Backend Guard
+
+#### [MODIFY] [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts)
+
+**تعديل `updateOrderStatus`:**
+
+```diff
+  const blockedForAll = ["delivered", "returned", "cancelled"];
++ const blockedForMerchant = ["shipped", "contacted"];
++ const merchantAllowed = ["preparing"]; // فقط هذه مسموحة للتاجر
+  
+  if (blockedForAll.includes(String(payload.status ?? ""))) {
+    throw new ForbiddenException("...");
+  }
++ 
++ if (this.isMerchantRole(payload.actor_role)) {
++   if (!merchantAllowed.includes(String(payload.status ?? ""))) {
++     throw new ForbiddenException("Merchants can only accept orders (set to preparing).");
++   }
++ }
+```
+
+#### [NEW] Merchant Reject Endpoint
+
+**إضافة endpoint جديد:**
+
+```
+POST /orders/:id/merchant-reject
+Roles: merchant_owner, merchant_manager
+Body: { reason: string, merchant_id?: string }
+```
+
+**السلوك:**
+1. يتحقق أن الطلب `status === "new"` وأنه يخص التاجر.
+2. يكتب `merchant_notes = reason`.
+3. يبقي الطلب كـ `new` (لا يلغيه — الإلغاء حق الأدمن فقط).
+4. يصدر إشعار/event للأدمن (يمكن تأجيله لـ Phase 4).
+
+#### [MODIFY] [orders.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.dto.ts)
+
+```ts
+export class MerchantRejectOrderDto {
+  @IsString()
+  @MinLength(5, { message: "سبب الرفض يجب أن يكون 5 أحرف على الأقل" })
+  reason!: string;
+
+  @IsOptional()
+  @IsUUID()
+  merchant_id?: string;
+}
+```
+
+---
+
+### Phase 3 — Merchant Decision Tracking (بدون migration)
+
+**لا migration في هذه المرحلة.** نستخدم:
+
+| الحدث | ما يحدث |
+|---|---|
+| **قبول** | `status: "new" → "preparing"` |
+| **رفض** | `merchant_notes: "رفض: [السبب]"` + الطلب يبقى `new` |
+
+> [!NOTE]
+> إذا أردنا لاحقاً حقل `merchant_decision_status` منفصل (`pending / accepted / rejected`) مع `merchant_decision_at` و `merchant_decision_by`، يمكن إضافته كـ migration مستقبلية. لكن حالياً النظام يعمل بدون ذلك.
+
+---
+
+### Phase 4 — Automatic Lifecycle (توثيق — لا تنفيذ الآن)
+
+> [!IMPORTANT]
+> **Phase 4 لا يُنفذ في هذا PR.** هذا توثيق للمرحلة التالية.
+
+المسار الكامل بعد القبول:
+
+```
+1. التاجر يقبل → status = "preparing"
+2. الأدمن يرسل إلى Jenni → POST /admin/orders/:id/delivery/dispatch-jenni
+3. Jenni تقبل الشحنة → order_delivery_integrations.dispatch_status = "dispatched"
+4. المندوب يستلم → delivery_status = "shipped" (عبر Jenni webhook أو أدمن)
+5. التسليم → delivery_status = "delivered" (عبر Jenni webhook أو أدمن)
+6. إرجاع → delivery_status = "returned" (عبر Jenni webhook أو أدمن)
+```
+
+**كل هذه الخطوات (3-6) لا يتدخل فيها التاجر.**
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **هل الرفض يبقي الطلب `new` أم نحتاج حالة `merchant_rejected`؟**
+>    توصيتي: يبقيه `new` ويكتب في `merchant_notes` — لأن إضافة حالة جديدة تحتاج migration + تعديل في `statusMap` في كل مكان. الأدمن يرى الملاحظة ويقرر.
+>
+> 2. **هل `contacted` تبقى متاحة للتاجر؟**
+>    حسب الطلب الأصلي، التاجر يقبل فقط (`new → preparing`). حالة `contacted` يمكن أن يستخدمها الأدمن. لذلك أقترح منعها من التاجر أيضاً.
+>
+> 3. **هل نريد إشعار للأدمن عند رفض التاجر؟**
+>    يمكن تأجيله لـ Phase 4، لكن إذا أردناه الآن يمكنني إضافته عبر `merchant_notifications` trigger معكوس.
+
+---
+
+## ملخص الملفات والمراحل
+
+| Phase | الملف | نوع | الوصف |
+|---|---|---|---|
+| **1** | [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx) | MODIFY | إزالة dropdown → زرين قبول/رفض |
+| **1** | [OrdersPage.tsx](file:///E:/Project/DilMart-Store/src/components/scoped/OrdersPage.tsx) | MODIFY | Badge بدل dropdown للتاجر |
+| **2** | [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts) | MODIFY | Guard يمنع merchant من أي حالة غير `preparing` |
+| **2** | [orders.controller.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.controller.ts) | MODIFY | إضافة `POST :id/merchant-reject` |
+| **2** | [orders.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.dto.ts) | MODIFY | إضافة `MerchantRejectOrderDto` |
+| **3** | لا migration | — | نستخدم `status + merchant_notes` |
+| **4** | توثيق فقط | — | Lifecycle automation بعد الإطلاق |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+cd backend && npm run build
+cd backend && npm run test:policy
+cd backend && npm run test:hardening
+cd .. && npm run build
+npm run arch:guard
+```
+
+### Manual Verification
+- طلب `new` → التاجر يرى زري قبول/رفض فقط.
+- طلب `preparing` → التاجر يرى badge فقط.
+- طلب `shipped` أو `delivered` → التاجر يرى badge قراءة فقط.
+- جدول الطلبات → التاجر يرى badge بدل dropdown.
+- جدول الطلبات → الأدمن يحتفظ بالـ dropdown الكامل.
+- API: merchant يحاول `shipped` → يُرفض 403.
+- API: merchant يحاول `preparing` → يمر ✅.
+- API: merchant يرفض مع سبب → يُكتب في `merchant_notes`.
+
+### PR Strategy
+- PR واحد يشمل Phase 1 + Phase 2 + Phase 3 معاً.
+- Phase 4 يُوثق فقط ولا يُنفذ.

@@ -1,0 +1,2 @@
+product_id,product_name,category_id,category_slug,category_name,parent_id,is_active,is_published,visibility_status,merchant_slug,merchant_status,publicly_listable,recommendation
+04e67079-aa3b-4fc5-a12c-da7de40f54d0,عطر اكوا شهامه الليل /سيف الفارس100مل,fc662e9f-ea22-454e-bb29-cdb7bf5ea90c,fragrances-and-scents,العطور والمعطرات,,false,true,public,ardh-alkhaleej,active,false,Remap to leaf perfumes in a separate approved content task; do not change in this hierarchy fix

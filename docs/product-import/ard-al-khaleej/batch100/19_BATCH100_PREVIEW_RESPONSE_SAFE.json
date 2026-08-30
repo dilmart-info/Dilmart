@@ -1,0 +1,2692 @@
+{
+  "http_status": 201,
+  "created_at": "2026-08-04T12:41:32.698Z",
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "csv_sha256": "EB30818E75A5CC3F4F0ACE3E2994BFE1EEC987BACDD392DDF0B700D84297E712",
+  "jwt_source": "env:ADMIN_JWT",
+  "jwt_len": 796,
+  "jwt_role_claim": "authenticated",
+  "import_id": "ff3274c4-7f65-455b-8bda-549c4ecd3fad",
+  "status": null,
+  "summary": {
+    "total_rows": 100,
+    "valid_rows": 100,
+    "invalid_rows": 0,
+    "warnings_count": 0
+  },
+  "response_keys": [
+    "import_id",
+    "summary",
+    "rows"
+  ],
+  "response": {
+    "import_id": "ff3274c4-7f65-455b-8bda-549c4ecd3fad",
+    "summary": {
+      "total_rows": 100,
+      "valid_rows": 100,
+      "invalid_rows": 0,
+      "warnings_count": 0
+    },
+    "rows": [
+      {
+        "row_number": 2,
+        "status": "valid",
+        "normalized": {
+          "name": "30 مل الشموخ",
+          "short_description": "عطر الشموخ من لطافة بحجم 30 مل ضمن مجموعة ثمين، برائحة شرقية حارة وخشبية دافئة، مثالي للسفر والاستخدام اليومي بحجم ميني عملي.",
+          "short_description_char_count": 125,
+          "description": "عائلة عطرية: Sweet Spicy / Oriental | المقدمة: Spicy floral | القلب: Spicy | القاعدة: Balsamic vanilla, amber, woody",
+          "category_id": "afcbc5ce-5b3a-4378-883c-be6567dbda16",
+          "category_name": "العطور الصغيرة والميني",
+          "price": 7000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1318",
+          "brand": "Lattafa",
+          "sizes": [
+            "30 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1318.webp",
+          "slug": "30-مل-الشموخ-ard-1318"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 3,
+        "status": "valid",
+        "normalized": {
+          "name": "30 مل ثراء",
+          "short_description": "عطر ثراء من لطافة بحجم 30 مل من مجموعة ثمين، بتركيبة زهرية دافئة مع لمسات خشبية، حجم ميني مناسب للسفر والاستخدام اليومي.",
+          "short_description_char_count": 120,
+          "description": "عائلة عطرية: Floral Woody | المقدمة: Allspice, purple freesia | القلب: Heliotrope, jasmine, hibiscus, Bulgarian rose | القاعدة: Himalayan cedar, warm skin accord, sandalwood, incense",
+          "category_id": "afcbc5ce-5b3a-4378-883c-be6567dbda16",
+          "category_name": "العطور الصغيرة والميني",
+          "price": 7000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1319",
+          "brand": "Lattafa",
+          "sizes": [
+            "30 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1319.webp",
+          "slug": "30-مل-ثراء-ard-1319"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 4,
+        "status": "valid",
+        "normalized": {
+          "name": "30 مل معالي",
+          "short_description": "عطر معالي من لطافة بحجم 30 مل ضمن مجموعة ثمين، بافتتاحية حمضية وقلب زهري ناعم، حجم ميني عملي للسفر والاستخدام اليومي.",
+          "short_description_char_count": 117,
+          "description": "عائلة عطرية: Citrus Floral | المقدمة: Fresh citrus | القلب: Magnolia, honeysuckle, raspberry | القاعدة: Cashmere wood, amber, musk",
+          "category_id": "afcbc5ce-5b3a-4378-883c-be6567dbda16",
+          "category_name": "العطور الصغيرة والميني",
+          "price": 7000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1320",
+          "brand": "Lattafa",
+          "sizes": [
+            "30 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1320.webp",
+          "slug": "30-مل-معالي-ard-1320"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 5,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر الدر المكنون سلفر",
+          "short_description": "عطر عطر الدر المكنون سلفر من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 110,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 12000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1369",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1369.webp",
+          "slug": "عطر-الدر-المكنون-سلفر-ard-1369"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 6,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر امير العود / انتنس عود",
+          "short_description": "عطر أمير العود إنتنس عود من لطافة بحجم 100 مل، بطابع عودي دخاني ثابت.",
+          "short_description_char_count": 69,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1430",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1430.webp",
+          "slug": "عطر-امير-العود-انتنس-عود-ard-1430"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 7,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر عود ليل ملكي",
+          "short_description": "عطر عطر عود ليل ملكي من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 105,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1480",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1480.webp",
+          "slug": "عطر-عود-ليل-ملكي-ard-1480"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 8,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر يارا",
+          "short_description": "عطر يارا من لطافة بحجم 100 مل للنساء، برائحة فاكهية فانيليا أنثوية شهيرة بثبات عالٍ واستخدام يومي.",
+          "short_description_char_count": 98,
+          "description": "عائلة عطرية: Amber Vanilla | المقدمة: Tangerine, heliotrope, orchid | القلب: Tropical notes, gourmand | القاعدة: Vanilla, sandalwood, musk",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-1858",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-1858.webp",
+          "slug": "عطر-يارا-ard-1858"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 9,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر بديع العود اميثست",
+          "short_description": "عطر بديع العود أميثست من لطافة بحجم 100 مل، برائحة خط بديع العود الرسمية.",
+          "short_description_char_count": 73,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 35000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2126",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2126.webp",
+          "slug": "عطر-بديع-العود-اميثست-ard-2126"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 10,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر قائد الشباب 100 مل",
+          "short_description": "عطر قائد الشباب من لطافة بحجم 100 مل للرجال، برائحة كهرمانية جلدية خشبية مع لمسة عود دافئة وثابتة.",
+          "short_description_char_count": 98,
+          "description": "عائلة عطرية: Amber / Leather Woody | المقدمة: Osmanthus, ylang-ylang | القلب: Leather, cedar | القاعدة: Oud, light amber",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2423",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2423.webp",
+          "slug": "عطر-قائد-الشباب-100-مل-ard-2423"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 11,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر سقراط",
+          "short_description": "عطر عطر سقراط من Lattafa بحجم 100 مل، مخصص للرجال بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 102,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2436",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2436.webp",
+          "slug": "عطر-سقراط-ard-2436"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 12,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر حياتي الملكي 100 مل",
+          "short_description": "عطر حياتي الملكي من لطافة بحجم 100 مل، بافتتاحية حمضية وقلب من الخوخ والزعفران والجلد، وقاعدة فانيليا ومسك عنبري.",
+          "short_description_char_count": 113,
+          "description": "عائلة عطرية: Amber | المقدمة: Grapefruit, bergamot, cassis | القلب: Peach, saffron, leather | القاعدة: Vetiver, vanilla, amber musk",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2437",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2437.webp",
+          "slug": "عطر-حياتي-الملكي-100-مل-ard-2437"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 13,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر عودين 100 مل",
+          "short_description": "عطر عودين من لطافة بحجم 100 مل، بمزيج مشرق من البرتقال والزعفران مع كراميل وعنبر وفانيليا دافئة.",
+          "short_description_char_count": 96,
+          "description": "عائلة عطرية: Sweet Oriental Woody | المقدمة: Orange, saffron | القلب: Caramel, dry amber | القاعدة: Tonka, vanilla",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 16000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2471",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2471.webp",
+          "slug": "عطر-عودين-100-مل-ard-2471"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 14,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر سمبلي عود 100 مل",
+          "short_description": "عطر سمبلي عود من لطافة بحجم 100 مل للجنسين، بتركيبة عودية دافئة مع لمسات زهرية وحارة ولمسة عنبرية ناعمة.",
+          "short_description_char_count": 104,
+          "description": "عائلة عطرية: Woody Oud | المقدمة: Cardamom, pepper | القلب: Jasmine, praline, raspberry, rose | القاعدة: Oud, amber, moss, musk",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2493",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2493.webp",
+          "slug": "عطر-سمبلي-عود-100-مل-ard-2493"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 15,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر سطور 100 مل",
+          "short_description": "عطر سطور من لطافة بحجم 100 مل، برائحة فاكهية شرقية غنية مع لمسات دافئة من الفانيليا والأخشاب الناعمة.",
+          "short_description_char_count": 101,
+          "description": "عائلة عطرية: Fruity Oriental | المقدمة: Peach, blood orange, cardamom | القلب: Brandy, rum, jasmine, davana | القاعدة: Amber, vanilla, cashmere wood, sandalwood, styrax, vetiver, patchouli, tonka, cistus",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 20000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2494",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2494.webp",
+          "slug": "عطر-سطور-100-مل-ard-2494"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 16,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انا الابيض بودري",
+          "short_description": "عطر أنا الأبيض بودري من لطافة، إصدار بودري ناعم للجنسين بطابع مسكي أنيق.",
+          "short_description_char_count": 72,
+          "description": "عائلة عطرية: powdery musky",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2511",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2511.webp",
+          "slug": "عطر-انا-الابيض-بودري-ard-2511"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 17,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر حياتي ذهبي الكسير",
+          "short_description": "عطر حياتي الذهبي إكسير من لطافة بحجم 100 مل، بطابع دافئ أنيق.",
+          "short_description_char_count": 61,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2512",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2512.webp",
+          "slug": "عطر-حياتي-ذهبي-الكسير-ard-2512"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 18,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انا الابيض لذر 60 مل",
+          "short_description": "عطر أنا الأبيض ليذر من لطافة بحجم 60 مل، برائحة جلدية أنيقة مع لمسات حارة وزهرية وقاعدة مسك وعنبر.",
+          "short_description_char_count": 98,
+          "description": "عائلة عطرية: Leather Woody | المقدمة: Juniper berries, cardamom, pink pepper, raspberry | القلب: Iris, ginger, rose | القاعدة: Leather, white musk, amber",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 16000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2515",
+          "brand": "Lattafa",
+          "sizes": [
+            "60 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2515.webp",
+          "slug": "عطر-انا-الابيض-لذر-60-مل-ard-2515"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 19,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر نجدية تربيوت",
+          "short_description": "عطر عطر نجدية تربيوت من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 105,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2583",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2583.webp",
+          "slug": "عطر-نجدية-تربيوت-ard-2583"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 20,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر الازل 100 مل",
+          "short_description": "عطر الأزل من لطافة بحجم 100 مل، بافتتاحية حمضية عشبية وقلب زهري وقاعدة فانيليا ومسك وخشب أرز دافئة.",
+          "short_description_char_count": 99,
+          "description": "عائلة عطرية: Woody Oriental | المقدمة: Bergamot, lemon, rosemary | القلب: Lavender, geranium, rose | القاعدة: Vanilla, musk, cedarwood",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2648",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2648.webp",
+          "slug": "عطر-الازل-100-مل-ard-2648"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 21,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر مهرة 100 مل",
+          "short_description": "عطر مهرة من لطافة بحجم 100 مل للجنسين، بمزيج حار زهري مع زعفران وورد وقاعدة خشبية مسكية أنيقة.",
+          "short_description_char_count": 94,
+          "description": "عائلة عطرية: Woody Spicy Floral | المقدمة: Bergamot, blood orange, lavender, saffron | القلب: Rose, black pepper, cashmeran | القاعدة: Cedar, sandalwood, patchouli, labdanum, musk",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2745",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2745.webp",
+          "slug": "عطر-مهرة-100-مل-ard-2745"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 22,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اوبلينت ريد 100 مل",
+          "short_description": "عطر أوبلينت ريد من لطافة بحجم 100 مل، برائحة فاكهية زهرية دافئة مع زعفران وكاشمران وقاعدة عنبر وخشب.",
+          "short_description_char_count": 100,
+          "description": "عائلة عطرية: Floral Fruity / Gourmand Woody | المقدمة: Saffron, bergamot | القلب: Patchouli, cashmeran, gourmand | القاعدة: Dry amber, leatherwood, cedarwood",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2753",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2753.webp",
+          "slug": "عطر-اوبلينت-ريد-100-مل-ard-2753"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 23,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اسد 100 مل",
+          "short_description": "عطر أسد من لطافة بحجم 100 مل للرجال، برائحة كهرمانية قوية مع فلفل أسود وتبغ وقهوة وقاعدة فانيليا وعنبر.",
+          "short_description_char_count": 103,
+          "description": "عائلة عطرية: Amber | المقدمة: Black pepper, pineapple, tobacco | القلب: Coffee, iris, patchouli | القاعدة: Amber, vanilla, dry woods, benzoin, labdanum",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2760",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2760.webp",
+          "slug": "عطر-اسد-100-مل-ard-2760"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 24,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر منى 100 مل",
+          "short_description": "عطر منى من لطافة بحجم 100 مل، برائحة زهرية فاكهية خفيفة مع بطيخ وورد دمشق وقاعدة مسكية خشبية ناعمة.",
+          "short_description_char_count": 99,
+          "description": "عائلة عطرية: Floral Fruity | المقدمة: Watermelon, strawberry | القلب: Damascus rose, cyclamen, peony, magnolia | القاعدة: Woody notes, musk",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2765",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2765.webp",
+          "slug": "عطر-منى-100-مل-ard-2765"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 25,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر عود مود تذكر 100 مل",
+          "short_description": "عطر عود مود تذكر من لطافة بحجم 100 مل، برائحة شرقية عودية مع ورد وزعفران وقاعدة فانيليا ومسك وطحلب.",
+          "short_description_char_count": 99,
+          "description": "عائلة عطرية: Oriental Woody | المقدمة: Rose, saffron, cinnamon | القلب: Patchouli, dry amber | القاعدة: Vanilla, musk, oakmoss, oud",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2773",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2773.webp",
+          "slug": "عطر-عود-مود-تذكر-100-مل-ard-2773"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 26,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو لطافة جديد فخر لطافة هوم",
+          "short_description": "معطر جو فخر لطافة من لطافة، لتعطير المنزل برائحة فخر الأنيقة المنعشة بحجم منزلي عملي وثابت.",
+          "short_description_char_count": 91,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2793",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2793.webp",
+          "slug": "معطر-جو-لطافة-جديد-فخر-لطافة-هوم-ard-2793"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 27,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو لطافة جديد فخر لطافة نسائي",
+          "short_description": "معطر جو فخر لطافة نسائي من لطافة، يعطّر الأجواء برائحة زهرية أنثوية مستوحاة من عطر فخر للنساء.",
+          "short_description_char_count": 94,
+          "description": "المقدمة: Orange blossom | القلب: Tuberose, jasmine | القاعدة: Vetiver, patchouli | التصنيف الرسمي: women",
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2797",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2797.webp",
+          "slug": "معطر-جو-لطافة-جديد-فخر-لطافة-نسائي-ard-2797"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 28,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انا الابيض",
+          "short_description": "عطر أنا الأبيض من لطافة، رائحة مسكية منعشة للجنسين بطابع نظيف وأنيق للاستخدام اليومي.",
+          "short_description_char_count": 85,
+          "description": "عائلة عطرية: musky fresh",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-287",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-287.webp",
+          "slug": "عطر-انا-الابيض-ard-287"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 29,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر قصائد السلطان 100 مل",
+          "short_description": "عطر قصائد السلطان من لطافة بحجم 100 مل، برائحة جلدية شرقية دافئة مع عسل وتوابل وقاعدة عود وفانيليا.",
+          "short_description_char_count": 99,
+          "description": "عائلة عطرية: Leather Oriental | المقدمة: Bergamot, amber | القلب: Spices, honey, leather | القاعدة: Sandalwood, patchouli, vanilla, oud",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2876",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2876.webp",
+          "slug": "عطر-قصائد-السلطان-100-مل-ard-2876"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 30,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر خمرة 100 مل",
+          "short_description": "عطر خمرة من لطافة بحجم 100 مل للجنسين، برائحة غورماند حارة مع قرفة وتمر وبراالين وقاعدة فانيليا وتونكا.",
+          "short_description_char_count": 103,
+          "description": "عائلة عطرية: Aromatic Spicy Gourmand | المقدمة: Bergamot, cinnamon, nutmeg | القلب: Dates, lily of the valley, praline, tuberose | القاعدة: Roasted tonka, benzoin, myrrh, akigalawood, vanilla, amberwood",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 40000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2879",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2879.webp",
+          "slug": "عطر-خمرة-100-مل-ard-2879"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 31,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر الاوصاف 100 مل",
+          "short_description": "عطر الأوصاف من لطافة بحجم 100 مل، برائحة خشبية راتنجية داكنة مع مر وعود وباتشولي تناسب الأمسيات والأجواء الباردة.",
+          "short_description_char_count": 113,
+          "description": "عائلة عطرية: Woody Resinous Amber | المقدمة: Myrrh, tonka bean, spices, cedar | القاعدة: Patchouli, oud, cedar, musk, oakmoss",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 13000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2932",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2932.webp",
+          "slug": "عطر-الاوصاف-100-مل-ard-2932"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 32,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر تميمة 100 مل",
+          "short_description": "عطر تميمة من لطافة بحجم 100 مل للنساء، برائحة فاكهية صيفية خفيفة مع توت وكيوي وقلب زهري وقاعدة صندل ومسك.",
+          "short_description_char_count": 105,
+          "description": "عائلة عطرية: Fruity Floral | المقدمة: Pink pepper, rhubarb, redcurrant, kiwi | القلب: Cyclamen, jasmine, watermelon | القاعدة: Sandalwood, musk, woody notes, cedar | التصنيف الرسمي: women",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 16000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-2933",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-2933.webp",
+          "slug": "عطر-تميمة-100-مل-ard-2933"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 33,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اختياري",
+          "short_description": "عطر اختياري (إختياري) من لطافة، عطر فاكهي عطري للجنسين بطابع منعش يناسب الاستخدام اليومي.",
+          "short_description_char_count": 89,
+          "description": "عائلة عطرية: aromatic fruity",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 12000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-308",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-308.webp",
+          "slug": "عطر-اختياري-ard-308"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 34,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر وشوشه",
+          "short_description": "عطر وشوشة من لطافة للنساء، بتركيبة زهرية فاكهية ناعمة تناسب الإطلالة اليومية والمناسبات.",
+          "short_description_char_count": 88,
+          "description": "عائلة عطرية: floral fruity",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-309",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-309.webp",
+          "slug": "عطر-وشوشه-ard-309"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 35,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر رغبه رجالي",
+          "short_description": "عطر رغبة الرجالي من لطافة، بطابع حلو دخاني رجالي يناسب الاستخدام اليومي والمساء.",
+          "short_description_char_count": 80,
+          "description": "عائلة عطرية: sweet smoky",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-310",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-310.webp",
+          "slug": "عطر-رغبه-رجالي-ard-310"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 36,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر رمز لطافه فضي",
+          "short_description": "عطر رمز لطافة الفضي من لطافة للرجال، بتركيبة منعشة حارة بطابع عصري واضح.",
+          "short_description_char_count": 72,
+          "description": "عائلة عطرية: fresh spicy",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 17000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-311",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-311.webp",
+          "slug": "عطر-رمز-لطافه-فضي-ard-311"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 37,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انسام سلفر",
+          "short_description": "عطر عطر انسام سلفر من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 103,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 45000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3117",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3117.webp",
+          "slug": "عطر-انسام-سلفر-ard-3117"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 38,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اعجازي لطافة",
+          "short_description": "عطر إعجازي من لطافة للرجال، بتركيبة عطرية خشبية بطابع قوي يناسب الحضور اليومي.",
+          "short_description_char_count": 78,
+          "description": "عائلة عطرية: woody aromatic",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-312",
+          "brand": "Lattafa",
+          "sizes": [
+            "90 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-312.webp",
+          "slug": "عطر-اعجازي-لطافة-ard-312"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 39,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر يارا موي 100 مل",
+          "short_description": "عطر يارا موي من لطافة بحجم 100 مل للنساء، برائحة فاكهية زهرية أنثوية مع كمثرى وتيوبيروز وقاعدة فانيليا وكاشمران.",
+          "short_description_char_count": 112,
+          "description": "عائلة عطرية: Floral Fruity | المقدمة: Pear, pink pepper, blackcurrant | القلب: Tuberose, jasmine, almond | القاعدة: Vanilla, cashmeran, patchouli",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3149",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3149.webp",
+          "slug": "عطر-يارا-موي-100-مل-ard-3149"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 40,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر هيا 100 مل",
+          "short_description": "عطر هيا من لطافة بحجم 100 مل للنساء، برائحة فاكهية زهرية حلوة مع شمبانيا وردية وغاردينيا وقاعدة برالين وعنبر.",
+          "short_description_char_count": 109,
+          "description": "عائلة عطرية: Fruity Floral Gourmand | المقدمة: Pink champagne, pink berries, orange, mandarin, pink strawberry | القلب: Gardenia, vanilla, orchid, jasmine | القاعدة: Praline, amber, sandalwood",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3240",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3240.webp",
+          "slug": "عطر-هيا-100-مل-ard-3240"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 41,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر سكينة 100 مل",
+          "short_description": "عطر سكينة من لطافة بحجم 100 مل للنساء، برائحة فاكهية غورماند مع باشون فروت وورد وقاعدة برالين وفانيليا.",
+          "short_description_char_count": 103,
+          "description": "عائلة عطرية: Fruity Gourmand | المقدمة: Mandarin, ozonic notes, passion fruit | القلب: Orange blossom, rose, sea salt, berries | القاعدة: Musk, vanilla, praline, toffee",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3242",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3242.webp",
+          "slug": "عطر-سكينة-100-مل-ard-3242"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 42,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر تاويل 100 مل",
+          "short_description": "عطر تأويل من لطافة بحجم 100 مل للرجال، برائحة عطرية خشبية مع برغموت وزنجبيل ولافندر وقاعدة جلدية وأمبروكسان.",
+          "short_description_char_count": 108,
+          "description": "عائلة عطرية: Aromatic Woody | المقدمة: Bergamot, ginger, juniper, nutmeg | القلب: Orange blossom, lavender | القاعدة: Vetiver, patchouli, leather, ambroxan | التصنيف الرسمي: men",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 27000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3244",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3244.webp",
+          "slug": "عطر-تاويل-100-مل-ard-3244"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 43,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر ايمان 100 مل",
+          "short_description": "عطر إيمان من لطافة بحجم 100 مل للنساء، برائحة شيبريه زهرية مع زهر البرتقال وتيوبيروز وقاعدة فانيليا ومسك أبيض.",
+          "short_description_char_count": 110,
+          "description": "عائلة عطرية: Chypre Floral | المقدمة: Orange blossom, bergamot, blackcurrant | القلب: Tuberose, marigold, jasmine | القاعدة: Vanilla, white musk, cedarwood, patchouli | التصنيف الرسمي: women",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3245",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3245.webp",
+          "slug": "عطر-ايمان-100-مل-ard-3245"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 44,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر ماهر لاغسي 100 مل",
+          "short_description": "عطر ماهر ليغاسي من لطافة بحجم 100 مل للرجال، برائحة حمضية منعشة مع نعناع وأناناس وقاعدة فيتيفير وأمبروكسان.",
+          "short_description_char_count": 107,
+          "description": "عائلة عطرية: Citrus Aromatic Woody | المقدمة: Lime, grapefruit, lavender, spearmint, pineapple | القلب: Juniper berry, rosemary, olibanum, geranium, black pepper | القاعدة: Vetiver, cashmeran, ambrox, oakmoss, tonka bean",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 35000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3260",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3260.webp",
+          "slug": "عطر-ماهر-لاغسي-100-مل-ard-3260"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 45,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر ذوق 80 مل",
+          "short_description": "عطر ذوق من لطافة بحجم 80 مل للنساء، بافتتاحية برغموت وليتشي وقلب ورد وبخور وقاعدة عنبر وفيتيفير.",
+          "short_description_char_count": 96,
+          "description": "عائلة عطرية: Floral Woody | المقدمة: Bergamot, litchi | القلب: Rose, incense | القاعدة: Amber, vetiver",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 45000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3274",
+          "brand": "Lattafa",
+          "sizes": [
+            "80 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3274.webp",
+          "slug": "عطر-ذوق-80-مل-ard-3274"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 46,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر عود نجدية",
+          "short_description": "عطر عطر عود نجدية من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة ويتميز بطابع Oud ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 137,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3347",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3347.webp",
+          "slug": "عطر-عود-نجدية-ard-3347"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 47,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اورا 60 مل",
+          "short_description": "عطر أورا من لطافة بحجم 60 مل للجنسين، بافتتاحية زعفران وقلب ياسمين وبلسم تنوب وقاعدة كاشمران ومسك وخشب أرز.",
+          "short_description_char_count": 107,
+          "description": "عائلة عطرية: Woody Spicy | المقدمة: Saffron | القلب: Jasmine, fir balsam | القاعدة: Cashmeran, ambergris, moss, musk, cedarwood | التصنيف الرسمي: unisex",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 26000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3349",
+          "brand": "Lattafa",
+          "sizes": [
+            "60 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3349.webp",
+          "slug": "عطر-اورا-60-مل-ard-3349"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 48,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر فلفت روز 100 مل",
+          "short_description": "عطر فلفت روز من لطافة بحجم 100 مل، برائحة وردية مخملية مع هيل وباتشولي وقاعدة سويد وعنبر وعود.",
+          "short_description_char_count": 94,
+          "description": "عائلة عطرية: Rose Woody | المقدمة: Cardamom, bergamot | القلب: Violet leaf, patchouli | القاعدة: Suede, amber musk, oakmoss, oud",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 23000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3350",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3350.webp",
+          "slug": "عطر-فلفت-روز-100-مل-ard-3350"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 49,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر النبل امير 100 مل",
+          "short_description": "عطر النبل أمير من لطافة بحجم 100 مل للجنسين، برائحة خشبية حارة مع تفاح وفلفل وردي وقاعدة عود وفيتيفير.",
+          "short_description_char_count": 102,
+          "description": "عائلة عطرية: Woody Spicy | المقدمة: Apple, pink pepper, rosemary | القلب: Cloves, floral notes | القاعدة: Oud, patchouli, cypress, labdanum, vetiver",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3351",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3351.webp",
+          "slug": "عطر-النبل-امير-100-مل-ard-3351"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 50,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر النبل وزير 100 مل",
+          "short_description": "عطر النبل وزير من لطافة بحجم 100 مل للجنسين، بمزيج فاكهي خشبي مع نعناع وشوكولاتة وقاعدة فانيليا ومسك.",
+          "short_description_char_count": 101,
+          "description": "عائلة عطرية: Fruity Woody Powdery | المقدمة: Mint, bitter orange, bergamot, juniper | القلب: Iris, dark chocolate, berries, caramel, pear | القاعدة: Amber, vanilla, musk",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3352",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3352.webp",
+          "slug": "عطر-النبل-وزير-100-مل-ard-3352"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 51,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر النبل سفير 100 مل",
+          "short_description": "عطر النبل سفير من لطافة بحجم 100 مل للجنسين، برائحة عطرية خضراء خشبية مع برغموت وأعشاب وقاعدة راتنجية دافئة.",
+          "short_description_char_count": 108,
+          "description": "عائلة عطرية: Aromatic Woody | المقدمة: Artemisia, bergamot | القلب: Herbal notes, green notes, spicy notes | القاعدة: Guaiac wood, juniper, frankincense, patchouli, labdanum | التصنيف الرسمي: unisex",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3353",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3353.webp",
+          "slug": "عطر-النبل-سفير-100-مل-ard-3353"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 52,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اجواء 90 مل",
+          "short_description": "عطر أجواء من لطافة، برائحة فاكهية زهرية شرقية مع ليتشي وياسمين وورد وقاعدة فانيليا وعنبر وخشب.",
+          "short_description_char_count": 94,
+          "description": "عائلة عطرية: Fruity Floral Oriental | المقدمة: Bergamot, litchi, fruity notes | القلب: Jasmine, rose, cinnamon | القاعدة: Amber, cedar, musk, sandalwood, vanilla",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 45000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3531",
+          "brand": "Lattafa",
+          "sizes": [
+            "60 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3531.webp",
+          "slug": "عطر-اجواء-90-مل-ard-3531"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 53,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر فنتاج راديو 100 مل",
+          "short_description": "عطر فينتاج راديو من لطافة بحجم 100 مل للجنسين، برائحة عطرية نوستالجية مع لافندر ومريمية وبرقوق وقاعدة صندل.",
+          "short_description_char_count": 107,
+          "description": "عائلة عطرية: Aromatic Woody | المقدمة: Lavender, sage, bergamot | القلب: Plum, palo santo, black pepper | القاعدة: Sandalwood, amberwood",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 45000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3536",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3536.webp",
+          "slug": "عطر-فنتاج-راديو-100-مل-ard-3536"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 54,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر لا كولكشن 1910 بايك 100 مل",
+          "short_description": "عطر لا كولكشن 1910 بايك من لطافة بحجم 100 مل، برائحة وردية فاكهية مع تفاح وأوسمانتوس وقاعدة فانيليا وتونكا.",
+          "short_description_char_count": 107,
+          "description": "عائلة عطرية: Floral Fruity Woody | المقدمة: Rose, apple, davana | القلب: Osmanthus, cedarwood | القاعدة: Tonka bean, vanilla, patchouli",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 65000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3627",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3627.webp",
+          "slug": "عطر-لا-كولكشن-1910-بايك-100-مل-ard-3627"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 55,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر لا كولكشن 1886 كار 100 مل",
+          "short_description": "عطر لا كولكشن 1886 كار من لطافة برايد بحجم 100 مل، برائحة عطرية دافئة مع قرفة وشوكولاتة بيضاء وتبغ أبيض.",
+          "short_description_char_count": 104,
+          "description": "عائلة عطرية: Aromatic Gourmand | المقدمة: Bergamot, mate | القلب: Cinnamon bark, jasmine, orris, tonka, bran | القاعدة: Vanilla, white musk, white chocolate, white tobacco, patchouli | التصنيف الرسمي: unisex",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 65000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3628",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3628.webp",
+          "slug": "عطر-لا-كولكشن-1886-كار-100-مل-ard-3628"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 56,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر خمرة قهوة 100 مل",
+          "short_description": "عطر خمرة قهوة من لطافة بحجم 100 مل للجنسين، برائحة غورماند قهوة وتوابل وفانيليا دافئة وثابتة.",
+          "short_description_char_count": 93,
+          "description": "عائلة عطرية: Oriental Vanilla Coffee | المقدمة: Ginger, cinnamon, cardamom | القلب: Praline, candied fruits, white flowers | القاعدة: Coffee Arabica, tonka, musk, benzoin, vanilla",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 40000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3709",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3709.webp",
+          "slug": "عطر-خمرة-قهوة-100-مل-ard-3709"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 57,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر عجايب دبي بورتريت ابيض 100 مل",
+          "short_description": "عطر عجايب دبي من لطافة بحجم 100 مل، بطابع كهرماني حلو للجنسين.",
+          "short_description_char_count": 62,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 20000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3710",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3710.webp",
+          "slug": "عطر-عجايب-دبي-بورتريت-ابيض-100-مل-ard-3710"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 58,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر قائد الفرسان انلمتد ابيض 90 مل",
+          "short_description": "عطر عطر قائد الفرسان انلمتد ابيض 90 مل من Lattafa بحجم 90 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 122,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3711",
+          "brand": "Lattafa",
+          "sizes": [
+            "90 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3711.webp",
+          "slug": "عطر-قائد-الفرسان-انلمتد-ابيض-90-مل-ard-3711"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 59,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر يارا توس 100 مل الاصفر",
+          "short_description": "عطر يارا توس من لطافة بحجم 100 مل للنساء، بطابع فاكهي فانيليا أنثوي ضمن هوية لطافة الرسمية.",
+          "short_description_char_count": 91,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3712",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3712.webp",
+          "slug": "عطر-يارا-توس-100-مل-الاصفر-ard-3712"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 60,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر ليام 100 مل",
+          "short_description": "عطر عطر ليام 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 104,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 25000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3714",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3714.webp",
+          "slug": "عطر-ليام-100-مل-ard-3714"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 61,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر بديع العود سبليم الاحمر",
+          "short_description": "عطر بديع العود سبلايم من لطافة بحجم 100 مل، بطابع عودي فاخر.",
+          "short_description_char_count": 60,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 35000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-3897",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-3897.webp",
+          "slug": "عطر-بديع-العود-سبليم-الاحمر-ard-3897"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 62,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اكلاير 100 مل",
+          "short_description": "عطر إكلير من لطافة للنساء بحجم 100 مل، بتركيبة فانيليا غورماند حلوة بطابع أنثوي جذاب.",
+          "short_description_char_count": 85,
+          "description": "عائلة عطرية: gourmand vanilla",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 40000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4138",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4138.webp",
+          "slug": "عطر-اكلاير-100-مل-ard-4138"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 63,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر عفيف 100 مل",
+          "short_description": "عطر عطر عفيف 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة ويتميز بطابع Afeef ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 141,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 49000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4214",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4214.webp",
+          "slug": "عطر-عفيف-100-مل-ard-4214"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 64,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر فخر لطافة اكستراكت 100 مل",
+          "short_description": "عطر فخر لطافة إكسترايت من لطافة بحجم 100 مل، بطابع دخاني كهرماني ضمن خط فخر الرسمي.",
+          "short_description_char_count": 83,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 25000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4215",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4215.webp",
+          "slug": "عطر-فخر-لطافة-اكستراكت-100-مل-ard-4215"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 65,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر بديع العود نوبل بلش 100 مل",
+          "short_description": "عطر بديع العود نوبل بلش من لطافة بحجم 100 مل، بطابع عودي زهري أنيق.",
+          "short_description_char_count": 67,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 35000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4246",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4246.webp",
+          "slug": "عطر-بديع-العود-نوبل-بلش-100-مل-ard-4246"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 66,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر حياتي فلورنس 100 مل",
+          "short_description": "عطر عطر حياتي فلورنس 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 112,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4255",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4255.webp",
+          "slug": "عطر-حياتي-فلورنس-100-مل-ard-4255"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 67,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انا الابيض كورال 60 مل",
+          "short_description": "عطر عطر انا الابيض كورال 60 مل من Lattafa بحجم 60 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 114,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4256",
+          "brand": "Lattafa",
+          "sizes": [
+            "60 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4256.webp",
+          "slug": "عطر-انا-الابيض-كورال-60-مل-ard-4256"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 68,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انغام 100 مل",
+          "short_description": "عطر أنغام من لطافة بحجم 100 مل، برائحة دافئة أنيقة تناسب الاستخدام اليومي والمساء بهوية لطافة الرسمية.",
+          "short_description_char_count": 102,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 29000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4273",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4273.webp",
+          "slug": "عطر-انغام-100-مل-ard-4273"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 69,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر مشربية 100 مل",
+          "short_description": "عطر عطر مشربية 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة ويتميز بطابع Mashrabya ضمن تشكيلة موثّقة ويتميز بطابع Mashrabya ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 188,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 33000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4286",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4286.webp",
+          "slug": "عطر-مشربية-100-مل-ard-4286"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 70,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو بديع العود ابيض 300 مل",
+          "short_description": "معطر جو Badee Al Oud White من لطافة بحجم 300 مل، لتعطير المنزل والمفارش برائحة خط العطر الأصلي بتركيز منزلي عملي.",
+          "short_description_char_count": 113,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4300",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4300.webp",
+          "slug": "معطر-جو-بديع-العود-ابيض-300-مل-ard-4300"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 71,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر خمرة دخان 100 مل",
+          "short_description": "عطر عطر خمرة دخان 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 109,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 40000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4336",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4336.webp",
+          "slug": "عطر-خمرة-دخان-100-مل-ard-4336"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 72,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو ماهر 300 مل",
+          "short_description": "معطر جو Maahir من لطافة بحجم 300 مل، لتعطير المنزل والمفارش برائحة خط العطر الأصلي بتركيز منزلي عملي.",
+          "short_description_char_count": 101,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4564",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4564.webp",
+          "slug": "معطر-جو-ماهر-300-مل-ard-4564"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 73,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر روعة العود",
+          "short_description": "عطر روعة العود من لطافة، بتركيبة عود خشبية فاخرة للجنسين تناسب الأمسيات والمناسبات.",
+          "short_description_char_count": 83,
+          "description": "عائلة عطرية: oud woody",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-463",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-463.webp",
+          "slug": "عطر-روعة-العود-ard-463"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 74,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اسد بوربون",
+          "short_description": "عطر عطر اسد بوربون من Lattafa بحجم 100 مل، مخصص للرجال بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 107,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4637",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4637.webp",
+          "slug": "عطر-اسد-بوربون-ard-4637"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 75,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر قمة النساء",
+          "short_description": "عطر قمة للنساء من لطافة، بتركيبة غورماند زهرية بطابع أنثوي جذاب للاستخدام اليومي والمساء.",
+          "short_description_char_count": 89,
+          "description": "عائلة عطرية: gourmand floral",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 16000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-465",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-465.webp",
+          "slug": "عطر-قمة-النساء-ard-465"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 76,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر رغبه للنساء",
+          "short_description": "عطر رغبة من لطافة، بتركيبة شرقية حلوة بطابع أنثوي جذاب يناسب الاستخدام اليومي والمناسبات.",
+          "short_description_char_count": 89,
+          "description": "عائلة عطرية: oriental sweet",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 13000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-466",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-466.webp",
+          "slug": "عطر-رغبه-للنساء-ard-466"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 77,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر ليان 75 مل",
+          "short_description": "عطر عطر ليان 75 مل من Lattafa بحجم 75 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 102,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 33000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4660",
+          "brand": "Lattafa",
+          "sizes": [
+            "75 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4660.webp",
+          "slug": "عطر-ليان-75-مل-ard-4660"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 78,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر نبراس الكسير 100 مل / لطافة برايد",
+          "short_description": "عطر نبراس إكسير من لطافة برايد بحجم 100 مل، بطابع أنثوي غني.",
+          "short_description_char_count": 60,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 45000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4664",
+          "brand": "Lattafa Pride",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4664.webp",
+          "slug": "عطر-نبراس-الكسير-100-مل-لطافة-برايد-ard-4664"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 79,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر مسك مود",
+          "short_description": "عطر مسك مود من لطافة بحجم 100 مل، بطابع مسكي ناعم مناسب للاستخدام اليومي.",
+          "short_description_char_count": 73,
+          "category_id": "be97afca-51e7-451a-8695-578b24cdf344",
+          "category_name": "المسك والمخمريات والعطور الزيتية",
+          "price": 16000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-467",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-467.webp",
+          "slug": "عطر-مسك-مود-ard-467"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 80,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر شهد كبير 150 مل",
+          "short_description": "عطر عطر شهد كبير 150 مل من Lattafa بحجم 150 مل، مخصص للنساء بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 112,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 17000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4680",
+          "brand": "Lattafa",
+          "sizes": [
+            "150 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4680.webp",
+          "slug": "عطر-شهد-كبير-150-مل-ard-4680"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 81,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اسد الكسير 100 مل",
+          "short_description": "عطر عطر اسد الكسير 100 مل من Lattafa بحجم 100 مل، مخصص للرجال بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة ويتميز بطابع Asad ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 150,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4685",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4685.webp",
+          "slug": "عطر-اسد-الكسير-100-مل-ard-4685"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 82,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر يارا الكسير 100 مل",
+          "short_description": "عطر عطر يارا الكسير 100 مل من Lattafa بحجم 100 مل، مخصص للنساء بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 115,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 30000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4686",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4686.webp",
+          "slug": "عطر-يارا-الكسير-100-مل-ard-4686"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 83,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو اكلاير 300 مل",
+          "short_description": "معطر جو Eclaire من لطافة بحجم 300 مل، لتعطير المنزل والمفارش برائحة خط العطر الأصلي بتركيز منزلي عملي ويتميز بطابع Eclaire ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 141,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4750",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4750.webp",
+          "slug": "معطر-جو-اكلاير-300-مل-ard-4750"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 84,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو مسمم ابيض 300 مل",
+          "short_description": "معطر جو Musamam White من لطافة بحجم 300 مل، لتعطير المنزل والمفارش برائحة خط العطر الأصلي بتركيز منزلي عملي ويتميز بطابع Musamam ضمن تشكيلة موثّقة ويتميز بطابع Musamam ضمن تشكيلة موثّقة ويتميز بطابع Musamam ضمن تشكيلة موثّقة ويتميز بطابع Musamam ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 264,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4751",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4751.webp",
+          "slug": "معطر-جو-مسمم-ابيض-300-مل-ard-4751"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 85,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو بديع العود نوبل بلوش 300 مل",
+          "short_description": "معطر جو Noble Blush من لطافة بحجم 300 مل، لتعطير المنزل والمفارش برائحة خط العطر الأصلي بتركيز منزلي عملي ويتميز بطابع Badee ضمن تشكيلة موثّقة ويتميز بطابع Badee ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 180,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4752",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4752.webp",
+          "slug": "معطر-جو-بديع-العود-نوبل-بلوش-300-مل-ard-4752"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 86,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انا الابيض سكارليت 100 مل",
+          "short_description": "عطر أنا الأبيض سكارليت من لطافة بحجم 100 مل، بطابع أنثوي ضمن خط أنا الأبيض.",
+          "short_description_char_count": 75,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4770",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4770.webp",
+          "slug": "عطر-انا-الابيض-سكارليت-100-مل-ard-4770"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 87,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر قمة رجالي",
+          "short_description": "عطر قمة الرجالي من لطافة، بتركيبة خشبية حارة بطابع رجالي قوي يناسب الحضور اليومي.",
+          "short_description_char_count": 81,
+          "description": "عائلة عطرية: woody spicy",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-479",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-479.webp",
+          "slug": "عطر-قمة-رجالي-ard-479"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 88,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر مسمم اسود انتنس",
+          "short_description": "عطر مسمم إنتنس من لطافة بحجم 100 مل، بطابع قوي ثابت.",
+          "short_description_char_count": 52,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 43000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4792",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4792.webp",
+          "slug": "عطر-مسمم-اسود-انتنس-ard-4792"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 89,
+        "status": "valid",
+        "normalized": {
+          "name": "معطر جو نبراس 300 مل / لطافة برايد",
+          "short_description": "معطر جو نبراس من لطافة برايد بحجم 300 مل، لتعطير المنزل برائحة نبراس الغورماند الدافئة الأنيقة.",
+          "short_description_char_count": 95,
+          "category_id": "2729f2e5-2ffc-411e-a581-efb2d810852c",
+          "category_name": "معطرات المنزل والمفارش والجو",
+          "price": 3000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-4807",
+          "brand": "Lattafa",
+          "sizes": [
+            "300 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-4807.webp",
+          "slug": "معطر-جو-نبراس-300-مل-لطافة-برايد-ard-4807"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 90,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر ماهر هونور 100 مل",
+          "short_description": "عطر عطر ماهر هونور 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 110,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 35000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-5036",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-5036.webp",
+          "slug": "عطر-ماهر-هونور-100-مل-ard-5036"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 91,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر خمرة واحة 100 مل",
+          "short_description": "عطر عطر خمرة واحة 100 مل من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة ويتميز بطابع Khamrah ضمن تشكيلة موثّقة.",
+          "short_description_char_count": 148,
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 40000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-5058",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-5058.webp",
+          "slug": "عطر-خمرة-واحة-100-مل-ard-5058"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 92,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر انا الابيض روج",
+          "short_description": "عطر أنا الأبيض روج من لطافة، إصدار أحمر بتركيبة فاكهية زهرية للجنسين بطابع حيوي.",
+          "short_description_char_count": 80,
+          "description": "عائلة عطرية: fruity floral",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 18000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-663",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-663.webp",
+          "slug": "عطر-انا-الابيض-روج-ard-663"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 93,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر رمز لطافه ذهبي",
+          "short_description": "عطر رمز لطافة الذهبي من لطافة، بتركيبة زهرية شرقية بطابع فاخر يناسب الاستخدام اليومي والمناسبات.",
+          "short_description_char_count": 96,
+          "description": "عائلة عطرية: floral oriental",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 17000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-715",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-715.webp",
+          "slug": "عطر-رمز-لطافه-ذهبي-ard-715"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 94,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر اوراق العود",
+          "short_description": "عطر أوراق العود من لطافة، بتركيبة عود خشبية رجالية بطابع شرقي أصيل.",
+          "short_description_char_count": 67,
+          "description": "عائلة عطرية: oud woody",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-766",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-766.webp",
+          "slug": "عطر-اوراق-العود-ard-766"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 95,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر مسك السلامه",
+          "short_description": "زيت عطري / مسك عطر مسك السلامه من Lattafa بحجم 100 مل، للجنسين بطابع عطري عربي واضح مناسب لليومي والمناسبات الخاصة.",
+          "short_description_char_count": 115,
+          "category_id": "be97afca-51e7-451a-8695-578b24cdf344",
+          "category_name": "المسك والمخمريات والعطور الزيتية",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-775",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-775.webp",
+          "slug": "عطر-مسك-السلامه-ard-775"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 96,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر شيخ الشيوخ",
+          "short_description": "عطر شيخ الشيوخ من لطافة، بتركيبة عود وعنبر رجالية كلاسيكية بطابع فاخر وثابت.",
+          "short_description_char_count": 76,
+          "description": "عائلة عطرية: oud amber",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 12000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-823",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-823.webp",
+          "slug": "عطر-شيخ-الشيوخ-ard-823"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 97,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر شيخ الشيوخ المركز 80 مل",
+          "short_description": "عطر شيخ الشيوخ المركز من لطافة، بتركيبة عود وعنبر مركّزة بطابع رجالي فاخر يناسب الاستخدام اليومي والمناسبات.",
+          "short_description_char_count": 108,
+          "description": "عائلة عطرية: oud amber",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 14000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-92",
+          "brand": "Lattafa",
+          "sizes": [
+            "80 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-92.webp",
+          "slug": "عطر-شيخ-الشيوخ-المركز-80-مل-ard-92"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 98,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر 24 قيراط ذهبي",
+          "short_description": "عطر 24 قيراط الذهبي من لطافة، بتركيبة عود وعنبر وفانيليا فاخرة للجنسين.",
+          "short_description_char_count": 71,
+          "description": "عائلة عطرية: amber vanilla oud",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 19000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-957",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-957.webp",
+          "slug": "عطر-24-قيراط-ذهبي-ard-957"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 99,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر 24 قيراط سلفر",
+          "short_description": "عطر 24 قيراط الأبيض/السلفر من لطافة، بتركيبة عنبرية خشبية أنيقة للجنسين.",
+          "short_description_char_count": 72,
+          "description": "عائلة عطرية: amber woody",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-958",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-958.webp",
+          "slug": "عطر-24-قيراط-سلفر-ard-958"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 100,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر نجدية",
+          "short_description": "عطر نجدية من لطافة للرجال، بتركيبة منعشة حارة بطابع يومي واضح وثابت.",
+          "short_description_char_count": 68,
+          "description": "عائلة عطرية: fresh spicy",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-959",
+          "brand": "Lattafa",
+          "sizes": [
+            "100 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-959.webp",
+          "slug": "عطر-نجدية-ard-959"
+        },
+        "errors": [],
+        "warnings": []
+      },
+      {
+        "row_number": 101,
+        "status": "valid",
+        "normalized": {
+          "name": "عطر قائد الفرسان",
+          "short_description": "عطر قائد الفرسان من لطافة، بتركيبة حلوة دخانية رجالية بطابع جريء وثابت.",
+          "short_description_char_count": 71,
+          "description": "عائلة عطرية: sweet smoky",
+          "category_id": "40b4649b-c017-41c0-b477-426cd8f6e7a0",
+          "category_name": "العطور",
+          "price": 15000,
+          "discount_price": null,
+          "stock": 0,
+          "sku": "ARD-970",
+          "brand": "Lattafa",
+          "sizes": [
+            "90 مل"
+          ],
+          "is_active": false,
+          "is_published": false,
+          "visibility_status": "private",
+          "image_url": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/ARD-970.webp",
+          "slug": "عطر-قائد-الفرسان-ard-970"
+        },
+        "errors": [],
+        "warnings": []
+      }
+    ]
+  }
+}

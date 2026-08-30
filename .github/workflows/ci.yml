@@ -1,0 +1,263 @@
+name: DilMart Store Launch Critical PR Quality & Security CI
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+      - "chore/**"
+  pull_request:
+    branches:
+      - main
+      - "feat/**"
+      - "chore/**"
+
+jobs:
+  build-and-test:
+    name: Build, Lint, Test & Guard Baseline
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Build Frontend
+        run: npm run build
+
+      - name: Build Backend
+        run: |
+          cd backend
+          npm run build
+
+      - name: Run Product Publication & Activation Regression Tests
+        run: |
+          cd backend
+          npm run test:product-publication-activation
+
+      - name: Run Architecture Guard Baseline
+        run: npm run arch:guard
+
+      - name: Run Auth Lifecycle Guard
+        run: npm run auth:guard
+
+      # Sits alongside the other guards, and deliberately NOT continue-on-error. These assertions pin
+      # the shape of the gated Netlify production deployment — that publishing is unreachable without
+      # the CI gate, that the kill switch fails closed, that the trust boundary rejects non-push and
+      # non-main triggers, and that the artifact GitHub verified is the one uploaded. A guard that is
+      # not part of the CI authorising Production does not protect it, so a failure here fails the
+      # workflow that gates the deploy.
+      - name: Run CI/Deployment Guards
+        run: npm run test:ci-guards
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start Supabase Local Stack and Verify Upgrade Path
+        run: |
+          supabase start
+
+          # 1. Park the final patch AND every later migration so db reset stops
+          #    at the pre-patch boundary. (Any migration timestamp > 20260725090000
+          #    must not be applied before the upgrade-path check for that patch.)
+          mkdir -p temp_migrations
+          while IFS= read -r -d '' f; do
+            base="$(basename "$f")"
+            ts="${base%%_*}"
+            if [ "$ts" -ge 20260725090000 ] 2>/dev/null; then
+              mv "$f" temp_migrations/
+            fi
+          done < <(find supabase/migrations -maxdepth 1 -name '*.sql' -print0 | sort -z)
+
+          # 2. Reset the database without the final patch / later migrations
+          supabase db reset
+
+          # 3. Inject historical legacy state fixture via psql using DB_URL
+          #    This simulates the pre-patch schema (legacy RPC + INSERT policy)
+          #    that the additive migration must cleanly remove.
+          eval "$(supabase status -o env)"
+          psql "$DB_URL" \
+            -v ON_ERROR_STOP=1 \
+            -f backend/tests/db-integration/fixtures/pre-final-patch-historical-state.sql
+
+          # 4. Restore only the final patch migration and apply it over historical state
+          mv temp_migrations/20260725090000_launch_critical_final_runtime_patch.sql supabase/migrations/
+          supabase migration up
+
+          # 5. Restore remaining later migrations (profiles hotfix, merchant push, …)
+          #    and apply them before the full-schema gate assertions.
+          if ls temp_migrations/*.sql >/dev/null 2>&1; then
+            mv temp_migrations/*.sql supabase/migrations/
+          fi
+          rmdir temp_migrations 2>/dev/null || rm -rf temp_migrations
+          supabase migration up
+
+          # 6. Run SQL schema gate — fails with nonzero exit if any assertion fails
+          psql "$DB_URL" \
+            -v ON_ERROR_STOP=1 \
+            -f backend/tests/db-integration/final-schema-gate.sql
+
+          # 7. Export connection values for downstream test steps
+          echo "SUPABASE_URL=$API_URL" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_ANON_KEY=$ANON_KEY" >> "$GITHUB_ENV"
+
+      - name: Run Launch Critical Package Unit & Integration Test Suites
+        run: |
+          cd backend
+          npm run test:launch-critical
+          node --test tests/password-recovery-service.test.mjs
+
+      - name: Run Merchant Push Phase 1 Tests
+        run: |
+          cd backend
+          npm run test:merchant-push
+
+      - name: Run WhatsApp OTP Delivery Tests
+        run: |
+          cd backend
+          npm run test:whatsapp-otp
+
+      - name: Run Database Integration Tests
+        run: |
+          cd backend
+          npm run test:db-integration
+
+      - name: Run Commercial & Security Policy Tests
+        run: |
+          cd backend
+          npm run test:policy
+          npm run test:hardening
+          npm run test:commercial
+
+      - name: Run Customer Entry (STORE-PR2) & Marketplace Surface Tests
+        run: |
+          # STORE-PR2 customer-entry unit tests + the reused PR#71 surface-resolver
+          # and marketplace-cart surface-resolution regression (no DB).
+          cd backend
+          npm run test:customer-entry
+
+      - name: Run Customer Handoff Foundation Security & DB Tests
+        run: |
+          # STORE-PR3: asymmetric assertion verification, canonical target-path fuzz,
+          # identity resolver, prepare, redeem mapping, log-safety, Barber regression (unit),
+          # plus the PostgreSQL Phase-0 proof, migration/RLS/permission tests, the atomic
+          # redeem DB test, and the 15-iteration real concurrency test. The DB tests EXECUTE
+          # against the live local Supabase stack started above (they do not skip).
+          cd backend
+          npm run test:customer-handoff
+          npm run test:customer-handoff-db
+          npm run test:customer-order-summary
+          # Barber Handoff (web SSO): assertion verifier, prepare/redeem orchestration,
+          # and the log-safety / key-isolation static scan.
+          npm run test:barber-handoff
+
+      - name: Run Federated Session Core Security & DB Tests
+        run: |
+          # STORE-PR4: federated access-token signing/verification, strict fail-closed config,
+          # opaque refresh-token entropy + keyed hashing, issuer orchestration (sign-before-consume,
+          # no-token-on-failure, no-session on LINK_REQUIRED/BLOCKED), and boot-time gate (unit),
+          # plus the atomic redeem→session creation, DB-time expiry, refresh rotation with reuse
+          # detection + family compromise, and logout/logout-all DB tests, INCLUDING the
+          # 25-iteration redeem and 25-iteration refresh-reuse real concurrency tests. The DB
+          # tests EXECUTE against the live local Supabase stack started above (they do not skip).
+          cd backend
+          npm run test:federated
+          npm run test:federated-db
+
+      - name: Run Dual Actor & Federated Customer Session Tests
+        run: |
+          # STORE-PR5: dual-source ActorContext, token classification (strict no-cross-verifier fallback),
+          # @AuthSources route policy, RolesGuard 401/403, the DUAL_CUSTOMER matrix, source-aware
+          # /auth/context capabilities (Phase A), web __Host- refresh-cookie + CSRF (Phase E), and
+          # cross-customer ownership denial (Phase B) — all unit (no DB). Then the frontend client session
+          # suite (Phase Q/N): unified source-neutral facade, native secure storage + device id, federated
+          # client API (native body vs web cookie), single-flight refresh (10 concurrent → 1; one 401
+          # replay; 403 no-refresh; 5xx preserves), logout/logout-all, and the native-restart + web-reload
+          # acceptance proofs incl. "no refresh token in browser storage". Zero skipped.
+          cd backend
+          npm run test:federated-actor
+          # Phase O: real federated session-family DB chain + session-state matrix (ACTIVE/version/REVOKED/
+          # COMPROMISED/expired/logout-all/BLOCKED-profile → invalid), against the live local Supabase stack.
+          npm run test:federated-actor-db
+          cd ..
+          npm run test:federated-client
+
+      - name: Run Store Deep Link (STORE-PR6) Tests
+        run: |
+          # STORE-PR6: strict /open URL parser (malicious/foreign-host/duplicate/oversized fail closed),
+          # defence-in-depth target allowlist, single-flight redeem dedup (cold+warm cannot double-redeem),
+          # web /open flow (param capture + URL scrub + redeem(web) + navigate; no code/state/token in JS
+          # storage), native cold/warm coordinator, App-Link association generator (TEST fixtures; fails
+          # closed without real signing identity), and native static config (Android manifest / iOS
+          # entitlements / AppDelegate). Zero skipped.
+          npm run test:store-deep-link
+
+      - name: Run Deploy Association Output Proof (STORE-PR6 §6/§7)
+        run: |
+          # Runs a REAL `npm run build:deploy` and asserts what lands in dist/.well-known: with TEST signing
+          # identity → correctly-scoped assetlinks.json + apple-app-site-association (package com.DilMart.store,
+          # appID TEAM.bundle, components → /open only); with NO identity + preseeded stale files → the deploy
+          # output contains NO association files (stale scrubbed before the bundler copies publicDir). TEST
+          # fixtures only — never real fingerprints/Team IDs; artifacts are cleaned; nothing committed.
+          # Isolated from the parallel suite so a CPU-heavy vite build cannot flake timer-based tests.
+          npm run test:deploy-associations
+
+      - name: Validate Ard Al Khaleej Batch100 Post-Upload Preview Artifacts
+        run: |
+          # Phase B lifecycle gate: uploaded_verified/already_present_verified + Preview evidence.
+          # Explicit --phase required (fail-closed). No network upload/Preview/Confirm.
+          node scripts/product-import/validate-batch100-phase-a.mjs --phase=post-upload-previewed
+          node scripts/product-import/verify-batch100-preview.mjs
+          # Soft note when local image binaries are absent on CI runners (gitignored .tmp):
+          # validator still enforces CSV identity/match/state/upload/Preview invariants from docs/.
+
+      - name: Batch100 Storage auth compatibility unit tests
+        run: |
+          # No network / no secrets: key classification, project guard, probe/canary gates.
+          node --test scripts/product-import/batch100-storage-auth.test.mjs
+
+      - name: Batch100 validator lifecycle unit tests
+        run: |
+          # No network: PRE_UPLOAD vs POST_UPLOAD_PREVIEWED phase gates.
+          node --test scripts/product-import/batch100-validator-lifecycle.test.mjs
+
+      - name: Private catalog QA read-only script guards
+        run: |
+          # No network / no mutations: proves QA scripts cannot perform production writes.
+          node --test scripts/product-import/private-catalog-qa-readonly.test.mjs
+
+      - name: Private catalog fix-plan proposal guards
+        run: |
+          # No network / no mutations: proposal-only package + forbidden write surface.
+          node --test scripts/product-import/private-catalog-fix-plan-readonly.test.mjs
+          node scripts/product-import/validate-private-catalog-fix-plan.mjs
+
+      - name: Private catalog fix-execution prep guards
+        run: |
+          # No network writes: auth gates, fake-adapter preflight, scope validators.
+          node --test scripts/product-import/private-catalog-fix-execution.test.mjs
+          node scripts/product-import/validate-private-catalog-fix-plan.mjs
+          node scripts/product-import/prepare-private-catalog-fix-execution.mjs
+          node scripts/product-import/generate-fix-exec-fake-catalog.mjs
+          FIX_EXEC_FAKE_ADAPTERS_JSON=.tmp-product-import/ard-al-khaleej/private-catalog-fix-plan/fake-adapters.json node scripts/product-import/execute-private-catalog-fix.mjs --preflight
+
+      - name: Bulk2200 pipeline and runtime unit tests
+        run: |
+          # Fake adapters only: no production network calls or writes.
+          node --test scripts/product-import/bulk-catalog/bulk-catalog.test.mjs scripts/product-import/bulk-catalog/bulk-runtime.test.mjs

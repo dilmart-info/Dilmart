@@ -1,0 +1,8 @@
+iOS_BASELINE_STATUS=BLOCKED_BY_ENVIRONMENT
+HOST_OS=Windows 10 (10.0.19045)
+xcodebuild=not found
+pod=not found
+REASON=macOS + Xcode required for Simulator Debug, Generic iOS Device Release, and Archive.
+SUPERVISOR_NOTE=Phase 0 is not fully CLOSED while this status remains. PR #61 must stay Draft until macOS evidence is attached under governance/evidence/capacitor-baseline/.
+STATIC_CONFIG_FROM_REPO_ONLY=true
+AUDIT_AGENT_CANNOT_EXECUTE_IOS_ON_THIS_HOST=true

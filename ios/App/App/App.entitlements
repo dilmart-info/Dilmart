@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- STORE-PR6 §16 — iOS Universal Links for the DilMart customer handoff (production + staging). -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:store.DilMart.org</string>
+		<string>applinks:staging-store.DilMart.org</string>
+	</array>
+</dict>
+</plist>

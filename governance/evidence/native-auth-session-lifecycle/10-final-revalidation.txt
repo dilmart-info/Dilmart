@@ -1,0 +1,68 @@
+﻿# Final re-validation after unhandled-rejection hardening in AuthProvider
+# Date: 2026-07-27T15:01:04
+# HEAD: 7bd1bbf
+
+## npx vitest run (full suite)
+
+ Test Files  13 passed (13)
+      Tests  70 passed (70)
+
+
+
+## npm run auth:guard
+
+Auth lifecycle boundary guard passed. Session lifecycle is owned by src/lib/auth only.
+
+
+
+## npm run arch:guard
+
+Architecture guard passed. Current violations (temporary baseline): 0. Resolved since baseline: 0.
+
+
+## npx vitest run src/lib/auth
+
+ Γ£ô src/lib/auth/auth-storage-keys.test.ts (9 tests) 8ms
+ Γ£ô src/lib/auth/auth-errors.test.ts (5 tests) 6ms
+ Γ£ô src/lib/auth/native-secure-auth-storage.test.ts (12 tests) 16ms
+ Γ£ô src/lib/auth/auth-session-manager.test.ts (13 tests) 19ms
+ Γ£ô src/lib/auth/api-auth-retry.test.ts (7 tests) 14ms
+ Γ£ô src/lib/auth/auth-storage.test.ts (3 tests) 103ms
+ Γ£ô src/lib/auth/AuthProvider.test.tsx (7 tests) 294ms
+ Test Files  7 passed (7)
+      Tests  56 passed (56)
+
+
+
+## npm run build / build:mobile / mobile:boundary
+
+Γ£ô built in 12.51s
+
+
+
+Γ£ô built in 8.25s
+Wrote dist-mobile/index.html for Capacitor webDir
+
+
+
+> ## Forbidden modules
+  - (none)
+  
+
+
+
+## Lint warning attribution (npx eslint -f json, severity=1 grouped by file)
+src\app\CustomerRoutes.tsx | 27:react-refresh/only-export-components, 80:react-refresh/only-export-components
+src\app\WebBackofficeRoutes.tsx | 63:react-refresh/only-export-components
+src\components\FlyingCartAnimation.tsx | 4:react-refresh/only-export-components
+src\components\merchant\MerchantNewOrderAlertBanner.tsx | 100:react-hooks/exhaustive-deps
+src\components\ui\badge.tsx | 29:react-refresh/only-export-components
+src\components\ui\button.tsx | 47:react-refresh/only-export-components
+src\components\ui\form.tsx | 129:react-refresh/only-export-components
+src\components\ui\navigation-menu.tsx | 111:react-refresh/only-export-components
+src\components\ui\sidebar.tsx | 636:react-refresh/only-export-components
+src\components\ui\sonner.tsx | 27:react-refresh/only-export-components
+src\components\ui\toggle.tsx | 37:react-refresh/only-export-components
+TOTAL errors=452 warnings=12
+
+No warning or error is reported in any file added or modified by this phase.

@@ -1,0 +1,9 @@
+Updating local specs repositories
+Analyzing dependencies
+[!] CocoaPods could not find compatible versions for pod "Capacitor":
+  In Podfile:
+    Capacitor (from `../../node_modules/@capacitor/ios`)
+
+Specs satisfying the `Capacitor (from `../../node_modules/@capacitor/ios`)` dependency were found, but they required a higher minimum deployment target.
+
+EXIT_CODE=1

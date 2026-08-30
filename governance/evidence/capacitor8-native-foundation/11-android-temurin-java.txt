@@ -1,0 +1,9 @@
+java.exe : java version "21.0.11" 2026-04-21 LTS
+At C:\Users\derma\AppData\Local\Temp\ps-script-33f327fe-c8e5-43ba-ba87-496e2a8e61e7.ps1:126 char:3
++   & "$javaHome\bin\java.exe" -version 2>&1 | Tee-Object "$ev/${logfil ...
++   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (java version "21.0.11" 2026-04-21 LTS:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Java(TM) SE Runtime Environment (build 21.0.11+9-LTS-211)
+Java HotSpot(TM) 64-Bit Server VM (build 21.0.11+9-LTS-211, mixed mode, sharing)

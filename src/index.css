@@ -1,0 +1,142 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400%3B500%3B600%3B700&family=Tajawal:wght@300%3B400%3B500%3B700%3B800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Luxury dark storefront — black / gold / ivory */
+    --background: 0 0% 4%;
+    --foreground: 40 20% 96%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 40 20% 96%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 40 20% 96%;
+
+    --primary: 43 48% 58%;
+    --primary-foreground: 0 0% 8%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 40 20% 94%;
+
+    --muted: 40 8% 16%;
+    --muted-foreground: 35 12% 58%;
+
+    --accent: 43 35% 18%;
+    --accent-foreground: 46 70% 78%;
+
+    --destructive: 0 58% 42%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 40 12% 18%;
+    --input: 40 12% 18%;
+    --ring: 43 48% 50%;
+
+    --radius: 0.5rem;
+
+    --DilMart-store-gold: 43 48% 58%;
+    --DilMart-store-gold-bright: 46 65% 69%;
+    --DilMart-store-beige-dark: 38 22% 28%;
+
+    --luxury-ivory: 38 33% 94%;
+    --luxury-ivory-fg: 0 0% 10%;
+
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 40 15% 92%;
+    --sidebar-primary: 43 48% 58%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 40 15% 92%;
+    --sidebar-border: 40 10% 16%;
+    --sidebar-ring: 43 48% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    direction: rtl;
+  }
+
+  body {
+    @apply bg-background text-foreground font-tajawal antialiased;
+  }
+}
+
+/* Safe area for Capacitor (status bar / notch) - prevents header overlap */
+.safe-top {
+  padding-top: max(env(safe-area-inset-top), 24px);
+}
+
+/*
+ * Native top safe area, resolved from the real device inset - never a fixed height.
+ *
+ * Capacitor 8 SystemBars runs with insetsHandling "css" by default and sets
+ * --safe-area-inset-* as inline custom properties on <html>, so Android reports the
+ * true status bar and display cutout height. iOS and the browser never define that
+ * variable and fall back to env(), which resolves because index.mobile.html declares
+ * viewport-fit=cover. The trailing 0px keeps devices with neither source, and every
+ * desktop browser, at zero instead of collapsing the declaration.
+ */
+:root {
+  --app-safe-area-top: var(
+    --safe-area-inset-top,
+    env(safe-area-inset-top, 0px)
+  );
+}
+
+/*
+ * Reserve the status bar height on a container whose background is allowed to bleed
+ * behind the system bars. Apply to exactly one element per header stack - applying it
+ * to both a wrapper and its child doubles the inset.
+ */
+.mobile-safe-area-top {
+  padding-top: var(--app-safe-area-top);
+}
+
+@layer utilities {
+  .font-display {
+    font-family: "Cormorant Garamond", "Tajawal", serif;
+  }
+
+  .luxury-ivory-section {
+    background-color: hsl(var(--luxury-ivory));
+    color: hsl(var(--luxury-ivory-fg));
+  }
+
+  .luxury-glow {
+    box-shadow:
+      0 0 0 1px hsl(var(--DilMart-store-gold) / 0.12),
+      0 24px 48px -12px hsl(0 0% 0% / 0.45);
+  }
+
+  .hover-scale {
+    @apply transition-transform duration-300 hover:scale-[1.02];
+  }
+
+  @keyframes fly-to-cart {
+    0% {
+      transform: translate(var(--start-x), var(--start-y)) scale(1.5);
+      opacity: 1;
+    }
+    100% {
+      transform: translate(var(--end-x), var(--end-y)) scale(0.2);
+      opacity: 0;
+    }
+  }
+
+  .animate-fly-to-cart {
+    animation: fly-to-cart 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    position: fixed;
+    top: 0;
+    left: 0;
+    margin-left: -20px;
+    margin-top: -20px;
+  }
+}

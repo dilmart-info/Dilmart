@@ -1,0 +1,15 @@
+﻿LOGCAT_SCAN_WINDOW=device validation window 2026-07-27 (Samsung SM-M315F)
+FATAL_EXCEPTION_COUNT=0
+D_IS_NOT_A_FUNCTION_COUNT=0
+CORS_COUNT=0
+ACCESS_TOKEN_LEAK_COUNT=0
+REFRESH_TOKEN_LEAK_COUNT=0
+PASSWORD_LEAK_COUNT=0
+
+## Observed Capacitor SecureStorage bridge (sanitized)
+To native (Capacitor plugin): pluginId: SecureStorage, methodName: internalGetItem
+methodData includes prefixedKey=capacitor-storage_DilMart.store.auth.session.v1 (no session value logged)
+
+## Notes
+Full raw logcat was scanned then discarded of token/password/Authorization patterns before commit.
+No access_token, refresh_token, or password material retained in this evidence file.

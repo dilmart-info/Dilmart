@@ -1,0 +1,47 @@
+TRANSACTION_SAFETY_UNIT_EVIDENCE
+HEAD=429a874d2595355f0da602c273c2508812801c76
+COMMAND=npx vitest run src/lib/auth/native-secure-auth-storage.test.ts
+RESULT=19 PASS
+
+A_MARKER_WRITE_FAILURE=PASS
+- ready() rejects StorageBootstrapError
+- Legacy remains
+- Marker absent
+- Secure copy remains valid
+- Retry after repair succeeds
+- Legacy removed only after marker succeeds
+
+A2_MARKER_READBACK_FAILURE=PASS
+- ready() rejects
+- Secure remains
+- Legacy remains
+- Marker not trusted
+
+B_PARTIAL_MARKER_COMMIT_RETRY=PASS
+- Preferences.set writes marker then throws
+- Retry sees marker
+- Retry removes Legacy only (no remigration)
+- Session preserved
+
+C_LEGACY_REMOVE_AFTER_MARKER=PASS
+- ready() rejects
+- Secure present + marker present + Legacy present
+- Retry after repair removes Legacy
+- Secure remains
+
+D_MARKER_PRESENT_SECURE_ABSENT_LEGACY=PASS
+- Legacy residue removed
+- Legacy NOT migrated into Secure
+- Secure remains empty (logged-out invariant)
+
+E_LOGOUT_LEGACY_CLEAR_FAILURE=PASS
+- clearPersistedSession rejects
+- storage_error path (AuthStorageUnavailableError/StorageBootstrapError)
+- Legacy remains when remove fails
+
+F_HAPPY_PATH_MIGRATION=PASS
+- Secure present
+- Marker present
+- Legacy absent
+
+FAULT_INJECTION=unit mocks only (no device Preferences sabotage required)

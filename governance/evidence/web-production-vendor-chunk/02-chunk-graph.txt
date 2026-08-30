@@ -1,0 +1,89 @@
+# Chunk graph BEFORE the fix (dist/, manualChunks active)
+
+Emitted top-level chunks:
+  index-D8WZyAIR.js         266779 B
+  vendor-react-BeDS4LWl.js  157730 B
+  vendor-radix-nHqKWmXK.js  122150 B
+  vendor-C-dDIgRE.js       1033366 B
+
+First static import statement of each chunk, read from the emitted files:
+
+  index-D8WZyAIR.js
+    import{...}from"./vendor-react-BeDS4LWl.js"
+    import{...}from"./vendor-radix-nHqKWmXK.js"
+    import{...}from"./vendor-C-dDIgRE.js"
+
+  vendor-react-BeDS4LWl.js
+    import{i as ie,g as Xu,r as Gu,j as Fr,...}from"./vendor-C-dDIgRE.js"
+
+  vendor-C-dDIgRE.js
+    import{r as R,R as O,a as AT,b as kT,c as su,g as et,j as V}from"./vendor-react-BeDS4LWl.js"
+
+  vendor-radix-nHqKWmXK.js
+    import{...}from"./vendor-react-BeDS4LWl.js"
+    import{...}from"./vendor-C-dDIgRE.js"
+
+=> vendor-react and vendor import each other. That is a chunk cycle.
+
+# Why the cycle exists
+
+vite.config.ts bucketed node_modules by name:
+
+  vendor-react : react/, react-dom/, scheduler/, react-router*, @tanstack/react-query
+  vendor-radix : @radix-ui/*
+  vendor       : everything else in node_modules
+
+Packages were separated from the dependencies they evaluate against:
+
+  react-router-dom 6.30.4      -> vendor-react   but @remix-run/router 1.23.3   -> vendor
+  @tanstack/react-query 5.101.4-> vendor-react   but @tanstack/query-core 5.101.4-> vendor
+  lucide-react, sonner, embla, zustand, ... -> vendor, and all of them import react
+                                               which lives in vendor-react
+
+# Why it crashed
+
+ES modules evaluate a cycle depth-first. The entry's first static import is
+vendor-react, whose own first statement imports vendor, so vendor runs to completion
+first — while vendor-react has not initialised any of its exports yet.
+
+The crash site, vendor-C-dDIgRE.js line 25 column 15, is lucide-react:
+
+  const e2=R.forwardRef(({color:t="currentColor",size:e=24,...},c)=>R.createElement("svg",...))
+
+R is bound to vendor-react's export `r` (the React namespace). At that moment the
+binding is still undefined, so `R.forwardRef` throws and the entry never renders.
+
+# Chunk graph AFTER the fix (manualChunks removed)
+
+  index-DFvihrxk.js  963603 B   static chunk imports: 0
+  no vendor-*.js chunks are emitted at all
+  92 JavaScript chunks total (route-level, from React.lazy dynamic imports)
+
+Automated cycle scan over the static import graph of all 92 chunks:
+  static-import cycles among chunks: 0
+
+The entry is self-contained, so no cross-chunk binding can be read before it is
+initialised.
+
+# dist-mobile carries the same cycle but does not crash — evidence only, NOT changed
+
+vite.mobile.config.ts still has the same manualChunks. Scanning dist-mobile:
+
+  mobile chunks: 7
+  static-import cycles: 1
+    vendor-react-Dun8IUFe.js -> vendor-B9izNjXC.js -> vendor-react-Dun8IUFe.js
+
+It survives because the entry enters the cycle from the other side:
+
+  mobile entry static import order : 1. vendor  2. vendor-react  3. vendor-radix
+  web    entry static import order : 1. vendor-react  2. vendor-radix  3. vendor
+
+The mobile entry imports vendor first, vendor's first import is vendor-react, so
+vendor-react evaluates to completion before control returns to vendor. By the time
+lucide-react's top-level R.forwardRef runs (byte offset 13178 of the mobile vendor
+chunk) React is fully initialised.
+
+That is luck, not design. The same latent cycle sits in the mobile bundle and one
+change to the module graph could flip the entry's import order and reproduce the black
+screen inside the APK. The APK currently passes its Android smoke test, so per the task
+brief the mobile config was left untouched and this is raised for a separate decision.

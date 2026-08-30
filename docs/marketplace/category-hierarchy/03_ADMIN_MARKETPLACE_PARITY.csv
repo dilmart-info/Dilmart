@@ -1,0 +1,22 @@
+slug,name,parent_slug,is_active,admin_visible,marketplace_before_occupancy_prune,marketplace_after_fix_expected,notes
+barber-clippers,ماكينات حلاقة ومشابك كهربائية,,true,yes,yes,yes,root with products
+shears-razors,مقصات وشفرات وموس احترافي,,true,yes,yes,yes,root with products
+beard-mustache-care,عناية باللحية والشارب,,true,yes,yes,yes,root with products
+men-barber-furniture,تجهيزات صالون حلاقة رجالي,,true,yes,yes,yes,root with products
+women-salon-styling,أدوات تصفيف — صالون نسائي,,true,yes,yes,yes,root with products
+sanitation-disposables,تعقيم وقفازات ومناشف ولابس صحي,,true,yes,yes,yes,root kept even with 0 public products
+hair-dryers-tools,مجففات ومكاوي وفُرش احترافية,,true,yes,yes,yes,root with products
+pro-hair-color-care,صبغة ومستلزمات صالون للشعر,,true,yes,yes,yes,root with products
+salon-accessories,ملحقات صالون — بخاخات وروب وعبوات,,true,yes,yes,yes,root with products
+fragrances-and-scents,العطور والمعطرات,,true,yes,yes,yes,root always kept; has 6 children
+personal-care-beauty,العناية الشخصية والتجميل,,true,yes,yes,yes,root always kept; has 4 children
+perfumes,العطور,fragrances-and-scents,true,yes,no,yes,pruned before: 0 public products
+mini-travel-perfume,العطور الصغيرة والميني,fragrances-and-scents,true,yes,no,yes,pruned before: empty child
+body-mist-splash,معطرات الجسم والبودي مست,fragrances-and-scents,true,yes,no,yes,pruned before: empty child
+home-linen-air,معطرات المنزل والمفارش والجو,fragrances-and-scents,true,yes,no,yes,pruned before: empty child
+incense-maamoul,البخور والمعمول,fragrances-and-scents,true,yes,no,yes,pruned before: empty child
+musk-oils-mukhammaria,المسك والمخمريات والعطور الزيتية,fragrances-and-scents,true,yes,no,yes,pruned before: empty child
+skin-care,العناية بالبشرة,personal-care-beauty,true,yes,no,yes,pruned before: empty child
+body-bath-care,العناية بالجسم والاستحمام,personal-care-beauty,true,yes,no,yes,pruned before: empty child
+hair-care-fragrance,العناية بالشعر وعطور الشعر,personal-care-beauty,true,yes,no,yes,pruned before: empty child
+powder-makeup,البودرة ومنتجات التجميل,personal-care-beauty,true,yes,no,yes,pruned before: empty child

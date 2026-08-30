@@ -1,0 +1,12 @@
+OS=Microsoft Windows NT 10.0.19045.0 (Windows_NT)
+Node=v22.22.3
+npm=11.17.0
+Java_PATH_default=25.0.3 (Oracle)
+JAVA_HOME_configured=C:\Program Files\Java\jdk-21.0.11 (21.0.11)
+Android_Studio_JBR=C:\Program Files\Android\Android Studio\jbr (OpenJDK 21.0.10, vendor=JetBrains s.r.o.)
+Android_Studio=2026.1.1 (AI-261.23567.138.2611.15646644 / build 261.23567.138.2611.15646644)
+Gradle_Wrapper=8.13
+AGP=8.13.2 (android/build.gradle classpath)
+Xcode=NOT_INSTALLED (Windows)
+CocoaPods=NOT_INSTALLED (Windows)
+Capacitor_CLI_npx=7.5.0

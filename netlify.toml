@@ -1,0 +1,32 @@
+# Canonical public routes & redirect policy: docs/canonical-routing.md
+# SPA: أي مسار يُعاد توجيهه إلى index.html حتى يعمل React Router (مسارات مثل /admin/login)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+[build]
+  # STORE-PR6 §7 — deploy build runs app-links:prepare first: it generates + validates the .well-known
+  # association files when BOTH signing identities are configured, fails closed on a partial identity, and
+  # skips (no fake files) when neither is set. Normal `npm run build` is unchanged for local dev.
+  command = "npm run build:deploy"
+  publish = "dist"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# STORE-PR6 §20 — App-Link association documents. Netlify serves existing static files (dist/.well-known/*)
+# ahead of the non-forced SPA "/*" rewrite, so these are NOT swallowed by React Router. The extensionless
+# apple-app-site-association is served as JSON. Files are produced at deploy time by app-links:generate.
+[[headers]]
+  for = "/.well-known/*"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "no-cache"

@@ -1,0 +1,45 @@
+# Walkthrough — PR #47: Merchant Accept/Reject Decision Model
+
+**PR**: [#47](https://github.com/cylendralabs-blip/DilMart-Store/pull/47)
+**Status**: Merged into `main` ✅
+
+---
+
+## Changes Made
+
+### DB Migration
+- [20260705203200_merchant_decision_fields.sql](file:///E:/Project/DilMart-Store/supabase/migrations/20260705203200_merchant_decision_fields.sql): Added 4 columns to `orders` table + safe backfill + NOT NULL constraint + index
+- Applied to production via `supabase db push` ✅
+
+### Backend (3 files, +205 lines)
+
+| File | Changes |
+|---|---|
+| [orders.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.dto.ts) | Added `MerchantAcceptOrderDto` and `MerchantRejectOrderDto` with `@IsIn` validation for 11 reason codes |
+| [orders.controller.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.controller.ts) | Added `POST :id/merchant-accept` and `POST :id/merchant-reject` endpoints (merchant_owner/manager only) |
+| [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts) | Added `merchantAcceptOrder()`, `merchantRejectOrder()` + merchant guard on `updateOrderStatus()` + rejection reason labels + admin notification on reject + decision fields in select queries. Enforces atomic CAS update scoped by `.eq("status", "new").eq("merchant_decision_status", "pending")` and checks status validation. |
+
+### Frontend (5 files, +197 lines, -61 lines)
+
+| File | Changes |
+|---|---|
+| [merchant-rejection-reasons.ts](file:///E:/Project/DilMart-Store/src/lib/merchant-rejection-reasons.ts) | **NEW** — 11 rejection reason codes with Arabic labels + `getRejectionLabel()` utility |
+| [orders.ts](file:///E:/Project/DilMart-Store/src/lib/api/orders.ts) | Added `merchantAcceptOrder()` and `merchantRejectOrder()` API methods |
+| [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx) | Removed dropdown, fulfillmentStatuses, allowedStatuses, updateStatus mutation. Added accept/reject buttons + inline rejection panel |
+| [OrdersPage.tsx](file:///E:/Project/DilMart-Store/src/components/scoped/OrdersPage.tsx) | Shows decision status badge for merchant scope (Pending, Accepted, Rejected) instead of simple order status. Admin retains dropdown |
+| [admin/OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/admin/OrderDetail.tsx) | Added merchant decision card showing pending/rejected/accepted status + rejection reason |
+
+---
+
+## Testing & Verification
+
+| Test | Result |
+|---|---|
+| Backend build | ✅ |
+| Policy tests | 23/23 pass ✅ |
+| Hardening tests | 39/39 pass ✅ |
+| Frontend build | 0 errors ✅ |
+| Architecture guard | pass ✅ |
+| Migration applied | via `supabase db push` ✅ |
+| Codex review thread | Addressed and resolved ✅ |
+| PR Merged | Done ✅ |

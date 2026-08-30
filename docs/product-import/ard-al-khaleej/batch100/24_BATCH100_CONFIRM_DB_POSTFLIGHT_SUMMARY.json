@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "errors": [],
+  "merchant_product_count": 110,
+  "approved_skus_found": 100,
+  "missing_skus": [],
+  "unexpected_skus": [],
+  "private": 100,
+  "inactive": 100,
+  "unpublished": 100,
+  "stock_zero": 100,
+  "discount_null": 100,
+  "short_ok": 100,
+  "detailed_descriptions": 59,
+  "category_distribution": {
+    "mini-travel-perfume": 3,
+    "perfumes": 87,
+    "home-linen-air": 8,
+    "musk-oils-mukhammaria": 2
+  },
+  "golden10_count": 10,
+  "special": {
+    "ARD-4138": "عطر اكلاير 100 مل",
+    "ARD-2511": "عطر انا الابيض بودري",
+    "mini": [
+      {
+        "sku": "ARD-1318",
+        "category_slug": "mini-travel-perfume"
+      },
+      {
+        "sku": "ARD-1319",
+        "category_slug": "mini-travel-perfume"
+      },
+      {
+        "sku": "ARD-1320",
+        "category_slug": "mini-travel-perfume"
+      }
+    ]
+  }
+}

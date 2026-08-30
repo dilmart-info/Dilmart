@@ -1,0 +1,3 @@
+sku_a,sku_b,hamming,decision
+ARD-4138,ARD-4750,2,approved_distinct_products_visual_similarity_only
+ARD-4246,ARD-4752,3,approved_distinct_products_visual_similarity_only

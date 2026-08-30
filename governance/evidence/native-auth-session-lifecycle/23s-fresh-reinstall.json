@@ -1,0 +1,17 @@
+{
+  "startedAt": "2026-07-27T12:47:40.681Z",
+  "href": "https://localhost/",
+  "storageProbe": {
+    "legacyPresent": false,
+    "securePresent": false,
+    "markerPresent": true,
+    "securePlugin": true,
+    "prefsPlugin": true,
+    "authedUi": false,
+    "authScreen": false,
+    "storageError": false,
+    "offline": false,
+    "hash": "",
+    "textSlice": "المحفظة ديلمارت ستور DilMart STORE تتبع طلبك عروض مختارة للعناية والجمال اكتشف منتجات مميزة من متاجر موثوقة بخصومات مستمرة. تسوّق الآن وصل حديثاً من العلامات المفضلة منتجات جديدة تماماً باستمرار مع تجربة شراء سريعة. شاهد ا"
+  }
+}

@@ -1,0 +1,188 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> DilMart-store-backend@0.1.0 test:launch-critical
+> npm run build && node -e "const fs=require('fs'), cp=require('child_process'); const files=['tests/account-claim-recovery.test.mjs','tests/order-cancellation-atomic.test.mjs','tests/checkout-idempotency.test.mjs','tests/customer-cancellation-returns.test.mjs'].filter(f=>fs.existsSync(f)); if(files.length>0){ cp.execSync('node --test ' + files.join(' '), {stdio:'inherit'}); } else { console.log('No PR package test files present on baseline; running policy suite instead.'); cp.execSync('npm run test:policy', {stdio:'inherit'}); }"
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` 
+for supported config options.
+
+> DilMart-store-backend@0.1.0 build
+> nest build
+
+TAP version 13
+# Subtest: PR-1: Account Claim, Phone Verification & Password Recovery (Security Hardened Suite)
+    # Subtest: verifies crypto.randomInt 6-digit numeric OTP generation format
+    ok 1 - verifies crypto.randomInt 6-digit numeric OTP generation format
+      ---
+      duration_ms: 1.1671
+      type: 'test'
+      ...
+    # Subtest: enforces phone binding check: rejects claim request if phone does not match provisional profile phone
+    ok 2 - enforces phone binding check: rejects claim request if phone does not match provisional profile phone
+      ---
+      duration_ms: 0.1792
+      type: 'test'
+      ...
+    # Subtest: verifies ActionToken payload contains verifiedPhone and challengeId
+    ok 3 - verifies ActionToken payload contains verifiedPhone and challengeId
+      ---
+      duration_ms: 0.2012
+      type: 'test'
+      ...
+    # Subtest: enforces strict Phone Matching in completeClaim (prevents account takeover)
+    ok 4 - enforces strict Phone Matching in completeClaim (prevents account takeover)
+      ---
+      duration_ms: 0.1312
+      type: 'test'
+      ...
+    # Subtest: enforces maximum attempt locking (blocks challenge on 5th failure)
+    ok 5 - enforces maximum attempt locking (blocks challenge on 5th failure)
+      ---
+      duration_ms: 0.1314
+      type: 'test'
+      ...
+    # Subtest: verifies atomic provisional account merge RPC parameter contract
+    ok 6 - verifies atomic provisional account merge RPC parameter contract
+      ---
+      duration_ms: 0.2376
+      type: 'test'
+      ...
+    1..6
+ok 1 - PR-1: Account Claim, Phone Verification & Password Recovery (Security Hardened Suite)
+  ---
+  duration_ms: 3.976
+  type: 'test'
+  ...
+# Subtest: PR-3: Checkout Idempotency & Post-Checkout Reliability (Concurrency & Processing Suite)
+    # Subtest: computes request hash deterministically regardless of item order
+    ok 1 - computes request hash deterministically regardless of item order
+      ---
+      duration_ms: 14.5613
+      type: 'test'
+      ...
+    # Subtest: halts execution with 202 CHECKOUT_IN_PROGRESS if attempt is currently processing
+    ok 2 - halts execution with 202 CHECKOUT_IN_PROGRESS if attempt is currently processing
+      ---
+      duration_ms: 0.2019
+      type: 'test'
+      ...
+    # Subtest: detects payload mismatch for identical attempt key and throws 409 conflict code
+    ok 3 - detects payload mismatch for identical attempt key and throws 409 conflict code
+      ---
+      duration_ms: 0.2097
+      type: 'test'
+      ...
+    # Subtest: completes attempt and links checkout_attempt_id on order record
+    ok 4 - completes attempt and links checkout_attempt_id on order record
+      ---
+      duration_ms: 0.1413
+      type: 'test'
+      ...
+    1..4
+ok 2 - PR-3: Checkout Idempotency & Post-Checkout Reliability (Concurrency & Processing Suite)
+  ---
+  duration_ms: 16.7116
+  type: 'test'
+  ...
+# Subtest: PR-4: Customer Cancellation & Return Requests Engine (Scoping & Delivery Transition Suite)
+    # Subtest: enforces delivered_at requirement: rejects return request if order has no delivered_at timestamp
+    ok 1 - enforces delivered_at requirement: rejects return request if order has no delivered_at timestamp
+      ---
+      duration_ms: 0.6381
+      type: 'test'
+      ...
+    # Subtest: enforces 7-day return window validation from delivered_at date
+    ok 2 - enforces 7-day return window validation from delivered_at date
+      ---
+      duration_ms: 0.1767
+      type: 'test'
+      ...
+    # Subtest: verifies markReturnItemReceived invokes delivery transition to returned (not cancelled)
+    ok 3 - verifies markReturnItemReceived invokes delivery transition to returned (not cancelled)
+      ---
+      duration_ms: 0.1583
+      type: 'test'
+      ...
+    # Subtest: verifies merchant scoping: merchant user cannot view or review return requests of another merchant
+    ok 4 - verifies merchant scoping: merchant user cannot view or review return requests of another merchant
+      ---
+      duration_ms: 0.1846
+      type: 'test'
+      ...
+    # Subtest: verifies notification payload format uses is_read (no type or read fields)
+    ok 5 - verifies notification payload format uses is_read (no type or read fields)
+      ---
+      duration_ms: 0.908
+      type: 'test'
+      ...
+    # Subtest: verifies state machine constraints: forbids pending_review -> completed and rejected -> approved
+    ok 6 - verifies state machine constraints: forbids pending_review -> completed and rejected -> approved
+      ---
+      duration_ms: 0.3284
+      type: 'test'
+      ...
+    # Subtest: verifies manual refund requires item_received status first
+    ok 7 - verifies manual refund requires item_received status first
+      ---
+      duration_ms: 0.1951
+      type: 'test'
+      ...
+    1..7
+ok 3 - PR-4: Customer Cancellation & Return Requests Engine (Scoping & Delivery Transition Suite)
+  ---
+  duration_ms: 4.5702
+  type: 'test'
+  ...
+# Subtest: PR-2: Atomic Cancellation Engine & Merchant Rejection (CAS & Idempotency Suite)
+    # Subtest: enforces strict CAS check for merchant rejection (fails if status is not new or decision is not pending)
+    ok 1 - enforces strict CAS check for merchant rejection (fails if status is not new or decision is not pending)
+      ---
+      duration_ms: 0.9138
+      type: 'test'
+      ...
+    # Subtest: verifies inventory stock restoration and sold_count decrement math
+    ok 2 - verifies inventory stock restoration and sold_count decrement math
+      ---
+      duration_ms: 0.252
+      type: 'test'
+      ...
+    # Subtest: verifies sold_count never drops below zero
+    ok 3 - verifies sold_count never drops below zero
+      ---
+      duration_ms: 0.2135
+      type: 'test'
+      ...
+    # Subtest: verifies notification idempotency: skips duplicate notifications when already_cancelled is true
+    ok 4 - verifies notification idempotency: skips duplicate notifications when already_cancelled is true
+      ---
+      duration_ms: 0.297
+      type: 'test'
+      ...
+    # Subtest: verifies merchant cross-account scoping check prevents unauthorized rejection
+    ok 5 - verifies merchant cross-account scoping check prevents unauthorized rejection
+      ---
+      duration_ms: 0.9991
+      type: 'test'
+      ...
+    1..5
+ok 4 - PR-2: Atomic Cancellation Engine & Merchant Rejection (CAS & Idempotency Suite)
+  ---
+  duration_ms: 4.8106
+  type: 'test'
+  ...
+1..4
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 138.2704

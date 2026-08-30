@@ -1,0 +1,19 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+ΓêÜ Copying web assets from dist to android\app\src\main\assets\public in 85.48ms
+ΓêÜ Creating capacitor.config.json in android\app\src\main\assets in 811.80╬╝s
+ΓêÜ copy android in 169.80ms
+ΓêÜ Updating Android plugins in 24.02ms
+[info] Found 4 Capacitor plugins for android:
+       @capacitor/app@8.0.1
+       @capacitor/browser@8.0.1
+       @capacitor/network@8.0.1
+       @capacitor/splash-screen@8.0.1
+ΓêÜ update android in 169.16ms
+[info] Sync finished in 0.517s

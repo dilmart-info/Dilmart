@@ -1,0 +1,10 @@
+# Git base
+
+branch: chore/native-brand-assets
+base sha (origin/main at branch creation): a95df07b0fcdaa3921e659f1732d156f43f18aa4
+base commit: a95df07 feat(mobile): secure native auth storage and session lifecycle (#64)
+
+## Pre-existing worktree state (NOT touched by this phase)
+- .claude/settings.local.json — local modification present before this phase, left unstaged
+- 85 untracked .tmp-* scratch files from the previous Phase 3 device runs, left untouched
+- 2 pre-existing git stashes, left untouched

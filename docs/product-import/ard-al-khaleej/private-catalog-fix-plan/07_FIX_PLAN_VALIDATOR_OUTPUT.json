@@ -1,0 +1,112 @@
+{
+  "generated_at": "2026-08-04T17:16:05.231237+00:00",
+  "judgment": "FIX_PLAN_PARTIAL_HOLDS",
+  "ok_guards": true,
+  "p1_total": 11,
+  "p1_ready": 7,
+  "p1_hold": 4,
+  "p2_content_proposed": 21,
+  "p2_image_proposed": 1,
+  "ard_1191_unchanged": true,
+  "price_proposals": 0,
+  "activation_publication_stock_proposals": 0,
+  "production_writes": false,
+  "production_storage_writes": false,
+  "exact_duplicate_replacement_images": {},
+  "exact_duplicate_descriptions": 0,
+  "perceptual_conflicts": [],
+  "unverified_source_count": 4,
+  "assets": {
+    "ARD-2793": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2793.webp",
+      "sha256": "2727DBE666AA59F84799AD31114DE479A5140F5505272711030EA860830DB6C9",
+      "bytes": 25646,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-2797": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2797.webp",
+      "sha256": "82D652273DA94ED0CEE4DB637BE6F429B02C2149A5723892F59B2C4EDEB97024",
+      "bytes": 23780,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-4564": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-4564.webp",
+      "sha256": "120C9873E53A41EBC70F3AE5E8EF23B33921289539356EF0A0B1E0A0924D0541",
+      "bytes": 22798,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-4752": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-4752.webp",
+      "sha256": "E0CF56D25300F722C198FD609F1482D1C956AB6893B091FBD44FB446632650F2",
+      "bytes": 31664,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-4792": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-4792.webp",
+      "sha256": "315545ADCF0C8DDF57704E68A8527EBED0C41741988F72E21A6F9065EAD0B89B",
+      "bytes": 22830,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-775": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-775.webp",
+      "sha256": "A662A1D1133ACF0BD35AE1A00D5B4FB423FE20E25CD303BD3C63AF33AB16337A",
+      "bytes": 56682,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-823": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-823.webp",
+      "sha256": "708745168955D575C3F24C30799C5DB0D964B5227AEDB5C3956E21A795706160",
+      "bytes": 70112,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-2511": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2511.webp",
+      "sha256": "3DB85A32E124DB200154A9BADBAF2C8A7FEA526052812B820E28A66CD0210950",
+      "bytes": 71026,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    },
+    "ARD-2932": {
+      "path": "docs/product-import/ard-al-khaleej/private-catalog-fix-plan/assets/ARD-2932.webp",
+      "sha256": "EE63C03520FE4C16AA80DEB0D47122A540074D9B4D123CBC96B0E122741DD119",
+      "bytes": 20224,
+      "mime": "image/webp",
+      "width": 1200,
+      "height": 1200
+    }
+  },
+  "notes": [
+    "Validator node script re-checks CSVs fail-closed.",
+    "All production_apply_status=NOT_AUTHORIZED",
+    "replacement_assets=9",
+    "replacement_assets=9",
+    "replacement_assets=9",
+    "replacement_assets=9",
+    "replacement_assets=9"
+  ],
+  "validated_at": "2026-08-04T20:42:43.556Z",
+  "validator_ok": true,
+  "errors": [],
+  "counts": {
+    "p1_total": 11,
+    "p1_ready": 7,
+    "p1_hold": 4,
+    "p2_content": 21,
+    "patch_rows": 38
+  }
+}

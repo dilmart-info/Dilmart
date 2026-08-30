@@ -1,0 +1,7 @@
+TEST_ACCOUNT_CLEANUP=PASS
+PHASE2_EMAIL=smoke.phase2.<redacted>@mailinator.com
+PHASE2_USER_ID=47e3678a-****-****-****-********4990
+EPHEMERAL_FINAL_SMOKE_USER_ID=f4e406ad-****-****-****-********371d
+ORDERS=0
+DELETED=auth.users+profiles(+auth.sessions/identities/refresh_tokens) for Phase2 and final ephemeral smoke accounts
+NOTE=No real orders created. Accounts deactivated after smoke. No passwords/tokens logged in evidence.

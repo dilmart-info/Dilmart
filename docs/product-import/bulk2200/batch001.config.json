@@ -1,0 +1,25 @@
+{
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "merchant_slug": "arth-al-khaleg",
+  "source_file": ".tmp-product-import/ard-al-khaleej/bulk2200/source_master_stage2.csv",
+  "source_workbook": ".tmp-product-import/ard-al-khaleej/Ard_Al_Khaleej_Catalog_Stage3_Pilot_Batches_AB_v4.xlsx",
+  "image_directories": [
+    ".tmp-product-import/ard-al-khaleej/batch100/images",
+    ".tmp-product-import/ard-al-khaleej/batch100/images-source",
+    ".tmp-product-import/ard-al-khaleej/private-catalog-qa/images",
+    ".tmp-product-import/ard-al-khaleej/bulk2200/normalized"
+  ],
+  "batch_size": 200,
+  "batch_id": "batch001",
+  "batch_selection_rule": "stable_source_order_valid_complete_image",
+  "default_product_state": {
+    "visibility_status": "private",
+    "is_active": false,
+    "is_published": false,
+    "stock": 0
+  },
+  "category_mapping_file": "docs/product-import/bulk2200/02_CATEGORY_MAPPING.csv",
+  "existing_catalog_snapshot": ".tmp-product-import/ard-al-khaleej/private-catalog-qa/products.json",
+  "docs_dir": "docs/product-import/bulk2200",
+  "tmp_dir": ".tmp-product-import/ard-al-khaleej/bulk2200"
+}

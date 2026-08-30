@@ -1,0 +1,43 @@
+# Walkthrough — Provisional Customer Account at Checkout
+
+We have implemented a provisional account creation flow at checkout for storefront orders. This guarantees that all storefront orders contain a valid `user_id` mapped to an authenticated session, avoiding null database fields while keeping guest signup friction-free (no OTP/password/manual email steps).
+
+---
+
+## Changes Made
+
+### 1. Backend: Provisional Account Endpoint & DTO
+- **[NEW] [create-provisional-user.dto.ts](file:///E:/Project/DilMart-Store/backend/src/modules/auth/create-provisional-user.dto.ts)**: Validates signup payload `customer_name` and `customer_phone` (applying the Iraqi phone number validator and HTML sanitizers).
+- **[MODIFY] [auth.controller.ts](file:///E:/Project/DilMart-Store/backend/src/modules/auth/auth.controller.ts)**: Added `POST /auth/create-provisional-user` with:
+  - Rate limiting: `@Throttle({ default: { limit: 5, ttl: 60000 } })`
+  - Cache control: `@Header("Cache-Control", "no-store")`
+- **[MODIFY] [auth.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/auth/auth.service.ts)**: Implemented `createProvisionalUser()` which:
+  - Normalizes the customer phone.
+  - Generates secure random credentials (random email on domain `@provisional.DilMart.com`, secure random password via `crypto.randomBytes`).
+  - Creates the user via Supabase Auth Admin client (`auth.admin.createUser`) with `email_confirm: true` to bypass verification.
+  - Attaches `account_type: "provisional_customer"` to both `user_metadata` and `app_metadata`.
+
+### 2. Backend: Order Hardening & Loyalty Restrictions
+- **[MODIFY] [checkout.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/checkout/checkout.service.ts)**:
+  - Rejects guest storefront orders: throws `UnauthorizedException` if `actorId` is missing.
+  - Restricts points spend: if `points_spent > 0`, checks the user metadata. If they are a `provisional_customer` or `phone_verified` is not true, throws `ForbiddenException`.
+
+### 3. Frontend: API Client & Checkout Page Flow
+- **[MODIFY] [customer.ts](file:///E:/Project/DilMart-Store/src/lib/api/customer.ts)**: Exposed `createProvisionalUser` endpoint.
+- **[MODIFY] [Checkout.tsx](file:///E:/Project/DilMart-Store/src/pages/Checkout.tsx)**:
+  - Disabled/hid the loyalty points toggle section for provisional accounts.
+  - When submitting the order, if the user is unauthenticated, it creates a provisional user, signs in via `supabase.auth.signInWithPassword`, fetches the auth context, and then submits the order.
+  - Renders the notice: `سيتم إنشاء حساب متابعة تلقائي من بيانات التوصيل حتى تتمكن من متابعة طلبك لاحقاً.`.
+  - Automatically updates the customer profile and saves their delivery details as the default address on order success.
+
+---
+
+## Verification Results
+
+### Automated Tests
+1. **NestJS Backend Build**: Compiled successfully.
+2. **Policy Tests**: Ran `npm run test:policy` and all 23 tests passed.
+3. **Hardening Tests**: Ran `npm run test:hardening` and all 39 tests passed.
+4. **Commercial Tests**: Ran `npm run test:commercial` and all 6 tests passed.
+5. **Frontend Build**: Ran `npm run build` and Vite compiled and bundled successfully.
+6. **Architecture Guard**: Ran `npm run arch:guard` and passed with 0 violations.

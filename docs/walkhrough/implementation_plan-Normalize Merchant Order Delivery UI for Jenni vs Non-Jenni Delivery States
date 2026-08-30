@@ -1,0 +1,109 @@
+# Normalize Merchant Order Delivery UI for Jenni vs Non-Jenni Delivery States
+
+## Background
+
+بعد مراجعة الطلبين (`DUK-260705-2161` الجديد و `DUK-260630-8029` القديم)، تبيّن أن الواجهة تعتمد على مزيج من حقول مختلفة لتحديد نوع ومسار التوصيل:
+
+- **`delivery_company_id` + `delivery_status`** — على مستوى `orders` مباشرة (legacy / يدوي)
+- **`order_delivery_integrations`** — سجل الربط الحقيقي مع Jenni (provider_code, dispatch_status, provider_shipment_id)
+
+المشكلة: الطلب القديم عنده `delivery_company_id` و `delivery_status = delivered` لكن **لا يملك سجل فعلي في `order_delivery_integrations`**. الواجهة حالياً تعامله كطلب Jenni بسبب:
+
+```typescript
+const isJenni = (order as any)?.delivery_companies?.provider_code === "jenni";
+const hasJenniIntegration = !!jenniIntegration || isJenni; // ← isJenni true يكفي
+```
+
+هذا يعني: أي طلب مربوط بشركة `Jenni / Al Zaeem Express` عبر `delivery_company_id` يظهر له بلوك Jenni وزر الستيكر (معطّل)، حتى لو لا يوجد سجل dispatch حقيقي.
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **لا يتم تغيير أي backend endpoint أو business logic أو checkout أو Jenni dispatch.**
+> التعديلات محصورة في واجهة التاجر فقط (`src/pages/merchant/OrderDetail.tsx`) لتوضيح حالة التوصيل بشكل أدق.
+
+> [!WARNING]
+> **Backfill للطلبات القديمة:** حالياً يوجد طلب قديم واحد فقط (`DUK-260630-8029`) بهذا النمط (delivery_company_id مربوط بـ Jenni بدون سجل integration). السؤال: هل نتركه كـ legacy أم نريد backfill لسجل `order_delivery_integrations`؟ توصيتي تركه كـ legacy لأنه واحد فقط وأصلاً `delivered`.
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1. **هل نريد إخفاء بلوك التوصيل بالكامل عن التاجر إذا الطلب لم يدخل Jenni ولا يوجد delivery_status؟** (مثل الطلب الجديد `DUK-260705-2161`) — حالياً هذا هو السلوك الافتراضي وهو صحيح.
+> 2. **هل نريد تمييز بصري بين "توصيل يدوي/legacy" و "Jenni dispatched كامل"؟** — الخطة تفترض نعم.
+
+---
+
+## Proposed Changes
+
+### Merchant Order Detail Page
+
+#### [MODIFY] [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx)
+
+**التعديلات:**
+
+1. **تصحيح منطق `hasJenniIntegration`** — فصل "الطلب مربوط بشركة Jenni" عن "الطلب تم إرساله فعلياً عبر dispatch":
+
+```diff
+- const isJenni = (order as any)?.delivery_companies?.provider_code === "jenni";
+- const hasJenniIntegration = !!jenniIntegration || isJenni;
++ const deliveryCompanyIsJenni = (order as any)?.delivery_companies?.provider_code === "jenni";
++ const hasRealJenniDispatch = !!jenniIntegration; // سجل حقيقي في order_delivery_integrations
++ const hasJenniIntegration = hasRealJenniDispatch; // الزر والبلوك يعتمدان فقط على سجل حقيقي
+```
+
+2. **زر طباعة الستيكر** — يظهر فقط إذا يوجد `hasRealJenniDispatch` (لا تغيير على شرط `canPrintSticker` نفسه):
+
+```diff
+- {hasJenniIntegration && (
++ {hasRealJenniDispatch && (
+    <Button ... disabled={!canPrintSticker} ...>
+```
+
+3. **بلوك حالة التوصيل** — تمييز بين ثلاث حالات:
+
+| الحالة | الشرط | ما يُعرض |
+|---|---|---|
+| **لا توصيل** | لا `delivery_status` ولا `delivery_company_id` ولا `jenniIntegration` | لا يظهر بلوك التوصيل ❌ |
+| **توصيل يدوي/legacy** | `delivery_company_id` أو `delivery_status` موجودة، لكن لا يوجد `jenniIntegration` | بلوك مبسّط يعرض اسم الشركة وحالة التوصيل فقط، بدون أزرار Jenni |
+| **Jenni dispatched** | يوجد `jenniIntegration` (سجل حقيقي) | البلوك الكامل الحالي مع dispatch_status، provider_shipment_id، آخر مزامنة، أزرار الستيكر |
+
+4. **رسالة توضيحية للتاجر** — إذا الطلب مربوط بـ Jenni ولكن لم يُرسل بعد:
+
+```
+"لم يتم إرسال الطلب إلى شركة التوصيل بعد. سيتم إشعارك عند الإرسال."
+```
+
+5. **تقييد حالات الطلب (allowedStatuses)** — لا تغيير على المنطق الحالي:
+   - `isJenniDispatched` يبقى يعتمد على `jenniIntegration?.dispatch_status === "dispatched"` وهو صحيح.
+
+---
+
+## ملخص الملفات
+
+| الملف | نوع التعديل | الوصف |
+|---|---|---|
+| [OrderDetail.tsx](file:///E:/Project/DilMart-Store/src/pages/merchant/OrderDetail.tsx) | MODIFY | فصل منطق الكشف، تمييز بصري، تحسين الرسائل |
+
+---
+
+## Verification Plan
+
+### Automated Tests
+```bash
+cd backend && npm run build
+cd backend && npm run test:policy
+cd backend && npm run test:hardening
+cd .. && npm run build
+npm run arch:guard
+```
+
+### Manual Verification
+- تأكيد أن الطلب الجديد (`DUK-260705-2161`) لا يظهر بلوك التوصيل ولا زر الستيكر.
+- تأكيد أن الطلب القديم (`DUK-260630-8029`) يظهر بلوك توصيل مبسّط (legacy) بدون أزرار Jenni.
+- تأكيد أن الطلبات المرسلة فعلياً إلى Jenni (مثل `DUK-260430-2387`) تظهر البلوك الكامل مع الستيكر.
+- تأكيد أن قائمة حالات التاجر تبقى مقيّدة بـ `new/contacted/preparing` فقط للطلبات المرسلة فعلياً.
+
+### Admin UI
+- تأكيد أن زر "إرسال إلى Jenni" في لوحة الأدمن يستدعي `dispatchOrderToJenni` (endpoint: `POST /admin/orders/:id/delivery/dispatch-jenni`) وليس `admin-override-delivery`. ✅ **تم التأكيد من الكود.**

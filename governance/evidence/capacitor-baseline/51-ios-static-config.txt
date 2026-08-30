@@ -1,0 +1,79 @@
+=== Info.plist ===
+{
+  "CFBundleDevelopmentRegion" => "en"
+  "CFBundleDisplayName" => "Ù…ØªØ¬Ø± Ø³Ø¨Ø£"
+  "CFBundleExecutable" => "$(EXECUTABLE_NAME)"
+  "CFBundleIdentifier" => "$(PRODUCT_BUNDLE_IDENTIFIER)"
+  "CFBundleInfoDictionaryVersion" => "6.0"
+  "CFBundleName" => "$(PRODUCT_NAME)"
+  "CFBundlePackageType" => "APPL"
+  "CFBundleShortVersionString" => "$(MARKETING_VERSION)"
+  "CFBundleVersion" => "$(CURRENT_PROJECT_VERSION)"
+  "LSRequiresIPhoneOS" => true
+  "UILaunchStoryboardName" => "LaunchScreen"
+  "UIMainStoryboardFile" => "Main"
+  "UIRequiredDeviceCapabilities" => [
+    0 => "armv7"
+  ]
+  "UISupportedInterfaceOrientations" => [
+    0 => "UIInterfaceOrientationPortrait"
+    1 => "UIInterfaceOrientationLandscapeLeft"
+    2 => "UIInterfaceOrientationLandscapeRight"
+  ]
+  "UISupportedInterfaceOrientations~ipad" => [
+    0 => "UIInterfaceOrientationPortrait"
+    1 => "UIInterfaceOrientationPortraitUpsideDown"
+    2 => "UIInterfaceOrientationLandscapeLeft"
+    3 => "UIInterfaceOrientationLandscapeRight"
+  ]
+  "UIViewControllerBasedStatusBarAppearance" => true
+}
+
+=== Podfile ===
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+
+platform :ios, '14.0'
+use_frameworks!
+
+# workaround to avoid Xcode caching of Pods that requires
+# Product -> Clean Build Folder after new Cordova plugins installed
+# Requires CocoaPods 1.6 or newer
+install! 'cocoapods', :disable_input_output_paths => true
+
+def capacitor_pods
+  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
+  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+  pod 'CapacitorBrowser', :path => '../../node_modules/@capacitor/browser'
+  pod 'CapacitorNetwork', :path => '../../node_modules/@capacitor/network'
+  pod 'CapacitorSplashScreen', :path => '../../node_modules/@capacitor/splash-screen'
+end
+
+target 'App' do
+  capacitor_pods
+  # Add your Pods here
+end
+
+post_install do |installer|
+  assertDeploymentTarget(installer)
+end
+
+=== Entitlements files ===
+
+=== Capabilities / associated domains / background modes ===
+
+=== Deployment target / bundle / versions ===
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:267:				CODE_SIGN_IDENTITY = "iPhone Developer";
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:286:				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:324:				CODE_SIGN_IDENTITY = "iPhone Developer";
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:337:				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:350:				CODE_SIGN_STYLE = Automatic;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:351:				CURRENT_PROJECT_VERSION = 1;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:353:				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:355:				MARKETING_VERSION = 1.0;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:357:				PRODUCT_BUNDLE_IDENTIFIER = com.DilMart.store;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:370:				CODE_SIGN_STYLE = Automatic;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:371:				CURRENT_PROJECT_VERSION = 1;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:373:				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:375:				MARKETING_VERSION = 1.0;
+/Users/runner/work/DilMart-Store/DilMart-Store/ios/App/App.xcodeproj/project.pbxproj:376:				PRODUCT_BUNDLE_IDENTIFIER = com.DilMart.store;

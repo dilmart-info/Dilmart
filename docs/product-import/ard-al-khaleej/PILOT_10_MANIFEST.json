@@ -1,0 +1,29 @@
+{
+  "task_id": "DilMart-ARD-AL-KHALEEJ-VERTICAL-PILOT-10-001",
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "merchant_slug": "arth-al-khaleg",
+  "category_id": "fc662e9f-ea22-454e-bb29-cdb7bf5ea90c",
+  "category_name": "عطور و معطرات جسم",
+  "defaults": {
+    "stock": 0,
+    "is_active": false,
+    "is_published": false,
+    "visibility_status": "private",
+    "discount_price": null,
+    "purchase_price": 0
+  },
+  "skus": [
+    { "source_code": "1015", "sku": "ARD-1015", "name": "عطر فلفت عود", "brand": "Lattafa", "size": "100 مل", "price_iqd": 23000 },
+    { "source_code": "1042", "sku": "ARD-1042", "name": "عطر ليل ملكي", "brand": "Lattafa", "size": "100 مل", "price_iqd": 15000 },
+    { "source_code": "1065", "sku": "ARD-1065", "name": "عود مود إكسير", "brand": "Lattafa", "size": "100 مل", "price_iqd": 19000 },
+    { "source_code": "1172", "sku": "ARD-1172", "name": "عطر فخر لطافة رجالي", "brand": "Lattafa", "size": "100 مل", "price_iqd": 24000 },
+    { "source_code": "1173", "sku": "ARD-1173", "name": "عطر فخر لطافة نسائي", "brand": "Lattafa", "size": "100 مل", "price_iqd": 24000 },
+    { "source_code": "1191", "sku": "ARD-1191", "name": "عطر عود مود ذهبي", "brand": "Lattafa", "size": "100 مل", "price_iqd": 19000 },
+    { "source_code": "3270", "sku": "ARD-3270", "name": "عطر أميرة العرب برايف روز", "brand": "Asdaaf", "size": "100 مل", "price_iqd": 16000 },
+    { "source_code": "1826", "sku": "ARD-1826", "name": "عطر ناو أسود", "brand": "RAVE", "size": "100 مل", "price_iqd": 20000 },
+    { "source_code": "2800", "sku": "ARD-2800", "name": "عطر ناو إنتنس أزرق", "brand": "RAVE", "size": "100 مل", "price_iqd": 20000 },
+    { "source_code": "3723", "sku": "ARD-3723", "name": "عطر ناو نسائي", "brand": "RAVE", "size": "100 مل", "price_iqd": 20000 }
+  ],
+  "storage_path_template": "merchants/ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7/{SKU}/main.webp",
+  "allowed_image_url_prefix": "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/"
+}

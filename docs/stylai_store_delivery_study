@@ -1,0 +1,438 @@
+# 🔍 دراسة شاملة: DilMart-Store — الربط مع شركة التوصيل
+
+## 1. نظرة عامة على المشروع
+
+| العنصر | القيمة |
+|--------|--------|
+| **الاسم** | DilMart-Store (متجر ستايلي) |
+| **الغرض** | متجر تسوق أونلاين في العراق |
+| **Frontend** | React + Vite + TypeScript + Tailwind CSS + shadcn/ui |
+| **Backend** | NestJS (TypeScript) — مستقل في `backend/` |
+| **Database** | Supabase (PostgreSQL) |
+| **State Management** | Zustand + React Query |
+| **شركة التوصيل** | Jenni (الزعيم إكسبرس) — `jenni.alzaeemexp.com` |
+| **الاستضافة** | Render (backend) + Netlify (frontend) |
+
+---
+
+## 2. هيكل المشروع (المتعلق بالتوصيل)
+
+```
+DilMart-Store/
+├── backend/src/modules/
+│   ├── shipping/                    ← إعدادات شركات التوصيل والأسعار
+│   │   ├── shipping.service.ts      ← CRUD لشركات التوصيل + أسعار المحافظات
+│   │   ├── shipping.controller.ts   ← REST API endpoints
+│   │   ├── shipping.dto.ts          ← Data Transfer Objects
+│   │   ├── shipping.module.ts       ← NestJS module
+│   │   └── delivery-operations.service.ts  ← ⭐ State Machine للتوصيل
+│   │
+│   ├── jenni/                       ← ⭐ وحدة الربط مع شركة Jenni (الزعيم)
+│   │   ├── jenni-auth.service.ts           ← مصادقة API Jenni (login/refresh)
+│   │   ├── jenni-client.service.ts         ← HTTP client لـ Jenni API v2
+│   │   ├── jenni-dispatch.service.ts       ← ⭐ إرسال الشحنات لـ Jenni
+│   │   ├── jenni-dispatch.util.ts          ← أدوات التحقق قبل الإرسال
+│   │   ├── jenni-sync.service.ts           ← ⭐ مزامنة الحالة من Jenni → المتجر
+│   │   ├── jenni-pricing.service.ts        ← تسعير التوصيل من تعرفة Jenni
+│   │   ├── jenni-reference-sync.service.ts ← مزامنة المحافظات والمدن من Jenni
+│   │   ├── jenni-status-mapper.ts          ← تحويل حالات Jenni → حالات المتجر
+│   │   ├── jenni-webhook.controller.ts     ← استقبال webhooks من Jenni
+│   │   ├── jenni-webhook-ingress.service.ts← معالجة webhook الوارد
+│   │   ├── jenni-webhook.util.ts           ← التحقق من صحة webhook
+│   │   ├── jenni-webhook-alias.ts          ← route بديل بدون /api prefix
+│   │   ├── jenni-name.util.ts              ← مطابقة أسماء المحافظات (عربي)
+│   │   ├── jenni.types.ts                  ← تعريفات TypeScript
+│   │   └── jenni.module.ts                 ← NestJS module
+│   │
+│   ├── checkout/                    ← عملية الدفع (يستخدم Jenni pricing)
+│   ├── orders/                      ← إدارة الطلبات
+│   ├── store-integration/           ← ربط DilMart-Main مع Store
+│   └── finance/                     ← الحسابات المالية
+│
+├── src/pages/admin/
+│   ├── Delivery.tsx                 ← صفحة إعدادات التوصيل
+│   ├── DeliveryOps.tsx              ← عمليات التوصيل
+│   ├── DeliveryIntelligence.tsx     ← ذكاء التوصيل
+│   └── OrderDetail.tsx             ← تفاصيل الطلب (يشمل إرسال لـ Jenni)
+```
+
+---
+
+## 3. ⭐ بنية الربط مع Jenni — التفصيل الكامل
+
+### 3.1 المصادقة (Authentication)
+
+[jenni-auth.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-auth.service.ts)
+
+```mermaid
+sequenceDiagram
+    participant Store as DilMart Backend
+    participant Jenni as Jenni API
+
+    Store->>Store: Check cached token
+    alt Token valid (not expired)
+        Store-->>Store: Return cached token
+    else Token expired + refresh token exists
+        Store->>Jenni: POST /v2/auth/refresh
+        alt Refresh success
+            Jenni-->>Store: New access + refresh tokens
+        else Refresh failed
+            Store->>Jenni: POST /v2/auth/login (username/password)
+            Jenni-->>Store: New access + refresh tokens
+        end
+    else No cached token
+        Store->>Jenni: POST /v2/auth/login
+        Jenni-->>Store: Access + refresh tokens
+    end
+```
+
+| المتغير | الوصف |
+|---------|-------|
+| `JENNI_API_BASE_URL` | `https://jenni.alzaeemexp.com/api` |
+| `JENNI_USERNAME` | اسم المستخدم لـ Jenni API |
+| `JENNI_PASSWORD` | كلمة المرور لـ Jenni API |
+| `JENNI_SYSTEM_CODE` | رمز النظام الخاص بالمتجر في Jenni |
+| `JENNI_WEBHOOK_TOKEN` | Bearer token لتأمين webhooks الواردة |
+
+**آلية الكاش**: التوكن يُحفظ في الذاكرة مع `expiresAtMs` ويُجدد قبل 30 ثانية من انتهائه.
+
+---
+
+### 3.2 إرسال الشحنات (Dispatch)
+
+[jenni-dispatch.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-dispatch.service.ts)
+
+```mermaid
+flowchart TD
+    A[Admin clicks 'إرسال لـ Jenni'] --> B{Check existing integration}
+    B -->|Already dispatched| C[❌ ConflictException]
+    B -->|Not dispatched| D[Load order data]
+    D --> E{Order eligible?}
+    E -->|Terminal status| F[❌ BadRequestException]
+    E -->|Eligible| G{Previous local_update_failed?}
+    G -->|Yes| H[Retry local dispatch only]
+    G -->|No| I[Build Jenni payload]
+    I --> J[POST /v2/shipments/create]
+    J --> K{Jenni accepted?}
+    K -->|Rejected| L[Save failure → ❌ BadRequestException]
+    K -->|Accepted| M[Persist integration row]
+    M --> N[Complete local dispatch]
+    N --> O{Local update OK?}
+    O -->|Yes| P[✅ Success]
+    O -->|No| Q[⚠️ local_update_failed - Jenni got it but local state is stale]
+```
+
+**Jenni Payload المُرسل:**
+```typescript
+{
+  shipment_number: "ORDER_NUMBER",      // رقم الطلب
+  external_shipment_id: "ORDER_UUID",   // UUID الطلب
+  receiver_name: "اسم العميل",
+  receiver_phone_1: "07XXXXXXXXX",      // Iraqi mobile format
+  governorate_code: "BGD",              // كود المحافظة من Jenni
+  city: "المنطقة",
+  address: "المنطقة — أقرب نقطة دالة",
+  amount_iqd: 25000,                    // المبلغ النقدي (COD)
+  quantity: 3,                          // عدد القطع
+  product_info: "شامبو x2, كريم x1",   // وصف المنتجات
+  note: "ملاحظات التوصيل"
+}
+```
+
+> [!IMPORTANT]
+> **حالة `local_update_failed`**: إذا Jenni قبلت الشحنة لكن تحديث DB المحلي فشل، النظام يحفظ الحالة كـ `local_update_failed` ويسمح بإعادة المحاولة (retry) بدون إنشاء شحنة مكررة في Jenni.
+
+---
+
+### 3.3 استقبال التحديثات (Sync & Webhooks)
+
+[jenni-sync.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-sync.service.ts)
+
+**ثلاث طرق لاستقبال التحديثات:**
+
+| الطريقة | المصدر | الوصف |
+|---------|--------|-------|
+| `webhook` | Jenni يرسل POST | تلقائي — Jenni تُبلّغنا بتغيير الحالة |
+| `query_sync` | نستعلم من Jenni API | مجدول — نسأل Jenni عن حالة الشحنات |
+| `manual_sync` | Admin يضغط "مزامنة" | يدوي — من لوحة تحكم الأدمن |
+
+```mermaid
+flowchart TD
+    A[Jenni Update Received] --> B[Record in delivery_provider_sync_events]
+    B --> C{Duplicate?}
+    C -->|Yes| D[Skip - return ok]
+    C -->|No| E[Find matching order]
+    E --> F{Order found?}
+    F -->|No| G[⚠️ Log warning - orphan update]
+    F -->|Yes| H[Map Jenni status → DeliveryStatus]
+    H --> I{Amount changed?}
+    I -->|Yes| J[Flag for admin review + insert delivery_event]
+    I -->|No| K[Update order_delivery_integrations]
+    J --> K
+    K --> L{Delivery transition needed?}
+    L -->|Yes| M[Apply delivery transition via DeliveryOps]
+    L -->|No| N[Insert delivery_event]
+    M --> N
+```
+
+**Webhook Endpoints:**
+- `POST /api/v2/push/update-status` — عبر NestJS controller
+- `POST /v2/push/update-status` — Express alias (بدون `/api`)
+
+**الأمان:** 
+- Bearer token validation (`JENNI_WEBHOOK_TOKEN`)
+- `system_code` validation (`JENNI_SYSTEM_CODE`)
+
+---
+
+### 3.4 خريطة تحويل حالات Jenni → المتجر
+
+[jenni-status-mapper.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-status-mapper.ts)
+
+| حالة Jenni (step/action) | حالة التوصيل المحلية | ملاحظات |
+|--------------------------|---------------------|---------|
+| `NEW_ORDER_TO_PRINT` | `assigned_to_company` | طلب جديد قيد الطباعة |
+| `NEW_ORDER_TO_PICKUP` | `assigned_to_company` | بانتظار الاستلام |
+| `NEW_WITH_PA` | `assigned_to_company` | مع وكيل الاستلام |
+| `IN_SC` | `picked_up` | في مركز الفرز |
+| `OFD` | `in_transit` | خارج للتوصيل |
+| `DELIVERED` | `delivered` | ✅ تم التوصيل |
+| `SUCCESSFUL_DELIVERY` | `delivered` | ✅ تسليم ناجح |
+| `DELIVERED_PRICE_CHANGED` | `delivered` | ⚠️ تم التوصيل مع تغيير السعر |
+| `POSTPONED` | `in_transit` | مؤجل |
+| `DELIVERY_REATTEMPT` | `in_transit` | إعادة محاولة |
+| `RTO_WITH_DA` | `returned` | مرتجع مع الوكيل |
+| `RTO_WH` | `returned` | مرتجع في المستودع |
+| `RETURN_APPROVED` | `returned` | تمت الموافقة على الإرجاع |
+| `RETURNED_WITH_AGENT` | `returned` | مرتجع مع المندوب |
+| `PARTIALLY_DELIVERED` | `in_transit` | ⚠️ تسليم جزئي - يحتاج مراجعة |
+
+---
+
+### 3.5 دورة حياة التوصيل (Delivery State Machine)
+
+[delivery-operations.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/shipping/delivery-operations.service.ts)
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending_assignment
+    pending_assignment --> assigned_to_company: تعيين شركة
+    pending_assignment --> cancelled: إلغاء
+    assigned_to_company --> assigned_to_agent: تعيين مندوب
+    assigned_to_company --> failed: فشل
+    assigned_to_company --> cancelled: إلغاء
+    assigned_to_agent --> picked_up: تم الاستلام
+    assigned_to_agent --> failed: فشل
+    assigned_to_agent --> cancelled: إلغاء
+    picked_up --> in_transit: في الطريق
+    picked_up --> failed: فشل
+    in_transit --> delivered: ✅ تم التوصيل
+    in_transit --> failed: فشل
+    in_transit --> returned: مرتجع
+    delivered --> returned: مرتجع بعد التوصيل
+    failed --> returned: مرتجع
+```
+
+**الانتقالات الممنوعة:**
+- `returned` → لا يوجد انتقال (نهائي)
+- `cancelled` → لا يوجد انتقال (نهائي)
+- `delivered` → فقط `returned`
+- `failed` → فقط `returned`
+
+**الآلية:** كل انتقال يتم عبر PostgreSQL RPC (`transition_delivery_status`) في transaction واحد (atomic) يشمل:
+1. تحديث `orders.delivery_status`
+2. إدراج سجل في `delivery_events`
+3. تحديث `orders.status` (legacy) للحالات النهائية
+4. حساب SLA breach
+
+---
+
+### 3.6 التسعير (Pricing)
+
+[jenni-pricing.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-pricing.service.ts)
+
+**المسار:** `delivery_companies` → `delivery_prices` (per governorate)
+
+- سعر التوصيل يُجلب من جدول `delivery_prices` (وليس من `governorates.delivery_price`)
+- يحدد الشركة عبر `provider_code = 'jenni'` + `is_active = true`
+- يُستخدم في:
+  - `CheckoutService.preview()` — لعرض تكلفة التوصيل
+  - `CheckoutService.submit()` — لحساب المبلغ الإجمالي
+
+> [!NOTE]
+> Jenni API لا تعرض تعرفات الشحن — الأسعار تُدار محلياً ويتم نسخها من `governorates.delivery_price` عند المزامنة الأولى.
+
+---
+
+### 3.7 مزامنة المرجع الجغرافي
+
+[jenni-reference-sync.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-reference-sync.service.ts)
+
+```mermaid
+flowchart LR
+    A[Jenni API: /v2/reference/governorates] --> B[جلب المحافظات]
+    B --> C[مطابقة مع المحافظات المحلية]
+    C --> D[تحديث jenni_governorate_code]
+    D --> E{copy_prices?}
+    E -->|Yes| F[نسخ الأسعار من governorates.delivery_price → delivery_prices]
+    E -->|No| G[Done]
+    F --> H{sync_cities?}
+    H -->|Yes| I[Jenni API: /v2/reference/cities per gov]
+    I --> J[حفظ في jenni_cities_reference]
+    H -->|No| G
+```
+
+**المطابقة الذكية للأسماء** ([jenni-name.util.ts](file:///e:/Project/DilMart-Store/backend/src/modules/jenni/jenni-name.util.ts)):
+1. تطبيع الحروف العربية (أ/إ/آ → ا، ة → ه، ى → ي)
+2. إزالة التشكيل والأقواس
+3. مطابقة exact → partial → English fallback
+
+---
+
+## 4. نموذج البيانات (Data Model)
+
+### جداول قاعدة البيانات المتعلقة بالتوصيل
+
+| الجدول | الغرض |
+|--------|-------|
+| `delivery_companies` | شركات التوصيل (Jenni, etc.) مع `provider_code`, `is_active`, `default_sla_minutes`, `cod_remittance_mode` |
+| `delivery_prices` | أسعار التوصيل per company per governorate |
+| `governorates` | المحافظات + `jenni_governorate_code` + `delivery_price` (legacy) |
+| `regions` | المناطق الفرعية داخل كل محافظة |
+| `orders` | يحتوي: `delivery_status`, `delivery_company_id`, `agent_id`, `delivery_sla_due_at`, `delivery_sla_breached`, timestamps |
+| `order_delivery_integrations` | ربط الطلب بـ Jenni: `provider_code`, `provider_shipment_id`, `external_shipment_id`, `dispatch_status`, `airway_bill_number`, `amount_change_flag` |
+| `delivery_events` | سجل كل حدث تغيير حالة (audit trail) |
+| `delivery_provider_sync_events` | سجل كل تحديث وارد من Jenni (dedupe بـ `payload_hash`) |
+| `jenni_cities_reference` | مرجع مدن Jenni المزامنة |
+| `profiles` | مع `role = 'agent'` + `delivery_company_id` للمناديب |
+
+---
+
+## 5. صفحات الأدمن (Frontend)
+
+| الصفحة | الملف | الوظيفة |
+|--------|-------|---------|
+| إعدادات التوصيل | [Delivery.tsx](file:///e:/Project/DilMart-Store/src/pages/admin/Delivery.tsx) | إدارة شركات التوصيل + أسعار المحافظات + مزامنة Jenni + سياسة COD |
+| عمليات التوصيل | [DeliveryOps.tsx](file:///e:/Project/DilMart-Store/src/pages/admin/DeliveryOps.tsx) | متابعة حالة التوصيل للطلبات |
+| ذكاء التوصيل | [DeliveryIntelligence.tsx](file:///e:/Project/DilMart-Store/src/pages/admin/DeliveryIntelligence.tsx) | تحليلات وإحصائيات |
+| تفاصيل الطلب | [OrderDetail.tsx](file:///e:/Project/DilMart-Store/src/pages/admin/OrderDetail.tsx) | إرسال لـ Jenni + مزامنة + تغيير الحالة |
+| طلبات المندوب | [AgentOrders.tsx](file:///e:/Project/DilMart-Store/src/pages/AgentOrders.tsx) | واجهة المندوب |
+
+---
+
+## 6. مسار الطلب الكامل (End-to-End Flow)
+
+```mermaid
+sequenceDiagram
+    participant Customer as العميل
+    participant Frontend as واجهة المتجر
+    participant Backend as DilMart Backend
+    participant DB as Supabase DB
+    participant Jenni as Jenni API (الزعيم)
+
+    Customer->>Frontend: يختار المنتجات + يُدخل العنوان
+    Frontend->>Backend: POST /checkout/preview
+    Backend->>DB: جلب أسعار المنتجات + سعر التوصيل (Jenni tariff)
+    Backend-->>Frontend: {subtotal, delivery_cost, total}
+    
+    Customer->>Frontend: يأكد الطلب
+    Frontend->>Backend: POST /checkout/submit
+    Backend->>DB: RPC place_order (atomic: order + items + stock deduction)
+    DB-->>Backend: order_number
+    Backend-->>Frontend: {order_number, totals}
+    Frontend-->>Customer: صفحة شكراً + رقم الطلب
+
+    Note over Backend,Jenni: مرحلة التوصيل (Admin Panel)
+    
+    rect rgb(255, 245, 230)
+        Backend->>Backend: Admin clicks "إرسال لـ Jenni"
+        Backend->>DB: Load order + items + governorate
+        Backend->>Backend: Build Jenni payload
+        Backend->>Jenni: POST /v2/shipments/create
+        Jenni-->>Backend: {accepted_shipments: [{shipment_id, airway_bill_number}]}
+        Backend->>DB: Upsert order_delivery_integrations
+        Backend->>DB: Update delivery_status → assigned_to_company
+        Backend->>DB: Insert delivery_event (provider_dispatched)
+    end
+
+    rect rgb(230, 255, 230)
+        Note over Jenni,Backend: تحديثات الحالة من Jenni
+        Jenni->>Backend: POST /v2/push/update-status (webhook)
+        Backend->>DB: Record sync event (dedupe)
+        Backend->>Backend: Map Jenni status → delivery status
+        Backend->>DB: Update order + delivery_events
+    end
+```
+
+---
+
+## 7. 🔴 ملاحظات ونقاط مهمة
+
+### 7.1 نقاط القوة
+- ✅ **Atomic transitions**: كل تغيير حالة يتم عبر PostgreSQL RPC في transaction واحد
+- ✅ **Idempotent sync**: مزامنة مكررة لا تسبب مشاكل (dedupe بـ payload_hash)
+- ✅ **Retry mechanism**: حالة `local_update_failed` تسمح بإعادة المحاولة بدون duplicate في Jenni
+- ✅ **SLA tracking**: تتبع وقت التوصيل + breach detection
+- ✅ **Amount change detection**: اكتشاف تغيير المبلغ من Jenni + تنبيه admin
+- ✅ **Audit trail**: كل حدث مسجل في `delivery_events`
+- ✅ **Arabic name matching**: مطابقة ذكية للأسماء العربية
+
+### 7.2 نقاط يجب مراعاتها
+- ⚠️ **Token caching in-memory**: إذا أعيد تشغيل السيرفر، يُفقد التوكن ويتم login جديد
+- ⚠️ **No automatic dispatch**: الإرسال لـ Jenni يتم يدوياً من Admin — لا يوجد إرسال تلقائي عند إنشاء الطلب
+- ⚠️ **Single delivery company**: الكود مصمم حول Jenni فقط (`provider_code = 'jenni'`) رغم أن البنية تدعم شركات متعددة
+- ⚠️ **Rate limiting**: لا يوجد rate limiting محدد لـ Jenni API calls
+- ⚠️ **Webhook alias**: مسار Express مباشر (بدون NestJS middleware) لاستقبال webhooks
+
+### 7.3 الجداول والـ RPCs المطلوبة في Supabase
+- `transition_delivery_status` — RPC لتغيير حالة التوصيل
+- `clear_order_agent_atomic` — RPC لإزالة المندوب
+- `admin_override_delivery_status` — RPC لتجاوز Admin
+- `place_order` — RPC لإنشاء الطلب
+- `validate_coupon` — RPC للتحقق من الكوبون
+
+---
+
+## 8. الربط بين DilMart-Main و DilMart-Store
+
+[store-integration.service.ts](file:///e:/Project/DilMart-Store/backend/src/modules/store-integration/store-integration.service.ts)
+
+هذا ربط مختلف عن التوصيل — يربط تطبيق الحلاق (DilMart Main) بالمتجر:
+
+```mermaid
+flowchart LR
+    A[DilMart Main Backend] -->|Signed JWT HMAC-SHA256| B[POST /integrations/DilMart/session/exchange]
+    B --> C[Verify token: iss, aud, exp, signature]
+    C --> D[Compute user segment]
+    D --> E[Upsert store_linked_profiles]
+    E --> F[Issue X-Store-Session token]
+    F --> G[Return to Barber App]
+```
+
+**الـ Segments:**
+- `DilMart_APP_BARBER_OWNER` — صاحب صالون عبر التطبيق
+- `DilMart_APP_BARBER_STAFF` — موظف صالون
+- `VERIFIED_SALON_OWNER` — صالون مُوثّق
+- `RETAIL_CUSTOMER` — زبون تجزئة
+- `DilMart_APP_CUSTOMER` — زبون عبر التطبيق
+
+> [!NOTE]
+> هذا الربط يخص تجزئة المنتجات (B2B vs B2C) وليس التوصيل مباشرة.
+
+---
+
+## 9. ملخص تنفيذي
+
+المتجر مبني بشكل ناضج من حيث ربط التوصيل مع Jenni (الزعيم). البنية تشمل:
+
+1. **15 ملف** مخصص لوحدة Jenni
+2. **State machine** كامل مع 9 حالات + قواعد انتقال صارمة
+3. **Webhook receiver** ثنائي المسار (NestJS + Express alias)
+4. **Financial integration** — كل تغيير حالة يُشغّل حسابات مالية
+5. **Geographic sync** — مزامنة المحافظات والمدن مع تطبيع عربي ذكي
+
+الربط يعمل في اتجاهين:
+- **Store → Jenni**: إرسال الشحنات (`dispatchOrderToJenni`)
+- **Jenni → Store**: تحديثات الحالة (webhook + query sync + manual sync)
+
+**أنا جاهز لاستقبال المهمة الشاملة التي أعددتها.** 🚀

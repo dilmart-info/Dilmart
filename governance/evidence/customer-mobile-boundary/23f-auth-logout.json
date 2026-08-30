@@ -1,0 +1,9 @@
+{
+  "profileAuthed": true,
+  "logoutClicked": true,
+  "logoutMethod": "button-click",
+  "keysAfterLogout": 0,
+  "emailRedacted": "smoke.phase2.<redacted>@mailinator.com",
+  "userIdRedacted": "f4e406ad-****-****-****-********371d",
+  "note": "Session injected for profile; Settings tab logout button clicked; toast تم تسجيل الخروج"
+}

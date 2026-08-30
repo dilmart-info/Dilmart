@@ -1,0 +1,11 @@
+assets/icon-only.png                                       1500x1502    RGBA       2049417 B  sha256=01f05b2c2f53a9d13090112e7aeb59beb4effcfc596f92fd78fffb2363029c3a
+assets/logo.png                                            2101x709     RGBA       1356347 B  sha256=1b92b8a79583bce4556d85b5790c1a95eeddc69992d7af653e716d02cb554812
+assets/splash.png                                          2732x2732    RGBA        876768 B  sha256=8c3d8297122abb4ecb2a687469ef907818bae1836ba4a4b20d62f620484646d4
+assets/splash-dark.png                                     2732x2732    RGBA        876768 B  sha256=8c3d8297122abb4ecb2a687469ef907818bae1836ba4a4b20d62f620484646d4
+assets/icon-foreground.png                                 1024x1024    RGBA       1138714 B  sha256=401017fb76514a2a19dc0557d0b29d0a3e8265fcb364c1392a9f38941ca09202
+assets/icon-background.png                                 1024x1024    RGBA         23062 B  sha256=698a738cb642dcc25df56cf78a35e2866f145b8a957f01eac63db8632c2e262c
+assets/android/icon.png                                    1024x1024    RGBA       1468473 B  sha256=f580ba0643e17cd960662432c050066faadf3e3cd37bc2e1caee55f496fd43f1
+assets/android/splash.png                                  2732x2732    RGBA        431007 B  sha256=fd014663ca87a1bd017f0a937dce741fc51b0442615f03194e2b96855574bcc7
+assets/android/splash-dark.png                             2732x2732    RGBA        431007 B  sha256=fd014663ca87a1bd017f0a937dce741fc51b0442615f03194e2b96855574bcc7
+assets/ios/icon.png                                        1024x1024    RGBA       1468473 B  sha256=f580ba0643e17cd960662432c050066faadf3e3cd37bc2e1caee55f496fd43f1
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png 1024x1024    RGB        1361426 B  sha256=eb1cbc84efba0c5b67ce2ffe0a0a54ad1c15a7f80ff048b0a64a8d24acaadd5a

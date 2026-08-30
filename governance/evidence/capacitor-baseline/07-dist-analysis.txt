@@ -1,0 +1,64 @@
+DIST_BYTES=8065606
+DIST_MB=7.69
+
+=== Top JS chunks ===
+952.2 KB	assets\vendor-ixgCorFR.js
+240.3 KB	assets\index-CESq-sFx.js
+154.2 KB	assets\vendor-react-D9Ie8oh4.js
+103.2 KB	assets\vendor-radix-B66HTNTV.js
+54.9 KB	assets\OrderDetail-Dy1i4XCB.js
+36.5 KB	assets\ProductForm-DEZLI0K5.js
+26.9 KB	assets\JenniIntegration-BoB3pULm.js
+24.2 KB	assets\MerchantLayout-SZYG7_ap.js
+19.4 KB	assets\OrderDetail-BqUk9h6U.js
+16.7 KB	assets\Dashboard-BkaCbee5.js
+14.6 KB	assets\OrdersPage-GybOFfoX.js
+14.3 KB	assets\MerchantDetail-BKXnc5pS.js
+12.6 KB	assets\Reconciliation-yxLIyOd_.js
+11.7 KB	assets\ProductsPage-CL-infLU.js
+11.1 KB	assets\Categories-BOFvO4aN.js
+10.4 KB	assets\Delivery-BeGGDlaA.js
+9.9 KB	assets\Settings-CZ79frsN.js
+9.2 KB	assets\Executive-DgDcmxBy.js
+8.8 KB	assets\AdminLayout-CoQsQgR5.js
+7.9 KB	assets\FinancePayouts-D__IDdnR.js
+7.6 KB	assets\Finance-B_aXxuaJ.js
+7.5 KB	assets\CouponsPage-DaFCacqa.js
+7.1 KB	assets\Merchants-DSf80YGN.js
+7 KB	assets\Agents-aUCGyPoX.js
+6.5 KB	assets\ClaimAccount-DfPQnFsU.js
+6.4 KB	assets\Orders-Cxje8jff.js
+5.6 KB	assets\Loyalty-845z6rbK.js
+5.5 KB	assets\Addresses-B0fRuqf2.js
+5.4 KB	assets\Overview-mRQt_FFO.js
+5.2 KB	assets\FinanceReversals-DQl0Qa2o.js
+
+=== Admin/Merchant chunk presence ===
+ADMIN_MATCHES=1
+assets\AdminLayout-CoQsQgR5.js
+MERCHANT_MATCHES=10
+assets\FinanceMerchants-CgxTdCzu.js
+assets\merchant-push-Dn7-CiAM.js
+assets\merchant-rejection-reasons-CnDEZYsu.js
+assets\MerchantCreate-xLPDG0mo.js
+assets\MerchantDetail-BKXnc5pS.js
+assets\MerchantLayout-SZYG7_ap.js
+assets\MerchantPlanAssignments-C2AMHy3c.js
+assets\MerchantPlans-B_zTFlbu.js
+assets\Merchants-DSf80YGN.js
+assets\use-current-merchant-Bzm8xIvv.js
+
+=== All assets matching admin|merchant (any ext) ===
+0 KB	merchant
+8.8 KB	assets\AdminLayout-CoQsQgR5.js
+2.7 KB	assets\FinanceMerchants-CgxTdCzu.js
+3.5 KB	assets\merchant-push-Dn7-CiAM.js
+1.1 KB	assets\merchant-rejection-reasons-CnDEZYsu.js
+2.1 KB	assets\MerchantCreate-xLPDG0mo.js
+14.3 KB	assets\MerchantDetail-BKXnc5pS.js
+24.2 KB	assets\MerchantLayout-SZYG7_ap.js
+2.9 KB	assets\MerchantPlanAssignments-C2AMHy3c.js
+3.7 KB	assets\MerchantPlans-B_zTFlbu.js
+7.1 KB	assets\Merchants-DSf80YGN.js
+0.9 KB	assets\use-current-merchant-Bzm8xIvv.js
+11.8 KB	sounds\merchant-new-order.wav

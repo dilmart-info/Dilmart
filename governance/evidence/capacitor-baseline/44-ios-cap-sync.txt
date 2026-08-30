@@ -1,0 +1,16 @@
+✔ Copying web assets from dist to ios/App/App/public in 30.69ms
+✔ Creating capacitor.config.json in ios/App/App in 781.63μs
+✔ copy ios in 97.98ms
+✔ Updating iOS plugins in 21.42ms
+✖ Updating iOS native dependencies with pod install - failed!
+✖ update ios - failed!
+[error] Analyzing dependencies
+        Adding spec repo `trunk` with CDN `https://cdn.cocoapods.org/`
+        [!] CocoaPods could not find compatible versions for pod "Capacitor":
+        In Podfile:
+        Capacitor (from `../../node_modules/@capacitor/ios`)
+        
+        Specs satisfying the `Capacitor (from `../../node_modules/@capacitor/ios`)` dependency were found, but they required a higher minimum deployment target.
+        
+
+EXIT_CODE=1

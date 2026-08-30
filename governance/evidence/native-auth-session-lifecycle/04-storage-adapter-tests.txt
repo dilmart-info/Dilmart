@@ -1,0 +1,10 @@
+STORAGE_ADAPTER_TESTS=PASS
+COMMAND=npx vitest run src/lib/auth/auth-storage.test.ts src/lib/auth/native-secure-auth-storage.test.ts src/lib/auth/auth-storage-keys.test.ts
+COVERAGE=
+- Native uses secure adapter
+- Web uses localStorage adapter
+- Native never falls back to localStorage
+- Missing secure item returns null
+- set/get/remove round-trip
+- Plugin failure produces storage_error / AuthStorageUnavailableError
+RESULT=included in 56 auth unit tests PASS

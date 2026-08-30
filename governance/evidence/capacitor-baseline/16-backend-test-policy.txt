@@ -1,0 +1,166 @@
+node.exe : npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm 
+help npmrc` for supported config options.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Users\derma\AppData\Roaming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (npm warn Unknow...config options.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+
+> DilMart-store-backend@0.1.0 test:policy
+> npm run build && node --test tests/policy-matrix.test.mjs tests/policy-endpoints.test.mjs
+
+npm warn Unknown env config "devdir". This will stop working in the next major version of npm. See `npm help npmrc` 
+for supported config options.
+
+> DilMart-store-backend@0.1.0 build
+> nest build
+
+TAP version 13
+# Subtest: boot app with fake supabase
+ok 1 - boot app with fake supabase
+  ---
+  duration_ms: 3227.8336
+  type: 'test'
+  ...
+# Subtest: merchant can access own products scope
+ok 2 - merchant can access own products scope
+  ---
+  duration_ms: 66.3088
+  type: 'test'
+  ...
+# Subtest: merchant denied on foreign products scope
+ok 3 - merchant denied on foreign products scope
+  ---
+  duration_ms: 8.8776
+  type: 'test'
+  ...
+# Subtest: merchant can access own scoped customers
+ok 4 - merchant can access own scoped customers
+  ---
+  duration_ms: 9.4911
+  type: 'test'
+  ...
+# Subtest: merchant denied on foreign scoped customers
+ok 5 - merchant denied on foreign scoped customers
+  ---
+  duration_ms: 8.477
+  type: 'test'
+  ...
+# Subtest: admin can access global customers without merchant scope
+ok 6 - admin can access global customers without merchant scope
+  ---
+  duration_ms: 5.4401
+  type: 'test'
+  ...
+# Subtest: uploads require bearer token
+ok 7 - uploads require bearer token
+  ---
+  duration_ms: 27.9149
+  type: 'test'
+  ...
+# Subtest: categories create requires bearer token
+ok 8 - categories create requires bearer token
+  ---
+  duration_ms: 4.1782
+  type: 'test'
+  ...
+# Subtest: shutdown app
+ok 9 - shutdown app
+  ---
+  duration_ms: 8.5107
+  type: 'test'
+  ...
+# Subtest: boot app once
+ok 10 - boot app once
+  ---
+  duration_ms: 3227.0012
+  type: 'test'
+  ...
+# Subtest: guard blocks missing actor role on admin route
+ok 11 - guard blocks missing actor role on admin route
+  ---
+  duration_ms: 65.0982
+  type: 'test'
+  ...
+# Subtest: guard blocks executive governance route without auth
+ok 12 - guard blocks executive governance route without auth
+  ---
+  duration_ms: 7.9436
+  type: 'test'
+  ...
+# Subtest: guard blocks invalid role on scoped routes
+ok 13 - guard blocks invalid role on scoped routes
+  ---
+  duration_ms: 6.4376
+  type: 'test'
+  ...
+# Subtest: guard blocks protected orders route without bearer token
+ok 14 - guard blocks protected orders route without bearer token
+  ---
+  duration_ms: 3.8807
+  type: 'test'
+  ...
+# Subtest: guard blocks protected products route without bearer token
+ok 15 - guard blocks protected products route without bearer token
+  ---
+  duration_ms: 3.3342
+  type: 'test'
+  ...
+# Subtest: guard blocks protected admin customers route without bearer token
+ok 16 - guard blocks protected admin customers route without bearer token
+  ---
+  duration_ms: 3.0988
+  type: 'test'
+  ...
+# Subtest: scope resolver matrix: allow/deny across core services
+ok 17 - scope resolver matrix: allow/deny across core services
+  ---
+  duration_ms: 5.135
+  type: 'test'
+  ...
+# Subtest: HTTP: client spoofing actor_role/actor_id in query parameter does not elevate privileges
+ok 18 - HTTP: client spoofing actor_role/actor_id in query parameter does not elevate privileges
+  ---
+  duration_ms: 5.4954
+  type: 'test'
+  ...
+# Subtest: HTTP: client spoofing actor_role/actor_id in request body does not elevate privileges
+ok 19 - HTTP: client spoofing actor_role/actor_id in request body does not elevate privileges
+  ---
+  duration_ms: 27.7752
+  type: 'test'
+  ...
+# Subtest: HTTP: merchant user cannot access another merchant via merchant_id query param
+ok 20 - HTTP: merchant user cannot access another merchant via merchant_id query param
+  ---
+  duration_ms: 6.1792
+  type: 'test'
+  ...
+# Subtest: HTTP: admin/super_admin filtering by merchant_id remains functional
+ok 21 - HTTP: admin/super_admin filtering by merchant_id remains functional
+  ---
+  duration_ms: 10.1667
+  type: 'test'
+  ...
+# Subtest: HTTP: customer/self routes do not rely on client-supplied user identity
+ok 22 - HTTP: customer/self routes do not rely on client-supplied user identity
+  ---
+  duration_ms: 2.8891
+  type: 'test'
+  ...
+# Subtest: shutdown app
+ok 23 - shutdown app
+  ---
+  duration_ms: 6.4103
+  type: 'test'
+  ...
+1..23
+# tests 23
+# suites 0
+# pass 23
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4169.4383

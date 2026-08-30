@@ -1,0 +1,7 @@
+Command line invocation:
+    /Applications/Xcode_26.5.app/Contents/Developer/usr/bin/xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -showBuildSettings
+
+2026-07-26 08:47:14.909 xcodebuild[17542:49413] Writing error result bundle to /var/folders/8j/sfr9qqcj73j4p6nhwcfpr0th0000gn/T/ResultBundle_2026-26-07_08-47-0014.xcresult
+xcodebuild: error: The workspace named "App" does not contain a scheme named "App". The "-list" option can be used to find the names of the schemes in the workspace.
+
+EXIT_CODE=65

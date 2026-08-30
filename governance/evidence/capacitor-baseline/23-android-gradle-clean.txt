@@ -1,0 +1,37 @@
+Downloading https://services.gradle.org/distributions/gradle-8.13-all.zip
+......................10%......................20%......................30%......................40%......................50%......................60%......................70%.......................80%......................90%......................100%
+
+Welcome to Gradle 8.13!
+
+Here are the highlights of this release:
+ - Daemon JVM auto-provisioning
+ - Enhancements for Scala plugin and JUnit testing
+ - Improvements for build authors and plugin developers
+
+For more details see https://docs.gradle.org/8.13/release-notes.html
+
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon JVM discovery is an incubating feature.
+.\gradlew.bat : 
+At C:\Users\derma\AppData\Local\Temp\ps-script-2822944d-ede0-472b-936f-25ec45e31a98.ps1:126 char:1
++ .\gradlew.bat clean --no-daemon 2>&1 | Tee-Object -FilePath "..\$ev/2 ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Unable to download toolchain matching the requirements ({languageVersion=21, vendor=JetBrains, 
+implementation=vendor-specific}) from 'null', due to: No defined toolchain download url for WINDOWS on x86_64 
+architecture.
+
+* Try:
+> Learn more about toolchain auto-detection and auto-provisioning at 
+https://docs.gradle.org/8.13/userguide/toolchains.html#sec:auto_detection.
+> Learn more about toolchain repositories at 
+https://docs.gradle.org/8.13/userguide/toolchains.html#sub:download_repositories.
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.

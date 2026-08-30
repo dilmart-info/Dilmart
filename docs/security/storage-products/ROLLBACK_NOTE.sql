@@ -1,0 +1,12 @@
+-- ROLLBACK NOTE for 20260801210000_products_storage_write_lockdown.sql
+--
+-- Re-creating Public Insert/Update/Delete is an emergency-only decision that
+-- reopens a known Pilot blocker. Prefer keeping lockdown and using:
+--   POST /uploads/products/image (service role)
+--
+-- Do NOT run this against production without explicit security authorization.
+
+-- Emergency reopen (NOT recommended):
+-- CREATE POLICY "Public Insert" ON storage.objects FOR INSERT TO public WITH CHECK (true);
+-- CREATE POLICY "Public Update" ON storage.objects FOR UPDATE TO public USING (true) WITH CHECK (true);
+-- CREATE POLICY "Public Delete" ON storage.objects FOR DELETE TO public USING (true);

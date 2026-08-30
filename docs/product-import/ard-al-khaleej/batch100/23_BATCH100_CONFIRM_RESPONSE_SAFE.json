@@ -1,0 +1,631 @@
+{
+  "http_status": 201,
+  "created_at": "2026-08-04T13:24:08.216Z",
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "import_id": "ff3274c4-7f65-455b-8bda-549c4ecd3fad",
+  "head": "501c9ef9c2c553763d55886ebb0d67e0855b44aa",
+  "csv_sha256": "A4378AAFC3121C880230C960563F9DB7E148CA567B79CEAEE5930A873E4BA181",
+  "jwt_source": "file:.admin-jwt.env",
+  "jwt_len": 796,
+  "jwt_role_claim": "authenticated",
+  "actor_sub_prefix": "ac4e1f4f",
+  "response_keys": [
+    "rows",
+    "total",
+    "errors",
+    "failed",
+    "created",
+    "skipped",
+    "updated"
+  ],
+  "response": {
+    "rows": [
+      {
+        "sku": "ARD-1318",
+        "action": "created",
+        "product_id": "19083415-2b0d-4367-bbd6-f793baccbc8c",
+        "row_number": 2
+      },
+      {
+        "sku": "ARD-1319",
+        "action": "created",
+        "product_id": "ea508cf2-b502-4e2e-aa62-f8f6815f29c1",
+        "row_number": 3
+      },
+      {
+        "sku": "ARD-1320",
+        "action": "created",
+        "product_id": "f550ffae-8e84-4cd6-af3d-726db00d0c05",
+        "row_number": 4
+      },
+      {
+        "sku": "ARD-1369",
+        "action": "created",
+        "product_id": "44b6769e-1fa7-4eff-aee0-6aaeaa359f09",
+        "row_number": 5
+      },
+      {
+        "sku": "ARD-1430",
+        "action": "created",
+        "product_id": "1995f2cc-21d1-4e46-8dbc-89505313c316",
+        "row_number": 6
+      },
+      {
+        "sku": "ARD-1480",
+        "action": "created",
+        "product_id": "df4a2fc0-53bc-45b0-8c5e-032a523c4ada",
+        "row_number": 7
+      },
+      {
+        "sku": "ARD-1858",
+        "action": "created",
+        "product_id": "0efda44b-94f2-4352-8de8-ccbfa8c4e224",
+        "row_number": 8
+      },
+      {
+        "sku": "ARD-2126",
+        "action": "created",
+        "product_id": "df231857-3081-4c6a-85e6-18b25b66d9e3",
+        "row_number": 9
+      },
+      {
+        "sku": "ARD-2423",
+        "action": "created",
+        "product_id": "fcba2e4c-9a35-40cb-a4c3-20820c8a6520",
+        "row_number": 10
+      },
+      {
+        "sku": "ARD-2436",
+        "action": "created",
+        "product_id": "045101a0-93fd-41b8-8f8c-f812f5557bec",
+        "row_number": 11
+      },
+      {
+        "sku": "ARD-2437",
+        "action": "created",
+        "product_id": "96597b43-c10c-40f4-8395-c8202ef174a7",
+        "row_number": 12
+      },
+      {
+        "sku": "ARD-2471",
+        "action": "created",
+        "product_id": "5a44f177-a1ed-4d91-85b7-b69a4852dfb9",
+        "row_number": 13
+      },
+      {
+        "sku": "ARD-2493",
+        "action": "created",
+        "product_id": "07b9cf6e-a45d-4528-8567-72bd87612588",
+        "row_number": 14
+      },
+      {
+        "sku": "ARD-2494",
+        "action": "created",
+        "product_id": "8803b56e-51ad-49b9-86af-13fb8b98ad2f",
+        "row_number": 15
+      },
+      {
+        "sku": "ARD-2511",
+        "action": "created",
+        "product_id": "50e81234-f7ae-41d3-9e47-63afc2e64e54",
+        "row_number": 16
+      },
+      {
+        "sku": "ARD-2512",
+        "action": "created",
+        "product_id": "42b8a1b0-cb71-4540-8e5b-88649153587f",
+        "row_number": 17
+      },
+      {
+        "sku": "ARD-2515",
+        "action": "created",
+        "product_id": "0c7b9665-d267-4daf-bd5b-cd3e09af28a5",
+        "row_number": 18
+      },
+      {
+        "sku": "ARD-2583",
+        "action": "created",
+        "product_id": "f61f42fc-8956-46f2-a544-64f9ba0bdd30",
+        "row_number": 19
+      },
+      {
+        "sku": "ARD-2648",
+        "action": "created",
+        "product_id": "3430e3a1-d7c2-4ccc-af19-0ce9dbaaf30f",
+        "row_number": 20
+      },
+      {
+        "sku": "ARD-2745",
+        "action": "created",
+        "product_id": "1bd28cea-3159-40a8-a6a8-2c796e158bb3",
+        "row_number": 21
+      },
+      {
+        "sku": "ARD-2753",
+        "action": "created",
+        "product_id": "a990f968-2c45-41c7-b123-5b07ede68aa1",
+        "row_number": 22
+      },
+      {
+        "sku": "ARD-2760",
+        "action": "created",
+        "product_id": "a733d687-ad6d-4a21-9d23-4ef4c24650ba",
+        "row_number": 23
+      },
+      {
+        "sku": "ARD-2765",
+        "action": "created",
+        "product_id": "7ed1c7c0-9451-4da2-8509-e8b7c79a897b",
+        "row_number": 24
+      },
+      {
+        "sku": "ARD-2773",
+        "action": "created",
+        "product_id": "25807a80-5272-47f6-9356-b58c4179d214",
+        "row_number": 25
+      },
+      {
+        "sku": "ARD-2793",
+        "action": "created",
+        "product_id": "0ad730ac-da6f-4493-a333-b816b58b308d",
+        "row_number": 26
+      },
+      {
+        "sku": "ARD-2797",
+        "action": "created",
+        "product_id": "a4fdeaaf-ef5d-4464-9d98-a2f2e2e79e16",
+        "row_number": 27
+      },
+      {
+        "sku": "ARD-287",
+        "action": "created",
+        "product_id": "0210fcbf-9ca9-4279-910c-9814835511d9",
+        "row_number": 28
+      },
+      {
+        "sku": "ARD-2876",
+        "action": "created",
+        "product_id": "7690edb5-05cc-4972-a2be-d0b98afb0aab",
+        "row_number": 29
+      },
+      {
+        "sku": "ARD-2879",
+        "action": "created",
+        "product_id": "c256c0f3-a76f-4e9f-a6e2-0c06b7cf3221",
+        "row_number": 30
+      },
+      {
+        "sku": "ARD-2932",
+        "action": "created",
+        "product_id": "eec78115-f3cd-4e5d-8cbe-0b71f92f27f6",
+        "row_number": 31
+      },
+      {
+        "sku": "ARD-2933",
+        "action": "created",
+        "product_id": "0a6fc7e8-181a-4f3b-8563-6d583ae8f243",
+        "row_number": 32
+      },
+      {
+        "sku": "ARD-308",
+        "action": "created",
+        "product_id": "6bae4a29-eefb-4033-9158-1b232a7ea144",
+        "row_number": 33
+      },
+      {
+        "sku": "ARD-309",
+        "action": "created",
+        "product_id": "d5ecc6a9-006d-4d62-b747-7826a7181010",
+        "row_number": 34
+      },
+      {
+        "sku": "ARD-310",
+        "action": "created",
+        "product_id": "ccbdb71f-388d-46e0-8a84-8ccd062c9ba5",
+        "row_number": 35
+      },
+      {
+        "sku": "ARD-311",
+        "action": "created",
+        "product_id": "147aae07-ae36-4406-acab-d8edbeded244",
+        "row_number": 36
+      },
+      {
+        "sku": "ARD-3117",
+        "action": "created",
+        "product_id": "a246eabe-ca06-4def-9ab8-63f994fcf0b4",
+        "row_number": 37
+      },
+      {
+        "sku": "ARD-312",
+        "action": "created",
+        "product_id": "9a52adc8-3c64-419c-a638-5febf80a3276",
+        "row_number": 38
+      },
+      {
+        "sku": "ARD-3149",
+        "action": "created",
+        "product_id": "8f62c791-3da1-48d1-8ec0-220b6d53e562",
+        "row_number": 39
+      },
+      {
+        "sku": "ARD-3240",
+        "action": "created",
+        "product_id": "801dcc70-f6e5-4dbc-a9e3-066505d8dc80",
+        "row_number": 40
+      },
+      {
+        "sku": "ARD-3242",
+        "action": "created",
+        "product_id": "021c053a-6dc8-4228-be82-ae118c26187b",
+        "row_number": 41
+      },
+      {
+        "sku": "ARD-3244",
+        "action": "created",
+        "product_id": "aa94896d-f737-4e5f-8c5b-15578d3f23b8",
+        "row_number": 42
+      },
+      {
+        "sku": "ARD-3245",
+        "action": "created",
+        "product_id": "9f74b366-927b-4601-a15b-a402ccff081d",
+        "row_number": 43
+      },
+      {
+        "sku": "ARD-3260",
+        "action": "created",
+        "product_id": "6b13c3a2-f7da-4aab-bf42-678fa3d768cd",
+        "row_number": 44
+      },
+      {
+        "sku": "ARD-3274",
+        "action": "created",
+        "product_id": "d8cdb9d2-5441-4dee-b4bb-c1d4c23787eb",
+        "row_number": 45
+      },
+      {
+        "sku": "ARD-3347",
+        "action": "created",
+        "product_id": "72d976c6-769c-43f0-b8f3-3878685b2070",
+        "row_number": 46
+      },
+      {
+        "sku": "ARD-3349",
+        "action": "created",
+        "product_id": "b5173fb9-b143-41a0-9231-06093445f0e3",
+        "row_number": 47
+      },
+      {
+        "sku": "ARD-3350",
+        "action": "created",
+        "product_id": "5cc4a9cf-684f-4452-b1aa-8b0e78208dc6",
+        "row_number": 48
+      },
+      {
+        "sku": "ARD-3351",
+        "action": "created",
+        "product_id": "5ef7f9a6-b90f-4d88-a07a-1d42cc615912",
+        "row_number": 49
+      },
+      {
+        "sku": "ARD-3352",
+        "action": "created",
+        "product_id": "eef0eec7-41c1-492b-9706-61dee8b7a9b4",
+        "row_number": 50
+      },
+      {
+        "sku": "ARD-3353",
+        "action": "created",
+        "product_id": "ec5c0ab9-6a06-4d02-830f-f90f1f772a26",
+        "row_number": 51
+      },
+      {
+        "sku": "ARD-3531",
+        "action": "created",
+        "product_id": "d805397e-23c9-4c7a-961e-1047a1464002",
+        "row_number": 52
+      },
+      {
+        "sku": "ARD-3536",
+        "action": "created",
+        "product_id": "0a8fe100-69de-4b44-81f7-4d962a239ceb",
+        "row_number": 53
+      },
+      {
+        "sku": "ARD-3627",
+        "action": "created",
+        "product_id": "e4679dc4-cdc9-44c1-a9ab-6ddbdb334196",
+        "row_number": 54
+      },
+      {
+        "sku": "ARD-3628",
+        "action": "created",
+        "product_id": "224239d5-efc4-4ec3-899c-9fee32ec9e2d",
+        "row_number": 55
+      },
+      {
+        "sku": "ARD-3709",
+        "action": "created",
+        "product_id": "744306d2-87df-4679-8f56-60e5aef5225c",
+        "row_number": 56
+      },
+      {
+        "sku": "ARD-3710",
+        "action": "created",
+        "product_id": "cd5ae895-e38c-4ed3-a6e9-c17a7f67d207",
+        "row_number": 57
+      },
+      {
+        "sku": "ARD-3711",
+        "action": "created",
+        "product_id": "1c423251-8d0c-4aff-b242-5b07bd75b629",
+        "row_number": 58
+      },
+      {
+        "sku": "ARD-3712",
+        "action": "created",
+        "product_id": "c428991b-aede-45e4-9f2c-b0027acd81e8",
+        "row_number": 59
+      },
+      {
+        "sku": "ARD-3714",
+        "action": "created",
+        "product_id": "a542e3e8-bd95-449b-af7f-c21faaad83c8",
+        "row_number": 60
+      },
+      {
+        "sku": "ARD-3897",
+        "action": "created",
+        "product_id": "cf95e34f-39ca-48ed-9d95-d71d6cf899da",
+        "row_number": 61
+      },
+      {
+        "sku": "ARD-4138",
+        "action": "created",
+        "product_id": "8a981308-8111-4ce2-95d9-2df84646e760",
+        "row_number": 62
+      },
+      {
+        "sku": "ARD-4214",
+        "action": "created",
+        "product_id": "75b59634-76ac-470d-a3eb-61d0670f6a63",
+        "row_number": 63
+      },
+      {
+        "sku": "ARD-4215",
+        "action": "created",
+        "product_id": "3f656acf-6f0d-43bd-a34a-14c7f7e21018",
+        "row_number": 64
+      },
+      {
+        "sku": "ARD-4246",
+        "action": "created",
+        "product_id": "5a62505a-4e4e-4502-9831-a2311d425f07",
+        "row_number": 65
+      },
+      {
+        "sku": "ARD-4255",
+        "action": "created",
+        "product_id": "c4603422-b7ab-414d-a2b6-c3151556c932",
+        "row_number": 66
+      },
+      {
+        "sku": "ARD-4256",
+        "action": "created",
+        "product_id": "e33f738a-fd31-42bc-8cb5-5eff12dbb415",
+        "row_number": 67
+      },
+      {
+        "sku": "ARD-4273",
+        "action": "created",
+        "product_id": "5bc9e785-e12a-4fe4-870e-719f3628f594",
+        "row_number": 68
+      },
+      {
+        "sku": "ARD-4286",
+        "action": "created",
+        "product_id": "2d91ead3-f751-4bf1-873b-80a1da4301ac",
+        "row_number": 69
+      },
+      {
+        "sku": "ARD-4300",
+        "action": "created",
+        "product_id": "d0fbe636-a30e-4271-b6b5-81b2c3ea687a",
+        "row_number": 70
+      },
+      {
+        "sku": "ARD-4336",
+        "action": "created",
+        "product_id": "168c1b49-0ef5-4f54-92ef-425b5de2a27c",
+        "row_number": 71
+      },
+      {
+        "sku": "ARD-4564",
+        "action": "created",
+        "product_id": "24ba4b48-7ca3-4e03-a8df-8368248d63c4",
+        "row_number": 72
+      },
+      {
+        "sku": "ARD-463",
+        "action": "created",
+        "product_id": "71ae8d9d-6f1d-430a-8589-8853c44e35cb",
+        "row_number": 73
+      },
+      {
+        "sku": "ARD-4637",
+        "action": "created",
+        "product_id": "0162afa5-df1e-40ff-aeb3-ab367dda8dd0",
+        "row_number": 74
+      },
+      {
+        "sku": "ARD-465",
+        "action": "created",
+        "product_id": "afe9a923-5dec-4c81-b440-9329df11a376",
+        "row_number": 75
+      },
+      {
+        "sku": "ARD-466",
+        "action": "created",
+        "product_id": "25ae9867-7a5c-41ca-99a8-c33013eebfd7",
+        "row_number": 76
+      },
+      {
+        "sku": "ARD-4660",
+        "action": "created",
+        "product_id": "d5521d55-3eb5-40c2-b451-b28413d50ceb",
+        "row_number": 77
+      },
+      {
+        "sku": "ARD-4664",
+        "action": "created",
+        "product_id": "554d6f4b-d4c2-49b9-8e6b-789d07af0a59",
+        "row_number": 78
+      },
+      {
+        "sku": "ARD-467",
+        "action": "created",
+        "product_id": "a4fb0574-89d2-4d21-b1d7-2b546b3f05ef",
+        "row_number": 79
+      },
+      {
+        "sku": "ARD-4680",
+        "action": "created",
+        "product_id": "3dc3bafb-de82-4959-a0f8-24fb745a875f",
+        "row_number": 80
+      },
+      {
+        "sku": "ARD-4685",
+        "action": "created",
+        "product_id": "565095bd-e6fd-4a45-a073-4a130f84179b",
+        "row_number": 81
+      },
+      {
+        "sku": "ARD-4686",
+        "action": "created",
+        "product_id": "6aca5860-da38-4d92-a5b3-2d3ab01b36f6",
+        "row_number": 82
+      },
+      {
+        "sku": "ARD-4750",
+        "action": "created",
+        "product_id": "e445333b-6a4c-41ca-a820-0a665c34b05a",
+        "row_number": 83
+      },
+      {
+        "sku": "ARD-4751",
+        "action": "created",
+        "product_id": "14cff61c-cf4e-42eb-be80-015cbdbd9d33",
+        "row_number": 84
+      },
+      {
+        "sku": "ARD-4752",
+        "action": "created",
+        "product_id": "c8dcd9c4-a485-44d4-b7a3-27bdb7b7e94c",
+        "row_number": 85
+      },
+      {
+        "sku": "ARD-4770",
+        "action": "created",
+        "product_id": "454bd3d9-b768-4de6-b91b-c9af8703196a",
+        "row_number": 86
+      },
+      {
+        "sku": "ARD-479",
+        "action": "created",
+        "product_id": "35919e03-111b-49b4-9283-d3022de4753d",
+        "row_number": 87
+      },
+      {
+        "sku": "ARD-4792",
+        "action": "created",
+        "product_id": "324cc543-e7f0-44dd-8bb4-08c0406ce5be",
+        "row_number": 88
+      },
+      {
+        "sku": "ARD-4807",
+        "action": "created",
+        "product_id": "c107da64-a884-4d42-9589-765d05c304f5",
+        "row_number": 89
+      },
+      {
+        "sku": "ARD-5036",
+        "action": "created",
+        "product_id": "890d8ebd-0dcd-4fd2-9136-392977ea4ddc",
+        "row_number": 90
+      },
+      {
+        "sku": "ARD-5058",
+        "action": "created",
+        "product_id": "1f290741-9b46-4a36-bb60-e39baffd0437",
+        "row_number": 91
+      },
+      {
+        "sku": "ARD-663",
+        "action": "created",
+        "product_id": "3b2d56e7-5a57-4c0f-be0b-6576059a452d",
+        "row_number": 92
+      },
+      {
+        "sku": "ARD-715",
+        "action": "created",
+        "product_id": "74ecad34-af4f-4f1e-9f52-8796f191822d",
+        "row_number": 93
+      },
+      {
+        "sku": "ARD-766",
+        "action": "created",
+        "product_id": "d56f56a8-5261-4c2d-b2cb-05014d9753fd",
+        "row_number": 94
+      },
+      {
+        "sku": "ARD-775",
+        "action": "created",
+        "product_id": "6159fc97-9fd3-405e-91b9-986fe0741140",
+        "row_number": 95
+      },
+      {
+        "sku": "ARD-823",
+        "action": "created",
+        "product_id": "f5ba19f3-c763-460f-b42f-de809d393117",
+        "row_number": 96
+      },
+      {
+        "sku": "ARD-92",
+        "action": "created",
+        "product_id": "92ea2610-7cb3-4663-8bee-35623df92d2e",
+        "row_number": 97
+      },
+      {
+        "sku": "ARD-957",
+        "action": "created",
+        "product_id": "761ff1ea-d30d-4057-bc96-a27b4da19578",
+        "row_number": 98
+      },
+      {
+        "sku": "ARD-958",
+        "action": "created",
+        "product_id": "87ca90e4-c5a5-44cf-9d23-5de23429689d",
+        "row_number": 99
+      },
+      {
+        "sku": "ARD-959",
+        "action": "created",
+        "product_id": "8f743fd8-4c40-40bf-8029-88895f6d7297",
+        "row_number": 100
+      },
+      {
+        "sku": "ARD-970",
+        "action": "created",
+        "product_id": "b5c5c9d2-f14c-4f10-832c-abf68cdfd9b2",
+        "row_number": 101
+      }
+    ],
+    "total": 100,
+    "errors": [],
+    "failed": 0,
+    "created": 100,
+    "skipped": 0,
+    "updated": 0
+  }
+}

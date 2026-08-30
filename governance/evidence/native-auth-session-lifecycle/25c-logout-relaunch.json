@@ -1,0 +1,12 @@
+{
+  "label": "25c-logout-relaunch",
+  "storageProbe": {
+    "legacyPresent": false,
+    "securePresent": true,
+    "markerPresent": true,
+    "authedUi": true,
+    "authScreen": false,
+    "hash": "#/profile",
+    "textSlice": "حسابي نقاط الولاء المتوفرة 0 تعادل خصم بقيمة ٠ د.ع * تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها طلباتي إعدادات الحساب ليس لديك أي طلبات بعد تصفح المنتجات الآن مقترحات لك اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سن"
+  }
+}

@@ -1,0 +1,16 @@
+
+> DilMart-store-store@1.0.0 brand:assets
+> node scripts/mobile/build-brand-source-assets.mjs
+
+brand background      #0f0d0b (verified against icon-only.png dark field)
+icon artwork bounds   1366x1328 @ 61,82
+icon max radius       826.9px
+logo artwork bounds   1937x626 @ 42,39
+assets/icon-foreground.png  artwork 804x782 on 1024
+assets/icon-background.png  flat #0f0d0b on 1024
+assets/android/icon.png     artwork 933px on 1024
+assets/ios/icon.png         artwork 933px on 1024
+assets\splash.png            logo 1366x441 on 2732
+assets\splash-dark.png       logo 1366x441 on 2732
+assets\android\splash.png    logo 820x265 on 2732
+assets\android\splash-dark.png logo 820x265 on 2732

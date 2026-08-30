@@ -1,0 +1,8 @@
+# ESLint
+
+Baseline on branch base a95df07 : 464 problems (452 errors, 12 warnings) — all pre-existing in src/**
+After this phase                : 464 problems (452 errors, 12 warnings)
+Delta                           : 0
+Findings inside scripts/mobile/ : 0
+
+npm run lint already fails on main and is not wired into any workflow. No unrelated file was touched to fix it.

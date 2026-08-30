@@ -1,0 +1,31 @@
+product_id,merchant_id,merchant_name,merchant_status,product_name,is_active,is_published,visibility_status,merchant_sku,hide_reason
+6e13f078-eb03-4d1e-8a36-c261c97612ce,65575f7c-4204-44d0-99a0-fc1902e2ed91,شركة العرش,active,طاسة جلاتين حراري لجهاز الشمع - قياس ستندر لجميع الأجهزة,true,true,archived,S-A-0060,visibility_not_public
+282d2968-1f83-4eab-8ca3-c69a6ca29067,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,بخاخات رذاذ — طقم صالون,true,true,public,,merchant_not_active
+1fc65617-1699-409a-8136-c039c261a29e,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,بلسم شارب ولحية — ثبات خفيف,true,true,public,,merchant_not_active
+ed7f7d3e-e16d-4490-8f12-ce140da50616,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,رذاذ تعقيم أسطح وأدوات,true,true,public,,merchant_not_active
+5e2ca502-5d47-430b-a214-61b19c0bdcd9,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,رقائق ألمنيوم للصبغة — لفافة صالون,true,true,public,,merchant_not_active
+2d632456-76f3-43de-b8e4-b18b2cfc69f5,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,روب حلاقة مقاوم للماء,true,true,public,,merchant_not_active
+5c874495-aaae-45f0-9610-b7814474c9bd,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,زيت لحية طبيعي — لافندر وخشب الأرز,true,true,public,,merchant_not_active
+7562ee54-82a2-4d06-a0ce-be765dda9007,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,شفرات حلاقة تقليدية — طقم عناية,true,true,public,,merchant_not_active
+6de55685-27a8-436f-bbf7-669e8d9c2feb,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,شمع شارب قوي الثبات,true,true,public,,merchant_not_active
+03ca21f9-eeb9-4519-ba32-2ed583aaa6a3,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,طقم أوعية صبغة مع فرشاة,true,true,public,,merchant_not_active
+d9f07450-62c5-46c4-b436-5bde818a87b1,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,عينة نفاد مخزون (عرض واجهة),true,true,public,,merchant_not_active
+d57c585f-2f9f-4d2c-bc4b-64c8e4734336,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,فرشاة أسطوانية للتجعيد بالمجفف,true,true,public,,merchant_not_active
+3f13cd94-25a9-4b08-81b9-54e77799fa7d,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,فرشاة إزالة الشعر الرقيق,true,true,public,,merchant_not_active
+7221091d-f37e-44cd-a4f6-afa3b5d99782,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,فرشاة حرارية دوارة,true,true,public,,merchant_not_active
+d0571e41-2f64-4f0c-bcc3-0a5417a0c08a,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,فرشاة صبغة عريضة,true,true,public,,merchant_not_active
+3644f0c1-bd17-4e19-94a6-9af41208834a,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,فرشاة مجفف بيضاوية احترافية,true,true,public,,merchant_not_active
+a47ea5ee-39ca-422d-8e00-1ed832fa47a7,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,فرشاة مسطحة احترافية للفك,true,true,public,,merchant_not_active
+08b51d37-4e98-4092-b8ae-441a83252b8b,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,قفازات نتريل — صندوق صالون,true,true,public,,merchant_not_active
+e694c5a3-1499-480a-beeb-9fefe84c5fa4,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,كرسي حلاقة هيدروليك — جلد فاخر,true,true,public,,merchant_not_active
+319abd56-6156-45e1-bd51-5f80fa8df37e,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,ماكينة حلاقة احترافية — مرجع مخزون مرتبط بطلب سابق,true,true,public,,merchant_not_active
+724c84a9-9de8-4fb3-9985-1db8587f7f38,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,ماكينة حلاقة احترافية لاسلكية,true,true,public,,merchant_not_active
+5bae580a-8dcb-4dbc-aa09-8174b9b10f2b,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,ماكينة حلاقة سلكية عزم عالٍ,true,true,public,,merchant_not_active
+d7355b10-3068-48f4-8f75-d69fb2d4b4d6,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,مجفف شعر احترافي 2200 واط,true,true,public,,merchant_not_active
+3f71ad89-e119-44ac-977d-bebf63a4a9b5,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,محطة عمل حلاق — رف أدوات ومرآة LED,true,true,public,,merchant_not_active
+17d9b0b8-11d2-49d5-9cf0-94b4b75e134f,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,مشابك تثبيت تسريحات — طقم صالون,true,true,public,,merchant_not_active
+7a2d5198-5daa-4556-8ab3-a561ca7d6092,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,مشبك تنعيم احترافي,true,true,public,,merchant_not_active
+d778339a-568d-4e18-b808-1c6395a6739c,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,مقص حلاقة ياباني 6.5 بوصة,true,true,public,,merchant_not_active
+09eeab94-b9e1-4da3-bc08-457fc4182e53,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,مكواة تجعيد سيراميك — صالون نسائي,true,true,public,,merchant_not_active
+7bcc238e-0c84-48fa-86c3-5188c570c9ca,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,مناشف صالون قطنية — عبوة,true,true,public,,merchant_not_active
+08626a92-7199-45e4-a3bd-55f55179c9ed,a3e3b17d-450f-4ccf-81dd-72cc4d4172d4,DilMart Store,suspended,موس حلاقة قابل لإعادة التعبئة,true,true,public,,merchant_not_active

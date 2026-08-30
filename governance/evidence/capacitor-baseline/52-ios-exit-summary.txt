@@ -1,0 +1,11 @@
+40-ios-environment.txt: NO_EXIT_CODE
+41-ios-npm-ci.txt: EXIT_CODE=0
+42-ios-web-build.txt: EXIT_CODE=0
+43-ios-cap-doctor.txt: EXIT_CODE=1
+44-ios-cap-sync.txt: EXIT_CODE=1
+45-ios-pod-install.txt: EXIT_CODE=1
+46-ios-workspace-list.txt: EXIT_CODE=0
+47-ios-simulator-debug-build.txt: EXIT_CODE=65
+48-ios-generic-release-build-nosign.txt: EXIT_CODE=65
+49-ios-archive-attempt.txt: EXIT_CODE=65
+50-ios-build-settings.txt: EXIT_CODE=65

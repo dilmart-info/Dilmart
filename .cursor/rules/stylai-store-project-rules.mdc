@@ -1,0 +1,33 @@
+---
+description: DilMart-Store project rules. Always apply in this repository.
+alwaysApply: true
+---
+
+# DilMart-Store Cursor Rules
+
+Before coding, read:
+
+- `/ai/README_FOR_AI.md`
+- `/ai/PROJECT_CONTEXT.md`
+- `/ai/AGENTS.md`
+- `/ai/CURSOR_EXECUTION_RULES.md`
+- `/ai/QA_CLOSURE_GATE.md`
+
+Use relevant skills in `/ai/SKILLS/`.
+
+## Mandatory Behavior
+
+- Classify task A/B/C/D/E before coding.
+- Inspect relevant files before editing.
+- Provide Pre-Coding Diagnosis for non-trivial tasks.
+- Preserve backend API authority.
+- Do not introduce new frontend direct Supabase business access.
+- Do not trust frontend `user_id`, `merchant_id`, totals, points, stock, or price.
+- Preserve one-merchant cart/order invariant.
+- Preserve Arabic RTL/mobile-first UX.
+- Run available validation commands.
+- Provide Implementation Report with PASS / PASS WITH NOTES / FAIL.
+
+## Launch Closure Bias
+
+If the user asks for improvements before launch, prefer closing P0/P1 gaps over adding new features.

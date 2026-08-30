@@ -1,0 +1,6 @@
+IOS_BUILD=PENDING_NATIVE_CI
+LOCAL_CAP_SYNC_IOS=PASS
+PLUGINS_LISTED=SecureStorage + Preferences
+COCOAPODS_ON_WINDOWS=SKIPPED
+NOTE=Simulator Debug / Generic Release / Archive classifier run on Native Foundation CI macOS runner
+REAL_DEVICE=BLOCKED BY APPLE SIGNING

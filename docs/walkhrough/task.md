@@ -1,0 +1,29 @@
+- [x] Add `resolveMerchantScope` method inside `ScopeResolverService`
+- [x] Import `ScopeResolverModule` in `ProductsModule`, `MerchantsModule`, `InventoryModule`, `CouponsModule`, and `AdminModule`
+- [x] Refactor `ProductsService`:
+  - [x] Inject `ScopeResolverService`
+  - [x] Remove duplicate private helper methods (`resolveMerchantScope`, `isAdminRole`, `isMerchantRole`)
+  - [x] Update occurrences to use `this.scopeResolver.resolveMerchantScope`
+- [x] Refactor `OrdersService`:
+  - [x] Remove duplicate private helper methods (`resolveMerchantScope`, `isAdminRole`, `isMerchantRole`)
+  - [x] Update occurrences to use `this.scopeResolver.resolveMerchantScope`
+- [x] Refactor `MerchantsService`:
+  - [x] Inject `ScopeResolverService`
+  - [x] Remove duplicate private helper methods (`resolveMerchantScope`, `isAdminRole`, `isMerchantRole`)
+  - [x] Update occurrences to use `this.scopeResolver.resolveMerchantScope`
+- [x] Refactor `InventoryService`:
+  - [x] Inject `ScopeResolverService`
+  - [x] Remove duplicate private helper methods (`resolveMerchantScope`, `isAdminRole`, `isMerchantRole`)
+  - [x] Update occurrences to use `this.scopeResolver.resolveMerchantScope`
+- [x] Refactor `CouponsService`:
+  - [x] Inject `ScopeResolverService`
+  - [x] Remove duplicate private helper methods (`resolveMerchantScope`, `isAdminRole`, `isMerchantRole`)
+  - [x] Update occurrences to use `this.scopeResolver.resolveMerchantScope`
+- [x] Refactor `AdminService`:
+  - [x] Inject `ScopeResolverService`
+  - [x] Remove duplicate private helper methods (`resolveMerchantScope`, `isAdminRole`, `isMerchantRole`)
+  - [x] Update occurrences to use `this.scopeResolver.resolveMerchantScope`
+- [x] Run `npm run arch:guard`
+- [x] Compile backend (`npm run build`)
+- [x] Run integration and regression tests (`test:policy`, `test:hardening`)
+- [x] Update `governance/CLOSURE_REPORT.md`

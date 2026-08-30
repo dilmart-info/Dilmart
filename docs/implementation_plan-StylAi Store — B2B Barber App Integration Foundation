@@ -1,0 +1,372 @@
+# DilMart Store — B2B Barber App Integration Foundation
+
+## Overview
+
+هذه الخطة تُحضّر **Store Backend** فقط لاستقبال تكامل Barber App مستقبلاً.
+لا تمسّ Barber App. لا تمسّ DilMart Main. لا تكسر أي شيء موجود في المتجر العام.
+
+---
+
+## دراسة الحالة الراهنة (Current Architecture Analysis)
+
+### ما يوجد الآن:
+
+| المكوّن | الحالة الحالية |
+|---|---|
+| **products table** | `is_active`, `visibility_status` (public/private/archived), `is_featured`, `is_new`, `is_best_seller`، brand، colors، sizes — **لا يوجد** target_audience/visible_in/business_type |
+| **marketplace home** (`GET /marketplace/home`) | يُرجع categories + featuredMerchants + featuredProducts + newProducts + offerProducts — **غير متمايز بالـ surface/segment** |
+| **marketplace products** (`GET /marketplace/products`) | يفلتر فقط بـ category_slug, search, filter, price, brand — **لا segment** |
+| **auth** | Supabase JWT فقط — **لا يوجد session exchange** |
+| **orders table** | `user_id`, `merchant_id` — **لا يوجد** source_app / DilMart_user_id |
+| **checkout** | يقبل `actorId` من Supabase فقط |
+| **store_linked_profiles** | **لا يوجد بعد** |
+
+### ما يجب إضافته:
+
+```
+1. DB migrations (3 ملفات)
+   ├── product segmentation metadata fields
+   ├── orders source tracking fields
+   └── store_linked_profiles table
+
+2. Backend module جديد: store-integration
+   ├── POST /integrations/DilMart/session/exchange
+   └── GET  /marketplace/home?surface=barber_app&segment=...
+
+3. تحديث marketplace service
+   ├── دعم surface/segment/businessType في getHome()
+   └── دعم audience/surface في listProducts()
+
+4. تحديث product detail contract
+   └── إضافة الحقول الجديدة للـ SELECT
+
+5. تحديث UpsertProductDto + products.service.ts
+   └── قبول وحفظ حقول الـ segmentation
+
+6. تحديث frontend Admin Product Form
+   └── multi-select UI لحقول الـ segmentation
+```
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **البيئة:** نعمل على Store مباشرة (لا فرع خاص). الـ Supabase للـ Store منفصل تماماً.
+> الـ migrations ستُطبَّق على Store Supabase فقط.
+
+> [!WARNING]
+> **backward compatibility:** الـ migration الخاص بالمنتجات سيضيف حقول nullable/default فقط.
+> المنتجات الحالية ستبقى مرئية في Web Store تماماً (الـ default لـ visible_in = ['web_store']).
+> لن تظهر تلقائياً في Barber App — يجب تهيئتها يدوياً من Admin.
+
+> [!CAUTION]
+> **DilMart_INTEGRATION_SECRET** سيكون secret جديد في `backend/.env`.
+> يجب مشاركته مع DilMart Main Backend عند تنفيذ Phase 2 هناك (على Staging).
+
+---
+
+## Proposed Changes
+
+### Phase 1 — Database Migrations (Store Supabase)
+
+#### [NEW] `supabase/migrations/20260601100000_m26_product_segmentation_metadata.sql`
+
+```sql
+-- إضافة حقول الـ segmentation لجدول products
+ALTER TABLE public.products
+  ADD COLUMN IF NOT EXISTS target_audience  TEXT[]  NOT NULL DEFAULT ARRAY['all'],
+  ADD COLUMN IF NOT EXISTS business_type_tags TEXT[] NOT NULL DEFAULT ARRAY['all'],
+  ADD COLUMN IF NOT EXISTS product_use_case TEXT    NULL,
+  ADD COLUMN IF NOT EXISTS visible_in       TEXT[]  NOT NULL DEFAULT ARRAY['web_store'],
+  ADD COLUMN IF NOT EXISTS purchase_mode    TEXT[]  NOT NULL DEFAULT ARRAY['retail'],
+  ADD COLUMN IF NOT EXISTS is_b2b_offer     BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS requires_verified_salon BOOLEAN NOT NULL DEFAULT false,
+  ADD COLUMN IF NOT EXISTS min_order_qty    INT     NULL,
+  ADD COLUMN IF NOT EXISTS max_order_qty    INT     NULL;
+
+-- GIN indexes للبحث الفعّال
+CREATE INDEX IF NOT EXISTS idx_products_target_audience_gin   ON public.products USING GIN (target_audience);
+CREATE INDEX IF NOT EXISTS idx_products_business_type_tags_gin ON public.products USING GIN (business_type_tags);
+CREATE INDEX IF NOT EXISTS idx_products_visible_in_gin        ON public.products USING GIN (visible_in);
+CREATE INDEX IF NOT EXISTS idx_products_purchase_mode_gin     ON public.products USING GIN (purchase_mode);
+```
+
+#### [NEW] `supabase/migrations/20260601110000_m27_store_linked_profiles.sql`
+
+```sql
+-- جدول الملفات الشخصية المرتبطة بـ DilMart Main
+CREATE TABLE IF NOT EXISTS public.store_linked_profiles (
+  id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  DilMart_user_id        UUID     NULL,
+  DilMart_role           TEXT     NULL,
+  DilMart_barbershop_id  UUID     NULL,
+  store_customer_id     UUID     NULL REFERENCES public.profiles(id) ON DELETE SET NULL,
+  segment               TEXT     NOT NULL,
+  display_name          TEXT     NULL,
+  phone                 TEXT     NULL,
+  city                  TEXT     NULL,
+  business_type         TEXT     NULL,
+  source_app            TEXT     NOT NULL DEFAULT 'store_web',
+  last_synced_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_store_linked_profiles_DilMart_user_id
+  ON public.store_linked_profiles(DilMart_user_id) WHERE DilMart_user_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_store_linked_profiles_barbershop_id
+  ON public.store_linked_profiles(DilMart_barbershop_id);
+
+ALTER TABLE public.store_linked_profiles ENABLE ROW LEVEL SECURITY;
+-- Service role فقط يقرأ/يكتب هذا الجدول (من NestJS backend)
+```
+
+#### [NEW] `supabase/migrations/20260601120000_m28_orders_source_tracking.sql`
+
+```sql
+-- إضافة حقول تتبع المصدر لجدول الطلبات
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS source_app              TEXT NULL,
+  ADD COLUMN IF NOT EXISTS segment                 TEXT NULL,
+  ADD COLUMN IF NOT EXISTS DilMart_user_id          UUID NULL,
+  ADD COLUMN IF NOT EXISTS DilMart_barbershop_id    UUID NULL,
+  ADD COLUMN IF NOT EXISTS business_type           TEXT NULL,
+  ADD COLUMN IF NOT EXISTS store_linked_profile_id UUID NULL
+    REFERENCES public.store_linked_profiles(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS idx_orders_source_app ON public.orders(source_app);
+CREATE INDEX IF NOT EXISTS idx_orders_DilMart_user_id ON public.orders(DilMart_user_id);
+```
+
+---
+
+### Phase 2 — Store Integration Module (Backend)
+
+#### [NEW] `backend/src/modules/store-integration/store-integration.module.ts`
+#### [NEW] `backend/src/modules/store-integration/store-integration.controller.ts`
+#### [NEW] `backend/src/modules/store-integration/store-integration.service.ts`
+#### [NEW] `backend/src/modules/store-integration/store-integration.types.ts`
+
+**Endpoint المُضاف:**
+
+```
+POST /integrations/DilMart/session/exchange
+```
+
+المسؤوليات:
+1. التحقق من HMAC أو JWT بـ `DilMart_INTEGRATION_SECRET`
+2. التحقق من `iss`, `aud`, `exp`
+3. إنشاء/تحديث `store_linked_profiles`
+4. إرجاع context مناسب للـ Barber App
+
+**Security:**
+- `DilMart_INTEGRATION_SECRET` من env فقط
+- لا يُعرض أي سر للـ frontend
+- الـ token يُرفض إذا انتهت صلاحيته
+- يُرفض إذا كان `aud` أو `iss` خاطئاً
+
+---
+
+### Phase 3 — Product Visibility Service
+
+#### [NEW] `backend/src/modules/store-integration/product-visibility.service.ts`
+
+دالة `canProductBeShown(product, viewerContext)`:
+
+```ts
+interface ViewerContext {
+  surface: 'barber_app' | 'web_store' | 'customer_app' | 'all';
+  segment?: string;
+  role?: string;
+  businessType?: string;
+}
+```
+
+قواعد الرؤية:
+1. `product.is_active = true`
+2. `product.visible_in` يحتوي `surface` أو `'all'`
+3. `product.target_audience` يحتوي دور المستخدم أو `'all'`
+4. `product.business_type_tags` يطابق `businessType` أو `'all'`
+5. المنتج متاح أو يدعم pre-order
+
+---
+
+### Phase 4 — Marketplace Service Updates
+
+#### [MODIFY] `backend/src/modules/marketplace/marketplace.service.ts`
+
+**تحديث `getHome()`:**
+- قبول context: `{ surface, segment, businessType }`
+- إذا `surface = 'barber_app'` → تُطبَّق قواعد الرؤية
+- إذا `surface = 'web_store'` (default) → يعمل كما هو (backward compatible)
+- يُرجع sections ديناميكية بدلاً من buckets ثابتة
+
+**تحديث `listProducts()`:**
+- إضافة params: `surface`, `audience`, `businessType`, `useCase`, `purchaseMode`
+- إذا `surface = 'barber_app'` → يفلتر بقواعد الرؤية
+- إذا `surface = 'web_store'` (default) → نفس السلوك الحالي
+
+#### [MODIFY] `backend/src/modules/marketplace/marketplace.controller.ts`
+
+إضافة query params:
+```
+surface, segment, business_type, use_case, purchase_mode
+```
+
+#### [MODIFY] `backend/src/modules/marketplace/marketplace-product-detail.contract.ts`
+
+إضافة الحقول الجديدة للـ SELECT:
+```
+target_audience, business_type_tags, product_use_case, visible_in, purchase_mode, is_b2b_offer
+```
+
+---
+
+### Phase 5 — Products DTO & Service Updates
+
+#### [MODIFY] `backend/src/modules/products/products.dto.ts`
+
+إضافة:
+```ts
+@IsOptional() @IsArray() target_audience?: string[];
+@IsOptional() @IsArray() business_type_tags?: string[];
+@IsOptional() @IsString() product_use_case?: string | null;
+@IsOptional() @IsArray() visible_in?: string[];
+@IsOptional() @IsArray() purchase_mode?: string[];
+@IsOptional() @IsBoolean() is_b2b_offer?: boolean;
+@IsOptional() @IsBoolean() requires_verified_salon?: boolean;
+@IsOptional() @IsNumber() min_order_qty?: number | null;
+@IsOptional() @IsNumber() max_order_qty?: number | null;
+```
+
+#### [MODIFY] `backend/src/modules/products/products.service.ts`
+
+- `createProduct()` و `updateProduct()` يحفظان الحقول الجديدة
+- `quickAddProduct()` و import يستخدمان الـ defaults
+
+---
+
+### Phase 6 — Admin Product Form (Frontend)
+
+#### [MODIFY] `src/pages/admin/ProductForm.tsx`
+
+إضافة UI section جديدة: **"إعدادات التوزيع والجمهور"**
+
+- Multi-select لـ: `target_audience`, `business_type_tags`, `visible_in`, `purchase_mode`
+- Select واحد لـ: `product_use_case`
+- Checkboxes: `is_b2b_offer`, `requires_verified_salon`
+- Number inputs: `min_order_qty`, `max_order_qty`
+
+---
+
+### Phase 7 — Environment Variables
+
+#### [MODIFY] `backend/.env` و `backend/.env.example`
+
+إضافة:
+```env
+# DilMart Store Integration
+DilMart_INTEGRATION_SECRET=           # shared secret مع DilMart Main Backend
+DilMart_SESSION_ISSUER=DilMart-main
+DilMart_SESSION_AUDIENCE=DilMart-store
+DilMart_SESSION_TTL_SECONDS=900
+```
+
+#### [MODIFY] `backend/src/app.module.ts`
+
+إضافة `StoreIntegrationModule` إلى قائمة الـ modules.
+
+---
+
+## Verification Plan
+
+### Automated Tests (Backend)
+
+```bash
+# تشغيل البيلد
+cd backend && npm run build
+
+# اختبار endpoint الجديد
+curl -X POST http://localhost:4000/api/integrations/DilMart/session/exchange \
+  -H "Content-Type: application/json" \
+  -d '{"token": "invalid"}' 
+# Expected: 401 Unauthorized
+
+# اختبار marketplace home مع surface
+curl "http://localhost:4000/api/marketplace/home?surface=web_store"
+# Expected: نفس استجابة الـ home الحالية
+
+curl "http://localhost:4000/api/marketplace/home?surface=barber_app&businessType=men_barbershop"
+# Expected: استجابة مع sections ديناميكية مصفّاة
+```
+
+### Migration Check
+
+```bash
+# التحقق من الـ migration قبل التطبيق
+cat supabase/migrations/20260601100000_m26_product_segmentation_metadata.sql
+
+# قراءة الجدول بعد migration
+SELECT column_name, data_type, column_default
+FROM information_schema.columns
+WHERE table_name = 'products' AND column_name IN 
+  ('target_audience','business_type_tags','visible_in','purchase_mode','product_use_case');
+```
+
+### Manual Verification
+
+1. فتح Admin Panel → تعديل منتج → التحقق من ظهور الحقول الجديدة
+2. حفظ منتج بـ `visible_in = ['barber_app']` → التحقق من الحفظ
+3. استدعاء `GET /marketplace/products?surface=barber_app` → التحقق من التصفية
+4. التحقق من أن المتجر العام (web_store) يعمل بدون تغيير
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> **سؤال 1:** هل تريد أن يُطبّق الـ migration على Supabase Store مباشرة الآن، أم تريد المراجعة أولاً؟
+
+> [!IMPORTANT]
+> **سؤال 2:** `DilMart_INTEGRATION_SECRET` — هل لديك قيمة جاهزة أم أُولّد واحدة عشوائية؟
+
+> [!IMPORTANT]
+> **سؤال 3:** التحقق من الـ token في session exchange — هل تفضّل HMAC-SHA256 (shared secret) أم JWT asymmetric (public/private key)؟
+> **التوصية:** HMAC-SHA256 أسهل للبداية مع shared secret.
+
+> [!NOTE]
+> **سؤال 4:** هل تريد إضافة UI لـ `store_linked_profiles` في Admin Panel للمراقبة؟ أم نؤجله؟
+
+---
+
+## Known Limitations / Deferred
+
+```
+- Dynamic home sections CMS (barbanners, campaigns) — مؤجّل لـ Phase 3 من الـ roadmap
+- Native Barber App screens — خارج نطاق هذه المهمة تماماً
+- DilMart Main Backend store-integration module — على Staging، مؤجّل
+- Advanced B2B (wholesale pricing, quote requests) — Phase 7 من الـ roadmap
+- Customer App — Phase 8
+- AI personalization — غير مدرج
+```
+
+---
+
+## ملخص الملفات المتأثرة
+
+| النوع | الملف | التغيير |
+|---|---|---|
+| NEW Migration | `supabase/migrations/20260601100000_m26_*.sql` | product segmentation fields |
+| NEW Migration | `supabase/migrations/20260601110000_m27_*.sql` | store_linked_profiles table |
+| NEW Migration | `supabase/migrations/20260601120000_m28_*.sql` | orders source tracking |
+| NEW Module | `backend/src/modules/store-integration/` | 4 ملفات جديدة |
+| MODIFY | `backend/src/modules/marketplace/marketplace.service.ts` | surface/segment support |
+| MODIFY | `backend/src/modules/marketplace/marketplace.controller.ts` | new query params |
+| MODIFY | `backend/src/modules/marketplace/marketplace-product-detail.contract.ts` | new fields in SELECT |
+| MODIFY | `backend/src/modules/products/products.dto.ts` | new segmentation fields |
+| MODIFY | `backend/src/modules/products/products.service.ts` | persist new fields |
+| MODIFY | `backend/src/app.module.ts` | register StoreIntegrationModule |
+| MODIFY | `src/pages/admin/ProductForm.tsx` | segmentation UI |
+| MODIFY | `backend/.env` + `.env.example` | new env vars |

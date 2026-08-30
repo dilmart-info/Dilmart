@@ -1,0 +1,15 @@
+BACKEND_EXIT_SUMMARY
+ci=0
+lint=1
+build=0
+test:launch-critical=0
+test:merchant-push=1
+test:whatsapp-otp=0
+test:policy=0
+test:hardening=0
+test:commercial=0
+
+NOTES:
+- lint: 541 problems (539 errors, 2 warnings) — existing baseline, mostly @typescript-eslint/no-explicit-any
+- test:merchant-push: FAIL root cause = SUPABASE_SERVICE_ROLE_KEY is required (tests/merchant-push-alerts.test.mjs:20) — environment/config blocker, not code regression
+- All other listed backend tests PASS on this machine

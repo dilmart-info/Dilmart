@@ -1,0 +1,20 @@
+# Netlify header rules shipped INSIDE the build output.
+#
+# store.DilMart.org is deployed by Netlify Drop (dist/ uploaded directly, no Git build), so the
+# [[headers]] blocks in netlify.toml are never evaluated — a live check showed every path,
+# including hashed assets, served the platform default `public,max-age=0,must-revalidate`.
+# This file travels with dist/ (Vite copies public/* to the build root) so Drop deploys get the
+# intended policy: never serve a stale SPA shell, but let content-hashed assets cache forever.
+#
+# Keep in sync with the [[headers]] blocks in netlify.toml (Git-built deploys use those).
+
+/*
+  Cache-Control: no-cache
+
+# Content-hashed filenames (index-<hash>.js) — safe to cache immutably; a new build emits a new name.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# App-link association documents must never be cached stale.
+/.well-known/*
+  Cache-Control: no-cache

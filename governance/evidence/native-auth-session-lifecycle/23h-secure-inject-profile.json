@@ -1,0 +1,15 @@
+{
+  "write": {
+    "ok": true,
+    "methods": [],
+    "readLen": 2284,
+    "readMatches": true
+  },
+  "after": {
+    "securePresent": false,
+    "legacyPresent": false,
+    "authedUi": false,
+    "textSlice": "مرحباً بك سجل دخولك أو أنشئ حساباً جديداً للمتابعة تسجيل دخول إنشاء حساب البريد الإلكتروني أو رقم الهاتف كلمة المرور تسجيل الدخول لدي طلب سابق وأريد استلام حسابي نسيت كلمة المرور؟ استعادة بواسطة الهاتف ديلمارت ستور DilMart"
+  },
+  "emailRedacted": "smoke.phase3.<redacted>@mailinator.com"
+}

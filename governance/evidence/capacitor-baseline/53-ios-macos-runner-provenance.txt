@@ -1,0 +1,8 @@
+MACOS_RUNNER_SOURCE=GitHub-hosted macos-26
+WORKFLOW_RUN_ID=30195211313
+WORKFLOW_URL=https://github.com/cylendralabs-blip/DilMart-Store/actions/runs/30195211313
+ARTIFACT=DilMart-store-ios-baseline-30195211313
+CHECKOUT_REF=3ee4d4ca12aa0e25c8a1606aa35398b387a03b77
+TEMP_BRANCH=audit/ios-baseline-macos-runner (to be deleted; workflow not part of PR #61)
+CLASSIFICATION=FAIL — CODE/TOOLCHAIN BLOCKER
+ROOT_CAUSE=CocoaPods: Capacitor pod from @capacitor/ios@8.1.0 requires higher minimum deployment target than Podfile platform :ios, '14.0'. Cascading: pod install failed → workspace has no schemes → xcodebuild scheme App missing (exit 65) for Simulator/Release/Archive/showBuildSettings.

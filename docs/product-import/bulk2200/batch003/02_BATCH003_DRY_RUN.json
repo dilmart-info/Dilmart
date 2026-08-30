@@ -1,0 +1,52 @@
+{
+  "batch_id": "batch003",
+  "mode": "dry-run",
+  "merchant_id": "ac7c356b-bcdf-4700-b31f-c6d2c5b53ca7",
+  "merchant_slug": "arth-al-khaleg",
+  "batch_size_cap": 300,
+  "selected_rows": 300,
+  "would_create": 300,
+  "image_verified_rows": 17,
+  "image_pending_rows": 283,
+  "existing_sku_skips": 510,
+  "invalid_rejects": 0,
+  "duplicate_rejects": 0,
+  "category_mapping_failures": 0,
+  "missing_image_failures": 0,
+  "image_normalization_failures": 0,
+  "hold_review": 53,
+  "status_counts": {
+    "READY": 1641,
+    "SKIP_EXISTING_SKU": 510,
+    "REJECT_DUPLICATE": 0,
+    "REJECT_REQUIRED_FIELD": 0,
+    "REJECT_CATEGORY": 0,
+    "REJECT_IMAGE": 0,
+    "HOLD_REVIEW": 53
+  },
+  "public_state_defaults": {
+    "visibility_status": "private",
+    "is_active": false,
+    "is_published": false,
+    "stock": 0
+  },
+  "expected_storage_object_count": 17,
+  "expected_db_insert_count": 300,
+  "production_storage_writes": false,
+  "production_db_writes": false,
+  "zero_writes_performed": true,
+  "every_row_has_one_status": true,
+  "manifest_path": "docs/product-import/bulk2200/batch003/01_BATCH003_MANIFEST.csv",
+  "manifest_sha256": "74E63B66567FC7B4D93AE6A249DE84CD9F0DEEF3965F2E56C9993CEB467F0901",
+  "corpus_status_counts": {
+    "READY": 1641,
+    "SKIP_EXISTING_SKU": 510,
+    "REJECT_DUPLICATE": 0,
+    "REJECT_REQUIRED_FIELD": 0,
+    "REJECT_CATEGORY": 0,
+    "REJECT_IMAGE": 0,
+    "HOLD_REVIEW": 53
+  },
+  "ready_in_corpus": 1641,
+  "batch_ready_capped": 300
+}

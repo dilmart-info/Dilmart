@@ -1,0 +1,88 @@
+# Implementation Plan — Merchant New Order Decision Modal & Queue (PR 2)
+
+Implementing the interactive decision modal and queue inside the merchant portal.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Real-time Synchronization**
+> When a new order notification arrives via Supabase Realtime, `NotificationHub` will automatically invalidate the pending orders cache. This will instantly refresh the list and prompt the merchant layout to show the modal or update the pending orders count banner.
+
+---
+
+## Proposed Changes
+
+### Backend
+
+#### [MODIFY] [orders.service.ts](file:///E:/Project/DilMart-Store/backend/src/modules/orders/orders.service.ts)
+- Add `merchant_decision_status` to `ListOrdersParams` type definition.
+- Add condition in `listOrdersForMerchant` to filter by `merchant_decision_status` if provided:
+  ```ts
+  if (params.merchant_decision_status) {
+    req = req.eq("merchant_decision_status", params.merchant_decision_status);
+  }
+  ```
+- Do the same in `listOrders` for completeness.
+
+---
+
+### Frontend API Client
+
+#### [MODIFY] [orders.ts](file:///E:/Project/DilMart-Store/src/lib/api/orders.ts)
+- Update `listScopedOrders` payload interface and implementation to accept and serialize `merchant_decision_status`.
+
+---
+
+### Frontend State & Queue Management
+
+#### [NEW] [use-pending-orders.ts](file:///E:/Project/DilMart-Store/src/hooks/use-pending-orders.ts)
+- Custom hook that fetches pending orders (where `status = 'new'` and `merchant_decision_status = 'pending'`).
+- Exposes:
+  - `pendingOrders`: list of pending orders.
+  - `count`: total count of pending orders.
+  - `currentOrder`: first order in the queue.
+  - `isLoading`: loading status.
+  - `refetch`: refresh function.
+
+#### [MODIFY] [NotificationHub.tsx](file:///E:/Project/DilMart-Store/src/components/NotificationHub.tsx)
+- Invalidate `["pending-merchant-orders", merchantId]` query on `onMerchantInsert` when `row.type === 'new_order'`.
+
+---
+
+### Frontend UI Components
+
+#### [NEW] [MerchantDecisionModal.tsx](file:///E:/Project/DilMart-Store/src/components/merchant/MerchantDecisionModal.tsx)
+- Responsive modal showing:
+  - Order number and created time.
+  - Total price and payment method.
+  - Number of items + list of items (names, price, quantity).
+  - Multi-page layout:
+    - **Page 1: Overview**: Shows order details + Accept / Reject / View Details buttons.
+    - **Page 2: Rejection Reasons**: List of 11 reasons with radio buttons + Cancel / Confirm Rejection buttons.
+  - "عرض التفاصيل" (View Details) button: Closes the modal and navigates to `/merchant/orders/:id`.
+
+#### [MODIFY] [MerchantLayout.tsx](file:///E:/Project/DilMart-Store/src/components/MerchantLayout.tsx)
+- Integrate the `usePendingOrders` hook.
+- Display a floating/sticky top banner if there are pending orders:
+  - Text: `لديك {count} طلبات بانتظار القرار` (You have {count} orders waiting for decision).
+  - Button: `مراجعة الطلبات` (Review Orders) which opens the modal.
+- On initial load: automatically open the modal if the merchant is on the overview page (`/merchant`) and there is at least one pending order.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+- Build both backend and frontend to ensure no compilation/type errors:
+  - Backend: `cd backend && npm run build`
+  - Frontend: `npm run build`
+- Run existing NestJS policy and hardening tests:
+  - `cd backend && npm run test:policy`
+  - `cd backend && npm run test:hardening`
+
+### Manual Verification
+- Place a test order via manual API or admin panel.
+- Verify real-time toast and notification sound.
+- Check that the top banner appears on the merchant portal.
+- Verify that clicking "Review Orders" opens the modal.
+- Verify accept/reject workflows inside the modal.
