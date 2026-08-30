@@ -1,7 +1,7 @@
 # DILMART — STAGE B PASS 2
 # PROPOSED REMOVAL WAVES & MIGRATION ARCHITECTURE
 
-**Generated:** 2026-08-30 | **Updated:** 2026-08-31 | **Status:** PLANNING & PROPOSAL ONLY
+**Generated:** 2026-08-30 | **Updated:** 2026-08-31 (Micro-Closure Patch) | **Status:** PLANNING & PROPOSAL ONLY
 
 ---
 
@@ -10,11 +10,11 @@
 To eliminate execution blast radius, prevent ambiguous PostgreSQL overloads, and ensure zero checkout/ordering downtime, future Stage B cleanup is structured into **6 bounded forward migrations**:
 
 ```text
-Migration A: place_order Authority & Signature Refactor ONLY (Checkout & Manual Orders)
-Migration B: Dead Non-Trigger Legacy RPC Removal (15 Functions)
+Migration A: place_order Authority & Signature Refactor ONLY (Exact 49 Params, Rename-First Atomic Sequence)
+Migration B: Dead Non-Trigger Legacy RPC Removal (15 Standalone Functions)
 Migration C: Legacy Leaf Tables & Audit Trigger Lifecycle (6 Tables + 3 Trigger Functions)
 Migration D: Intermediate & Root Parent Tables + Inbound FKs (5 Tables)
-Migration E: Active-Table Legacy Columns & Indexes (8 Columns)
+Migration E: Active-Table Legacy Columns & Constraints (11 Columns + chk_checkout_attempts_owner_xor Replacement)
 Optional Migration F: auth.users Federated Domain Guard Retirement (Separate Authorization)
 ```
 
@@ -23,12 +23,14 @@ Optional Migration F: auth.users Federated Domain Guard Retirement (Separate Aut
 ## 2. Detailed Migration Wave Specifications
 
 ### MIGRATION A: `place_order` Authority & Signature Refactor ONLY
-- **Scope:** Single atomic transaction:
-  1. Create new 50-parameter `public.place_order` (removing legacy arguments & column writes).
-  2. Update `public.place_order_idempotent` named parameter delegation.
-  3. Drop old 55-parameter `public.place_order` overload under `RESTRICT`.
-  4. Revoke public/anon/authenticated and grant `service_role` EXECUTE.
-  5. Assert exactly 1 `place_order` function exists in `pg_proc`.
+- **Scope:** Single atomic rename-first transaction:
+  1. Preflight assert old 55-parameter `public.place_order` exists.
+  2. `ALTER FUNCTION public.place_order(55 args) RENAME TO place_order_legacy_stageb;`
+  3. Create clean 49-parameter `public.place_order` (removing `p_source_app`, `p_store_linked_profile_id`, `p_dilmart_user_id`, `p_dilmart_barbershop_id`, `p_segment`, `p_business_type`).
+  4. Update `public.place_order_idempotent` named parameter delegation to resolve new `place_order`.
+  5. `REVOKE ALL ... FROM PUBLIC, anon, authenticated;` and `GRANT EXECUTE ... TO service_role;`
+  6. `DROP FUNCTION public.place_order_legacy_stageb(55 args) RESTRICT;`
+  7. Assert in SQL: `count(*) WHERE proname = 'place_order'` MUST = 1; `count(*) WHERE proname = 'place_order_legacy_stageb'` MUST = 0.
 - **Preconditions:** Updated backend TypeScript callers (`CheckoutService`, `OrdersService`).
 - **Rollback Feasibility:** HIGH (Can re-apply original function definition without data loss).
 - **Required Verification:** `npm run test:launch-critical`, `checkout-concurrency.test.mjs`, `p0-checkout-identity-geo.test.mjs`, manual assisted order tests.
@@ -66,11 +68,13 @@ Optional Migration F: auth.users Federated Domain Guard Retirement (Separate Aut
 - **Rollback Feasibility:** MEDIUM (DDL rollback script).
 - **Required Verification:** `final-schema-gate.sql`, Universal RLS check (71 - 11 = 60 public tables).
 
-### MIGRATION E: Active Table Legacy Columns & Indexes (8 Columns)
+### MIGRATION E: Active Table Legacy Columns & Constraints (11 Columns)
 - **Scope:**
-  - Drop columns `dilmart_barbershop_id`, `dilmart_user_id`, `store_cart_id`, `store_linked_profile_id` from `public.orders`.
-  - Drop columns `store_cart_id`, `store_linked_profile_id` from `public.checkout_attempts`.
-  - Drop column `requires_verified_salon` from `public.products` and `public.marketplace_banners`.
+  1. Drop XOR constraint: `ALTER TABLE public.checkout_attempts DROP CONSTRAINT chk_checkout_attempts_owner_xor;`
+  2. Add modern invariant: `ALTER TABLE public.checkout_attempts ADD CONSTRAINT chk_checkout_attempts_user_id_not_null CHECK (user_id IS NOT NULL);`
+  3. Drop columns from `checkout_attempts`: `store_cart_id`, `store_linked_profile_id`.
+  4. Drop columns and indexes from `orders`: `store_cart_id`, `store_linked_profile_id`, `dilmart_barbershop_id`, `dilmart_user_id`, `source_app`, `segment`, `business_type`.
+  5. Drop column `requires_verified_salon` from `public.products` and `public.marketplace_banners`.
 - **Preconditions:** Migration A (`place_order` refactor) and Migration D complete. All non-null counts = 0.
 - **Rollback Feasibility:** MEDIUM (Zero data loss; values are all null/false).
 - **Required Verification:** Full CI test matrix (`npm run test:launch-critical`, `npm run test:policy`, `npm run test:hardening`, `npm run test:product-import`).

@@ -306,5 +306,44 @@
     "is_indexed": false,
     "is_nullable": true,
     "table_name": "store_linked_profiles"
+  },
+  {
+    "table_name": "orders",
+    "column_name": "source_app",
+    "column_position": 18,
+    "data_type": "text",
+    "is_nullable": true,
+    "default_expression": null,
+    "is_constrained": false,
+    "is_indexed": true,
+    "foreign_table_target": null,
+    "live_non_null_count": 0,
+    "disposition": "REMOVE (Migration E)"
+  },
+  {
+    "table_name": "orders",
+    "column_name": "segment",
+    "column_position": 21,
+    "data_type": "text",
+    "is_nullable": true,
+    "default_expression": null,
+    "is_constrained": false,
+    "is_indexed": true,
+    "foreign_table_target": null,
+    "live_non_null_count": 0,
+    "disposition": "REMOVE (Migration E)"
+  },
+  {
+    "table_name": "orders",
+    "column_name": "business_type",
+    "column_position": 22,
+    "data_type": "text",
+    "is_nullable": true,
+    "default_expression": null,
+    "is_constrained": false,
+    "is_indexed": false,
+    "foreign_table_target": null,
+    "live_non_null_count": 0,
+    "disposition": "REMOVE (Migration E)"
   }
 ]

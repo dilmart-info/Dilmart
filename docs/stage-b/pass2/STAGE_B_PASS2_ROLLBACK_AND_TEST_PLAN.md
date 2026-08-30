@@ -1,7 +1,7 @@
 # DILMART — STAGE B PASS 2
 # ROLLBACK & TEST VERIFICATION PLAN (PASS 3 BLUEPRINT)
 
-**Generated:** 2026-08-30 | **Updated:** 2026-08-31 | **Status:** PLANNING & PROPOSAL ONLY
+**Generated:** 2026-08-30 | **Updated:** 2026-08-31 (Micro-Closure Patch) | **Status:** PLANNING & PROPOSAL ONLY
 
 ---
 
@@ -9,11 +9,11 @@
 
 | Migration | Operation | Data Loss Risk | Rollback Feasibility | Multi-Dimensional Verification Requirements |
 |---|---|:---:|:---:|---|
-| **Migration A** | `place_order` Refactor | **ZERO** (Code change only) | **HIGH** (Instant) | Verify exact `regprocedure`, 50 arguments, `result_type`, `owner = 'postgres'`, `prosecdef = true`, `proconfig = ["search_path=public, pg_temp"]`, and `service_role` EXECUTE grant only. |
+| **Migration A** | `place_order` Rename-First Refactor | **ZERO** (Code change only) | **HIGH** (Instant) | Verify exact `regprocedure`, 49 arguments, `result_type`, `owner = 'postgres'`, `prosecdef = true`, `proconfig = ["search_path=public, pg_temp"]`, and `service_role` EXECUTE grant only. Assert 0 old overloads exist. |
 | **Migration B** | Drop 15 Dead RPCs | **ZERO** (Unused routines) | **HIGH** (Instant) | Re-create functions from historical migration catalog definitions; verify `count = 0` in `pg_proc` for target identities. |
 | **Migration C** | Drop 6 Leaf Tables + 3 Trigger Functions | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Verify table existence = false, trigger existence = false, trigger functions existence = false. Rollback restores columns, constraints, RLS enablement, and trigger definitions. |
 | **Migration D** | Drop 5 Parent Tables (`store_linked_profiles`) | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Verify all 5 tables dropped; rollback restores tables, primary keys, and inbound foreign keys from `orders`/`checkout_attempts`. |
-| **Migration E** | Drop 8 Legacy Columns in Active Tables | **ZERO** (0 non-null values) | **MEDIUM** (DDL rollback) | Verify `pg_attribute` no longer contains target columns; rollback executes `ALTER TABLE ... ADD COLUMN ... NULL;` and restores indexes. |
+| **Migration E** | Drop 11 Legacy Columns & Replace Owner XOR | **ZERO** (0 non-null values) | **MEDIUM** (DDL rollback) | Verify `pg_attribute` no longer contains target columns; verify `chk_checkout_attempts_owner_xor` replaced by `user_id IS NOT NULL`; rollback executes `ALTER TABLE ... ADD COLUMN ... NULL;` and restores indexes. |
 | **Optional Migration F** | Retire `auth.users` Federated Guard | **ZERO** (0 federated users) | **HIGH** (Instant) | Verify trigger `trg_reject_reserved_federated_email` dropped from `auth.users`. Rollback re-attaches trigger. |
 
 ---
@@ -31,21 +31,24 @@ Before executing ANY destructive DDL statement in future Pass 3 migrations:
      END IF;
    END $$;
    ```
-2. **Non-Null Value Re-Check:**
+2. **Non-Null Value Re-Check (Orders & Checkout Attempts):**
    ```sql
    DO $$
    BEGIN
-     IF (SELECT count(*) FROM public.orders WHERE dilmart_user_id IS NOT NULL OR dilmart_barbershop_id IS NOT NULL) > 0 THEN
+     IF (SELECT count(*) FROM public.orders WHERE dilmart_user_id IS NOT NULL OR dilmart_barbershop_id IS NOT NULL OR segment IS NOT NULL OR source_app IS NOT NULL OR business_type IS NOT NULL) > 0 THEN
        RAISE EXCEPTION 'PRE-MIGRATION GATE FAILED: orders legacy columns contain non-null values';
      END IF;
    END $$;
    ```
-3. **Overload Ambiguity Prevention Assertion:**
+3. **Overload Ambiguity Prevention Assertion (Migration A):**
    ```sql
    DO $$
    BEGIN
      IF (SELECT count(*) FROM pg_proc WHERE proname = 'place_order') <> 1 THEN
        RAISE EXCEPTION 'MIGRATION FAILED: Multiple or missing place_order function overloads detected';
+     END IF;
+     IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'place_order_legacy_stageb') THEN
+       RAISE EXCEPTION 'MIGRATION FAILED: Legacy place_order temporary identity still present';
      END IF;
    END $$;
    ```

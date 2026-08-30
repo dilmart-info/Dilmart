@@ -1,354 +1,95 @@
-[
-  {
-    "dependency_type": "trigger",
-    "constraint_or_object_name": "trg_reject_barber_handoff_audit_mutation",
-    "source_schema": "public",
-    "source_table": "dilmart_barber_handoff_audit_events",
-    "source_column": null,
-    "target_schema": "public",
-    "target_table": "reject_barber_handoff_audit_mutation",
-    "target_column": "reject_barber_handoff_audit_mutation()",
-    "on_delete_action": "SECURITY INVOKER"
+{
+  "summary": {
+    "foreign_keys_count": 37,
+    "check_constraints_count": 1,
+    "indexes_count": 8,
+    "triggers_count": 4,
+    "views_referencing_legacy_count": 0,
+    "policies_referencing_legacy_count": 0,
+    "defaults_referencing_legacy_count": 2,
+    "total_dependencies": 50
   },
-  {
-    "dependency_type": "trigger",
-    "constraint_or_object_name": "trg_reject_handoff_audit_mutation",
-    "source_schema": "public",
-    "source_table": "dilmart_customer_handoff_audit_events",
-    "source_column": null,
-    "target_schema": "public",
-    "target_table": "reject_handoff_audit_mutation",
-    "target_column": "reject_handoff_audit_mutation()",
-    "on_delete_action": "SECURITY INVOKER"
-  },
-  {
-    "dependency_type": "trigger",
-    "constraint_or_object_name": "trg_reject_federated_session_audit_mutation",
-    "source_schema": "public",
-    "source_table": "store_federated_session_audit_events",
-    "source_column": null,
-    "target_schema": "public",
-    "target_table": "reject_federated_session_audit_mutation",
-    "target_column": "reject_federated_session_audit_mutation()",
-    "on_delete_action": "SECURITY INVOKER"
-  },
-  {
-    "dependency_type": "trigger",
-    "constraint_or_object_name": "trg_reject_reserved_federated_email",
-    "source_schema": "auth",
-    "source_table": "users",
-    "source_column": null,
-    "target_schema": "public",
-    "target_table": "reject_reserved_federated_email",
-    "target_column": "reject_reserved_federated_email()",
-    "on_delete_action": "SECURITY INVOKER"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "checkout_attempts_order_id_fkey",
-    "source_schema": "public",
-    "source_table": "checkout_attempts",
-    "source_column": "order_id",
-    "target_schema": "public",
-    "target_table": "orders",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "checkout_attempts_store_cart_id_fkey",
-    "source_schema": "public",
-    "source_table": "checkout_attempts",
-    "source_column": "store_cart_id",
-    "target_schema": "public",
-    "target_table": "store_carts",
-    "target_column": "id",
-    "on_delete_action": "r"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "checkout_attempts_store_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "checkout_attempts",
-    "source_column": "store_linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "r"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "checkout_attempts_user_id_fkey",
-    "source_schema": "public",
-    "source_table": "checkout_attempts",
-    "source_column": "user_id",
-    "target_schema": "auth",
-    "target_table": "users",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "dilmart_barber_handoffs_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "dilmart_barber_handoffs",
-    "source_column": "linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "dilmart_barber_web_sessions_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "dilmart_barber_web_sessions",
-    "source_column": "linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "dilmart_customer_handoffs_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "dilmart_customer_handoffs",
-    "source_column": "linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "dilmart_customer_handoffs_store_customer_id_fkey",
-    "source_schema": "public",
-    "source_table": "dilmart_customer_handoffs",
-    "source_column": "store_customer_id",
-    "target_schema": "public",
-    "target_table": "profiles",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "orders_checkout_attempt_id_fkey",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "checkout_attempt_id",
-    "target_schema": "public",
-    "target_table": "checkout_attempts",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "orders_store_cart_id_fkey",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "store_cart_id",
-    "target_schema": "public",
-    "target_table": "store_carts",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "orders_store_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "store_linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_cart_items_cart_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_cart_items",
-    "source_column": "cart_id",
-    "target_schema": "public",
-    "target_table": "store_carts",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_cart_items_merchant_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_cart_items",
-    "source_column": "merchant_id",
-    "target_schema": "public",
-    "target_table": "merchants",
-    "target_column": "id",
-    "on_delete_action": "r"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_cart_items_product_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_cart_items",
-    "source_column": "product_id",
-    "target_schema": "public",
-    "target_table": "products",
-    "target_column": "id",
-    "on_delete_action": "r"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_carts_merchant_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_carts",
-    "source_column": "merchant_id",
-    "target_schema": "public",
-    "target_table": "merchants",
-    "target_column": "id",
-    "on_delete_action": "r"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_carts_store_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_carts",
-    "source_column": "store_linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_federated_refresh_tokens_parent_token_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_federated_refresh_tokens",
-    "source_column": "parent_token_id",
-    "target_schema": "public",
-    "target_table": "store_federated_refresh_tokens",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_federated_refresh_tokens_replaced_by_token_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_federated_refresh_tokens",
-    "source_column": "replaced_by_token_id",
-    "target_schema": "public",
-    "target_table": "store_federated_refresh_tokens",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_federated_refresh_tokens_session_family_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_federated_refresh_tokens",
-    "source_column": "session_family_id",
-    "target_schema": "public",
-    "target_table": "store_federated_session_families",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_federated_session_families_linked_profile_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_federated_session_families",
-    "source_column": "linked_profile_id",
-    "target_schema": "public",
-    "target_table": "store_linked_profiles",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_federated_session_families_store_customer_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_federated_session_families",
-    "source_column": "store_customer_id",
-    "target_schema": "public",
-    "target_table": "profiles",
-    "target_column": "id",
-    "on_delete_action": "c"
-  },
-  {
-    "dependency_type": "foreign_key",
-    "constraint_or_object_name": "store_linked_profiles_store_customer_id_fkey",
-    "source_schema": "public",
-    "source_table": "store_linked_profiles",
-    "source_column": "store_customer_id",
-    "target_schema": "public",
-    "target_table": "profiles",
-    "target_column": "id",
-    "on_delete_action": "n"
-  },
-  {
-    "dependency_type": "index",
-    "constraint_or_object_name": "idx_checkout_attempts_linked_profile",
-    "source_schema": "public",
-    "source_table": "checkout_attempts",
-    "source_column": "store_linked_profile_id",
-    "target_schema": null,
-    "target_table": null,
-    "target_column": null,
-    "on_delete_action": "NON-UNIQUE"
-  },
-  {
-    "dependency_type": "index",
-    "constraint_or_object_name": "idx_checkout_attempts_store_cart",
-    "source_schema": "public",
-    "source_table": "checkout_attempts",
-    "source_column": "store_cart_id",
-    "target_schema": null,
-    "target_table": null,
-    "target_column": null,
-    "on_delete_action": "NON-UNIQUE"
-  },
-  {
-    "dependency_type": "index",
-    "constraint_or_object_name": "idx_orders_dilmart_barbershop_id",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "dilmart_barbershop_id",
-    "target_schema": null,
-    "target_table": null,
-    "target_column": null,
-    "on_delete_action": "NON-UNIQUE"
-  },
-  {
-    "dependency_type": "index",
-    "constraint_or_object_name": "idx_orders_dilmart_user_id",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "dilmart_user_id",
-    "target_schema": null,
-    "target_table": null,
-    "target_column": null,
-    "on_delete_action": "NON-UNIQUE"
-  },
-  {
-    "dependency_type": "index",
-    "constraint_or_object_name": "idx_orders_store_cart_id",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "store_cart_id",
-    "target_schema": null,
-    "target_table": null,
-    "target_column": null,
-    "on_delete_action": "UNIQUE"
-  },
-  {
-    "dependency_type": "index",
-    "constraint_or_object_name": "idx_orders_store_linked_profile_id",
-    "source_schema": "public",
-    "source_table": "orders",
-    "source_column": "store_linked_profile_id",
-    "target_schema": null,
-    "target_table": null,
-    "target_column": null,
-    "on_delete_action": "NON-UNIQUE"
-  }
-]
+  "check_constraints": [
+    {
+      "constraint_name": "chk_checkout_attempts_owner_xor",
+      "table_name": "checkout_attempts",
+      "definition": "CHECK ((((user_id IS NOT NULL) AND (store_linked_profile_id IS NULL)) OR ((user_id IS NULL) AND (store_linked_profile_id IS NOT NULL) AND (store_cart_id IS NOT NULL))))",
+      "columns_referenced": [
+        "user_id",
+        "store_linked_profile_id",
+        "store_cart_id"
+      ],
+      "impact_on_migration_e": "MUST DROP or REPLACE before dropping store_linked_profile_id / store_cart_id columns",
+      "proposed_modern_replacement": "CHECK (user_id IS NOT NULL)"
+    }
+  ],
+  "triggers": [
+    {
+      "trigger_name": "trg_reject_barber_handoff_audit_mutation",
+      "source_table": "public.dilmart_barber_handoff_audit_events",
+      "target_function": "public.reject_barber_handoff_audit_mutation()",
+      "security_mode": "SECURITY INVOKER"
+    },
+    {
+      "trigger_name": "trg_reject_handoff_audit_mutation",
+      "source_table": "public.dilmart_customer_handoff_audit_events",
+      "target_function": "public.reject_handoff_audit_mutation()",
+      "security_mode": "SECURITY INVOKER"
+    },
+    {
+      "trigger_name": "trg_reject_federated_session_audit_mutation",
+      "source_table": "public.store_federated_session_audit_events",
+      "target_function": "public.reject_federated_session_audit_mutation()",
+      "security_mode": "SECURITY INVOKER"
+    },
+    {
+      "trigger_name": "trg_reject_reserved_federated_email",
+      "source_table": "auth.users",
+      "target_function": "public.reject_reserved_federated_email()",
+      "security_mode": "SECURITY INVOKER",
+      "cross_schema": true
+    }
+  ],
+  "indexes": [
+    {
+      "index_name": "idx_checkout_attempts_linked_profile",
+      "table_name": "checkout_attempts",
+      "column": "store_linked_profile_id"
+    },
+    {
+      "index_name": "idx_checkout_attempts_store_cart",
+      "table_name": "checkout_attempts",
+      "column": "store_cart_id"
+    },
+    {
+      "index_name": "idx_orders_dilmart_barbershop_id",
+      "table_name": "orders",
+      "column": "dilmart_barbershop_id"
+    },
+    {
+      "index_name": "idx_orders_dilmart_user_id",
+      "table_name": "orders",
+      "column": "dilmart_user_id"
+    },
+    {
+      "index_name": "idx_orders_segment",
+      "table_name": "orders",
+      "column": "segment"
+    },
+    {
+      "index_name": "idx_orders_source_app",
+      "table_name": "orders",
+      "column": "source_app"
+    },
+    {
+      "index_name": "idx_orders_store_cart_id",
+      "table_name": "orders",
+      "column": "store_cart_id"
+    },
+    {
+      "index_name": "idx_orders_store_linked_profile_id",
+      "table_name": "orders",
+      "column": "store_linked_profile_id"
+    }
+  ]
+}

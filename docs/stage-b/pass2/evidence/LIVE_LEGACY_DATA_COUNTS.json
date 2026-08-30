@@ -106,5 +106,23 @@
     "object_type": "column",
     "non_null_or_row_count": 0,
     "disposition_status": "ZERO TRUE [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.source_app",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.segment",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
+  },
+  {
+    "object_name": "orders.business_type",
+    "object_type": "column",
+    "non_null_or_row_count": 0,
+    "disposition_status": "ALL NULL [CONFIRMED BY LIVE DB QUERY]"
   }
 ]
