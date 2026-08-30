@@ -2,11 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- STORE-PR6 §16 — iOS Universal Links for the DilMart customer handoff (production + staging). -->
+	<!-- DILMART — iOS Universal Links for marketplace discovery paths (production + staging). -->
 	<key>com.apple.developer.associated-domains</key>
 	<array>
-		<string>applinks:store.DilMart.org</string>
-		<string>applinks:staging-store.DilMart.org</string>
+		<string>applinks:store.dilmart.org</string>
+		<string>applinks:staging-store.dilmart.org</string>
+		<string>applinks:dilmart.store</string>
+		<string>applinks:www.dilmart.store</string>
+		<string>applinks:staging.dilmart.store</string>
 	</array>
 </dict>
 </plist>

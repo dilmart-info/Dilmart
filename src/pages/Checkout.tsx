@@ -265,7 +265,10 @@ const Checkout = () => {
   }, 0);
 
   // 1 point = 10 IQD discount
-  const isProvisionalUser = !!user?.email?.endsWith("@provisional.DilMart.com");
+  const userEmailLower = (user?.email ?? "").toLowerCase();
+  const isProvisionalUser =
+    userEmailLower.endsWith("@provisional.dilmart.com") ||
+    userEmailLower.endsWith("@provisional.dilmart.org");
   const pointsRedemptionValue = usePoints && !isProvisionalUser
     ? Math.min(loyaltyPreview?.redeemable_amount ?? availablePoints * 10, Math.max(0, subtotal - discount))
     : 0;

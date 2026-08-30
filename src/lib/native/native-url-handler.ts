@@ -14,6 +14,8 @@ const APPROVED_HOSTNAMES = new Set([
   "dilmart.store",
   "www.dilmart.store",
   "staging.dilmart.store",
+  "store.dilmart.org",
+  "staging-store.dilmart.org",
   "localhost",
   "127.0.0.1",
 ]);
@@ -44,7 +46,12 @@ export function resolveInternalRouteFromUrl(rawUrl: string | null | undefined): 
     }
 
     const hostname = url.hostname.toLowerCase();
-    if (!APPROVED_HOSTNAMES.has(hostname) && !hostname.endsWith(".dilmart.store")) {
+    const isApprovedHost =
+      APPROVED_HOSTNAMES.has(hostname) ||
+      hostname.endsWith(".dilmart.store") ||
+      hostname.endsWith(".dilmart.org");
+
+    if (!isApprovedHost) {
       return null;
     }
 
@@ -81,11 +88,11 @@ function parsePathname(pathname: string, search = ""): string | null {
     return null;
   }
 
-  // /store/:slug or /merchants/:slug
+  // /store/:slug (or /merchants/:slug) -> maps to customer route /store/:slug
   if ((first === "store" || first === "merchants") && segments.length === 2) {
     const slug = segments[1];
     if (SAFE_SLUG_REGEX.test(slug)) {
-      return `/merchants/${encodeURIComponent(slug)}`;
+      return `/store/${encodeURIComponent(slug)}`;
     }
     return null;
   }

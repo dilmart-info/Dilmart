@@ -19,15 +19,30 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- STORE-PR6 §15 — verified HTTPS App Link for the DilMart customer handoff. Scoped to the exact
-                 /open path on the approved Store hosts only (does NOT claim all paths on the domain). Warm
-                 routing relies on launchMode="singleTask" delivering the new intent to this activity. -->
+            <!-- DILMART — verified HTTPS App Links for marketplace discovery paths on approved Store hosts.
+                 Scoped to public product, category, store, catalog, and offers routes. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="store.DilMart.org" android:path="/open" />
-                <data android:scheme="https" android:host="staging-store.DilMart.org" android:path="/open" />
+                <data android:scheme="https" android:host="store.dilmart.org" />
+                <data android:scheme="https" android:host="staging-store.dilmart.org" />
+                <data android:scheme="https" android:host="dilmart.store" />
+                <data android:scheme="https" android:host="www.dilmart.store" />
+                <data android:scheme="https" android:host="staging.dilmart.store" />
+                <data android:pathPrefix="/product" />
+                <data android:pathPrefix="/category" />
+                <data android:pathPrefix="/store" />
+                <data android:pathPrefix="/products" />
+                <data android:pathPrefix="/offers" />
+            </intent-filter>
+
+            <!-- Custom scheme fallback: dilmart:// -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="dilmart" />
             </intent-filter>
         </activity>
 

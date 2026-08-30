@@ -136,13 +136,25 @@ export class MarketplaceService {
    */
   private getViewerVisibilityCacheIdentity(ctx?: ViewerContext): Record<string, unknown> {
     const surface = ctx?.surface ?? "web_store";
-    return { surface };
+    if (surface === "web_store") return { surface };
+    const audiences = this.visibilityService.resolveAudienceFromViewerContext(ctx);
+    return { surface, audiences };
   }
 
   private applyViewerVisibility(query: any, ctx?: ViewerContext): any {
     const surface = ctx?.surface ?? "web_store";
     if (surface === "web_store") return query;
-    return query.or(`visible_in.cs.{${surface}},visible_in.cs.{all}`);
+
+    query = query.or(`visible_in.cs.{${surface}},visible_in.cs.{all}`);
+
+    const audiences = this.visibilityService.resolveAudienceFromViewerContext(ctx);
+    const audienceClauses = [
+      "target_audience.cs.{all}",
+      ...audiences.map((a) => `target_audience.cs.{${a}}`),
+    ];
+    query = query.or(audienceClauses.join(","));
+
+    return query;
   }
 
   /**

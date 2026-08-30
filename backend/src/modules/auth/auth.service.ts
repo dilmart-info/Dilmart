@@ -200,7 +200,7 @@ export class AuthService {
   async createProvisionalUser(payload: CreateProvisionalUserDto) {
     const normalizedPhone = normalizeIraqiPhone(payload.customer_phone);
     const uuidSuffix = crypto.randomBytes(4).toString("hex");
-    const email = `provisional_${Date.now()}_${uuidSuffix}@provisional.DilMart.com`;
+    const email = `provisional_${Date.now()}_${uuidSuffix}@provisional.dilmart.com`.toLowerCase();
     const password = crypto.randomBytes(16).toString("hex");
 
     const { data, error } = await this.supabaseAdmin.client.auth.admin.createUser({

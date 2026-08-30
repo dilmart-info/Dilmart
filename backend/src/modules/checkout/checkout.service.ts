@@ -4,6 +4,7 @@ import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { OrderFinanceService } from "../finance/order-finance.service";
 import { JenniPricingService } from "../jenni/jenni-pricing.service";
 import { ProductPurchaseEligibilityService } from "../store-integration/product-purchase-eligibility.service";
+import { StoreSurface } from "../store-integration/store-integration.types";
 import { normalizeIraqiPhone } from "../../common/validators/iraqi-phone.validator";
 
 type ProductRow = {
@@ -69,7 +70,10 @@ export class CheckoutService {
   /**
    * Loads catalog rows and computes totals from DB only (never trusts client unit prices).
    */
-  private async resolveCheckoutLines(items: { product_id: string; quantity: number }[]): Promise<ResolvedCheckout> {
+  private async resolveCheckoutLines(
+    items: { product_id: string; quantity: number }[],
+    surface: StoreSurface = "web_store",
+  ): Promise<ResolvedCheckout> {
     const qtyByProduct = new Map<string, number>();
     for (const item of items) {
       const q = Math.max(1, Math.floor(Number(item.quantity)));
@@ -127,9 +131,10 @@ export class CheckoutService {
       const row = byId.get(item.product_id)!;
       const qty = Math.max(1, Math.floor(Number(item.quantity)));
 
-      // Canonical purchase eligibility evaluation for web_store channel
+      // Canonical purchase eligibility evaluation for store surface
+      const channel = surface === "customer_app" ? "customer_app" : "web_store";
       const eligibility = this.eligibilityService.evaluate(row as any, {
-        channel: "web_store",
+        channel,
         merchantStatus: merchantRow.status,
         quantity: qty,
       });
@@ -209,8 +214,8 @@ export class CheckoutService {
     };
   }
 
-  async preview(payload: CheckoutPreviewDto) {
-    const resolved = await this.resolveCheckoutLines(payload.items);
+  async preview(payload: CheckoutPreviewDto, surface: StoreSurface = "web_store") {
+    const resolved = await this.resolveCheckoutLines(payload.items, surface);
     const quote = await this.buildQuote(resolved, payload.coupon_code);
     if (!payload.governorate_id) {
       return { ...quote, delivery_cost: null as number | null };
@@ -227,7 +232,7 @@ export class CheckoutService {
     return this.jenniPricing.resolveJenniDeliveryPrice(governorateId);
   }
 
-  async submit(payload: CheckoutSubmitDto, actorId?: string) {
+  async submit(payload: CheckoutSubmitDto, actorId?: string, surface: StoreSurface = "web_store") {
     if (!actorId) {
       throw new UnauthorizedException("يرجى إنشاء جلسة متابعة مؤقتة قبل إرسال الطلب.");
     }
@@ -259,7 +264,7 @@ export class CheckoutService {
       // Normalize phone to canonical 07XXXXXXXXX format for Jenni dispatch compatibility.
       const normalizedPhone = normalizeIraqiPhone(payload.customer_phone);
 
-      const resolved = await this.resolveCheckoutLines(payload.items);
+      const resolved = await this.resolveCheckoutLines(payload.items, surface);
       const quote = await this.buildQuote(resolved, payload.coupon_code);
 
       // Resolve delivery cost from DB — never trust the client-supplied value.
@@ -291,8 +296,10 @@ export class CheckoutService {
               .select("email")
               .eq("id", actorId)
               .maybeSingle();
-            const email = String(profileRow?.email ?? "");
-            isProvisional = email.includes("@provisional.DilMart.com");
+            const emailLower = String(profileRow?.email ?? "").toLowerCase();
+            isProvisional =
+              emailLower.includes("@provisional.dilmart.com") ||
+              emailLower.includes("@provisional.dilmart.org");
             isPhoneVerified = !isProvisional;
           }
 

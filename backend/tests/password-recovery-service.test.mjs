@@ -851,7 +851,7 @@ test("AuthService — profiles.account_type Hotfix Integration Tests", async (t)
     const { data: searchData, error: searchErr } = await serviceSupabase
       .from("profiles")
       .select("id, account_type, role")
-      .eq("email", provUser.email)
+      .eq("email", provUser.email.toLowerCase())
       .maybeSingle();
 
     assert.equal(searchErr, null, searchErr ? searchErr.message : "");

@@ -19,10 +19,13 @@ describe("Native URL Handler", () => {
 
   it("resolves valid store URL", () => {
     expect(resolveInternalRouteFromUrl("https://dilmart.store/store/baghdad-merchant")).toBe(
-      "/merchants/baghdad-merchant",
+      "/store/baghdad-merchant",
+    );
+    expect(resolveInternalRouteFromUrl("https://store.dilmart.org/store/baghdad-merchant")).toBe(
+      "/store/baghdad-merchant",
     );
     expect(resolveInternalRouteFromUrl("https://dilmart.store/merchants/baghdad-merchant")).toBe(
-      "/merchants/baghdad-merchant",
+      "/store/baghdad-merchant",
     );
   });
 

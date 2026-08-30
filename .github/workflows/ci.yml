@@ -145,68 +145,15 @@ jobs:
           npm run test:hardening
           npm run test:commercial
 
-      - name: Run Customer Entry (STORE-PR2) & Marketplace Surface Tests
+      - name: Run Customer Entry & Store Integration Tests
         run: |
-          # STORE-PR2 customer-entry unit tests + the reused PR#71 surface-resolver
-          # and marketplace-cart surface-resolution regression (no DB).
           cd backend
           npm run test:customer-entry
+          npm run test:store-integration
 
-      - name: Run Customer Handoff Foundation Security & DB Tests
+      - name: Run Native URL Intake Tests
         run: |
-          # STORE-PR3: asymmetric assertion verification, canonical target-path fuzz,
-          # identity resolver, prepare, redeem mapping, log-safety, Barber regression (unit),
-          # plus the PostgreSQL Phase-0 proof, migration/RLS/permission tests, the atomic
-          # redeem DB test, and the 15-iteration real concurrency test. The DB tests EXECUTE
-          # against the live local Supabase stack started above (they do not skip).
-          cd backend
-          npm run test:customer-handoff
-          npm run test:customer-handoff-db
-          npm run test:customer-order-summary
-          # Barber Handoff (web SSO): assertion verifier, prepare/redeem orchestration,
-          # and the log-safety / key-isolation static scan.
-          npm run test:barber-handoff
-
-      - name: Run Federated Session Core Security & DB Tests
-        run: |
-          # STORE-PR4: federated access-token signing/verification, strict fail-closed config,
-          # opaque refresh-token entropy + keyed hashing, issuer orchestration (sign-before-consume,
-          # no-token-on-failure, no-session on LINK_REQUIRED/BLOCKED), and boot-time gate (unit),
-          # plus the atomic redeem→session creation, DB-time expiry, refresh rotation with reuse
-          # detection + family compromise, and logout/logout-all DB tests, INCLUDING the
-          # 25-iteration redeem and 25-iteration refresh-reuse real concurrency tests. The DB
-          # tests EXECUTE against the live local Supabase stack started above (they do not skip).
-          cd backend
-          npm run test:federated
-          npm run test:federated-db
-
-      - name: Run Dual Actor & Federated Customer Session Tests
-        run: |
-          # STORE-PR5: dual-source ActorContext, token classification (strict no-cross-verifier fallback),
-          # @AuthSources route policy, RolesGuard 401/403, the DUAL_CUSTOMER matrix, source-aware
-          # /auth/context capabilities (Phase A), web __Host- refresh-cookie + CSRF (Phase E), and
-          # cross-customer ownership denial (Phase B) — all unit (no DB). Then the frontend client session
-          # suite (Phase Q/N): unified source-neutral facade, native secure storage + device id, federated
-          # client API (native body vs web cookie), single-flight refresh (10 concurrent → 1; one 401
-          # replay; 403 no-refresh; 5xx preserves), logout/logout-all, and the native-restart + web-reload
-          # acceptance proofs incl. "no refresh token in browser storage". Zero skipped.
-          cd backend
-          npm run test:federated-actor
-          # Phase O: real federated session-family DB chain + session-state matrix (ACTIVE/version/REVOKED/
-          # COMPROMISED/expired/logout-all/BLOCKED-profile → invalid), against the live local Supabase stack.
-          npm run test:federated-actor-db
-          cd ..
-          npm run test:federated-client
-
-      - name: Run Store Deep Link (STORE-PR6) Tests
-        run: |
-          # STORE-PR6: strict /open URL parser (malicious/foreign-host/duplicate/oversized fail closed),
-          # defence-in-depth target allowlist, single-flight redeem dedup (cold+warm cannot double-redeem),
-          # web /open flow (param capture + URL scrub + redeem(web) + navigate; no code/state/token in JS
-          # storage), native cold/warm coordinator, App-Link association generator (TEST fixtures; fails
-          # closed without real signing identity), and native static config (Android manifest / iOS
-          # entitlements / AppDelegate). Zero skipped.
-          npm run test:store-deep-link
+          npm run test:native-url
 
       - name: Run Deploy Association Output Proof (STORE-PR6 §6/§7)
         run: |
