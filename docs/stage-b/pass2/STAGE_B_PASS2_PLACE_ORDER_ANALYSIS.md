@@ -1,69 +1,125 @@
 # DILMART — STAGE B PASS 2
-# DEEP-DIVE ANALYSIS: `public.place_order` & CHECKOUT AUTHORITY
+# DEEP-DIVE ANALYSIS: `public.place_order` & SIGNATURE TRANSITION CONTRACT
 
-**Generated:** 2026-08-30 | **Status:** READ-ONLY AUDIT BASELINE
+**Generated:** 2026-08-30 | **Updated:** 2026-08-31 | **Status:** READ-ONLY AUDIT BASELINE
 **Target Function:** `public.place_order(...)`
-**Source Location:** `supabase/migrations/20260820180000_order_finance_core_contracts.sql` / Live PostgreSQL `pg_proc`
+**Live OID:** `19893` | **Security Mode:** `SECURITY DEFINER` | **Search Path:** `public, pg_temp`
 
 ---
 
-## 1. Live Function Identity & Metadata
+## 1. Full Production Caller Map
 
-- **`p.oid::regprocedure`:**
-  ```text
-  public.place_order(text, text, uuid, text, text, text, numeric, numeric, numeric, numeric, uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer, uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric, uuid, uuid, uuid, uuid, uuid, text, integer, text, text, uuid, uuid, uuid, text, text)
-  ```
-- **Security Mode:** `SECURITY DEFINER` (`prosecdef = true`)
-- **Search Path:** `public, pg_temp` (`proconfig = ["search_path=public, pg_temp"]`)
-- **Execution Authority:** `service_role` ONLY (`anon` = false, `authenticated` = false, `PUBLIC` = false)
-- **Status:** **REFACTOR / MODIFY (CRITICAL CHECKOUT BLOCKER)**
+`public.place_order` is **ACTIVELY RUNTIME REACHABLE** across three critical production code paths:
+
+1. **Customer Web & Native Checkout:**
+   - Flow: `POST /api/checkout/submit` ➔ `CheckoutController.submit()` ➔ `CheckoutService.submit()`
+   - Database Entrypoint: Calls `public.place_order_idempotent` (when `attemptId` is passed) or fallback `public.place_order`.
+2. **PostgreSQL Idempotency Envelope:**
+   - Flow: `public.place_order_idempotent` executes attempt locking, request hash validation, and delegates core order creation to `public.place_order` via Named Parameters.
+3. **Manual Assisted & WhatsApp-Assisted Orders:**
+   - Flow: `POST /api/orders/manual` ➔ `OrdersController.createManualOrder()` ➔ `OrdersService.createManualOrder()`
+   - Database Entrypoint: Invokes `public.place_order` directly via SupabaseAdmin RPC client to create merchant orders, attach WhatsApp intent metadata, compute financial snapshots, and decrement stock.
 
 ---
 
-## 2. Answers to Explicit Architectural Questions
+## 2. Full Regression Scope for Future Refactor
 
-### Q1: Is `place_order` still runtime reachable?
-**YES.** `place_order` is actively called on every checkout submission:
-1. Called by `place_order_idempotent` in Section 2 (`v_order_number := public.place_order( ... Named Parameters ... );`).
-2. Called as direct fallback by `backend/src/modules/checkout/checkout.service.ts` when `attemptId` is omitted.
+Any future modification of `place_order` must execute and pass verification against:
+- **Standard Customer Checkout:** Single-item, multi-item, and multi-category orders.
+- **Checkout Idempotency:** Duplicate submission handling, concurrency locking, payload hash mismatch rejection.
+- **Checkout Recovery / Stale Attempt Retry:** Re-opening processing attempts after timeout.
+- **Manual Assisted Orders:** Agent-driven order creation with custom commercial terms.
+- **WhatsApp-Assisted Orders:** Linkage of `whatsapp_intent_id` and channel attribution.
+- **Financial Snapshot Calculations:** Commission, platform assisted fee, extra fee, courier fee, and merchant net amounts.
+- **Inventory Stock Decrements:** Atomic decrement of `products.stock_quantity` and increment of `products.sold_count`.
+- **Loyalty Transactions:** Atomic points deduction and `loyalty_transactions` insertion.
+- **Coupon Redemptions:** Multi-use and single-use coupon validation and logging.
 
-### Q2: Which backend route/RPC invokes it?
-- Route: `POST /api/checkout/submit`
-- Controller: `CheckoutController.submit()`
-- Service: `CheckoutService.submit()`
-- DB RPC: `place_order_idempotent` (which wraps `place_order`).
+---
 
-### Q3: Is `place_order_idempotent` the preferred modern authority?
-**YES.** `place_order_idempotent` provides the authoritative transactional idempotency lock, request payload hashing, and order-attempt linkage. It delegates the core order insertion and inventory decrement logic to `place_order`.
+## 3. Function Signature Transition Contract
 
-### Q4: Are both functions active?
-**YES.** They work as a nested transactional pair: `place_order_idempotent` handles attempt locking & deduplication, while `place_order` executes the order creation and stock decrements.
+In PostgreSQL, altering function parameter types or removing parameters creates a **new overload** rather than replacing the existing function. To prevent an ambiguous overload state in production, the transition must execute inside a **single atomic transaction**:
 
-### Q5: Can `place_order` be retired entirely?
-**NO.** `place_order` contains the core commercial logic:
-- Order record insertion into `public.orders`
-- Order items batch insertion into `public.order_items`
-- Loyalty points deduction & transaction logging in `public.loyalty_transactions`
-- Atomic stock decrements in `public.products` (`stock_quantity = stock_quantity - item.quantity`, `sold_count = sold_count + item.quantity`)
-- Coupon redemption recording
-
-### Q6: Must `place_order` be recreated before legacy columns are removed?
-**YES, ABSOLUTELY.** The current function body of `place_order` includes:
-```sql
-dilmart_user_id = p_dilmart_user_id,
-dilmart_barbershop_id = p_dilmart_barbershop_id,
-segment = p_segment,
-business_type = p_business_type
+### Exact Old Function Identity (`p.oid::regprocedure`):
+```text
+public.place_order(text, text, uuid, text, text, text, numeric, numeric, numeric, numeric, uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer, uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric, uuid, uuid, uuid, uuid, uuid, text, integer, text, text, uuid, uuid, uuid, text, text)
 ```
-If `orders.dilmart_user_id` or `orders.dilmart_barbershop_id` are dropped before `place_order` is refactored, any subsequent checkout call will throw a PostgreSQL runtime syntax error (`column "dilmart_user_id" does not exist`).
+*(55 parameters total, containing legacy arguments `p_store_linked_profile_id`, `p_dilmart_user_id`, `p_dilmart_barbershop_id`, `p_segment`, `p_business_type`)*.
 
-### Q7: Does any checkout path depend on its current signature?
-**NO.** Modern callers pass parameters by name. The legacy parameters (`p_store_linked_profile_id`, `p_dilmart_user_id`, `p_dilmart_barbershop_id`, `p_segment`, `p_business_type`) default to `NULL` and are not passed by modern checkout clients.
+### Proposed New Function Identity (50 parameters):
+```text
+public.place_order(
+  p_customer_name text,
+  p_customer_phone text,
+  p_governorate_id uuid,
+  p_area text,
+  p_nearest_landmark text,
+  p_notes text,
+  p_subtotal numeric,
+  p_delivery_cost numeric,
+  p_discount numeric,
+  p_total numeric,
+  p_coupon_id uuid,
+  p_items jsonb,
+  p_user_id uuid,
+  p_latitude double precision,
+  p_longitude double precision,
+  p_map_url text,
+  p_points_spent integer,
+  p_points_discount numeric,
+  p_points_earned integer,
+  p_merchant_id uuid,
+  p_payment_method text,
+  p_merchant_notes text,
+  p_merchandise_subtotal numeric,
+  p_discount_total numeric,
+  p_delivery_fee_charged numeric,
+  p_platform_commission_type text,
+  p_platform_commission_rate numeric,
+  p_platform_commission_amount numeric,
+  p_platform_assisted_fee_amount numeric,
+  p_platform_extra_fee_amount numeric,
+  p_courier_fee_payable numeric,
+  p_merchant_gross_amount numeric,
+  p_merchant_net_amount numeric,
+  p_gross_collected_amount numeric,
+  p_platform_net_revenue_amount numeric,
+  p_currency_code text,
+  p_financial_snapshot_version integer,
+  p_payment_status text,
+  p_collection_status text,
+  p_settlement_status text,
+  p_cash_expected_amount numeric,
+  p_commission_rule_id uuid,
+  p_assisted_fee_rule_id uuid,
+  p_platform_fee_rule_id uuid,
+  p_delivery_billing_rule_id uuid,
+  p_resolved_plan_id uuid,
+  p_resolved_plan_code text,
+  p_commercial_snapshot_version integer,
+  p_channel text
+)
+```
 
----
-
-## 3. Final Strategic Verdict: `REFACTOR` (Wave 0)
-
-1. **Step 1:** Author forward migration to re-create `public.place_order` with pure modern arguments, removing all legacy parameters and column writes.
-2. **Step 2:** Verify checkout test suites (`checkout-concurrency.test.mjs`, `p0-checkout-identity-geo.test.mjs`).
-3. **Step 3:** Only after Step 1 & 2 succeed can `orders.dilmart_user_id` and `orders.dilmart_barbershop_id` be safely dropped.
+### Atomic Migration Transition Order (Migration A Blueprint):
+1. **Step 1: Create New Function:**
+   Define `public.place_order` with the clean 50-parameter signature, setting `search_path = public, pg_temp` and `SECURITY DEFINER`.
+2. **Step 2: Update Idempotency Wrapper:**
+   Re-create `public.place_order_idempotent` to pass named arguments matching the new signature.
+3. **Step 3: Drop Old Overload:**
+   Execute `DROP FUNCTION public.place_order(text, text, uuid, ... 55 args) RESTRICT;`.
+4. **Step 4: Configure Security Grants:**
+   ```sql
+   REVOKE ALL ON FUNCTION public.place_order(...) FROM PUBLIC, anon, authenticated;
+   GRANT EXECUTE ON FUNCTION public.place_order(...) TO service_role;
+   ```
+5. **Step 5: Post-Transition Verification Assertion:**
+   ```sql
+   DO $$
+   BEGIN
+     IF (SELECT count(*) FROM pg_proc WHERE proname = 'place_order') <> 1 THEN
+       RAISE EXCEPTION 'MIGRATION FAILED: Ambiguous or missing place_order overload detected';
+     END IF;
+   END $$;
+   ```

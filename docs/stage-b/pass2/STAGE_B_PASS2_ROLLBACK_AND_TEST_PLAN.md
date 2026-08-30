@@ -1,30 +1,54 @@
 # DILMART — STAGE B PASS 2
 # ROLLBACK & TEST VERIFICATION PLAN (PASS 3 BLUEPRINT)
 
-**Generated:** 2026-08-30 | **Status:** PLANNING & PROPOSAL ONLY
+**Generated:** 2026-08-30 | **Updated:** 2026-08-31 | **Status:** PLANNING & PROPOSAL ONLY
 
 ---
 
-## 1. Rollback & Recovery Strategy by Wave
+## 1. Rollback & Multi-Dimensional Recovery Strategy by Migration
 
-| Wave | Operation | Data Loss Risk | Rollback Feasibility | Recovery / Restoration Procedure | Verification Query |
-|---|---|:---:|:---:|---|---|
-| **Wave 0** | `place_order` Refactor | **ZERO** (Code change only) | **HIGH** (Instant) | Re-execute prior `place_order` DDL definition from `20260820180000`. | `SELECT prosrc FROM pg_proc WHERE proname = 'place_order';` |
-| **Wave 1** | Drop 19 Dead Functions | **ZERO** (Unused routines) | **HIGH** (Instant) | Execute DDL re-creating function definitions from historical migrations. | `SELECT proname FROM pg_proc WHERE proname = ANY(...);` |
-| **Wave 2** | Drop 6 Leaf Tables | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Execute `CREATE TABLE` and `ENABLE RLS` DDL statements for the 6 empty tables. | `SELECT relname FROM pg_class WHERE relname = ANY(...);` |
-| **Wave 3** | Drop 4 Intermediate Tables | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Re-create 4 tables and re-add FK constraints. | `SELECT conname FROM pg_constraint WHERE conname = ANY(...);` |
-| **Wave 4** | Drop `store_linked_profiles` | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Re-create table and re-establish child FK constraints. | `SELECT relname FROM pg_class WHERE relname = 'store_linked_profiles';` |
-| **Wave 5** | Drop 8 Legacy Columns | **ZERO** (0 non-null values) | **MEDIUM** (DDL rollback) | Re-add nullable columns: `ALTER TABLE ... ADD COLUMN ... NULL;` | `SELECT attname FROM pg_attribute WHERE attname = ANY(...);` |
+| Migration | Operation | Data Loss Risk | Rollback Feasibility | Multi-Dimensional Verification Requirements |
+|---|---|:---:|:---:|---|
+| **Migration A** | `place_order` Refactor | **ZERO** (Code change only) | **HIGH** (Instant) | Verify exact `regprocedure`, 50 arguments, `result_type`, `owner = 'postgres'`, `prosecdef = true`, `proconfig = ["search_path=public, pg_temp"]`, and `service_role` EXECUTE grant only. |
+| **Migration B** | Drop 15 Dead RPCs | **ZERO** (Unused routines) | **HIGH** (Instant) | Re-create functions from historical migration catalog definitions; verify `count = 0` in `pg_proc` for target identities. |
+| **Migration C** | Drop 6 Leaf Tables + 3 Trigger Functions | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Verify table existence = false, trigger existence = false, trigger functions existence = false. Rollback restores columns, constraints, RLS enablement, and trigger definitions. |
+| **Migration D** | Drop 5 Parent Tables (`store_linked_profiles`) | **ZERO** (0 live rows) | **MEDIUM** (DDL rollback) | Verify all 5 tables dropped; rollback restores tables, primary keys, and inbound foreign keys from `orders`/`checkout_attempts`. |
+| **Migration E** | Drop 8 Legacy Columns in Active Tables | **ZERO** (0 non-null values) | **MEDIUM** (DDL rollback) | Verify `pg_attribute` no longer contains target columns; rollback executes `ALTER TABLE ... ADD COLUMN ... NULL;` and restores indexes. |
+| **Optional Migration F** | Retire `auth.users` Federated Guard | **ZERO** (0 federated users) | **HIGH** (Instant) | Verify trigger `trg_reject_reserved_federated_email` dropped from `auth.users`. Rollback re-attaches trigger. |
 
 ---
 
-## 2. Pre-Migration Safety Gates for Future Pass 3
+## 2. Pre-Migration Safety Assertions for Future Pass 3
 
-Before executing ANY destructive DDL in Pass 3:
-1. **Live Row Count Re-Check:** Assert `count(*) = 0` on every target table immediately before drop.
-2. **Non-Null Value Re-Check:** Assert `count(col) = 0` on every target column immediately before drop.
-3. **Database Backup Point:** Create a snapshot/dump of current schema and data via Supabase management API.
-4. **CI Integration Gate:** Full green run of `Launch Critical PR Quality & Security CI` on the candidate branch.
+Before executing ANY destructive DDL statement in future Pass 3 migrations:
+1. **Live Row Count Re-Check:**
+   ```sql
+   DO $$
+   BEGIN
+     IF (SELECT count(*) FROM public.store_carts) > 0 OR
+        (SELECT count(*) FROM public.store_linked_profiles) > 0 THEN
+       RAISE EXCEPTION 'PRE-MIGRATION GATE FAILED: Target legacy tables are not empty';
+     END IF;
+   END $$;
+   ```
+2. **Non-Null Value Re-Check:**
+   ```sql
+   DO $$
+   BEGIN
+     IF (SELECT count(*) FROM public.orders WHERE dilmart_user_id IS NOT NULL OR dilmart_barbershop_id IS NOT NULL) > 0 THEN
+       RAISE EXCEPTION 'PRE-MIGRATION GATE FAILED: orders legacy columns contain non-null values';
+     END IF;
+   END $$;
+   ```
+3. **Overload Ambiguity Prevention Assertion:**
+   ```sql
+   DO $$
+   BEGIN
+     IF (SELECT count(*) FROM pg_proc WHERE proname = 'place_order') <> 1 THEN
+       RAISE EXCEPTION 'MIGRATION FAILED: Multiple or missing place_order function overloads detected';
+     END IF;
+   END $$;
+   ```
 
 ---
 
@@ -32,11 +56,12 @@ Before executing ANY destructive DDL in Pass 3:
 
 | Suite Name | Command | Primary Validation Focus |
 |---|---|---|
-| **Policy Matrix Suite** | `npm run test:policy` | RLS enablement, table ACL lockdowns, role privilege isolation. |
-| **Hardening Regression Suite** | `npm run test:hardening` | Phone normalization, search sanitization, customer masking. |
-| **Launch Critical Suite** | `npm run test:launch-critical` | Account claim, order cancellation atomicity, checkout idempotency. |
+| **Launch Critical Suite** | `npm run test:launch-critical` | Checkout idempotency, atomic order placement, stock decrement, account claims. |
+| **Manual & Assisted Orders Suite** | `npm run test:manual-orders` | `OrdersService.createManualOrder()`, agent commercial terms resolution, WhatsApp intent linkage. |
+| **Database Concurrency Suite** | `node --test backend/tests/db-integration/checkout-concurrency.test.mjs` | Lock attempt concurrency, payload hash mismatches, retry logic. |
+| **Policy Matrix Suite** | `npm run test:policy` | Universal RLS enablement (60/60 tables post-cleanup), ACL lockdowns, role privilege isolation. |
+| **Hardening Regression Suite** | `npm run test:hardening` | Iraqi phone normalization, search sanitization, customer identity masking. |
 | **Product Import Suite** | `npm run test:product-import` | Catalog readiness, publication gates, tenant scope isolation. |
-| **Database Integration Suite** | `node --test tests/db-integration/*.test.mjs` | Live PostgreSQL execution, atomic confirm, RLS policies, concurrency locks. |
 | **Frontend Production Build** | `npm run build` (root) | Zero broken imports or type references to removed legacy tables/types. |
 | **Backend Production Build** | `npm run build` (`backend/`) | Zero broken NestJS service dependencies or DTO mappings. |
-| **CI / Deployment Guards** | `npm run test:ci` | Universal schema gate (`final-schema-gate.sql`) passes with 0 RLS gaps. |
+| **Universal Schema Gate** | `node backend/tests/db-integration/final-schema-gate.sql` | Universal schema gate passes with 0 RLS gaps. |

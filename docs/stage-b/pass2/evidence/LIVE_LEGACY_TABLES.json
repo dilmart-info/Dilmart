@@ -1,286 +1,156 @@
 [
   {
-    "inbound_fks": null,
-    "index_count": 3,
-    "oid": 19778,
-    "outbound_fks": null,
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19778,
     "schema_name": "public",
     "table_name": "dilmart_barber_handoff_audit_events",
-    "user_trigger_count": 1
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 0,
+    "policy_count": 0,
+    "trigger_count": 1,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Leaf Audit Table)"
   },
   {
-    "inbound_fks": null,
-    "index_count": 5,
-    "oid": 19755,
-    "outbound_fks": [
-      {
-        "constraint_name": "dilmart_barber_handoffs_linked_profile_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_linked_profiles"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19755,
     "schema_name": "public",
     "table_name": "dilmart_barber_handoffs",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 1,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Intermediate Table)"
   },
   {
-    "inbound_fks": null,
-    "index_count": 5,
-    "oid": 19800,
-    "outbound_fks": [
-      {
-        "constraint_name": "dilmart_barber_web_sessions_linked_profile_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_linked_profiles"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19800,
     "schema_name": "public",
     "table_name": "dilmart_barber_web_sessions",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 1,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Leaf Table)"
   },
   {
-    "inbound_fks": null,
-    "index_count": 3,
-    "oid": 19541,
-    "outbound_fks": null,
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19541,
     "schema_name": "public",
     "table_name": "dilmart_customer_handoff_audit_events",
-    "user_trigger_count": 1
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 0,
+    "policy_count": 0,
+    "trigger_count": 1,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Leaf Audit Table)"
   },
   {
-    "inbound_fks": null,
-    "index_count": 6,
-    "oid": 19511,
-    "outbound_fks": [
-      {
-        "constraint_name": "dilmart_customer_handoffs_linked_profile_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_linked_profiles"
-      },
-      {
-        "constraint_name": "dilmart_customer_handoffs_store_customer_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "profiles"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19511,
     "schema_name": "public",
     "table_name": "dilmart_customer_handoffs",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 2,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Intermediate Table)"
   },
   {
-    "inbound_fks": null,
-    "index_count": 4,
-    "oid": 19002,
-    "outbound_fks": [
-      {
-        "constraint_name": "store_cart_items_cart_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_carts"
-      },
-      {
-        "constraint_name": "store_cart_items_merchant_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "merchants"
-      },
-      {
-        "constraint_name": "store_cart_items_product_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "products"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19002,
     "schema_name": "public",
     "table_name": "store_cart_items",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": false,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 3,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Leaf Table)"
   },
   {
-    "inbound_fks": [
-      {
-        "constraint_name": "checkout_attempts_store_cart_id_fkey",
-        "referencing_column": "store_cart_id",
-        "referencing_table": "checkout_attempts"
-      },
-      {
-        "constraint_name": "orders_store_cart_id_fkey",
-        "referencing_column": "store_cart_id",
-        "referencing_table": "orders"
-      },
-      {
-        "constraint_name": "store_cart_items_cart_id_fkey",
-        "referencing_column": "cart_id",
-        "referencing_table": "store_cart_items"
-      }
-    ],
-    "index_count": 4,
-    "oid": 18976,
-    "outbound_fks": [
-      {
-        "constraint_name": "store_carts_merchant_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "merchants"
-      },
-      {
-        "constraint_name": "store_carts_store_linked_profile_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_linked_profiles"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 18976,
     "schema_name": "public",
     "table_name": "store_carts",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": false,
+    "inbound_fk_count": 3,
+    "outbound_fk_count": 2,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Intermediate Table)"
   },
   {
-    "inbound_fks": [
-      {
-        "constraint_name": "store_federated_refresh_tokens_replaced_by_token_id_fkey",
-        "referencing_column": "replaced_by_token_id",
-        "referencing_table": "store_federated_refresh_tokens"
-      },
-      {
-        "constraint_name": "store_federated_refresh_tokens_parent_token_id_fkey",
-        "referencing_column": "parent_token_id",
-        "referencing_table": "store_federated_refresh_tokens"
-      }
-    ],
-    "index_count": 4,
-    "oid": 19580,
-    "outbound_fks": [
-      {
-        "constraint_name": "store_federated_refresh_tokens_parent_token_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_federated_refresh_tokens"
-      },
-      {
-        "constraint_name": "store_federated_refresh_tokens_replaced_by_token_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_federated_refresh_tokens"
-      },
-      {
-        "constraint_name": "store_federated_refresh_tokens_session_family_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_federated_session_families"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19580,
     "schema_name": "public",
     "table_name": "store_federated_refresh_tokens",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 2,
+    "outbound_fk_count": 3,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Leaf Table)"
   },
   {
-    "inbound_fks": null,
-    "index_count": 3,
-    "oid": 19635,
-    "outbound_fks": null,
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19635,
     "schema_name": "public",
     "table_name": "store_federated_session_audit_events",
-    "user_trigger_count": 1
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 0,
+    "outbound_fk_count": 0,
+    "policy_count": 0,
+    "trigger_count": 1,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Leaf Audit Table)"
   },
   {
-    "inbound_fks": [
-      {
-        "constraint_name": "store_federated_refresh_tokens_session_family_id_fkey",
-        "referencing_column": "session_family_id",
-        "referencing_table": "store_federated_refresh_tokens"
-      }
-    ],
-    "index_count": 6,
-    "oid": 19554,
-    "outbound_fks": [
-      {
-        "constraint_name": "store_federated_session_families_linked_profile_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "store_linked_profiles"
-      },
-      {
-        "constraint_name": "store_federated_session_families_store_customer_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "profiles"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 19554,
     "schema_name": "public",
     "table_name": "store_federated_session_families",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": true,
+    "inbound_fk_count": 1,
+    "outbound_fk_count": 2,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Intermediate Table)"
   },
   {
-    "inbound_fks": [
-      {
-        "constraint_name": "checkout_attempts_store_linked_profile_id_fkey",
-        "referencing_column": "store_linked_profile_id",
-        "referencing_table": "checkout_attempts"
-      },
-      {
-        "constraint_name": "orders_store_linked_profile_id_fkey",
-        "referencing_column": "store_linked_profile_id",
-        "referencing_table": "orders"
-      },
-      {
-        "constraint_name": "store_carts_store_linked_profile_id_fkey",
-        "referencing_column": "store_linked_profile_id",
-        "referencing_table": "store_carts"
-      },
-      {
-        "constraint_name": "dilmart_customer_handoffs_linked_profile_id_fkey",
-        "referencing_column": "linked_profile_id",
-        "referencing_table": "dilmart_customer_handoffs"
-      },
-      {
-        "constraint_name": "store_federated_session_families_linked_profile_id_fkey",
-        "referencing_column": "linked_profile_id",
-        "referencing_table": "store_federated_session_families"
-      },
-      {
-        "constraint_name": "dilmart_barber_handoffs_linked_profile_id_fkey",
-        "referencing_column": "linked_profile_id",
-        "referencing_table": "dilmart_barber_handoffs"
-      },
-      {
-        "constraint_name": "dilmart_barber_web_sessions_linked_profile_id_fkey",
-        "referencing_column": "linked_profile_id",
-        "referencing_table": "dilmart_barber_web_sessions"
-      }
-    ],
-    "index_count": 7,
-    "oid": 18943,
-    "outbound_fks": [
-      {
-        "constraint_name": "store_linked_profiles_store_customer_id_fkey",
-        "foreign_column": "id",
-        "foreign_table": "profiles"
-      }
-    ],
-    "owner_name": "postgres",
-    "policy_count": 0,
-    "rls_enabled": true,
+    "table_oid": 18943,
     "schema_name": "public",
     "table_name": "store_linked_profiles",
-    "user_trigger_count": 0
+    "owner_name": "postgres",
+    "is_rls_enabled": true,
+    "is_rls_forced": false,
+    "inbound_fk_count": 7,
+    "outbound_fk_count": 1,
+    "policy_count": 0,
+    "trigger_count": 0,
+    "live_row_count": 0,
+    "classification": "SAFE TO REMOVE (Root Parent Table)"
   }
 ]
