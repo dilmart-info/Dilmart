@@ -53,7 +53,6 @@ export class AuthController {
 
   @Get("context")
   @Roles("authenticated")
-  @AuthSources("supabase", "DilMart_federated") // STORE-PR5 §14: DUAL_CUSTOMER auth context.
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   getContext(@CurrentActor() actor: ActorContext) {
     return this.authService.getContext(actor);

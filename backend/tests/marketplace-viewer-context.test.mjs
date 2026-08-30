@@ -108,59 +108,7 @@ const isOccupancyCall = (c) => {
   return c.table === 'products' && String(sel).startsWith('category_id');
 };
 
-test('category cache identity differentiates ROLE-only contexts (OWNER vs CUSTOMER, no segment)', async () => {
-  // barber_app surface, no segment: role alone drives resolved audiences and
-  // verified-salon-owner status — the cache key MUST differ so the two contexts
-  // do not share one occupancy result.
-  const categories = [
-    { id: 'owner-cat', slug: 'o', name: 'o', parent_id: null, is_active: true },
-    { id: 'cust-cat', slug: 'c', name: 'c', parent_id: null, is_active: true },
-  ];
-  const routes = {
-    categories: () => ({ data: categories }),
-    products: (rec) => {
-      const sel = rec.ops.find((o) => o[0] === 'select')?.[1] ?? '';
-      if (!String(sel).startsWith('category_id')) return { data: [], count: 0 };
-      const orExprs = rec.ops.filter((o) => o[0] === 'or').map((o) => String(o[1])).join('|');
-      if (orExprs.includes('salon_owner') || orExprs.includes('professional_buyer')) return { data: [{ category_id: 'owner-cat' }] };
-      if (orExprs.includes('customer')) return { data: [{ category_id: 'cust-cat' }] };
-      return { data: [] };
-    },
-  };
-  const { client, allCalls } = makeSupabase(routes);
-  const svc = new MarketplaceService({ client }, fakeWhatsApp);
 
-  const ownerCtx = { surface: 'barber_app', role: 'OWNER', segment: undefined, salonVerified: true, isTrusted: true };
-  const customerCtx2 = { surface: 'barber_app', role: 'CUSTOMER', segment: undefined, isTrusted: true };
-
-  const owner = await svc.getCategories(ownerCtx);
-  const customer = await svc.getCategories(customerCtx2);
-
-  // Two DISTINCT occupancy queries ran → the second did not reuse the first's cache.
-  const occ = allCalls.filter(isOccupancyCall);
-  assert.equal(occ.length, 2, 'both role contexts executed a separate occupancy query (no cache reuse)');
-
-  const orOf = (call) => call.ops.filter((o) => o[0] === 'or').map((o) => String(o[1])).join('|');
-  const hasEq = (call, col, val) => call.ops.some((o) => o[0] === 'eq' && o[1] === col && o[2] === val);
-  const ownerOcc = occ[0];
-  const custOcc = occ[1];
-
-  // OWNER resolves salon_owner/professional_buyer; CUSTOMER resolves customer.
-  assert.ok(/salon_owner|professional_buyer/.test(orOf(ownerOcc)), 'OWNER query resolves salon_owner/professional_buyer');
-  assert.ok(/target_audience\.cs\.\{customer\}/.test(orOf(custOcc)), 'CUSTOMER query resolves customer audience');
-
-  // Verified-salon behavior: OWNER (a verified salon owner) keeps requires_verified_salon
-  // products; a trusted CUSTOMER applies requires_verified_salon=false.
-  assert.equal(hasEq(ownerOcc, 'requires_verified_salon', false), false, 'OWNER retains requires_verified_salon products');
-  assert.equal(hasEq(custOcc, 'requires_verified_salon', false), true, 'trusted CUSTOMER applies requires_verified_salon=false');
-
-  // Distinct occupancy results per role.
-  const occd = (rows, id) => rows.find((c) => c.id === id)?.has_public_products;
-  assert.equal(occd(owner, 'owner-cat'), true);
-  assert.equal(occd(owner, 'cust-cat'), false);
-  assert.equal(occd(customer, 'cust-cat'), true);
-  assert.equal(occd(customer, 'owner-cat'), false);
-});
 
 test('segmented home uses ViewerContext-aware categories (response.categories === category_grid)', async () => {
   const categories = [

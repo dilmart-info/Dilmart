@@ -11,7 +11,6 @@ import { WhatsAppIntentsModule } from "../whatsapp-intents/whatsapp-intents.modu
 import { FinanceModule } from "../finance/finance.module";
 import { ShippingModule } from "../shipping/shipping.module";
 import { JenniModule } from "../jenni/jenni.module";
-import { StoreIntegrationModule } from "../store-integration/store-integration.module";
 
 @Module({
   imports: [
@@ -21,7 +20,6 @@ import { StoreIntegrationModule } from "../store-integration/store-integration.m
     FinanceModule,
     ShippingModule,
     JenniModule,
-    StoreIntegrationModule,
   ],
 
   controllers: [OrdersController],

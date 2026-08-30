@@ -10,7 +10,6 @@ import ReentryTrackingHub from "@/components/ReentryTrackingHub";
 import BottomNav from "@/components/BottomNav";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
-import { BarberWebSessionProvider } from "@/lib/barber-handoff/BarberWebSessionContext";
 
 type AppProvidersProps = {
   children: ReactNode;
@@ -37,15 +36,14 @@ export function AppProviders({ children, withCapacitorChrome = true }: AppProvid
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <BarberWebSessionProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <FlyingCartAnimation />
-            {withCapacitorChrome ? <CapacitorAppWrapper>{body}</CapacitorAppWrapper> : body}
-          </TooltipProvider>
-        </BarberWebSessionProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <FlyingCartAnimation />
+          {withCapacitorChrome ? <CapacitorAppWrapper>{body}</CapacitorAppWrapper> : body}
+        </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
 }
+

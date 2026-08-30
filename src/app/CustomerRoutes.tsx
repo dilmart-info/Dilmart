@@ -19,11 +19,8 @@ import Offers from "@/pages/Offers";
 import TrackOrder from "@/pages/TrackOrder";
 import Wishlist from "@/pages/Wishlist";
 import { RequireAuthenticatedUser } from "@/components/guards/RequireAuthenticatedUser";
-import { ProfileRouteGate } from "@/components/guards/ProfileRouteGate";
 import { CustomerCapabilityGuard } from "@/lib/auth/CustomerCapabilityGuard";
 
-const OpenHandoff = lazy(() => import("@/pages/OpenHandoff"));
-const OpenBarberHandoff = lazy(() => import("@/pages/OpenBarberHandoff"));
 const AccountAddresses = lazy(() => import("@/pages/account/Addresses"));
 const AccountOrders = lazy(() => import("@/pages/account/Orders"));
 const ClaimAccount = lazy(() => import("@/pages/account/ClaimAccount"));
@@ -34,10 +31,6 @@ const PhoneSecurity = lazy(() => import("@/pages/account/PhoneSecurity"));
 export function getCustomerRouteElements(): ReactElement[] {
   return [
     <Route key="home" path="/" element={<Index />} />,
-    // STORE-PR6 §12 — Universal/App Link + web landing for the DilMart customer handoff (customer surface).
-    <Route key="open" path="/open" element={<OpenHandoff />} />,
-    // Web landing for the Barber/Owner handoff (barber_app surface, separate from Customer).
-    <Route key="open-barber" path="/open-barber" element={<OpenBarberHandoff />} />,
     <Route key="store" path="/store/:slug" element={<Storefront />} />,
     <Route key="products" path="/products" element={<Products />} />,
     <Route key="stores" path="/stores" element={<Stores />} />,
@@ -72,11 +65,9 @@ export function getCustomerRouteElements(): ReactElement[] {
       key="profile"
       path="/profile"
       element={
-        <ProfileRouteGate>
-          <RequireAuthenticatedUser>
-            <Profile />
-          </RequireAuthenticatedUser>
-        </ProfileRouteGate>
+        <RequireAuthenticatedUser>
+          <Profile />
+        </RequireAuthenticatedUser>
       }
     />,
     <Route
@@ -157,9 +148,11 @@ export const CUSTOMER_ROUTE_PATHS = [
   "/auth",
   "/forgot-password",
   "/profile",
+  "/profile/security/phone",
   "/my-account/addresses",
   "/my-account/orders",
   "/category/:slug",
   "/track-order",
   "/wishlist",
 ] as const;
+

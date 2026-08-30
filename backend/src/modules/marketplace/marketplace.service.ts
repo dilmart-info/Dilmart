@@ -144,49 +144,13 @@ export class MarketplaceService {
    */
   private getViewerVisibilityCacheIdentity(ctx?: ViewerContext): Record<string, unknown> {
     const surface = ctx?.surface ?? "web_store";
-    if (surface === "web_store") return { surface: "web_store" };
-    const filters = this.visibilityService.buildVisibilityFilters(ctx as ViewerContext);
-    return {
-      surface,
-      businessType: ctx?.businessType ?? null,
-      resolvedAudiences: [...filters.resolvedAudiences].sort(),
-      isTrusted: ctx?.isTrusted === true,
-      isVerifiedSalonOwner: this.visibilityService.isVerifiedSalonOwner(ctx as ViewerContext),
-    };
+    return { surface };
   }
 
   private applyViewerVisibility(query: any, ctx?: ViewerContext): any {
-    const isVerifiedOwner = ctx ? this.visibilityService.isVerifiedSalonOwner(ctx) : false;
-
-    // Rule 0: requires_verified_salon — only trusted verified salon owners may see restricted products on ANY surface.
-    if (!isVerifiedOwner) {
-      query = query.eq("requires_verified_salon", false);
-    }
-
     const surface = ctx?.surface ?? "web_store";
     if (surface === "web_store") return query;
-
-    // Rule 1: visible_in must contain surface OR 'all'
-    query = query.or(`visible_in.cs.{${surface}},visible_in.cs.{all}`);
-
-    // Rule 2: business_type_tags
-    if (ctx?.businessType) {
-      query = query.or(`business_type_tags.cs.{${ctx.businessType}},business_type_tags.cs.{all}`);
-    } else {
-      // No businessType: only show 'all' products to prevent mixing
-      query = query.contains("business_type_tags", ["all"]);
-    }
-
-    // Rule 3: target_audience
-    const filters = this.visibilityService.buildVisibilityFilters(ctx as ViewerContext);
-    if (filters.resolvedAudiences.length > 0) {
-      const audienceFilter = filters.resolvedAudiences
-        .map((a) => `target_audience.cs.{${a}}`)
-        .join(",");
-      query = query.or(`target_audience.cs.{all},${audienceFilter}`);
-    }
-
-    return query;
+    return query.or(`visible_in.cs.{${surface}},visible_in.cs.{all}`);
   }
 
   /**
@@ -717,15 +681,13 @@ export class MarketplaceService {
     // but re-check the triple-state in-process in case a future edit narrows the select/columns.
     if (!isPubliclyListableProduct(product)) return null;
 
-    // Apply visibility check across all surfaces (ensuring requires_verified_salon is enforced on public web_store too)
+    // Apply visibility check across all surfaces
     const activeCtx = ctx ?? { surface: "web_store" };
     const isVisible = this.visibilityService.canProductBeShown(
       {
         is_active: product.is_active,
         visible_in: product.visible_in,
         target_audience: product.target_audience,
-        business_type_tags: product.business_type_tags,
-        requires_verified_salon: product.requires_verified_salon,
       },
       activeCtx,
     );
@@ -800,8 +762,6 @@ export class MarketplaceService {
             is_active: p.is_active,
             visible_in: p.visible_in,
             target_audience: p.target_audience,
-            business_type_tags: p.business_type_tags,
-            requires_verified_salon: p.requires_verified_salon,
           },
           ctx,
         ),

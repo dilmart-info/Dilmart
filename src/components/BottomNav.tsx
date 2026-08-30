@@ -1,27 +1,21 @@
-import { Heart, Home, LayoutGrid, ShoppingCart, Store, User, UserCheck } from "lucide-react";
+import { Heart, Home, LayoutGrid, ShoppingCart, Store, User } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuth } from "@/hooks/use-auth";
-import { useBarberWebSession } from "@/lib/barber-handoff/BarberWebSessionContext";
 import { isNative } from "@/lib/capacitor";
 
 const BottomNav = () => {
     const location = useLocation();
     const { getItemCount } = useCartStore();
     const { isMerchantUser } = useAuth();
-    const { state: barberSession } = useBarberWebSession();
     const itemCount = getItemCount();
     const native = isNative();
-    const barberConnected = barberSession.status === "authenticated";
 
     const navItems = [
         { icon: Home, label: "الرئيسية", path: "/" },
         { icon: LayoutGrid, label: "الأقسام", path: "/products" },
         { icon: Heart, label: "المفضلة", path: "/wishlist" },
-        // A connected Barber B2B session gets a visibly distinct icon here (Phase 7 — account
-        // navigation must not present the Barber as an anonymous/guest Customer). The path is
-        // unchanged; ProfileRouteGate decides what actually renders at /profile.
-        { icon: barberConnected ? UserCheck : User, label: "حسابي", path: "/profile" },
+        { icon: User, label: "حسابي", path: "/profile" },
         // Merchant entry is Web-only; native customer bundle must not deep-link into /merchant.
         ...(!native
             ? [{ icon: Store, label: "التاجر", path: isMerchantUser ? "/merchant" : "/merchant/login" }]

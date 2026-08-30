@@ -122,8 +122,6 @@ export class MarketplaceBannersService {
               is_active: row.is_active,
               visible_in: row.visible_in,
               target_audience: row.target_audience,
-              business_type_tags: row.business_type_tags,
-              requires_verified_salon: row.requires_verified_salon,
             },
             ctx,
           );

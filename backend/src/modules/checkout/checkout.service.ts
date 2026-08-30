@@ -228,15 +228,11 @@ export class CheckoutService {
     return this.jenniPricing.resolveJenniDeliveryPrice(governorateId);
   }
 
-  async submit(payload: CheckoutSubmitDto, actorId?: string, authSource?: string) {
+  async submit(payload: CheckoutSubmitDto, actorId?: string) {
     if (!actorId) {
       throw new UnauthorizedException("يرجى إنشاء جلسة متابعة مؤقتة قبل إرسال الطلب.");
     }
-    // STORE-PR5 §Phase C/D — a federated DilMart customer is a verified Store customer; its loyalty
-    // assurance is the validated federated session itself (Store-owned rule), NOT Supabase
-    // user_metadata.phone_verified (which the shadow auth user does not carry). Provisional/phone
-    // gating below therefore applies to Supabase actors only.
-    const isFederated = authSource === "DilMart_federated";
+    const isFederated = false;
 
     // Attempt Idempotency Lock
     const attemptId = payload.checkout_attempt_id || null;

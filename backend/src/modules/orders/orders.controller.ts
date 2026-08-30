@@ -1,12 +1,9 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Res, ForbiddenException, Headers, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Res, ForbiddenException, UnauthorizedException } from "@nestjs/common";
 import { OrdersService } from "./orders.service";
 import { Roles } from "../../common/authz/roles.decorator";
-import { AuthSources } from "../../common/authz/auth-source";
 import { ActorContext, CurrentActor } from "../../common/authz/actor-context.decorator";
 import { JenniStickerService } from "../jenni/jenni-sticker.service";
 import { JenniClientService } from "../jenni/jenni-client.service";
-import { StoreIntegrationService } from "../store-integration/store-integration.service";
-import { StoreSessionClaims } from "../store-integration/store-integration.types";
 import {
   AdminOverrideDeliveryStatusDto,
   AgentOrdersQueryDto,
@@ -41,7 +38,6 @@ export class OrdersController {
     private readonly ordersService: OrdersService,
     private readonly jenniStickerService: JenniStickerService,
     private readonly jenniClientService: JenniClientService,
-    private readonly storeIntegrationService: StoreIntegrationService,
     private readonly orderReturnsService: OrderReturnsService,
   ) {}
 
@@ -99,45 +95,13 @@ export class OrdersController {
     if (actor.actorRole === "agent" && agentId !== actor.actorId) {
       throw new ForbiddenException("Agent can only view own orders.");
     }
-    return this.ordersService.getAgentOrders(agentId, query, actor);
+    return this.ordersService.getAgentOrders(agentId, query);
   }
 
-  @Get("me")
+  @Get("my-orders")
   @Roles("authenticated")
-  @AuthSources("supabase", "DilMart_federated") // STORE-PR5 §14: DUAL_CUSTOMER (own orders).
   getMyOrders(@CurrentActor() actor: ActorContext) {
     return this.ordersService.getMyOrders(actor);
-  }
-
-  // ── B2B Orders (Barber App) ──────────────────────────────────────────────
-
-  private requireBarberAppSession(rawHeader: string | undefined): StoreSessionClaims {
-    if (!rawHeader) {
-      throw new UnauthorizedException("X-Store-Session header is required.");
-    }
-    const claims = this.storeIntegrationService.verifyStoreSessionHeader(rawHeader);
-    if (!claims) {
-      throw new UnauthorizedException("X-Store-Session is invalid or expired.");
-    }
-    if (claims.sourceApp !== "barber_app") {
-      throw new ForbiddenException("Only Barber App B2B sessions are allowed.");
-    }
-    return claims;
-  }
-
-  @Get("b2b/my-orders")
-  async getB2BOrders(@Headers("x-store-session") storeSession: string | undefined) {
-    const claims = this.requireBarberAppSession(storeSession);
-    return this.ordersService.getB2BOrders(claims.linkedProfileId);
-  }
-
-  @Get("b2b/:orderId")
-  async getB2BOrderDetail(
-    @Param("orderId") orderId: string,
-    @Headers("x-store-session") storeSession: string | undefined,
-  ) {
-    const claims = this.requireBarberAppSession(storeSession);
-    return this.ordersService.getB2BOrderDetail(orderId, claims.linkedProfileId);
   }
 
   @Get(":id/detail")
@@ -299,7 +263,6 @@ export class OrdersController {
 
   @Post(":id/customer-cancel")
   @Roles("authenticated")
-  @AuthSources("supabase", "DilMart_federated") // STORE-PR5 §14: DUAL_CUSTOMER (own order).
   async customerCancelOrder(
     @Param("id") id: string,
     @Body() payload: CustomerCancelOrderDto,
@@ -316,7 +279,6 @@ export class OrdersController {
 
   @Post(":id/return-request")
   @Roles("authenticated")
-  @AuthSources("supabase", "DilMart_federated") // STORE-PR5 §14: DUAL_CUSTOMER (own order).
   async createReturnRequest(
     @Param("id") id: string,
     @Body() payload: CreateReturnRequestDto,
@@ -333,7 +295,6 @@ export class OrdersController {
 
   @Get(":id/return-request")
   @Roles("authenticated")
-  @AuthSources("supabase", "DilMart_federated") // STORE-PR5 §14: DUAL_CUSTOMER (own order).
   async getReturnRequestStatus(
     @Param("id") id: string,
     @CurrentActor() actor: ActorContext,

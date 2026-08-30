@@ -1,54 +1,69 @@
 /**
- * DilMart-CUSTOMER-STORE-STORE-PR2 — Target-path allowlist for the Customer Gateway.
- *
- * As of STORE-PR3 this module DELEGATES to the single canonical Store target-path
- * validator (`store-integration/customer-handoff/customer-handoff-target.validator`),
- * restricted to the discovery-only subset (master spec §12). There is exactly one
- * allowlist in the Store backend — do not add a second one.
- *
- * Discovery-safe subset returned by this endpoint:
- *   /  /products  /offers  /stores  /category/:slug  /product/:slug  /store/:slug
- *
- * Everything else — external/absolute/protocol-relative URLs, javascript:/data:
- * schemes, admin/merchant/agent routes, cart/checkout/account routes, control
- * characters, traversal — is rejected (returns null). Callers drop the item.
+ * Target-path allowlist for the Customer Gateway discovery surface.
  */
 
-import {
-  DISCOVERY_TARGET_SUBSET,
-  brandTarget as canonicalBrandTarget,
-  isValidSlug as canonicalIsValidSlug,
-  validateHandoffTargetPath,
-} from "../../store-integration/customer-handoff/customer-handoff-target.validator";
+const SLUG_REGEX = /^[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*$/u;
 
 export function isValidSlug(slug: unknown): slug is string {
-  return canonicalIsValidSlug(slug);
+  if (typeof slug !== "string") return false;
+  if (!slug || slug.length > 128) return false;
+  if (slug !== slug.toLowerCase()) return false;
+  if (slug.includes("_") || slug.includes(" ") || slug.includes(".")) return false;
+  return SLUG_REGEX.test(slug);
 }
 
-/**
- * Returns the path if it is an allowlisted, internal, discovery-safe target;
- * otherwise null. Never returns an external, absolute, protocol-relative, or
- * privileged (admin/merchant/agent) path, nor a cart/checkout/account route.
- */
 export function validateTargetPath(path: unknown): string | null {
-  return validateHandoffTargetPath(path, DISCOVERY_TARGET_SUBSET);
+  if (typeof path !== "string") return null;
+  const trimmed = path.trim();
+  if (path !== trimmed) return null;
+  if (trimmed.includes("..") || trimmed.includes("\\") || trimmed.includes("://") || trimmed.startsWith("//")) return null;
+
+  if (trimmed === "/" || trimmed === "/products" || trimmed === "/offers" || trimmed === "/stores") {
+    return trimmed;
+  }
+
+  const categoryMatch = trimmed.match(/^\/category\/([^/]+)$/);
+  if (categoryMatch) {
+    const slug = categoryMatch[1];
+    return isValidSlug(slug) ? trimmed : null;
+  }
+
+  const productMatch = trimmed.match(/^\/product\/([^/]+)$/);
+  if (productMatch) {
+    const slug = productMatch[1];
+    return isValidSlug(slug) ? trimmed : null;
+  }
+
+  const storeMatch = trimmed.match(/^\/store\/([^/]+)$/);
+  if (storeMatch) {
+    const slug = storeMatch[1];
+    return isValidSlug(slug) ? trimmed : null;
+  }
+
+  const brandMatch = trimmed.match(/^\/products\?brand=([^&]+)$/);
+  if (brandMatch) {
+    return trimmed;
+  }
+
+  return null;
 }
 
-/** Builds a validated `/category/:slug` target, or null if the slug is unsafe. */
 export function categoryTarget(slug: unknown): string | null {
-  return isValidSlug(slug) ? validateTargetPath(`/category/${slug}`) : null;
+  return isValidSlug(slug) ? `/category/${slug}` : null;
 }
 
-/** Builds a validated `/product/:slug` target, or null if the slug is unsafe. */
 export function productTarget(slug: unknown): string | null {
-  return isValidSlug(slug) ? validateTargetPath(`/product/${slug}`) : null;
+  return isValidSlug(slug) ? `/product/${slug}` : null;
 }
 
-/**
- * Builds a validated `/products?brand=<encoded>` target, or null if the brand cannot
- * produce a safe target (caller drops the brand rather than shipping an unchecked target).
- * Delegates to the canonical builder — the brand is never concatenated raw here.
- */
+const BRAND_NAME_SAFE_REGEX = /^[\p{L}\p{N}\s.\-&'+/]{1,100}$/u;
+
 export function brandTarget(name: unknown): string | null {
-  return canonicalBrandTarget(name);
+  if (typeof name !== "string") return null;
+  const trimmed = name.trim();
+  if (!trimmed || !BRAND_NAME_SAFE_REGEX.test(trimmed)) return null;
+  if (trimmed.includes("<") || trimmed.includes(">") || trimmed.includes('"') || trimmed.includes("`")) return null;
+  return `/products?brand=${encodeURIComponent(trimmed)}`;
 }
+
+

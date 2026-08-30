@@ -26,26 +26,10 @@ const NO_CAPABILITIES: AuthContextCapabilities = {
   federatedLogoutAll: false,
 };
 
-/**
- * STORE-PR5 §Phase A — capabilities are a pure function of (authSource, activeRole).
- *  - A federated DilMart customer: commerce + "logout everywhere", but NO Store password/phone/claim
- *    surface (those live on Supabase-owned auth-security routes the guard denies to federated actors).
- *  - A Supabase customer/provisional: the classic Store-account surface; federatedLogoutAll never applies.
- *  - Merchant / admin / agent: no customer-commerce capabilities.
- */
 function capabilitiesFor(
-  authSource: AuthSource | null,
+  _authSource: AuthSource | null,
   activeRole: ContextRole | null,
 ): AuthContextCapabilities {
-  if (authSource === "DilMart_federated") {
-    return {
-      customerCommerce: true,
-      phoneIdentity: false,
-      accountClaim: false,
-      passwordManagement: false,
-      federatedLogoutAll: true,
-    };
-  }
   const isCustomer = activeRole === "customer";
   return {
     customerCommerce: isCustomer,
@@ -55,6 +39,7 @@ function capabilitiesFor(
     federatedLogoutAll: false,
   };
 }
+
 
 const merchantRoleWeight: Record<"owner" | "manager" | "staff", number> = {
   owner: 3,
@@ -142,18 +127,6 @@ export class AuthService {
 
     if (profileError) throw profileError;
 
-    // STORE-PR5 §Phase A — federated DilMart customer context.
-    //
-    // Authorization comes from the verified DilMart federated session, NOT from Supabase auth
-    // state. A federated actor is ALWAYS a Store customer with commerce access; it must never be
-    // presented as provisional / claim_required / needing a Store OTP/password/phone-change, even
-    // if the underlying shadow profile row (created by the PR3 provisioning path) still carries
-    // legacy `account_type = 'provisional_customer'`. We fix this at the CONTRACT layer — no DB
-    // mutation — and never leak linkedProfileId/DilMartUserId/sessionFamilyId/sessionVersion/tokens.
-    if (actor.authSource === "DilMart_federated") {
-      return this.buildFederatedContext(actor, profileRow);
-    }
-
     // Fetch phone verification status
     const { data: phoneIdentity } = await this.supabaseAdmin.client
       .from("customer_phone_identities")
@@ -222,60 +195,6 @@ export class AuthService {
       verified_phone: verifiedPhone,
       authSource: actor.authSource ?? "supabase",
       capabilities: capabilitiesFor(actor.authSource ?? "supabase", activeRole),
-    };
-  }
-
-  /**
-   * STORE-PR5 §Phase A — build the federated customer context from the verified actor + Store profile.
-   * `actor.actorId` is the Store customer/profile UUID (NOT DilMartUserId). Verified DilMart email/phone
-   * from the federated verifier win over stale profile columns. Role is pinned to "customer"; merchant
-   * facets are empty; claim/password/phone capabilities are off; account_type is a response-only marker.
-   */
-  private buildFederatedContext(
-    actor: ActorContext,
-    profileRow: unknown,
-  ): AuthContextResponse {
-    const actorId = actor.actorId as string;
-    const row = (profileRow ?? null) as {
-      full_name?: string | null;
-      email?: string | null;
-      phone?: string | null;
-      address?: string | null;
-      points?: number | null;
-    } | null;
-
-    const email = actor.actorEmail ?? row?.email ?? null;
-    const phone = actor.actorPhone ?? row?.phone ?? null;
-    // A federated session only exists because DilMart verified the identity; treat a carried phone as verified.
-    const phoneVerified = Boolean(actor.actorPhone);
-
-    const profile: AuthContextProfile = {
-      id: actorId,
-      role: "customer",
-      full_name: row?.full_name ?? null,
-      email,
-      phone,
-      address: row?.address ?? null,
-      points: row?.points ?? null,
-      account_type: FEDERATED_CUSTOMER_ACCOUNT_TYPE,
-      phone_verified: phoneVerified,
-      claim_required: false,
-      verified_phone: phoneVerified ? phone : null,
-    };
-
-    return {
-      user: { id: actorId, email, phone },
-      profile,
-      roles: ["customer"],
-      activeRole: "customer",
-      merchant: null,
-      merchant_memberships: [],
-      account_type: FEDERATED_CUSTOMER_ACCOUNT_TYPE,
-      phone_verified: phoneVerified,
-      claim_required: false,
-      verified_phone: phoneVerified ? phone : null,
-      authSource: "DilMart_federated",
-      capabilities: capabilitiesFor("DilMart_federated", "customer"),
     };
   }
 
