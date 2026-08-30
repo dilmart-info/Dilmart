@@ -71,14 +71,10 @@ export type AuthContextResponse = {
   verified_phone?: string | null;
   /**
    * Which identity provider resolved the caller. `null` only for the guest passthrough.
-   * Federated actors NEVER expose linkedProfileId/DilMartUserId/sessionFamilyId/sessionVersion here.
    */
   authSource: AuthSource | null;
   capabilities: AuthContextCapabilities;
 };
-
-/** Response-level account_type marker for a federated DilMart customer (never written to the DB). */
-export const FEDERATED_CUSTOMER_ACCOUNT_TYPE = "DilMart_federated_customer";
 
 export type RawMembershipRow = {
   merchant_id: string;

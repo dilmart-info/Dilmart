@@ -132,7 +132,6 @@ export default function AdminProductForm() {
         visible_in: "web_store",       // comma-string → TEXT[]
         purchase_mode: "retail",       // comma-string → TEXT[]
         is_b2b_offer: false,
-        requires_verified_salon: false,
         min_order_qty: "",
         max_order_qty: "",
     });
@@ -207,7 +206,6 @@ export default function AdminProductForm() {
                     ? ((product as any).purchase_mode as string[]).join(", ")
                     : (product as any).purchase_mode ?? "retail",
                 is_b2b_offer: (product as any).is_b2b_offer ?? false,
-                requires_verified_salon: (product as any).requires_verified_salon ?? false,
                 min_order_qty: (product as any).min_order_qty != null ? String((product as any).min_order_qty) : "",
                 max_order_qty: (product as any).max_order_qty != null ? String((product as any).max_order_qty) : "",
             });
@@ -543,7 +541,6 @@ export default function AdminProductForm() {
             visible_in: parseCommaValues(form.visible_in).length ? parseCommaValues(form.visible_in) : ["web_store"],
             purchase_mode: parseCommaValues(form.purchase_mode).length ? parseCommaValues(form.purchase_mode) : ["retail"],
             is_b2b_offer: form.is_b2b_offer,
-            requires_verified_salon: form.requires_verified_salon,
             min_order_qty: form.min_order_qty.trim() ? parseInt(form.min_order_qty) : null,
             max_order_qty: form.max_order_qty.trim() ? parseInt(form.max_order_qty) : null,
         };
@@ -891,30 +888,30 @@ export default function AdminProductForm() {
                     {isAdmin && (
                     <Card className="border-blue-500/30 bg-blue-500/5">
                         <CardHeader>
-                            <CardTitle className="text-blue-700 dark:text-blue-400">
-                                🏪 إعدادات التقسيم B2B (Barber App)
+                            <CardTitle className="text-base flex items-center gap-2">
+                                🏪 إعدادات التقسيم والعروض الخاصة (Marketplace & B2B)
                             </CardTitle>
                             <p className="text-xs text-muted-foreground">
-                                تحكم في ظهور المنتج في متجر الويب وتطبيق الحلاق (DilMart Barber App).
+                                تحكم في ظهور المنتج في متجر الويب وتطبيق العملاء (Customer App).
                             </p>
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {/* visible_in */}
                             <div className="space-y-1">
                                 <Label htmlFor="visible_in">يظهر في (visible_in)</Label>
-                                <p className="text-xs text-muted-foreground">القيم المتاحة: web_store، barber_app، all — مفصولة بفاصلة</p>
+                                <p className="text-xs text-muted-foreground">القيم المتاحة: web_store، customer_app، all — مفصولة بفاصلة</p>
                                 <Input
                                     id="visible_in"
                                     dir="ltr"
                                     value={form.visible_in}
                                     onChange={(e) => setForm((p) => ({ ...p, visible_in: e.target.value }))}
-                                    placeholder="web_store, barber_app"
+                                    placeholder="web_store, customer_app"
                                 />
                             </div>
                             {/* target_audience */}
                             <div className="space-y-1">
                                 <Label htmlFor="target_audience">الجمهور المستهدف (target_audience)</Label>
-                                <p className="text-xs text-muted-foreground">القيم: all، salon_owner، barber_staff، professional_buyer، customer</p>
+                                <p className="text-xs text-muted-foreground">القيم: all، customer، business، wholesale</p>
                                 <Input
                                     id="target_audience"
                                     dir="ltr"
@@ -926,7 +923,7 @@ export default function AdminProductForm() {
                             {/* business_type_tags */}
                             <div className="space-y-1">
                                 <Label htmlFor="business_type_tags">نوع النشاط التجاري (business_type_tags)</Label>
-                                <p className="text-xs text-muted-foreground">القيم: all، men_barbershop، women_salon، nail_studio، mixed_salon</p>
+                                <p className="text-xs text-muted-foreground">القيم: all، أو وسوم مخصصة لنوع النشاط</p>
                                 <Input
                                     id="business_type_tags"
                                     dir="ltr"
@@ -938,13 +935,13 @@ export default function AdminProductForm() {
                             {/* product_use_cases */}
                             <div className="space-y-1">
                                 <Label htmlFor="product_use_cases">حالات الاستخدام (product_use_cases)</Label>
-                                <p className="text-xs text-muted-foreground">مثال: barber_tool، salon_equipment، furniture، consumable</p>
+                                <p className="text-xs text-muted-foreground">مثال: retail_pack, bulk_pack, equipment, consumable</p>
                                 <Input
                                     id="product_use_cases"
                                     dir="ltr"
                                     value={form.product_use_cases}
                                     onChange={(e) => setForm((p) => ({ ...p, product_use_cases: e.target.value }))}
-                                    placeholder="barber_tool, consumable"
+                                    placeholder="equipment, consumable"
                                 />
                             </div>
                             {/* purchase_mode */}
@@ -986,28 +983,17 @@ export default function AdminProductForm() {
                                     />
                                 </div>
                             </div>
-                            {/* is_b2b_offer + requires_verified_salon */}
+                            {/* is_b2b_offer */}
                             <div className="space-y-3 pt-1">
                                 <div className="flex items-center justify-between rounded-md border px-3 py-2">
                                     <div>
-                                        <p className="text-sm font-medium">عرض B2B</p>
-                                        <p className="text-xs text-muted-foreground">يظهر في قسم "عروض B2B" في تطبيق الحلاق</p>
+                                        <p className="text-sm font-medium">عرض خاص للأعمال (B2B Offer)</p>
+                                        <p className="text-xs text-muted-foreground">يظهر في قسم عروض الأعمال والجملة</p>
                                     </div>
                                     <Switch
                                         id="is_b2b_offer"
                                         checked={form.is_b2b_offer}
                                         onCheckedChange={(v) => setForm((p) => ({ ...p, is_b2b_offer: v }))}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                                    <div>
-                                        <p className="text-sm font-medium">يتطلب صالون موثّق</p>
-                                        <p className="text-xs text-muted-foreground">يُخفى عن المستخدمين غير الموثّقين من Barber App</p>
-                                    </div>
-                                    <Switch
-                                        id="requires_verified_salon"
-                                        checked={form.requires_verified_salon}
-                                        onCheckedChange={(v) => setForm((p) => ({ ...p, requires_verified_salon: v }))}
                                     />
                                 </div>
                             </div>

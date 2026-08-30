@@ -1466,7 +1466,7 @@ export class AdminService {
     return { ok: true, assignment: data };
   }
 
-  private readonly allowedCommercialConditionChannels = new Set(["web_checkout", "whatsapp_assisted", "manual_assisted", "barber_app_checkout"]);
+  private readonly allowedCommercialConditionChannels = new Set(["web_checkout", "whatsapp_assisted", "manual_assisted", "customer_app_checkout"]);
 
   /** M13-R: reject hybrid, invalid values, inconsistent scope, bad condition enums, unknown categories. */
   private async validateCommercialRuleRow(row: Record<string, any>) {

@@ -10,10 +10,11 @@ export interface ViewerContext {
   segment?: string;
   businessType?: string;
   isTrusted?: boolean;
-  requiresVerifiedSalonCheck?: boolean;
 }
 
 export type ResolvedAudience =
   | "customer"
+  | "business"
+  | "wholesale"
   | "all";
 

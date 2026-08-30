@@ -43,7 +43,7 @@ export type CommercialResolveResult = {
 export class CommercialEngineService {
   constructor(private readonly supabaseAdmin: SupabaseAdminService) {}
 
-  private static readonly RECOGNIZED_CHANNELS = new Set(["web_checkout", "whatsapp_assisted", "manual_assisted", "barber_app_checkout"]);
+  private static readonly RECOGNIZED_CHANNELS = new Set(["web_checkout", "whatsapp_assisted", "manual_assisted", "customer_app_checkout"]);
 
   private normalizeChannel(channel?: string | null) {
     const safe = String(channel ?? "web_checkout").trim().toLowerCase();

@@ -12,11 +12,15 @@ export function resolveMarketplaceSurface(
   }
 }
 
-export function resolveViewerContext(surface?: string): ViewerContext {
+export function resolveViewerContext(
+  surface?: string,
+  options?: { segment?: string; businessType?: string; isTrusted?: boolean },
+): ViewerContext {
   return {
     surface: resolveMarketplaceSurface(surface),
-    isTrusted: false,
-    requiresVerifiedSalonCheck: false,
+    segment: options?.segment,
+    businessType: options?.businessType,
+    isTrusted: options?.isTrusted ?? false,
   };
 }
 

@@ -34,7 +34,6 @@ export class CustomerEntryController {
     const ctx: ViewerContext = {
       surface: 'web_store',
       isTrusted: false,
-      requiresVerifiedSalonCheck: false,
     };
 
     res.setHeader(

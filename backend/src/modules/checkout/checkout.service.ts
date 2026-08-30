@@ -18,7 +18,6 @@ type ProductRow = {
   visibility_status: string | null;
   visible_in: string[] | null;
   target_audience: string[] | null;
-  requires_verified_salon: boolean | null;
   purchase_mode: string[] | string | null;
   min_order_qty: number | null;
   max_order_qty: number | null;
@@ -86,7 +85,7 @@ export class CheckoutService {
     const { data: rows, error } = await this.supabaseAdmin.client
       .from("products")
       .select(
-        "id,name,price,discount_price,offer_ends_at,stock,is_active,is_published,visibility_status,visible_in,target_audience,requires_verified_salon,purchase_mode,min_order_qty,max_order_qty,merchant_id,category_id",
+        "id,name,price,discount_price,offer_ends_at,stock,is_active,is_published,visibility_status,visible_in,target_audience,purchase_mode,min_order_qty,max_order_qty,merchant_id,category_id",
       )
       .in("id", ids);
 

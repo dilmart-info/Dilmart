@@ -8,7 +8,6 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { AppActorRole, ROLES_KEY } from "./roles.decorator";
-import { AuthSource, AUTH_SOURCES_KEY, DEFAULT_AUTH_SOURCES } from "./auth-source";
 import { ActorRequest } from "./actor-context.decorator";
 import { SupabaseActorResolverService } from "./supabase-actor-resolver.service";
 

@@ -13,10 +13,9 @@ const { CustomerEntryService } = await import(
 
 const customerCtx = {
   surface: 'customer_app',
-  segment: 'DilMart_APP_CUSTOMER',
+  segment: 'customer',
   sourceApp: 'customer_app',
   isTrusted: true,
-  requiresVerifiedSalonCheck: true,
 };
 
 function makeMarketplace(overrides = {}) {

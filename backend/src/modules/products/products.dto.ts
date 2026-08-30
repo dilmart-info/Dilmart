@@ -97,11 +97,10 @@ export class UpsertProductDto {
   @IsString()
   merchant_sku?: string | null;
 
-  // ─── B2B Segmentation Fields ───────────────────────────────────────────────
-
+  // ─── Marketplace Segmentation Fields ──────────────────────────────────────
   /**
    * Who can see this product.
-   * Values: 'customer' | 'barber_staff' | 'salon_owner' | 'professional_buyer' | 'all'
+   * Values: 'customer' | 'business' | 'wholesale' | 'all'
    * Default: ['all']
    */
   @IsOptional()
@@ -110,8 +109,8 @@ export class UpsertProductDto {
   target_audience?: string[];
 
   /**
-   * Business types this product targets.
-   * Values: 'men_barbershop' | 'women_salon' | 'nail_studio' | 'beauty_center' | 'spa' | 'all'
+   * Business types or domain tags this product targets.
+   * Values: generic configurable strings, e.g. 'all'
    * Default: ['all']
    */
   @IsOptional()
@@ -120,10 +119,8 @@ export class UpsertProductDto {
   business_type_tags?: string[];
 
   /**
-   * Product use cases (multi-value).
-   * Values: 'personal_tool' | 'barber_tool' | 'salon_equipment' | 'consumable' |
-   *         'furniture' | 'professional_cosmetic' | 'setup_package' | 'wholesale' |
-   *         'nail_tool' | 'beauty_equipment' | 'hair_care' | 'beard_care' | 'sterilization'
+   * Product use cases (multi-value generic tags).
+   * Values: generic category/use-case strings
    */
   @IsOptional()
   @IsArray()
@@ -132,8 +129,8 @@ export class UpsertProductDto {
 
   /**
    * Surfaces where this product appears.
-   * Values: 'web_store' | 'barber_app' | 'customer_app' | 'all'
-   * Default: ['web_store'] — products are NOT exposed to barber_app unless configured.
+   * Values: 'web_store' | 'customer_app' | 'all'
+   * Default: ['web_store']
    */
   @IsOptional()
   @IsArray()
@@ -150,15 +147,10 @@ export class UpsertProductDto {
   @IsString({ each: true })
   purchase_mode?: string[];
 
-  /** True if this is a B2B-specific offer with special pricing. */
+  /** True if this is a B2B/wholesale offer. */
   @IsOptional()
   @IsBoolean()
   is_b2b_offer?: boolean;
-
-  /** True if buyer must be a verified DilMart salon to purchase. */
-  @IsOptional()
-  @IsBoolean()
-  requires_verified_salon?: boolean;
 
   /** Minimum order quantity for B2B/wholesale. */
   @IsOptional()

@@ -10,7 +10,6 @@ import {
   AuthContextProfile,
   AuthContextResponse,
   ContextRole,
-  FEDERATED_CUSTOMER_ACCOUNT_TYPE,
   RawMembershipRow,
   isContextRole,
   isPlatformRole,

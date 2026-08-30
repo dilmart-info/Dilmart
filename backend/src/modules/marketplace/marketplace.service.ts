@@ -35,7 +35,7 @@ const MARKETPLACE_PRODUCT_WITH_MERCHANT_SELECT = `${MARKETPLACE_PUBLIC_PRODUCT_S
 const MARKETPLACE_PRODUCT_LIST_WITH_MERCHANT_SELECT = `${MARKETPLACE_PUBLIC_PRODUCT_LIST_SELECT}, merchants!inner(${MARKETPLACE_PRODUCT_MERCHANT_EMBED})`;
 
 /**
- * M26 — Segmentation context for B2B Barber App surface.
+ * Segmentation context for marketplace surfaces.
  * Used by getHome() and listProducts() to apply visibility rules.
  */
 type SegmentedContext = {
@@ -120,27 +120,19 @@ export class MarketplaceService {
 
   /**
    * Shared ViewerContext visibility filter — the SINGLE source of truth for the
-   * M26/M27 segmentation rules. Used by listProducts(), getBrands(), the segmented
+   * marketplace segmentation rules. Used by listProducts(), getBrands(), the segmented
    * home, and context-aware category occupancy so product, brand and category
    * filtering can never diverge.
    *
    * - web_store (or no ctx): public behavior — query returned unchanged.
-   * - non-web surface: visible_in ⊇ {surface|all}; business_type_tags ⊇
-   *   {businessType|all} (or {all} when no businessType); target_audience ⊇
-   *   {all|resolved audiences}; requires_verified_salon=false for a trusted,
-   *   non-verified-salon viewer.
+   * - non-web surface: visible_in ⊇ {surface|all}.
    */
   /**
    * Canonical cache identity for ViewerContext-dependent visibility. Keyed on the
-   * RESOLVED visibility SEMANTICS — surface, businessType, the sorted resolved
-   * target audiences, trust, and verified-salon-owner status — rather than raw
-   * context fields, so it differentiates any two contexts whose occupancy /
-   * visibility SQL predicates differ. This includes role-only differences: role
-   * drives ProductVisibilityService.resolveAudienceFromViewerContext() (reflected
-   * in resolvedAudiences) and isVerifiedSalonOwner() (reflected directly). Since
-   * web_store visibility is role-independent (applyViewerVisibility no-ops), it
-   * collapses to a single identity so the classic global "categories" cache entry
-   * is preserved. Contains no PII/tokens.
+   * RESOLVED visibility SEMANTICS — surface. Since web_store visibility is
+   * role-independent (applyViewerVisibility no-ops), it collapses to a single
+   * identity so the classic global "categories" cache entry is preserved.
+   * Contains no PII/tokens.
    */
   private getViewerVisibilityCacheIdentity(ctx?: ViewerContext): Record<string, unknown> {
     const surface = ctx?.surface ?? "web_store";
@@ -157,12 +149,9 @@ export class MarketplaceService {
    * Active category tree with occupancy metadata.
    *
    * Backward compatible: with no ctx (or a web_store ctx) it preserves the classic
-   * public behavior and the global "categories" cache entry. With a non-web
+   * public behavior and the global "categories" cache entry. With a customer_app
    * ViewerContext, occupancy is computed with the SAME visibility rules as products
-   * (applyViewerVisibility), so a category occupied only by (e.g.) barber_app
-   * products is NOT counted as occupied for a customer viewer. Occupancy is cached
-   * PER-CONTEXT (a customer_app result can never be served from a barber_app or
-   * web_store cache entry).
+   * (applyViewerVisibility). Occupancy is cached PER-CONTEXT.
    */
   async getCategories(ctx?: ViewerContext) {
     const identity = this.getViewerVisibilityCacheIdentity(ctx);
@@ -266,10 +255,7 @@ export class MarketplaceService {
    * Marketplace home payload.
    *
    * Surface=web_store (default): returns classic home shape for backward compatibility.
-   * Surface=barber_app: returns dynamic segmented layout for Barber App native screens.
-   *
-   * The barber_app response always has a stable shape (layoutVersion, surface, segment, banners, categories, sections)
-   * even if banners/sections are empty in early phases.
+   * Surface=customer_app: returns dynamic segmented layout.
    */
   async getHome(ctx: ViewerContext = { surface: "web_store" }) {
     const { surface, segment, businessType } = ctx;
@@ -281,7 +267,7 @@ export class MarketplaceService {
       });
     }
 
-    // barber_app or other surfaces: dynamic, cached by canonical viewer visibility + segment
+    // customer_app or other surfaces: dynamic, cached by canonical viewer visibility + segment
     const cacheKey = `home:${JSON.stringify({
       segment: segment ?? null,
       visibility: this.getViewerVisibilityCacheIdentity(ctx),
@@ -365,9 +351,9 @@ export class MarketplaceService {
   }
 
   /**
-   * Segmented home for Barber App (and future Customer App).
+   * Segmented home for Customer App.
    * Returns a stable dynamic layout shape even if sections are initially empty.
-   * Products in sections are automatically filtered by surface + audience + businessType.
+   * Products in sections are automatically filtered by surface + audience.
    */
   private async _buildSegmentedHome(ctx: ViewerContext) {
     const { surface, segment, businessType } = ctx;
@@ -525,12 +511,7 @@ export class MarketplaceService {
 
   /**
    * Paginated cross-merchant listing — sort/search semantics: `marketplace-list.contract.ts`.
-   * M26/M27: Uses ViewerContext (trusted X-Store-Session or untrusted query params).
    * When surface=web_store (default), behaves exactly as before.
-   *
-   * Key rules:
-   *  - barber_app without businessType: only shows business_type_tags=['all'] products
-   *  - requires_verified_salon=true: excluded unless viewer is VERIFIED salon owner (trusted session)
    */
   async listProducts(params: {
     offset: number;
@@ -645,9 +626,8 @@ export class MarketplaceService {
 
   /**
    * Public product by global slug — see `marketplace-product-detail.contract.ts`.
-   * M27: Supports ViewerContext for segmentation.
-   * - For barber_app surface: applies visibility rules (visible_in, audience, requires_verified_salon).
-   * - Returns null (→ 404) if product exists but is not visible in the viewer's context.
+   * Supports ViewerContext for surface visibility.
+   * Returns null (→ 404) if product exists but is not visible in the viewer's context.
    */
   async getProductBySlug(slug: string, ctx?: ViewerContext) {
     const { data: rows, error } = await applyPublicProductFilters(

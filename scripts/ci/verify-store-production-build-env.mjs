@@ -18,14 +18,14 @@
 
 /** Canonical Production identity. Changing these changes what may be published. */
 export const CANONICAL = Object.freeze({
-  apiBaseUrl: "https://api.store.DilMart.org/api",
-  apiHostname: "api.store.DilMart.org",
+  apiBaseUrl: "https://api.store.dilmart.org/api",
+  apiHostname: "api.store.dilmart.org",
   apiPathname: "/api",
   supabaseProjectRef: "ztplxqlthuqkuktbznbo",
   supabaseHostname: "ztplxqlthuqkuktbznbo.supabase.co",
   supabasePathname: "/",
   supabaseUrl: "https://ztplxqlthuqkuktbznbo.supabase.co",
-  backendBindingUrl: "https://api.store.DilMart.org/api/health/config-public",
+  backendBindingUrl: "https://api.store.dilmart.org/api/health/config-public",
 });
 
 const REQUIRED_KEYS = [
@@ -100,7 +100,7 @@ export function verifyStoreProductionBuildEnv(env) {
     if (apiUrl.protocol !== "https:") {
       errors.push(`VITE_STORE_API_BASE_URL must use https:, got ${apiUrl.protocol}`);
     }
-    if (apiUrl.hostname !== CANONICAL.apiHostname) {
+    if (apiUrl.hostname.toLowerCase() !== CANONICAL.apiHostname.toLowerCase()) {
       errors.push(
         `VITE_STORE_API_BASE_URL host must be ${CANONICAL.apiHostname}, got ${apiUrl.hostname}`,
       );
@@ -128,7 +128,7 @@ export function verifyStoreProductionBuildEnv(env) {
     if (supabaseUrl.protocol !== "https:") {
       errors.push(`VITE_SUPABASE_URL must use https:, got ${supabaseUrl.protocol}`);
     }
-    if (supabaseUrl.hostname !== CANONICAL.supabaseHostname) {
+    if (supabaseUrl.hostname.toLowerCase() !== CANONICAL.supabaseHostname.toLowerCase()) {
       errors.push(
         `VITE_SUPABASE_URL host must be ${CANONICAL.supabaseHostname}, got ${supabaseUrl.hostname}`,
       );

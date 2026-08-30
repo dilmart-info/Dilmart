@@ -12,7 +12,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
-    include: ["src/lib/deep-link/build-deploy-associations.test.ts"],
+    include: ["scripts/mobile/app-link-associations.test.ts"],
     testTimeout: 300_000,
     hookTimeout: 300_000,
   },

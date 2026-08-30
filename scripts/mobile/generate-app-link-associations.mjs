@@ -50,8 +50,14 @@ export function buildAasa(teamId, bundleId) {
       details: [
         {
           appIDs: [appId],
-          // Modern components matching, scoped ONLY to the handoff path.
-          components: [{ "/": "/open", comment: "DilMart customer handoff" }],
+          // Modern components matching, scoped to public marketplace discovery paths.
+          components: [
+            { "/": "/product/*", comment: "DilMart product detail" },
+            { "/": "/category/*", comment: "DilMart category page" },
+            { "/": "/store/*", comment: "DilMart merchant store page" },
+            { "/": "/products*", comment: "DilMart product catalog" },
+            { "/": "/offers*", comment: "DilMart offers" },
+          ],
         },
       ],
     },

@@ -28,7 +28,7 @@
  * As of the Gate 2 correction, `applyPublicProductFilters` is applied to **every** public
  * `products` query in `marketplace.service.ts` — no exceptions: product detail (this file),
  * `listProducts` (grid/list), `getSuggested`, `getCategoryPage`, `getProductsByIds`,
- * `getOffersList`, `getBrands`, both `_buildWebStoreHome` and `_buildSegmentedHome` (barber_app)
+ * `getOffersList`, `getBrands`, both `_buildWebStoreHome` and `_buildSegmentedHome`
  * home buckets. (Gate 1 had left `getCategoryPage`/`getProductsByIds`/`getOffersList`/
  * `getBrands`/the segmented home on the older `is_active`-only rule; that gap is closed now.)
  * Internal/merchant/admin product queries intentionally do NOT use this helper — a merchant
@@ -70,11 +70,11 @@
 
 /** Comma-separated `products` columns exposed on marketplace product JSON (no `*`). */
 export const MARKETPLACE_PUBLIC_PRODUCT_SELECT =
-  "id, merchant_id, category_id, slug, name, short_description, description, price, discount_price, images, stock, is_active, is_new, is_best_seller, is_featured, offer_ends_at, sort_order, created_at, loyalty_points_enabled, is_published, visibility_status, brand, colors, sizes, dimensions, weight_grams, target_audience, business_type_tags, product_use_cases, visible_in, purchase_mode, is_b2b_offer, requires_verified_salon, min_order_qty, max_order_qty" as const;
+  "id, merchant_id, category_id, slug, name, short_description, description, price, discount_price, images, stock, is_active, is_new, is_best_seller, is_featured, offer_ends_at, sort_order, created_at, loyalty_points_enabled, is_published, visibility_status, brand, colors, sizes, dimensions, weight_grams, target_audience, business_type_tags, product_use_cases, visible_in, purchase_mode, is_b2b_offer, min_order_qty, max_order_qty" as const;
 
 /** Comma-separated `products` columns for list/grid endpoints (M2.8). Includes short_description; no long description. */
 export const MARKETPLACE_PUBLIC_PRODUCT_LIST_SELECT =
-  "id, merchant_id, category_id, slug, name, short_description, price, discount_price, images, stock, is_active, is_new, is_best_seller, is_featured, offer_ends_at, sort_order, created_at, loyalty_points_enabled, is_published, visibility_status, brand, colors, sizes, dimensions, weight_grams, target_audience, business_type_tags, product_use_cases, visible_in, purchase_mode, is_b2b_offer, requires_verified_salon, min_order_qty, max_order_qty" as const;
+  "id, merchant_id, category_id, slug, name, short_description, price, discount_price, images, stock, is_active, is_new, is_best_seller, is_featured, offer_ends_at, sort_order, created_at, loyalty_points_enabled, is_published, visibility_status, brand, colors, sizes, dimensions, weight_grams, target_audience, business_type_tags, product_use_cases, visible_in, purchase_mode, is_b2b_offer, min_order_qty, max_order_qty" as const;
 
 /** Merchant object embedded on product rows — minimal stable fields only. */
 export const MARKETPLACE_PRODUCT_MERCHANT_EMBED = "id, slug, display_name" as const;

@@ -37,7 +37,6 @@ export class MarketplaceController {
       segment: segmentParam,
       businessType: businessTypeParam?.trim() || undefined,
       isTrusted: false,
-      requiresVerifiedSalonCheck: false,
     };
   }
 

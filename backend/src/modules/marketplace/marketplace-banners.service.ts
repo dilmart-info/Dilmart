@@ -18,7 +18,6 @@ export interface MarketplaceBannerRow {
   visible_in: string[];
   target_audience: string[];
   business_type_tags: string[];
-  requires_verified_salon: boolean;
   is_active: boolean;
   sort_order: number;
   starts_at?: string | null;
@@ -34,7 +33,7 @@ export interface CategorySummary {
 }
 
 export const MARKETPLACE_BANNER_SELECT =
-  "id, banner_type, title, subtitle, image_url, mobile_image_url, action_type, action_category_id, action_search_query, action_external_url, visible_in, target_audience, business_type_tags, requires_verified_salon, is_active, sort_order, starts_at, ends_at, created_at, updated_at";
+  "id, banner_type, title, subtitle, image_url, mobile_image_url, action_type, action_category_id, action_search_query, action_external_url, visible_in, target_audience, business_type_tags, is_active, sort_order, starts_at, ends_at, created_at, updated_at";
 
 @Injectable()
 export class MarketplaceBannersService {
@@ -47,7 +46,7 @@ export class MarketplaceBannersService {
 
   /**
    * Evaluates if a given URL is a valid, secure HTTPS DilMart-controlled external URL.
-   * Hostname must be DilMart.org or a subdomain of DilMart.org (e.g. store.DilMart.org).
+   * Hostname must be dilmart.org or a subdomain of dilmart.org (e.g. store.dilmart.org).
    */
   isValidExternalUrl(urlStr: string | null | undefined): boolean {
     if (!urlStr || typeof urlStr !== "string") return false;
@@ -55,7 +54,7 @@ export class MarketplaceBannersService {
       const parsed = new URL(urlStr);
       if (parsed.protocol !== "https:") return false;
       const host = parsed.hostname.toLowerCase();
-      return host === "DilMart.org" || host.endsWith(".DilMart.org");
+      return host === "dilmart.org" || host.endsWith(".dilmart.org");
     } catch {
       return false;
     }

@@ -104,7 +104,7 @@ export class CustomerEntryService {
     ctx: ViewerContext,
   ): Promise<CustomerEntryCategory[]> {
     // Context-aware occupancy: has_public_products reflects products visible to
-    // THIS viewer, so a category occupied only by (e.g.) barber_app products is
+    // THIS viewer, so a category occupied only by private/other products is
     // not emitted to a customer viewer.
     const rows = (await this.marketplace.getCategories(ctx)) as Array<
       Record<string, unknown>

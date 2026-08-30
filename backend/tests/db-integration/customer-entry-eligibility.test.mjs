@@ -23,10 +23,9 @@ const fakeWhatsApp = { getComplianceMultiplierMap: async () => new Map() };
 const enabledConfig = { get: (k) => (k === 'STORE_CUSTOMER_APP_SURFACE_ENABLED' ? 'true' : undefined) };
 const CUSTOMER_CTX = {
   surface: 'customer_app',
-  segment: 'DilMart_APP_CUSTOMER',
+  segment: 'customer',
   sourceApp: 'customer_app',
   isTrusted: true,
-  requiresVerifiedSalonCheck: true,
 };
 
 test('customer-entry categories + featured respect ViewerContext eligibility (DB integration)', async (t) => {
