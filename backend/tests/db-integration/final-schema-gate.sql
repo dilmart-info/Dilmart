@@ -594,7 +594,8 @@ $fra_universal_rls$;
 -- ── FRA-S-PIS-001 — public.product_import_sessions lockdown gate ──────────────
 DO $fra_pis_001$
 DECLARE
-  v_rls_enabled boolean;
+  v_rls_enabled  boolean;
+  v_policy_count integer;
 BEGIN
   -- 1. RLS must be enabled
   SELECT c.relrowsecurity
@@ -608,7 +609,7 @@ BEGIN
       'FRA-S-PIS-001 gate: RLS is not enabled on public.product_import_sessions';
   END IF;
 
-  -- 2. anon must have NO access
+  -- 2. anon must have NO access (SELECT, INSERT, UPDATE, DELETE all denied)
   IF has_table_privilege('anon', 'public.product_import_sessions', 'SELECT')
      OR has_table_privilege('anon', 'public.product_import_sessions', 'INSERT')
      OR has_table_privilege('anon', 'public.product_import_sessions', 'UPDATE')
@@ -617,15 +618,16 @@ BEGIN
       'FRA-S-PIS-001 gate: anon holds table privileges on public.product_import_sessions';
   END IF;
 
-  -- 3. authenticated must NOT have direct INSERT/UPDATE/DELETE
-  IF has_table_privilege('authenticated', 'public.product_import_sessions', 'INSERT')
+  -- 3. authenticated must have NO direct access (SELECT, INSERT, UPDATE, DELETE all denied)
+  IF has_table_privilege('authenticated', 'public.product_import_sessions', 'SELECT')
+     OR has_table_privilege('authenticated', 'public.product_import_sessions', 'INSERT')
      OR has_table_privilege('authenticated', 'public.product_import_sessions', 'UPDATE')
      OR has_table_privilege('authenticated', 'public.product_import_sessions', 'DELETE') THEN
     RAISE EXCEPTION
-      'FRA-S-PIS-001 gate: authenticated holds direct mutation privileges on public.product_import_sessions';
+      'FRA-S-PIS-001 gate: authenticated holds direct table privileges on public.product_import_sessions';
   END IF;
 
-  -- 4. service_role must retain full CRUD
+  -- 4. service_role must retain full CRUD (backend is the sole trusted writer/reader)
   IF NOT (
     has_table_privilege('service_role', 'public.product_import_sessions', 'SELECT')
     AND has_table_privilege('service_role', 'public.product_import_sessions', 'INSERT')
@@ -635,6 +637,19 @@ BEGIN
     RAISE EXCEPTION
       'FRA-S-PIS-001 gate: service_role lost CRUD on public.product_import_sessions';
   END IF;
+
+  -- 5. Expected policy count is 0 (service-role mediated, zero browser surface)
+  SELECT count(*)
+  INTO v_policy_count
+  FROM pg_catalog.pg_policies
+  WHERE schemaname = 'public' AND tablename = 'product_import_sessions';
+
+  IF v_policy_count > 0 THEN
+    RAISE EXCEPTION
+      'FRA-S-PIS-001 gate: unexpected browser policies found on product_import_sessions: %',
+      v_policy_count;
+  END IF;
 END;
 $fra_pis_001$;
+
 
