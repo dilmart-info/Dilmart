@@ -3,9 +3,15 @@
 
 ---
 
-## 1. Matrix Overview
+## 1. Matrix Overview & Executive Scope
 
-This matrix inventories the Row Level Security (RLS) policies and direct table privileges across all core tables in the PostgreSQL database.
+This document provides the high-level Row Level Security (RLS) overview across the core marketplace tables.
+For the complete, un-truncated policy and privilege breakdown across **all 71 active database tables**, see the authoritative companion document:
+👉 [`docs/stage-b/STAGE_B_RLS_FULL_MATRIX.md`](file:///d:/DilMart/docs/stage-b/STAGE_B_RLS_FULL_MATRIX.md) `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`.
+
+---
+
+## 2. Core Marketplace RLS Summary
 
 | Table Name | RLS Enabled | Anon SELECT | Auth SELECT | Auth INSERT | Auth UPDATE | Auth DELETE | Merchant Access | Admin Access | Service Role |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -35,14 +41,12 @@ This matrix inventories the Row Level Security (RLS) policies and direct table p
 
 ---
 
-## 2. Key RLS Hardening Findings & Verification
+## 3. Key RLS Hardening Findings & Verification
 
 1. **`profiles` Role Escalation Blocked:**
-   - Prior to migration `20260827170552_lock_profiles_browser_update_privileges.sql`, `public.profiles` permitted users to update their own row including `role`.
-   - Table-level and column-level `UPDATE` privileges were **revoked from PUBLIC, anon, and authenticated**. Profile updates are now strictly mediated by the backend NestJS service with field allowlisting.
+   - Table-level and column-level `UPDATE` privileges were **revoked from PUBLIC, anon, and authenticated** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`. Profile updates are now strictly mediated by the backend NestJS service with field allowlisting.
 
 2. **`orders` Financial Mutation Blocked:**
-   - Prior to migration `20260828155204_lock_orders_browser_update_privileges.sql`, permissive policies existed that allowed delivery agents and merchants to update order rows.
    - `UPDATE` privileges on `public.orders` were **revoked from PUBLIC, anon, and authenticated** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`. Direct modification of order status, cash collected, and settlement state via PostgREST is rejected at the database privilege level.
 
 3. **RLS Helper Schema Isolation:**
@@ -51,4 +55,4 @@ This matrix inventories the Row Level Security (RLS) policies and direct table p
 
 4. **Migration / Schema Drift on `product_import_sessions`:**
    - In repository migration `20260426090000_m20_merchant_productivity_layer.sql`, `product_import_sessions` was created without RLS statements.
-   - In production database, 4 RLS policies were added out-of-band. A forward-only alignment migration is documented for Stage B cleanup.
+   - In the live production database, 4 RLS policies exist out-of-band. A forward-only alignment migration is documented as Finding `F-B-01` for Stage B Pass 2 cleanup.

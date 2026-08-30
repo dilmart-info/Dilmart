@@ -12,6 +12,7 @@ In accordance with the **DILMART Stage B Master Prompt**, a comprehensive, stric
 Repository:           https://github.com/dilmart-info/Dilmart
 Git Branch:           main
 Baseline Commit:      62922bb56212c62a15a857eb36a46c9802c8c94e
+Audit Branch:         audit/stage-b-pass1
 Render Service:       dilmart-backend (srv-d1m8s0k9c5sc73flttr0)
 Backend Hostname:     dilmart-backend.onrender.com
 Supabase Project Ref: ztplxqlthuqkuktbznbo
@@ -29,7 +30,7 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 | :--- | :---: | :--- |
 | **DilMart Store Launch Critical PR Quality & Security CI** | **GREEN (PASSED)** | `[CONFIRMED BY CI]` All 27 steps passed (Lint, Build, NestJS Unit/Integration Tests, Schema Checks, Security Audits). |
 | **Native Foundation CI** | **GREEN (PASSED)** | `[CONFIRMED BY CI]` Android Foundation (AGP 8.2.1 / API 35 / Temurin JDK 21) and iOS Foundation builds succeeded. |
-| **Netlify Production Deploy** | **FAILING (REFUSED)** | `[CONFIRMED BY CI]` The gated production deployment workflow fails at step `Verify deployment gate -> Enforce trust boundary` due to legacy repository identity hardcoding (see finding `F-B-DEPLOY-01`). |
+| **Netlify Production Deploy** | **FAILING (REFUSED AT GATE)** | `[CONFIRMED BY CI]` The gated production deployment workflow fails at step `Verify deployment gate -> Enforce trust boundary` due to legacy repository identity hardcoding (see finding `F-B-DEPLOY-01`). |
 
 ---
 
@@ -67,9 +68,13 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 #### `F-B-01` — Schema Migration Drift on `product_import_sessions`
 - **Exact File / Object:** [`supabase/migrations/20260426090000_m20_merchant_productivity_layer.sql:L6`](file:///d:/DilMart/supabase/migrations/20260426090000_m20_merchant_productivity_layer.sql#L6) and live table `public.product_import_sessions`.
 - **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]`
-  The table creation migration lacks `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` and policy definitions, whereas the live Supabase production database has 4 RLS policies applied out-of-band (as noted in migration `20260820180000_rls_helper_private_schema.sql:L31`).
-- **Impact:** Migration replay on a clean environment leaves `product_import_sessions` without RLS policies unless the out-of-band policies are codified.
-- **Recommended Direction:** Author a forward-only idempotency migration (`ENABLE ROW LEVEL SECURITY` + standard merchant/admin policies) to codify the production state in the repository history.
+  The repository migration `20260426090000_m20_merchant_productivity_layer.sql` created the table without `ENABLE ROW LEVEL SECURITY` or policy DDL. In the live production database (`ztplxqlthuqkuktbznbo`), RLS is enabled and the following **4 exact policies** exist:
+  1. `Admins can manage product_import_sessions` | Command: `ALL` | Roles: `{public}` | `USING (app_private.is_platform_admin())` | `WITH CHECK (app_private.is_platform_admin())`
+  2. `Merchants can view own product_import_sessions` | Command: `SELECT` | Roles: `{authenticated}` | `USING (app_private.is_merchant_member(merchant_id))`
+  3. `Merchants can insert own product_import_sessions` | Command: `INSERT` | Roles: `{authenticated}` | `WITH CHECK (app_private.is_merchant_member(merchant_id))`
+  4. `Merchants can update own product_import_sessions` | Command: `UPDATE` | Roles: `{authenticated}` | `USING (app_private.is_merchant_member(merchant_id))` | `WITH CHECK (app_private.is_merchant_member(merchant_id))`
+- **Impact:** Clean migration replay in fresh environments leaves `product_import_sessions` without RLS policies unless codified.
+- **Recommended Direction:** Author a forward-only idempotency migration reproducing the exact 4 live policies in repository history.
 - **DB Change Required:** **YES** (Forward migration only; no historical rewrite).
 
 ---
@@ -79,14 +84,14 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 #### `F-B-02` — 11 Legacy Tables from Decoupled Architectures
 - **Exact Objects:**
   `public.store_carts`, `public.store_cart_items`, `public.store_linked_profiles`, `public.store_federated_session_families`, `public.store_federated_refresh_tokens`, `public.store_federated_session_audit_events`, `public.DilMart_customer_handoffs`, `public.DilMart_customer_handoff_audit_events`, `public.DilMart_barber_handoffs`, `public.DilMart_barber_handoff_audit_events`, `public.DilMart_barber_web_sessions`.
-- **Evidence:** `[CONFIRMED BY CODE]` Full repository audit mapped 0 active runtime callers across frontend, backend, and native mobile apps.
+- **Evidence:** `[CONFIRMED BY CODE] [CONFIRMED BY LIVE DB QUERY]` Full repository audit mapped 0 active runtime callers across frontend, backend, and native mobile apps. Live database queries confirmed 0 active rows across all 11 tables.
 - **Impact:** Database schema bloat and maintenance overhead.
-- **Recommended Direction:** Execute forward-only drop migration after supervisor approval in Stage B remediation.
+- **Recommended Direction:** Execute forward-only drop migration following explicit topological ordering with `RESTRICT` semantics (NO blind `CASCADE`).
 - **DB Change Required:** **YES** (Forward `DROP TABLE` migration).
 
 #### `F-B-03` — Legacy Database Columns & Obsolete Stored Functions
 - **Exact Objects:**
-  - Columns: `products.requires_verified_salon`, `orders.DilMart_barbershop_id`, `orders.DilMart_user_id`.
+  - Columns: `products.requires_verified_salon` (0 active true rows `[CONFIRMED BY LIVE DB QUERY]`), `orders.DilMart_barbershop_id` (0 non-null rows `[CONFIRMED BY REPOSITORY CODE]`), `orders.DilMart_user_id` (0 non-null rows `[CONFIRMED BY REPOSITORY CODE]`).
   - Functions: `place_b2b_cart_order_idempotent`, `finalize_barber_handoff`, `verify_barber_web_session`, `redeem_barber_handoff_and_create_session`, `revoke_barber_web_sessions_for_user`, `reject_barber_handoff_audit_mutation`.
 - **Evidence:** `[CONFIRMED BY CODE]`
 - **Impact:** Schema residue with no active business purpose in DILMART.
@@ -139,5 +144,5 @@ Audit Status:         COMPLETED (Pass 1 — Strictly Read-Only)
 20. **Pass 20 — RLS Matrix:** Comprehensive matrix across all 71 active tables generated `[CONFIRMED BY CODE]`.
 21. **Pass 21 — Secret Boundaries:** Zero leaks in client and mobile apps `[CONFIRMED BY CODE]`.
 22. **Pass 22 — Test Suite:** 27 test suites in Main CI verified green `[CONFIRMED BY CI]`.
-23. **Pass 23 — Completion Map:** Overall marketplace completion calculated at 86% `[INFERRED]`.
-24. **Pass 24 — Future Architecture Gaps:** Multi-Merchant and Hub Consolidation roadmap completed `[INFERRED]`.
+23. **Pass 23 — Completion Map:** Single-merchant baseline maturity estimated at ~86% `[ENGINEERING ESTIMATE]`.
+24. **Pass 24 — Future Architecture Gaps:** Multi-Merchant and Hub Network roadmap completed `[INFERRED]`.
