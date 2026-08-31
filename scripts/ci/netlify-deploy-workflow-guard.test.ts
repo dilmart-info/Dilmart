@@ -15,7 +15,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const WORKFLOW_PATH = resolve(__dirname, "../../.github/workflows/netlify-production-deploy.yml");
-const workflow = readFileSync(WORKFLOW_PATH, "utf8");
+const workflow = readFileSync(WORKFLOW_PATH, "utf8").replace(/\r\n/g, "\n");
 
 /** The one existing production site. A new or wrong site id must never appear here. */
 const SITE_ID = "e9925590-a4cb-4e31-a97b-141f45264f24";
@@ -81,8 +81,8 @@ describe("netlify production deploy workflow — trust boundary", () => {
   });
 
   it("requires the triggering run to come from this repository", () => {
-    expect(gate).toMatch(/"\$RUN_REPO"\s*!=\s*"cylendralabs-blip\/DilMart-Store"/);
-    expect(gate).toMatch(/"\$THIS_REPO"\s*!=\s*"cylendralabs-blip\/DilMart-Store"/);
+    expect(gate).toMatch(/"\$RUN_REPO"\s*!=\s*"dilmart-info\/Dilmart"/);
+    expect(gate).toMatch(/"\$THIS_REPO"\s*!=\s*"dilmart-info\/Dilmart"/);
   });
 
   it("never triggers on pull_request, so a contributor head cannot reach the secrets", () => {

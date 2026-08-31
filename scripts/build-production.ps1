@@ -6,7 +6,7 @@
     Fails closed: refuses to produce a deployable `dist` unless the local
     checkout is provably in sync with the authoritative GitHub source.
 
-    Authoritative source : https://github.com/cylendralabs-blip/DilMart-Store
+    Authoritative source : https://github.com/dilmart-info/Dilmart
     Production branch     : main
 
     Only run this from the canonical workspace. Never deploy a `dist` that was
@@ -29,7 +29,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$ExpectedOwnerRepo = 'cylendralabs-blip/DilMart-Store'
+$ExpectedOwnerRepo = 'dilmart-info/Dilmart'
 $ExpectedBranch    = 'main'
 
 function Fail([string]$msg) {

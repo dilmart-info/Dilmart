@@ -97,7 +97,7 @@ jobs:
           THIS_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          if [ "$THIS_REPO" != "cylendralabs-blip/DilMart-Store" ]; then
+          if [ "$THIS_REPO" != "dilmart-info/Dilmart" ]; then
             echo "REFUSED: unexpected repository $THIS_REPO"
             exit 1
           fi
@@ -115,7 +115,7 @@ jobs:
             echo "REFUSED: triggering run branch is '$RUN_BRANCH', not 'main'."
             exit 1
           fi
-          if [ "$RUN_REPO" != "cylendralabs-blip/DilMart-Store" ]; then
+          if [ "$RUN_REPO" != "dilmart-info/Dilmart" ]; then
             echo "REFUSED: triggering run head repository is '$RUN_REPO'."
             exit 1
           fi
