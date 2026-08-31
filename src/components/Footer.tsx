@@ -28,8 +28,8 @@ const Footer = () => {
                 <Truck size={24} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">توصيل سريع</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">تغطية شاملة لكافة محافظات العراق</p>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">توصيل موثوق</h4>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">شحن مباشر وسريع لباب المنزل</p>
               </div>
             </div>
 
@@ -38,7 +38,7 @@ const Footer = () => {
                 <ShieldCheck size={24} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">منتجات أصلية 100%</h4>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">منتجات مختارة</h4>
                 <p className="text-[11px] text-blue-200/80 mt-0.5">من كبرى العلامات والمتاجر المعتمدة</p>
               </div>
             </div>
@@ -48,8 +48,8 @@ const Footer = () => {
                 <RotateCcw size={24} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">دفع عند الاستلام</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">تسوق براحة وأمان مع فحص الطلب</p>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">دفع مرن</h4>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">فحص طلبك والدفع عند الاستلام</p>
               </div>
             </div>
 
@@ -58,8 +58,8 @@ const Footer = () => {
                 <Headphones size={24} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">خدمة عملاء مباشرة</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">دعم متواصل للإجابة على استفساراتكم</p>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">دعم العملاء</h4>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">فريق دعم متواصل لخدمتكم</p>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@ const Footer = () => {
           <div className="space-y-4 md:col-span-1">
             <BrandMark variant="footer" theme="navy" />
             <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed max-w-sm">
-              ديلمارت هي المنصة العراقية الرائدة للتسوق الإلكتروني الشامل، نجمع أفضل المتاجر والمنتجات لتجربة تسوق موثوقة وسريعة.
+              ديلمارت هي المنصة للتسوق الإلكتروني الشامل، تجمع أفضل المتاجر والمنتجات لتجربة تسوق موثوقة وسريعة.
             </p>
             <div className="flex items-center gap-3 pt-2">
               <a
@@ -176,7 +176,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center gap-3">
                 <MapPin size={16} className="text-accent shrink-0" />
-                <span>بغداد، العراق — توصيل لجميع المحافظات</span>
+                <span>بغداد، العراق</span>
               </div>
             </div>
           </div>

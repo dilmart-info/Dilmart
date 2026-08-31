@@ -14,7 +14,7 @@ import MerchantSection from "@/components/MerchantSection";
 import BrandRail from "@/components/BrandRail";
 import HomeDiscoveryFeed from "@/components/home/HomeDiscoveryFeed";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Flame, Sparkles, Star, Tag, Trophy, Truck, ShieldCheck, RotateCcw, Zap } from "lucide-react";
+import { Flame, Sparkles, Star, Tag, Truck, ShieldCheck, RotateCcw, Headphones, Zap } from "lucide-react";
 import {
   filterRootStorefrontCategories,
   NEUTRAL_CATEGORY_PLACEHOLDER,
@@ -75,21 +75,21 @@ const Index = () => {
 
   const heroSlides = [
     {
-      id: "hero-mega-deals",
-      badge: "عروض كبرى",
-      title: "تخفيضات ديلمارت الكبرى تصل إلى 50%",
-      subtitle: "آلاف المنتجات بأفضل الأسعار مع توصيل سريع لجميع محافظات العراق والدفع عند الاستلام.",
-      valueProps: ["منتجات أصلية 100%", "دفع آمن عند الاستلام", "ضمان استرجاع", "توصيل لكافة المحافظات"],
-      ctaLabel: "تسوق العروض الآن",
+      id: "hero-deals",
+      badge: "عروض مميزة",
+      title: "عروض وتخفيضات ديلمارت المختارة",
+      subtitle: "تشكيلة واسعة من المنتجات بأسعار منافسة وتوصيل مباشر.",
+      valueProps: ["منتجات مختارة", "دفع آمن عند الاستلام", "تسوق بثقة", "توصيل سريع"],
+      ctaLabel: "تصفح العروض",
       href: "/offers",
       image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1600&q=85&auto=format&fit=crop",
     },
     {
       id: "hero-new-arrivals",
       badge: "وصل حديثاً",
-      title: "أحدث المنتجات والماركات العالمية",
-      subtitle: "تشكيلة متجددة يومياً من الأجهزة، الإلكترونيات، العناية، والمزيد.",
-      valueProps: ["أحدث الإصدارات", "ماركات معتمدة", "شحن سريع ومباشر", "خدمة عملاء متواصلة"],
+      title: "أحدث المنتجات والماركات المعتمدة",
+      subtitle: "منتجات متجددة باستمرار تلبي مختلف احتياجاتك اليومية.",
+      valueProps: ["أحدث الإضافات", "ماركات موثوقة", "شحن مباشر", "دعم العملاء"],
       ctaLabel: "استكشف الجديد",
       href: "/products?sort=newest",
       image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85&auto=format&fit=crop",
@@ -97,8 +97,8 @@ const Index = () => {
     {
       id: "hero-top-stores",
       badge: "متاجر رسمية",
-      title: "تسوق مباشرة من كبرى المتاجر والشركات",
-      subtitle: "وجهتك الموثوقة للتسوق الإلكتروني مع عروض حصرية يومية وتغطية لكافة محافظات العراق.",
+      title: "تسوق مباشرة من كبرى المتاجر المعتمدة",
+      subtitle: "وجهتك الموثوقة للتسوق الإلكتروني مع تجربة شراء سهلة وسريعة.",
       valueProps: ["متاجر موثقة", "أسعار منافسة", "توصيل مباشر", "فحص الطلب قبل الاستلام"],
       ctaLabel: "تصفح المتاجر",
       href: "/stores",
@@ -109,15 +109,15 @@ const Index = () => {
   const sideCards = [
     {
       id: "side-flash-deals",
-      badge: "خصم يصل 40%",
-      title: "عروض وتخفيضات اليوم الحصرية",
+      badge: "تخفيضات",
+      title: "عروض وتخفيضات اليوم",
       href: "/offers",
       image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800&q=85&auto=format&fit=crop",
     },
     {
       id: "side-stores",
-      badge: "متاجر مميزة",
-      title: "دليل المتاجر الرسمية المعتمدة",
+      badge: "متاجر",
+      title: "دليل المتاجر المعتمدة",
       href: "/stores",
       image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=85&auto=format&fit=crop",
     },
@@ -137,7 +137,7 @@ const Index = () => {
             {/* 1. Hero Promo Slider & Side Promo Banners */}
             <HeroSlider slides={heroSlides} sideCards={sideCards} loading={false} />
 
-            {/* 2. Trust Value Propositions Bar (Desktop & Mobile) */}
+            {/* 2. Trust Value Propositions Bar (Neutral Language) */}
             <section className="container py-2" dir="rtl">
               <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-sm">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-right">
@@ -146,8 +146,8 @@ const Index = () => {
                       <Truck size={20} strokeWidth={2.2} />
                     </div>
                     <div>
-                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">توصيل لكافة المحافظات</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">شحن سريع ومباشر لباب المنزل</p>
+                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">توصيل موثوق</h4>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">شحن مباشر وسريع لباب المنزل</p>
                     </div>
                   </div>
 
@@ -156,8 +156,8 @@ const Index = () => {
                       <ShieldCheck size={20} strokeWidth={2.2} />
                     </div>
                     <div>
-                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">منتجات أصلية 100%</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">ضمان الجودة من المتاجر المعتمدة</p>
+                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">تسوق بثقة</h4>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">منتجات مختارة من متاجر معتمدة</p>
                     </div>
                   </div>
 
@@ -166,18 +166,18 @@ const Index = () => {
                       <RotateCcw size={20} strokeWidth={2.2} />
                     </div>
                     <div>
-                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">دفع عند الاستلام</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">افحص طلبك وادفع بأمان</p>
+                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">دفع مرن</h4>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">فحص طلبك والدفع عند الاستلام</p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <Zap size={20} strokeWidth={2.2} />
+                      <Headphones size={20} strokeWidth={2.2} />
                     </div>
                     <div>
-                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">عروض يومية حصرية</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">أسعار منافسة وتخفيضات مستمرة</p>
+                      <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">دعم العملاء</h4>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">فريق متواصل للإجابة عن الاستفسارات</p>
                     </div>
                   </div>
                 </div>
@@ -187,7 +187,7 @@ const Index = () => {
             {/* 3. Top Categories Discovery */}
             <CategoryGrid
               title="تسوق حسب الفئات"
-              subtitle="استكشف تشكيلاتنا الواسعة والمختارة بعناية"
+              subtitle="استكشف تشكيلاتنا المتنوعة من المنتجات المختارة"
               items={topCategories}
               fallbackImage={NEUTRAL_CATEGORY_PLACEHOLDER}
               viewAllHref="/products"
@@ -203,7 +203,7 @@ const Index = () => {
                 products={offers}
                 horizontal
                 titleIcon={Flame}
-                badge="عروض كبرى 🔥"
+                badge="عروض مختارة 🔥"
               />
             )}
 

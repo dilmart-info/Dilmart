@@ -26,15 +26,15 @@ export default function DesktopHeader({
       {/* ── Top Utility Bar (Deep Navy: #071A3D) ─────────────────────────── */}
       <div className="bg-navy text-white/90 border-b border-white/10 text-xs">
         <div className="container flex h-9 items-center justify-between" dir="rtl">
-          {/* Trust Value Props */}
+          {/* Trust Value Props (Neutral Operational Language) */}
           <div className="flex items-center gap-6 font-medium">
             <span className="inline-flex items-center gap-1.5 text-blue-200">
               <Truck size={14} className="text-accent" />
-              <span>توصيل سريع لكافة محافظات العراق</span>
+              <span>توصيل سريع وموثوق</span>
             </span>
             <span className="hidden lg:inline-flex items-center gap-1.5 text-blue-200">
               <ShieldCheck size={14} className="text-accent" />
-              <span>ضمان أصالة المنتجات 100%</span>
+              <span>تسوق بثقة وأمان</span>
             </span>
           </div>
 
@@ -87,7 +87,7 @@ export default function DesktopHeader({
                 value={searchQuery}
                 onChange={setSearchQuery}
                 onSubmit={onSearch}
-                placeholder="ابحث عن منتج، متجر، علامة تجارية أو فئة..."
+                placeholder="ابحث عن المنتجات، الماركات، والمتاجر..."
               />
             </div>
 

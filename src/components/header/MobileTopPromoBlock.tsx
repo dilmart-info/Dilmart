@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PackageSearch, ShoppingBag, Truck } from "lucide-react";
+import { PackageSearch, Truck } from "lucide-react";
 import { BrandMark } from "@/components/BrandMark";
 import SearchBar from "@/components/SearchBar";
 
@@ -65,7 +65,7 @@ export default function MobileTopPromoBlock({
             {/* Delivery Guarantee Pill */}
             <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-200 bg-white/10 px-2.5 py-1 rounded-full">
               <Truck size={13} className="text-accent" />
-              <span>توصيل لكافة المحافظات</span>
+              <span>توصيل سريع وموثوق</span>
             </div>
 
             {/* Brand Logo */}
