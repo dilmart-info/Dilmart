@@ -107,6 +107,21 @@ jobs:
           rmdir temp_migrations 2>/dev/null || rm -rf temp_migrations
           supabase migration up
 
+          # ── Stage B Pass 3: Distinct Immediate Pre-A Upgrade & Rollback Gate ──
+          mkdir -p temp_stageb
+          mv supabase/migrations/20260831100000_stage_b_place_order_authority_refactor.sql temp_stageb/
+          supabase db reset
+
+          # Run pre-A state assertion & forced-failure rollback proof on pre-A state
+          psql "$DB_URL" \
+            -v ON_ERROR_STOP=1 \
+            -f backend/tests/db-integration/stage-b-rollback-and-upgrade-gate.sql
+
+          # Restore ONLY Migration A and apply
+          mv temp_stageb/20260831100000_stage_b_place_order_authority_refactor.sql supabase/migrations/
+          rmdir temp_stageb
+          supabase migration up
+
           # 6. Run SQL schema gate — fails with nonzero exit if any assertion fails
           psql "$DB_URL" \
             -v ON_ERROR_STOP=1 \

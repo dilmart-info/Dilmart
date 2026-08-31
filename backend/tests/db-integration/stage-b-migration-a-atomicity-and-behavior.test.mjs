@@ -24,6 +24,7 @@ test("Stage B Migration A — Static SQL Contract & Invariant Assertions [STATIC
     assert.ok(sql.includes("v_old_identity <> v_expected_old_identity"), "Must compare exact 55-argument old identity string");
     assert.ok(sql.includes("v_idempotent_identity <> v_expected_idempotent_identity"), "Must compare exact 51-argument idempotent identity string");
     assert.ok(sql.includes("v_old_count <> 1"), "Must assert exactly 1 place_order function");
+    assert.ok(sql.includes("v_idempotent_count <> 1"), "Must assert exactly 1 place_order_idempotent function in preflight");
   });
 
   await t.test("3. Rename-First Atomic Sequence with RESTRICT drop", () => {

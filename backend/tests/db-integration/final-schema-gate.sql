@@ -672,6 +672,16 @@ BEGIN
     RAISE EXCEPTION 'Stage B Gate: Expected exactly 1 public.place_order, found %', v_po_count;
   END IF;
 
+  -- 2. Assert exactly 1 public.place_order_idempotent function
+  SELECT count(*) INTO v_poi_count
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_poi_count <> 1 THEN
+    RAISE EXCEPTION 'Stage B Gate: Expected exactly 1 public.place_order_idempotent, found %', v_poi_count;
+  END IF;
+
   -- 2. Inspect public.place_order attributes
   SELECT
     p.oid,

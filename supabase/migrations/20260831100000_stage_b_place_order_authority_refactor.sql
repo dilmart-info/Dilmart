@@ -23,6 +23,7 @@ BEGIN;
 DO $$
 DECLARE
   v_old_count INT;
+  v_idempotent_count INT;
   v_old_identity TEXT;
   v_expected_old_identity TEXT := 'p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_source_app text, p_channel text, p_store_linked_profile_id uuid, p_dilmart_user_id uuid, p_dilmart_barbershop_id uuid, p_segment text, p_business_type text';
   v_idempotent_identity TEXT;
@@ -46,6 +47,16 @@ BEGIN
 
   IF v_old_identity <> v_expected_old_identity THEN
     RAISE EXCEPTION 'PREFLIGHT FAILED: Current public.place_order identity arguments [%] do not match reviewed live authority [%]', v_old_identity, v_expected_old_identity;
+  END IF;
+
+  -- Assert exactly 1 place_order_idempotent function exists
+  SELECT count(*) INTO v_idempotent_count
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_idempotent_count <> 1 THEN
+    RAISE EXCEPTION 'PREFLIGHT FAILED: Expected exactly 1 public.place_order_idempotent function, found %', v_idempotent_count;
   END IF;
 
   -- Assert exact identity arguments of place_order_idempotent
@@ -613,6 +624,16 @@ BEGIN
   -- Assert exactly 1 place_order exists
   IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'place_order') <> 1 THEN
     RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected exactly 1 public.place_order function';
+  END IF;
+
+  -- Assert exactly 1 place_order_idempotent exists
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent') <> 1 THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected exactly 1 public.place_order_idempotent function';
+  END IF;
+
+  -- Assert temporary legacy function count is exactly 0
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'place_order_legacy_stageb') <> 0 THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Temporary legacy function place_order_legacy_stageb still exists (count <> 0)';
   END IF;
 
   -- Inspect place_order
