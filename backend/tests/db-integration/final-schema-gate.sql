@@ -774,5 +774,77 @@ BEGIN
 END;
 $stage_b_place_order_gate$;
 
+-- ── Stage B Migration B: Legacy Destructive Cleanup Gate ──────────────────────
+DO $stage_b_migration_b_gate$
+DECLARE
+  v_legacy_fn_count INT;
+  v_legacy_tbl_count INT;
+  v_legacy_col_count INT;
+BEGIN
+  -- 1. Assert zero legacy functions exist
+  SELECT count(*) INTO v_legacy_fn_count
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public'
+    AND p.proname IN (
+      'finalize_barber_handoff',
+      'finalize_customer_handoff',
+      'logout_all_federated_sessions',
+      'place_b2b_cart_order_idempotent',
+      'provision_dilmart_federated_customer',
+      'redeem_and_create_federated_session',
+      'redeem_barber_handoff_and_create_session',
+      'redeem_customer_handoff',
+      'reject_barber_handoff_audit_mutation',
+      'reject_handoff_audit_mutation',
+      'reject_federated_session_audit_mutation',
+      'reject_reserved_federated_email',
+      'resolve_dilmart_federated_customer',
+      'revoke_barber_web_sessions_for_user',
+      'revoke_federated_sessions_for_identity',
+      'rotate_federated_refresh_token',
+      'validate_federated_session_family',
+      'verify_barber_web_session'
+    );
 
+  IF v_legacy_fn_count <> 0 THEN
+    RAISE EXCEPTION 'Stage B Migration B Gate: % legacy functions still exist', v_legacy_fn_count;
+  END IF;
 
+  -- 2. Assert zero legacy tables exist
+  SELECT count(*) INTO v_legacy_tbl_count
+  FROM information_schema.tables
+  WHERE table_schema = 'public'
+    AND table_name IN (
+      'dilmart_barber_handoff_audit_events',
+      'dilmart_barber_handoffs',
+      'dilmart_barber_web_sessions',
+      'dilmart_customer_handoff_audit_events',
+      'dilmart_customer_handoffs',
+      'store_cart_items',
+      'store_carts',
+      'store_federated_refresh_tokens',
+      'store_federated_session_audit_events',
+      'store_federated_session_families',
+      'store_linked_profiles'
+    );
+
+  IF v_legacy_tbl_count <> 0 THEN
+    RAISE EXCEPTION 'Stage B Migration B Gate: % legacy tables still exist', v_legacy_tbl_count;
+  END IF;
+
+  -- 3. Assert zero legacy columns exist
+  SELECT count(*) INTO v_legacy_col_count
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND (
+      (table_name = 'products' AND column_name = 'requires_verified_salon')
+      OR (table_name = 'orders' AND column_name IN ('dilmart_barbershop_id', 'dilmart_user_id', 'store_cart_id', 'store_linked_profile_id'))
+      OR (table_name = 'checkout_attempts' AND column_name IN ('store_cart_id', 'store_linked_profile_id'))
+    );
+
+  IF v_legacy_col_count <> 0 THEN
+    RAISE EXCEPTION 'Stage B Migration B Gate: % legacy columns still exist', v_legacy_col_count;
+  END IF;
+END;
+$stage_b_migration_b_gate$;

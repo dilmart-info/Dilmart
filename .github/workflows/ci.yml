@@ -107,9 +107,10 @@ jobs:
           rmdir temp_migrations 2>/dev/null || rm -rf temp_migrations
           supabase migration up
 
-          # ── Stage B Pass 3: Distinct Immediate Pre-A Upgrade & Rollback Gate ──
+          # ── Stage B Pass 4: Pre-A Upgrade, Migration A Apply, and Migration B Upgrade Gate ──
           mkdir -p temp_stageb
           mv supabase/migrations/20260831100000_stage_b_place_order_authority_refactor.sql temp_stageb/
+          mv supabase/migrations/20260831120000_stage_b_legacy_destructive_cleanup.sql temp_stageb/
           supabase db reset
 
           # Run pre-A state assertion & forced-failure rollback proof on pre-A state
@@ -117,8 +118,12 @@ jobs:
             -v ON_ERROR_STOP=1 \
             -f backend/tests/db-integration/stage-b-rollback-and-upgrade-gate.sql
 
-          # Restore ONLY Migration A and apply
+          # Restore ONLY Migration A and apply over pre-A state
           mv temp_stageb/20260831100000_stage_b_place_order_authority_refactor.sql supabase/migrations/
+          supabase migration up
+
+          # Restore Migration B and apply over post-A state
+          mv temp_stageb/20260831120000_stage_b_legacy_destructive_cleanup.sql supabase/migrations/
           rmdir temp_stageb
           supabase migration up
 
