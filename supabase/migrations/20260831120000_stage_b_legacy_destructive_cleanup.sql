@@ -101,10 +101,6 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
   END IF;
 
-  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
-  END IF;
-
   -- ── 1.3 Assert Zero Rows in All 11 Legacy Tables ───────────────────────────
   FOR v_tbl IN
     SELECT unnest(ARRAY[
@@ -287,6 +283,7 @@ BEGIN
   LOOP
     EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', v_fn.ident);
     EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', v_fn.ident);
+    EXECUTE format('ALTER FUNCTION %s SET search_path = public, pg_temp', v_fn.ident);
   END LOOP;
 END;
 $$;
