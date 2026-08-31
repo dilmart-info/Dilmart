@@ -66,8 +66,8 @@ export default function BrandRail({
         <div className="flex gap-3.5 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {brands.map((b) => (
             <Link
-              key={b.id}
-              to={toBrandProductsHref(b.slug)}
+              key={b.name}
+              to={toBrandProductsHref(b.name || "")}
               className="group flex w-[100px] sm:w-[115px] md:w-[125px] shrink-0 flex-col items-center text-center p-2 rounded-2xl bg-white border border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-1"
             >
               <BrandTileVisual brand={b} />

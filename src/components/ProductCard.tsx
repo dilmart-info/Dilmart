@@ -59,6 +59,7 @@ const PLACEHOLDER_IMG = "/placeholder.svg";
 const ProductCard = ({ product }: Props) => {
   const merchantEmbed = product.merchants;
   const { attemptAdd, dialogNode } = useMerchantSwitchCart();
+  const { addItem, removeItem, hasItem } = useWishlistStore();
   const resolveImage = (p: ProductCardProduct) => {
     const raw = (p as any).image_url || p.images?.[0];
     return typeof raw === "string" && raw.trim() ? raw : PLACEHOLDER_IMG;
