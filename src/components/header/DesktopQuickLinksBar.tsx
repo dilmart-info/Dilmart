@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { classifyDesktopQuickLinkHref } from "@/lib/desktop-quick-link-href";
 
-const LINK_CLASS = "font-medium text-foreground transition-colors hover:text-DilMart-store-gold-bright";
+const LINK_CLASS =
+  "inline-flex items-center gap-1.5 font-bold text-xs text-foreground/80 hover:text-primary transition-colors py-1 px-3 rounded-md hover:bg-primary/10";
 
 export default function DesktopQuickLinksBar() {
   const { data: links } = useQuery({
@@ -11,32 +12,40 @@ export default function DesktopQuickLinksBar() {
     queryFn: () => apiClient.listDesktopQuickLinks(),
   });
 
-  if (!links || links.length === 0) return null;
+  if (!links || links.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="w-full border-t border-DilMart-store-gold/30 bg-[linear-gradient(90deg,rgba(238,210,145,0.40)_0%,rgba(205,164,88,0.34)_40%,rgba(128,95,43,0.32)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
+    <div className="w-full border-b border-border/70 bg-surface-light/80 backdrop-blur-md">
       <div className="container">
-        <div dir="rtl" className="flex h-11 items-center gap-5 overflow-x-auto whitespace-nowrap text-sm [scrollbar-width:none]">
-          {links.map((item) => {
-            // Defense in depth — the backend already filters invalid hrefs out of this response
-            // (DilMart-STORE-DESKTOP-QUICK-LINKS-SECURITY-047/048), but this component never
-            // trusts that alone: it classifies every href itself before deciding whether to
-            // render it as clickable navigation. Policy is internal-only — no external anchor path.
-            const classification = classifyDesktopQuickLinkHref(item.href);
-            if (classification === "VALID_INTERNAL") {
+        <div
+          dir="rtl"
+          className="flex h-8 items-center justify-between overflow-x-auto whitespace-nowrap text-xs [scrollbar-width:none]"
+        >
+          <div className="flex items-center gap-1.5">
+            {links.map((item) => {
+              const classification = classifyDesktopQuickLinkHref(item.href);
+              if (classification === "VALID_INTERNAL") {
+                return (
+                  <Link key={item.id} to={item.href} className={LINK_CLASS}>
+                    {item.label}
+                  </Link>
+                );
+              }
               return (
-                <Link key={item.id} to={item.href} className={LINK_CLASS}>
+                <span key={item.id} className="font-medium text-muted-foreground/60 px-2">
                   {item.label}
-                </Link>
+                </span>
               );
-            }
-            // Invalid href — render the label as inert text, never a clickable navigation target.
-            return (
-              <span key={item.id} className="font-medium text-muted-foreground/60">
-                {item.label}
-              </span>
-            );
-          })}
+            })}
+          </div>
+          <div className="hidden xl:flex items-center gap-3 text-[11px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1 text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>تسوق آمن ومباشر</span>
+            </span>
+          </div>
         </div>
       </div>
     </div>

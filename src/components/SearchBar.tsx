@@ -1,6 +1,7 @@
-import { Camera, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import type { FormEvent } from "react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 type SearchBarProps = {
   value: string;
@@ -14,31 +15,31 @@ export default function SearchBar({
   value,
   onChange,
   onSubmit,
-  placeholder = "ابحث عن منتج، عطر، ماكينة...",
+  placeholder = "ابحث عن المنتجات، الماركات، والمتاجر...",
   className = "",
 }: SearchBarProps) {
   return (
-    <form onSubmit={onSubmit} className={`group relative ${className}`}>
-      <Input
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="h-12 rounded-xl border border-[#e6cc8b]/60 bg-white text-zinc-900 placeholder:text-zinc-400 px-12 text-sm font-medium shadow-sm shadow-black/20 transition-all focus-visible:border-[#f3d896] focus-visible:ring-4 focus-visible:ring-[#e6cc8b]/30"
-      />
-      <button
+    <form onSubmit={onSubmit} className={`group relative flex items-center w-full ${className}`}>
+      <div className="relative w-full">
+        <Input
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="h-11 w-full rounded-xl border-2 border-border/90 bg-surface-light text-foreground placeholder:text-muted-foreground pr-11 pl-20 text-sm font-medium transition-all duration-200 focus-visible:border-primary focus-visible:bg-white focus-visible:ring-2 focus-visible:ring-primary/20"
+        />
+        <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary pointer-events-none">
+          <Search size={18} strokeWidth={2.2} />
+        </div>
+      </div>
+
+      <Button
         type="submit"
-        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-DilMart-store-gold"
+        size="sm"
+        className="absolute left-1.5 top-1/2 -translate-y-1/2 h-8 px-4 rounded-lg bg-primary hover:bg-primary-hover text-white text-xs font-bold transition-all shadow-sm"
         aria-label="بحث"
       >
-        <Search size={18} strokeWidth={1.75} />
-      </button>
-      <button
-        type="button"
-        aria-label="بحث بالذكاء الاصطناعي قريباً"
-        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <Camera size={18} strokeWidth={1.75} />
-      </button>
+        بحث
+      </Button>
     </form>
   );
 }

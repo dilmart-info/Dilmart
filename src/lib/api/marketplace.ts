@@ -6,6 +6,14 @@ import type { MarketplaceListProduct, MarketplacePublicProduct, MarketplaceSugge
 import type { MarketplaceMerchantsListResponse, StoresSort } from "@/lib/marketplace-stores.types";
 import type { MarketplaceBrandsResponse } from "@/lib/marketplace-brands.types";
 
+import {
+  FIXTURE_HOME_RESPONSE,
+  FIXTURE_BRANDS,
+  FIXTURE_DISCOVERY_PRODUCTS,
+  FIXTURE_CATEGORIES,
+  isMarketplaceVisualFixturesEnabled,
+} from "@/lib/marketplace-fixtures";
+
 export const marketplaceApi = {
   /**
    * @deprecated Legacy `GET /api/catalog/categories`. No in-repo callers (M1.6). Use `getMarketplaceCategories`.
@@ -16,18 +24,42 @@ export const marketplaceApi = {
   },
 
   /** Public taxonomy — same data as `/catalog/categories`; preferred entry for new UI. */
-  getMarketplaceCategories() {
-    return request<Tables<"categories">[]>("/marketplace/categories", "GET");
+  async getMarketplaceCategories() {
+    try {
+      const res = await request<Tables<"categories">[]>("/marketplace/categories", "GET");
+      if (res && res.length > 0) return res;
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_CATEGORIES;
+      return res ?? [];
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_CATEGORIES;
+      throw err;
+    }
   },
 
   /** Public marketplace home — typed contract; see `marketplace-home.types.ts` / backend `marketplace-home.contract.ts`. */
-  getMarketplaceHome() {
-    return request<MarketplaceHomeResponse>("/marketplace/home", "GET");
+  async getMarketplaceHome() {
+    try {
+      const res = await request<MarketplaceHomeResponse>("/marketplace/home", "GET");
+      if (res && res.categories && res.categories.length > 0) return res;
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_HOME_RESPONSE;
+      return res;
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_HOME_RESPONSE;
+      throw err;
+    }
   },
 
   /** Real product brands (name/count/representative image) — `GET /marketplace/brands`. Not merchants. */
-  getMarketplaceBrands() {
-    return request<MarketplaceBrandsResponse>("/marketplace/brands", "GET");
+  async getMarketplaceBrands() {
+    try {
+      const res = await request<MarketplaceBrandsResponse>("/marketplace/brands", "GET");
+      if (res && res.brands && res.brands.length > 0) return res;
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_BRANDS;
+      return res ?? { brands: [] };
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_BRANDS;
+      throw err;
+    }
   },
 
   /** Paginated merchant discovery for `/stores` — `GET /marketplace/merchants` only (no search in M1.5). */
@@ -40,7 +72,7 @@ export const marketplaceApi = {
   },
 
   /** `search` is passed to `GET /marketplace/products` raw; server normalizes + min length (M2.1) — see `marketplace-list.contract.ts`. */
-  getMarketplaceProducts(payload: {
+  async getMarketplaceProducts(payload: {
     offset?: number;
     limit?: number;
     category_slug?: string | null;
@@ -71,7 +103,12 @@ export const marketplaceApi = {
     if (payload.size) params.set("size", payload.size);
     if (payload.min_weight != null && payload.min_weight !== undefined) params.set("min_weight", String(payload.min_weight));
     if (payload.max_weight != null && payload.max_weight !== undefined) params.set("max_weight", String(payload.max_weight));
-    return request<MarketplaceStorefrontProductsResult>(`/marketplace/products?${params.toString()}`, "GET");
+    try {
+      return await request<MarketplaceStorefrontProductsResult>(`/marketplace/products?${params.toString()}`, "GET");
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_DISCOVERY_PRODUCTS;
+      throw err;
+    }
   },
 
   /** Public product detail — `GET /marketplace/products/slug/:slug` only (global resolution; no legacy catalog fallback). */

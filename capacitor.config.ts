@@ -19,7 +19,7 @@ const config: CapacitorConfig = {
       launchShowDuration: 3000,
       launchAutoHide: true,
       launchFadeOutDuration: 300,
-      backgroundColor: '#0f0d0bff',
+      backgroundColor: '#ffffffff',
       showSpinner: false,
     },
   },

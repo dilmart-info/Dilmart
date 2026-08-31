@@ -1,0 +1,1091 @@
+{
+  "active_table_legacy_columns": [
+    {
+      "column_name": "requires_verified_salon",
+      "data_type": "boolean",
+      "is_nullable": "NO",
+      "table_name": "products"
+    },
+    {
+      "column_name": "dilmart_user_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "orders"
+    },
+    {
+      "column_name": "dilmart_barbershop_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "orders"
+    },
+    {
+      "column_name": "store_linked_profile_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "orders"
+    },
+    {
+      "column_name": "store_cart_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "orders"
+    },
+    {
+      "column_name": "store_linked_profile_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "checkout_attempts"
+    },
+    {
+      "column_name": "store_cart_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "table_name": "checkout_attempts"
+    }
+  ],
+  "candidate_legacy_functions": [
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.finalize_barber_handoff(p_dilmart_user_id uuid, p_dilmart_role text, p_barbershop_id uuid, p_segment text, p_display_name text, p_phone text, p_city text, p_business_type text, p_code_hash text, p_state_hash text, p_assertion_jti text, p_target_path text, p_source_surface text, p_code_ttl_seconds integer, p_request_id uuid)\n RETURNS TABLE(status text, error_code text, handoff_id uuid, expires_at timestamp with time zone, linked_profile_id uuid)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_linked_profile_id UUID;\n  v_handoff_id        UUID;\n  v_expires_at        TIMESTAMPTZ;\n  v_existing          public.store_linked_profiles%ROWTYPE;\nBEGIN\n  IF p_code_ttl_seconds IS DISTINCT FROM 120 THEN\n    RAISE EXCEPTION 'handoff code ttl must be exactly 120 seconds' USING ERRCODE = 'check_violation';\n  END IF;\n  IF upper(coalesce(p_DilMart_role, '')) NOT IN ('OWNER', 'BARBER') THEN\n    RAISE EXCEPTION 'finalize_barber_handoff requires role OWNER or BARBER' USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- Review (Major): use the SAME advisory-lock key as finalize_customer_handoff so Customer and\n  -- Barber finalizations for one DilMart user can never interleave — a customer link created\n  -- between our not-found check and our upsert would otherwise be silently overwritten. The key\n  -- string is deliberately 'customer_handoff_finalize' (the already-deployed Customer key): it is\n  -- the shared per-user IDENTITY lock, not a customer-only lock.\n  PERFORM pg_advisory_xact_lock(hashtext('customer_handoff_finalize'), hashtext(p_DilMart_user_id::text));\n\n  -- Fail closed on a Customer-owned identity row (review P1): a linked profile that carries a\n  -- Store customer identity (store_customer_id / CUSTOMER role / any customer link_status) must\n  -- NEVER be overwritten into a Barber identity — that would break customer session refreshes\n  -- and future customer handoffs. Mirrors the Customer finalize's symmetric refusal to mutate a\n  -- Barber-owned row. Locked FOR UPDATE so the check holds through the upsert below.\n  SELECT * INTO v_existing FROM public.store_linked_profiles\n   WHERE DilMart_user_id = p_DilMart_user_id FOR UPDATE;\n  IF FOUND AND (\n       v_existing.store_customer_id IS NOT NULL\n    OR upper(coalesce(v_existing.DilMart_role, '')) = 'CUSTOMER'\n    OR v_existing.link_status IS NOT NULL\n  ) THEN\n    RETURN QUERY SELECT 'ERROR', 'IDENTITY_BLOCKED', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n    RETURN;\n  END IF;\n\n  INSERT INTO public.store_linked_profiles AS lp\n    (DilMart_user_id, DilMart_role, DilMart_barbershop_id, segment, display_name, phone, city,\n     business_type, source_app, last_synced_at, created_at, updated_at)\n  VALUES\n    (p_DilMart_user_id, upper(p_DilMart_role), p_barbershop_id, p_segment, p_display_name, p_phone,\n     p_city, p_business_type, 'barber_app', now(), now(), now())\n  ON CONFLICT (DilMart_user_id) DO UPDATE\n    SET DilMart_role           = EXCLUDED.DilMart_role,\n        DilMart_barbershop_id  = EXCLUDED.DilMart_barbershop_id,\n        segment               = EXCLUDED.segment,\n        display_name          = EXCLUDED.display_name,\n        phone                 = EXCLUDED.phone,\n        city                  = EXCLUDED.city,\n        business_type         = EXCLUDED.business_type,\n        source_app            = 'barber_app',\n        last_synced_at        = now(),\n        updated_at            = now()\n    -- Defense in depth on the write path itself (belt to the locked check above): the update\n    -- only ever applies to a row that is NOT customer-owned. If this predicate fails, RETURNING\n    -- yields no row and we fail closed below instead of mutating a customer identity.\n    WHERE lp.store_customer_id IS NULL\n      AND upper(coalesce(lp.DilMart_role, '')) <> 'CUSTOMER'\n      AND lp.link_status IS NULL\n  RETURNING lp.id INTO v_linked_profile_id;\n\n  IF v_linked_profile_id IS NULL THEN\n    RETURN QUERY SELECT 'ERROR', 'IDENTITY_BLOCKED', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n    RETURN;\n  END IF;\n\n  INSERT INTO public.DilMart_barber_handoffs AS h\n    (code_hash, state_hash, assertion_jti, DilMart_user_id, linked_profile_id,\n     target_path, source_surface, status, expires_at)\n  VALUES\n    (p_code_hash, p_state_hash, p_assertion_jti, p_DilMart_user_id, v_linked_profile_id,\n     p_target_path, p_source_surface, 'PENDING',\n     clock_timestamp() + make_interval(secs => p_code_ttl_seconds))\n  -- Qualified via the alias: `expires_at` is also a RETURNS TABLE output name; an unqualified\n  -- reference would be ambiguous (42702) under plpgsql.variable_conflict = error.\n  RETURNING h.id, h.expires_at INTO v_handoff_id, v_expires_at;\n\n  INSERT INTO public.DilMart_barber_handoff_audit_events\n    (request_id, handoff_id, linked_profile_id, event_type, status, source_surface, metadata)\n  VALUES\n    (p_request_id, v_handoff_id, v_linked_profile_id, 'HANDOFF_PREPARED', 'PENDING', p_source_surface, '{}'::jsonb);\n\n  RETURN QUERY SELECT 'OK', NULL::TEXT, v_handoff_id, v_expires_at, v_linked_profile_id;\n  RETURN;\nEND;\n$function$\n",
+      "identity": "finalize_barber_handoff(uuid,text,uuid,text,text,text,text,text,text,text,text,text,text,integer,uuid)",
+      "proname": "finalize_barber_handoff"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.finalize_customer_handoff(p_dilmart_user_id uuid, p_store_customer_id uuid, p_identity_outcome text, p_link_method text, p_link_status text, p_identity_assurance text, p_reuse_existing boolean, p_conflict_reason text, p_code_hash text, p_state_hash text, p_assertion_jti text, p_target_path text, p_source_surface text, p_campaign text, p_code_ttl_seconds integer, p_kid text, p_email text, p_phone_verified_at timestamp with time zone, p_email_verified_at timestamp with time zone, p_request_id uuid)\n RETURNS TABLE(status text, error_code text, handoff_id uuid, expires_at timestamp with time zone, linked_profile_id uuid)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_link              public.store_linked_profiles%ROWTYPE;\n  v_found             BOOLEAN := FALSE;\n  v_linked_profile_id UUID;\n  v_effective_customer UUID;\n  v_actual_customer   UUID;\n  v_handoff_id        UUID;\n  v_expires_at        TIMESTAMPTZ;\n  v_constraint        TEXT;\nBEGIN\n  -- B3: the code TTL is EXACTLY 120s for this implementation, or fail.\n  IF p_code_ttl_seconds IS DISTINCT FROM 120 THEN\n    RAISE EXCEPTION 'handoff code ttl must be exactly 120 seconds' USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- B2: serialize all finalizations for the SAME DilMart user (transaction-scoped advisory lock) so\n  -- concurrent calls resolve deterministically rather than racing on the store_customer_id partial-unique\n  -- index (which ON CONFLICT(DilMart_user_id) does not arbitrate). The second caller then observes the\n  -- first's committed link under the FOR UPDATE read below.\n  PERFORM pg_advisory_xact_lock(hashtext('customer_handoff_finalize'), hashtext(p_DilMart_user_id::text));\n\n  -- Lock the existing identity link for this DilMart user and recheck under serialization.\n  SELECT * INTO v_link FROM public.store_linked_profiles WHERE DilMart_user_id = p_DilMart_user_id FOR UPDATE;\n  v_found := FOUND;\n\n  IF p_identity_outcome = 'LINKED' THEN\n    IF p_reuse_existing THEN\n      -- EXISTING_LINK: the locked row must STILL be a customer-compatible LINKED row owning exactly\n      -- p_store_customer_id; anything else fails closed.\n      IF NOT v_found\n         OR upper(coalesce(v_link.DilMart_role, '')) <> 'CUSTOMER'\n         OR upper(coalesce(v_link.link_status, '')) <> 'LINKED'\n         OR v_link.store_customer_id IS DISTINCT FROM p_store_customer_id THEN\n        RETURN QUERY SELECT 'ERROR', 'IDENTITY_BLOCKED', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n        RETURN;\n      END IF;\n      v_linked_profile_id := v_link.id;\n      v_effective_customer := v_link.store_customer_id;  -- the LOCKED value is authoritative\n      UPDATE public.store_linked_profiles\n         SET last_handoff_at = clock_timestamp(), updated_at = now()\n       WHERE id = v_link.id;\n    ELSE\n      -- New / verified-candidate link. A pre-existing row must be customer-compatible, not blocked/revoked,\n      -- and must not already own a DIFFERENT store customer.\n      IF v_found THEN\n        IF upper(coalesce(v_link.DilMart_role, '')) NOT IN ('', 'CUSTOMER')\n           OR upper(coalesce(v_link.link_status, '')) IN ('BLOCKED', 'REVOKED')\n           OR (v_link.store_customer_id IS NOT NULL AND v_link.store_customer_id IS DISTINCT FROM p_store_customer_id) THEN\n          RETURN QUERY SELECT 'ERROR', 'IDENTITY_BLOCKED', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n          RETURN;\n        END IF;\n      END IF;\n\n      -- Upsert, then re-verify the ACTUAL persisted customer equals the intended one. A concurrent request\n      -- that linked a different customer first makes COALESCE keep the other value → roll back + BLOCK.\n      BEGIN\n        INSERT INTO public.store_linked_profiles\n          (DilMart_user_id, DilMart_role, store_customer_id, segment, source_app, email,\n           link_status, link_method, identity_assurance, phone_verified_at, email_verified_at,\n           linked_at, last_handoff_at, last_synced_at, updated_at)\n        VALUES\n          (p_DilMart_user_id, 'CUSTOMER', p_store_customer_id, 'DilMart_APP_CUSTOMER', 'customer_app', p_email,\n           p_link_status, p_link_method, p_identity_assurance, p_phone_verified_at, p_email_verified_at,\n           clock_timestamp(), clock_timestamp(), now(), now())\n        ON CONFLICT (DilMart_user_id) DO UPDATE\n          SET store_customer_id  = COALESCE(public.store_linked_profiles.store_customer_id, EXCLUDED.store_customer_id),\n              link_status        = EXCLUDED.link_status,\n              link_method        = EXCLUDED.link_method,\n              identity_assurance = EXCLUDED.identity_assurance,\n              email              = COALESCE(EXCLUDED.email, public.store_linked_profiles.email),\n              phone_verified_at  = COALESCE(EXCLUDED.phone_verified_at, public.store_linked_profiles.phone_verified_at),\n              email_verified_at  = COALESCE(EXCLUDED.email_verified_at, public.store_linked_profiles.email_verified_at),\n              linked_at          = COALESCE(public.store_linked_profiles.linked_at, EXCLUDED.linked_at),\n              last_handoff_at    = clock_timestamp(),\n              updated_at         = now()\n        RETURNING id, store_customer_id INTO v_linked_profile_id, v_actual_customer;\n\n        IF v_actual_customer IS DISTINCT FROM p_store_customer_id THEN\n          RAISE EXCEPTION 'store customer ownership conflict';  -- rolls back this upsert (nested savepoint)\n        END IF;\n      EXCEPTION WHEN raise_exception THEN\n        IF SQLERRM LIKE '%ownership conflict%' THEN\n          RETURN QUERY SELECT 'ERROR', 'IDENTITY_BLOCKED', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n          RETURN;\n        END IF;\n        RAISE;\n      END;\n\n      v_effective_customer := v_actual_customer;\n    END IF;\n  ELSE\n    -- LINK_REQUIRED / BLOCKED: never create, re-own, OR mutate a link row (task C3). The conflict state\n    -- lives only in the handoff row (identity_outcome/status) and the audit event (error_code + metadata);\n    -- a Barber/OWNER linked-profile row is left byte-for-byte semantically unchanged.\n    v_linked_profile_id := NULL;\n    v_effective_customer := NULL;\n  END IF;\n\n  INSERT INTO public.DilMart_customer_handoffs AS h\n    (code_hash, state_hash, assertion_jti, DilMart_user_id, linked_profile_id, store_customer_id,\n     target_path, source_surface, campaign, status, identity_outcome, expires_at)\n  VALUES\n    (p_code_hash, p_state_hash, p_assertion_jti, p_DilMart_user_id,\n     CASE WHEN p_identity_outcome = 'LINKED' THEN v_linked_profile_id ELSE NULL END,\n     CASE WHEN p_identity_outcome = 'LINKED' THEN v_effective_customer ELSE NULL END,\n     p_target_path, p_source_surface, p_campaign,\n     CASE WHEN p_identity_outcome = 'LINKED' THEN 'PENDING' ELSE p_identity_outcome END,\n     p_identity_outcome,\n     clock_timestamp() + make_interval(secs => p_code_ttl_seconds))\n  RETURNING h.id, h.expires_at INTO v_handoff_id, v_expires_at;\n\n  -- B8: the atomic PREPARED audit carries the API request id.\n  INSERT INTO public.DilMart_customer_handoff_audit_events\n    (request_id, handoff_id, linked_profile_id, event_type, status, source_surface, campaign, error_code, metadata)\n  VALUES\n    (p_request_id, v_handoff_id,\n     CASE WHEN p_identity_outcome = 'LINKED' THEN v_linked_profile_id ELSE NULL END,\n     'HANDOFF_PREPARED', p_identity_outcome, p_source_surface, p_campaign,\n     CASE WHEN p_identity_outcome IN ('LINK_REQUIRED','BLOCKED') THEN p_identity_outcome ELSE NULL END,\n     jsonb_build_object('kid', p_kid, 'linkMethod', p_link_method, 'conflictReason', p_conflict_reason));\n\n  RETURN QUERY SELECT 'OK', NULL::TEXT, v_handoff_id, v_expires_at, v_linked_profile_id;\n  RETURN;\n\nEXCEPTION\n  WHEN unique_violation THEN\n    GET STACKED DIAGNOSTICS v_constraint = CONSTRAINT_NAME;\n    IF v_constraint = 'uq_store_linked_profiles_store_customer_id' THEN\n      RETURN QUERY SELECT 'ERROR', 'IDENTITY_BLOCKED', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n    ELSE\n      RETURN QUERY SELECT 'ERROR', 'HANDOFF_INVALID', NULL::UUID, NULL::TIMESTAMPTZ, NULL::UUID;\n    END IF;\n    RETURN;\nEND;\n$function$\n",
+      "identity": "finalize_customer_handoff(uuid,uuid,text,text,text,text,boolean,text,text,text,text,text,text,text,integer,text,text,timestamp with time zone,timestamp with time zone,uuid)",
+      "proname": "finalize_customer_handoff"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.logout_all_federated_sessions(p_refresh_token_hash text, p_request_id uuid)\n RETURNS TABLE(status text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_fam_id UUID;\n  v_sc UUID; v_lp UUID; v_su UUID;\n  v_link public.store_linked_profiles%ROWTYPE;\n  v_tok public.store_federated_refresh_tokens%ROWTYPE;\n  v_pfam public.store_federated_session_families%ROWTYPE;\n  r RECORD;\nBEGIN\n  -- (1) Resolve the presented token → family → identity triple WITHOUT any row lock.\n  SELECT session_family_id INTO v_fam_id FROM public.store_federated_refresh_tokens WHERE token_hash = p_refresh_token_hash;\n  IF v_fam_id IS NULL THEN RETURN QUERY SELECT 'logged_out'; RETURN; END IF;\n  SELECT store_customer_id, linked_profile_id, DilMart_user_id INTO v_sc, v_lp, v_su\n    FROM public.store_federated_session_families WHERE id = v_fam_id;\n  IF v_lp IS NULL THEN RETURN QUERY SELECT 'logged_out'; RETURN; END IF;\n\n  -- (2) IDENTITY MUTEX: lock the linked_profiles row for this identity. Serializes all logout-all for the\n  --     identity BEFORE any session-family row is locked → the A↔B cross-family deadlock cannot form.\n  SELECT * INTO v_link FROM public.store_linked_profiles WHERE id = v_lp FOR UPDATE;\n  IF NOT FOUND THEN RETURN QUERY SELECT 'logged_out'; RETURN; END IF;\n\n  -- (3) Re-read/revalidate the identity context under the mutex (the family identity columns are immutable,\n  --     but we re-read the presented family below under lock for the authority gate).\n\n  -- (4) Lock EVERY matching ACTIVE family for the identity, in a single deterministic id-ordered pass. This\n  --     matches revoke_federated_sessions_for_identity's order, so those two can never deadlock either.\n  FOR r IN\n    SELECT f.id FROM public.store_federated_session_families f\n     WHERE f.store_customer_id = v_sc AND f.linked_profile_id = v_lp AND f.DilMart_user_id = v_su\n       AND f.status = 'ACTIVE'\n     ORDER BY f.id\n     FOR UPDATE\n  LOOP\n    NULL; -- rows are now locked; revoked in the second pass after the authority gate passes\n  END LOOP;\n\n  -- (5) Lock the exact presented refresh-token row (its family is already locked → family→token order kept).\n  SELECT * INTO v_tok FROM public.store_federated_refresh_tokens WHERE token_hash = p_refresh_token_hash FOR UPDATE;\n  -- (6) Read the presented family (locked above if ACTIVE) and enforce the full authority gate.\n  SELECT * INTO v_pfam FROM public.store_federated_session_families WHERE id = v_fam_id;\n  IF v_tok.id IS NULL\n     OR v_tok.session_family_id IS DISTINCT FROM v_fam_id\n     OR v_tok.used_at IS NOT NULL\n     OR v_tok.revoked_at IS NOT NULL\n     OR v_tok.expires_at <= clock_timestamp()\n     OR v_pfam.id IS NULL\n     OR v_pfam.status <> 'ACTIVE'\n     OR v_pfam.revoked_at IS NOT NULL\n     OR v_pfam.absolute_expires_at <= clock_timestamp()\n     OR (v_pfam.last_used_at + make_interval(secs => 2592000)) <= clock_timestamp()\n     OR v_pfam.store_customer_id IS DISTINCT FROM v_sc\n     OR v_pfam.linked_profile_id IS DISTINCT FROM v_lp\n     OR v_pfam.DilMart_user_id    IS DISTINCT FROM v_su THEN\n    -- Invalid/used/revoked/expired presented token → no change, no success audit, generic response.\n    RETURN QUERY SELECT 'logged_out'; RETURN;\n  END IF;\n\n  -- (7) Revoke every ACTIVE identity family (already locked) + its tokens; one audit per revoked family.\n  FOR r IN\n    SELECT f.id, f.linked_profile_id, f.store_customer_id FROM public.store_federated_session_families f\n     WHERE f.store_customer_id = v_sc AND f.linked_profile_id = v_lp AND f.DilMart_user_id = v_su\n       AND f.status = 'ACTIVE'\n     ORDER BY f.id\n     FOR UPDATE\n  LOOP\n    UPDATE public.store_federated_session_families\n       SET status = 'REVOKED', revoked_at = clock_timestamp(), revoke_reason = 'USER_LOGOUT_ALL',\n           session_version = store_federated_session_families.session_version + 1, updated_at = now()\n     WHERE id = r.id;\n    UPDATE public.store_federated_refresh_tokens SET revoked_at = clock_timestamp()\n      WHERE session_family_id = r.id AND revoked_at IS NULL;\n    INSERT INTO public.store_federated_session_audit_events\n      (request_id, session_family_id, linked_profile_id, store_customer_id, event_type, status)\n    VALUES (p_request_id, r.id, r.linked_profile_id, r.store_customer_id, 'FEDERATED_SESSION_LOGOUT_ALL', 'REVOKED');\n  END LOOP;\n\n  RETURN QUERY SELECT 'logged_out'; RETURN;\nEND;\n$function$\n",
+      "identity": "logout_all_federated_sessions(text,uuid)",
+      "proname": "logout_all_federated_sessions"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.logout_federated_session(p_refresh_token_hash text, p_request_id uuid)\n RETURNS TABLE(status text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_fam_id UUID;\n  v_fam public.store_federated_session_families%ROWTYPE;\n  v_tok public.store_federated_refresh_tokens%ROWTYPE;\nBEGIN\n  SELECT session_family_id INTO v_fam_id FROM public.store_federated_refresh_tokens WHERE token_hash = p_refresh_token_hash;\n  IF v_fam_id IS NOT NULL THEN\n    SELECT * INTO v_fam FROM public.store_federated_session_families WHERE id = v_fam_id FOR UPDATE;\n    IF FOUND THEN\n      SELECT * INTO v_tok FROM public.store_federated_refresh_tokens WHERE token_hash = p_refresh_token_hash FOR UPDATE;\n      IF FOUND\n         AND v_tok.session_family_id = v_fam.id\n         AND v_tok.used_at IS NULL\n         AND v_tok.revoked_at IS NULL\n         AND v_tok.expires_at > clock_timestamp()\n         AND v_fam.status = 'ACTIVE'\n         AND v_fam.revoked_at IS NULL\n         AND v_fam.absolute_expires_at > clock_timestamp()\n         AND (v_fam.last_used_at + make_interval(secs => 2592000)) > clock_timestamp() THEN\n        UPDATE public.store_federated_session_families\n           SET status = 'REVOKED', revoked_at = clock_timestamp(), revoke_reason = 'USER_LOGOUT',\n               session_version = store_federated_session_families.session_version + 1, updated_at = now()\n         WHERE id = v_fam.id;\n        UPDATE public.store_federated_refresh_tokens SET revoked_at = clock_timestamp()\n          WHERE session_family_id = v_fam.id AND revoked_at IS NULL;\n        INSERT INTO public.store_federated_session_audit_events\n          (request_id, session_family_id, linked_profile_id, store_customer_id, event_type, status)\n        VALUES (p_request_id, v_fam.id, v_fam.linked_profile_id, v_fam.store_customer_id, 'FEDERATED_SESSION_LOGOUT', 'REVOKED');\n      END IF;\n    END IF;\n  END IF;\n  -- Idempotent + no oracle: always report logged_out.\n  RETURN QUERY SELECT 'logged_out'; RETURN;\nEND;\n$function$\n",
+      "identity": "logout_federated_session(text,uuid)",
+      "proname": "logout_federated_session"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.place_b2b_cart_order_idempotent(p_checkout_attempt_id uuid, p_checkout_request_hash text, p_store_linked_profile_id uuid, p_store_cart_id uuid, p_expected_cart_updated_at timestamp with time zone, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_subtotal numeric, p_delivery_cost numeric, p_total numeric, p_items jsonb, p_nearest_landmark text DEFAULT NULL::text, p_notes text DEFAULT NULL::text, p_discount numeric DEFAULT 0, p_coupon_id uuid DEFAULT NULL::uuid, p_latitude double precision DEFAULT NULL::double precision, p_longitude double precision DEFAULT NULL::double precision, p_map_url text DEFAULT NULL::text, p_merchant_id uuid DEFAULT NULL::uuid, p_merchandise_subtotal numeric DEFAULT 0, p_discount_total numeric DEFAULT 0, p_delivery_fee_charged numeric DEFAULT 0, p_platform_commission_type text DEFAULT 'fixed'::text, p_platform_commission_rate numeric DEFAULT 0, p_platform_commission_amount numeric DEFAULT 0, p_platform_assisted_fee_amount numeric DEFAULT 0, p_platform_extra_fee_amount numeric DEFAULT 0, p_courier_fee_payable numeric DEFAULT 0, p_merchant_gross_amount numeric DEFAULT 0, p_merchant_net_amount numeric DEFAULT 0, p_gross_collected_amount numeric DEFAULT 0, p_platform_net_revenue_amount numeric DEFAULT 0, p_currency_code text DEFAULT 'IQD'::text, p_financial_snapshot_version integer DEFAULT 1, p_payment_status text DEFAULT 'unpaid'::text, p_collection_status text DEFAULT 'not_collected'::text, p_settlement_status text DEFAULT 'not_accrued'::text, p_cash_expected_amount numeric DEFAULT 0, p_commission_rule_id uuid DEFAULT NULL::uuid, p_assisted_fee_rule_id uuid DEFAULT NULL::uuid, p_platform_fee_rule_id uuid DEFAULT NULL::uuid, p_delivery_billing_rule_id uuid DEFAULT NULL::uuid, p_resolved_plan_id uuid DEFAULT NULL::uuid, p_resolved_plan_code text DEFAULT NULL::text, p_commercial_snapshot_version integer DEFAULT 1, p_source_app text DEFAULT 'barber_app'::text, p_channel text DEFAULT 'barber_app_checkout'::text, p_dilmart_user_id uuid DEFAULT NULL::uuid, p_dilmart_barbershop_id uuid DEFAULT NULL::uuid, p_segment text DEFAULT NULL::text, p_business_type text DEFAULT NULL::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public'\nAS $function$\nDECLARE\n  v_attempt             RECORD;\n  v_cart                 RECORD;\n  v_order_number        TEXT;\n  v_order_id            UUID;\n  v_inserted_attempt_id UUID;\n  v_attempt_created     BOOLEAN := false;\nBEGIN\n  -- ═══════════════════════════════════════════════════════════════════════════\n  -- PHASE 1: Attempt Resolution (Idempotency Gate)\n  -- ═══════════════════════════════════════════════════════════════════════════\n\n  -- Race-safe insert: ON CONFLICT DO NOTHING handles concurrent first-attempts\n  INSERT INTO public.checkout_attempts (\n    id, user_id, store_linked_profile_id, store_cart_id,\n    request_hash, status, created_at, updated_at\n  ) VALUES (\n    p_checkout_attempt_id, NULL, p_store_linked_profile_id, p_store_cart_id,\n    p_checkout_request_hash, 'processing', now(), now()\n  ) ON CONFLICT (id) DO NOTHING\n  RETURNING id INTO v_inserted_attempt_id;\n\n  v_attempt_created := v_inserted_attempt_id IS NOT NULL;\n\n  -- Lock the attempt row for authoritative read\n  SELECT * INTO v_attempt\n  FROM public.checkout_attempts\n  WHERE id = p_checkout_attempt_id\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'B2B_CHECKOUT_ATTEMPT_NOT_FOUND: Attempt ID does not exist';\n  END IF;\n\n  -- Ownership verification: must match verified session claims\n  IF v_attempt.store_linked_profile_id IS NULL\n     OR v_attempt.store_linked_profile_id <> p_store_linked_profile_id THEN\n    RAISE EXCEPTION 'B2B_CHECKOUT_ATTEMPT_OWNERSHIP_MISMATCH: Attempt belongs to a different profile';\n  END IF;\n\n  -- Request hash verification\n  IF v_attempt.request_hash <> p_checkout_request_hash THEN\n    RAISE EXCEPTION 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD: Attempt key used with different payload';\n  END IF;\n\n  -- If not freshly created, check for completed replay\n  IF NOT v_attempt_created THEN\n    -- COMPLETED replay: return existing order immediately (BEFORE touching cart state)\n    IF v_attempt.status = 'completed' AND v_attempt.order_number IS NOT NULL THEN\n      RETURN jsonb_build_object(\n        'order_id', v_attempt.order_id,\n        'order_number', v_attempt.order_number,\n        'checkout_attempt_id', p_checkout_attempt_id,\n        'reused', true\n      );\n    END IF;\n\n    -- Still processing (concurrent request) — reject if fresh (<5 min)\n    IF v_attempt.status = 'processing' AND (now() - v_attempt.updated_at) < INTERVAL '5 minutes' THEN\n      RAISE EXCEPTION 'B2B_CHECKOUT_IN_PROGRESS: Attempt is actively being processed';\n    END IF;\n\n    -- Stale processing or failed: reset for retry\n    UPDATE public.checkout_attempts\n    SET status = 'processing',\n        error_code = NULL,\n        store_cart_id = p_store_cart_id,\n        updated_at = now()\n    WHERE id = p_checkout_attempt_id;\n  END IF;\n\n  -- ═══════════════════════════════════════════════════════════════════════════\n  -- PHASE 2: Cart Lock + Version Guard (Transactional)\n  -- ═══════════════════════════════════════════════════════════════════════════\n\n  -- Lock cart row and verify ownership + active status + version\n  SELECT * INTO v_cart\n  FROM public.store_carts\n  WHERE id = p_store_cart_id\n  FOR UPDATE;\n\n  IF NOT FOUND THEN\n    RAISE EXCEPTION 'B2B_CART_NOT_FOUND: Cart does not exist';\n  END IF;\n\n  IF v_cart.store_linked_profile_id <> p_store_linked_profile_id THEN\n    RAISE EXCEPTION 'B2B_CART_OWNERSHIP_MISMATCH: Cart belongs to a different profile';\n  END IF;\n\n  -- If cart is already converted, check if this cart already has an order\n  IF v_cart.status = 'converted' THEN\n    -- Look up the order created from this cart\n    SELECT id, order_number INTO v_order_id, v_order_number\n    FROM public.orders\n    WHERE store_cart_id = p_store_cart_id\n    LIMIT 1;\n\n    IF v_order_id IS NOT NULL THEN\n      -- Link this attempt to the existing order and mark completed\n      UPDATE public.checkout_attempts\n      SET status = 'completed',\n          order_id = v_order_id,\n          order_number = v_order_number,\n          completed_at = now(),\n          updated_at = now()\n      WHERE id = p_checkout_attempt_id;\n\n      RETURN jsonb_build_object(\n        'order_id', v_order_id,\n        'order_number', v_order_number,\n        'checkout_attempt_id', p_checkout_attempt_id,\n        'reused', true\n      );\n    END IF;\n\n    RAISE EXCEPTION 'B2B_CART_ALREADY_CONVERTED: Cart was already converted but order not found';\n  END IF;\n\n  IF v_cart.status <> 'active' THEN\n    RAISE EXCEPTION 'B2B_CART_NOT_ACTIVE: Cart status is %, expected active', v_cart.status;\n  END IF;\n\n  -- Version guard: reject if cart changed between JS resolution and atomic commit\n  IF v_cart.updated_at <> p_expected_cart_updated_at THEN\n    RAISE EXCEPTION 'B2B_CART_CHANGED_DURING_CHECKOUT: Cart was modified between preview and submit';\n  END IF;\n\n  -- Transition cart to checkout_in_progress within this transaction\n  UPDATE public.store_carts\n  SET status = 'checkout_in_progress',\n      updated_at = now()\n  WHERE id = p_store_cart_id;\n\n  -- ═══════════════════════════════════════════════════════════════════════════\n  -- PHASE 3: Order Creation (via canonical place_order)\n  -- ═══════════════════════════════════════════════════════════════════════════\n\n  v_order_number := public.place_order(\n    p_customer_name          => p_customer_name,\n    p_customer_phone         => p_customer_phone,\n    p_governorate_id         => p_governorate_id,\n    p_area                   => p_area,\n    p_nearest_landmark       => p_nearest_landmark,\n    p_notes                  => p_notes,\n    p_subtotal               => p_subtotal,\n    p_delivery_cost          => p_delivery_cost,\n    p_discount               => p_discount,\n    p_total                  => p_total,\n    p_coupon_id              => p_coupon_id,\n    p_items                  => p_items,\n    p_user_id                => NULL,\n    p_latitude               => p_latitude,\n    p_longitude              => p_longitude,\n    p_map_url                => p_map_url,\n    p_points_spent           => 0,\n    p_points_discount        => 0,\n    p_points_earned          => 0,\n    p_merchant_id            => p_merchant_id,\n    p_payment_method         => 'cod',\n    p_merchant_notes         => NULL,\n    p_merchandise_subtotal   => p_merchandise_subtotal,\n    p_discount_total         => p_discount_total,\n    p_delivery_fee_charged   => p_delivery_fee_charged,\n    p_platform_commission_type    => p_platform_commission_type,\n    p_platform_commission_rate    => p_platform_commission_rate,\n    p_platform_commission_amount  => p_platform_commission_amount,\n    p_platform_assisted_fee_amount => p_platform_assisted_fee_amount,\n    p_platform_extra_fee_amount   => p_platform_extra_fee_amount,\n    p_courier_fee_payable         => p_courier_fee_payable,\n    p_merchant_gross_amount       => p_merchant_gross_amount,\n    p_merchant_net_amount         => p_merchant_net_amount,\n    p_gross_collected_amount      => p_gross_collected_amount,\n    p_platform_net_revenue_amount => p_platform_net_revenue_amount,\n    p_currency_code               => p_currency_code,\n    p_financial_snapshot_version  => p_financial_snapshot_version,\n    p_payment_status              => p_payment_status,\n    p_collection_status           => p_collection_status,\n    p_settlement_status           => p_settlement_status,\n    p_cash_expected_amount        => p_cash_expected_amount,\n    p_commission_rule_id          => p_commission_rule_id,\n    p_assisted_fee_rule_id        => p_assisted_fee_rule_id,\n    p_platform_fee_rule_id        => p_platform_fee_rule_id,\n    p_delivery_billing_rule_id    => p_delivery_billing_rule_id,\n    p_resolved_plan_id            => p_resolved_plan_id,\n    p_resolved_plan_code          => p_resolved_plan_code,\n    p_commercial_snapshot_version => p_commercial_snapshot_version,\n    p_source_app                  => p_source_app,\n    p_channel                     => p_channel,\n    p_store_linked_profile_id     => p_store_linked_profile_id,\n    p_DilMart_user_id              => p_DilMart_user_id,\n    p_DilMart_barbershop_id        => p_DilMart_barbershop_id,\n    p_segment                     => p_segment,\n    p_business_type               => p_business_type\n  );\n\n  -- ═══════════════════════════════════════════════════════════════════════════\n  -- PHASE 4: Post-Order Linkage (Same Transaction)\n  -- ═══════════════════════════════════════════════════════════════════════════\n\n  -- Retrieve generated order ID\n  SELECT id INTO v_order_id\n  FROM public.orders\n  WHERE order_number = v_order_number;\n\n  -- Link order → attempt + cart\n  UPDATE public.orders\n  SET checkout_attempt_id = p_checkout_attempt_id,\n      checkout_request_hash = p_checkout_request_hash,\n      store_cart_id = p_store_cart_id\n  WHERE id = v_order_id;\n\n  -- Complete attempt\n  UPDATE public.checkout_attempts\n  SET status = 'completed',\n      order_id = v_order_id,\n      order_number = v_order_number,\n      completed_at = now(),\n      updated_at = now()\n  WHERE id = p_checkout_attempt_id;\n\n  -- Convert cart (same transaction — atomic with order)\n  UPDATE public.store_carts\n  SET status = 'converted',\n      updated_at = now()\n  WHERE id = p_store_cart_id;\n\n  -- ═══════════════════════════════════════════════════════════════════════════\n  -- PHASE 5: Return Structured Result\n  -- ═══════════════════════════════════════════════════════════════════════════\n\n  RETURN jsonb_build_object(\n    'order_id', v_order_id,\n    'order_number', v_order_number,\n    'checkout_attempt_id', p_checkout_attempt_id,\n    'reused', false\n  );\nEND;\n$function$\n",
+      "identity": "place_b2b_cart_order_idempotent(uuid,text,uuid,uuid,timestamp with time zone,text,text,uuid,text,numeric,numeric,numeric,jsonb,text,text,numeric,uuid,double precision,double precision,text,uuid,numeric,numeric,numeric,text,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,integer,text,text,text,numeric,uuid,uuid,uuid,uuid,uuid,text,integer,text,text,uuid,uuid,text,text)",
+      "proname": "place_b2b_cart_order_idempotent"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.provision_dilmart_federated_customer(p_dilmart_user_id uuid, p_federated_id text)\n RETURNS TABLE(store_customer_id uuid, error_code text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_email TEXT := 'DilMart-federated+' || p_federated_id || '@federated.DilMart.internal';\n  v_id    UUID;\n  v_other UUID;\nBEGIN\n  IF p_federated_id IS NULL OR p_federated_id !~ '^[A-Za-z0-9_-]{16,120}$' THEN\n    RAISE EXCEPTION 'invalid federated_id' USING ERRCODE = 'check_violation';\n  END IF;\n\n  -- 1) Ownership-validated recovery.\n  SELECT u.id INTO v_id\n  FROM auth.users u JOIN public.profiles p ON p.id = u.id\n  WHERE lower(btrim(u.email)) = lower(v_email)\n    AND (u.raw_app_meta_data ->> 'account_type') = 'DilMart_federated_customer'\n    AND (u.raw_app_meta_data ->> 'origin') = 'DilMart_federated'\n    AND (u.raw_user_meta_data ->> 'DilMart_user_id') = p_DilMart_user_id::text\n    AND u.deleted_at IS NULL AND (u.banned_until IS NULL OR u.banned_until < now())\n    AND p.role = 'customer'\n  LIMIT 1;\n  IF FOUND THEN\n    RETURN QUERY SELECT v_id, NULL::TEXT; RETURN;\n  END IF;\n\n  -- 2) Email held by a non-owned account → collision, never reuse.\n  SELECT u.id INTO v_other FROM auth.users u WHERE lower(btrim(u.email)) = lower(v_email) LIMIT 1;\n  IF FOUND THEN\n    RETURN QUERY SELECT NULL::UUID, 'IDENTITY_BLOCKED'::TEXT; RETURN;\n  END IF;\n\n  -- 3) Provision. Ownership metadata + federated_id are set AT insert so the reserved-domain trigger allows it.\n  v_id := gen_random_uuid();\n  INSERT INTO auth.users\n    (id, instance_id, aud, role, email, encrypted_password, raw_app_meta_data, raw_user_meta_data,\n     created_at, updated_at, confirmation_token, recovery_token, email_change_token_new, email_change,\n     email_change_token_current, phone_change, phone_change_token, reauthentication_token)\n  VALUES\n    (v_id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', v_email,\n     encode(sha256((gen_random_uuid()::text)::bytea), 'hex'),   -- unusable password; login impossible, never logged\n     jsonb_build_object('provider','email','providers', array['email'],\n                        'account_type','DilMart_federated_customer','origin','DilMart_federated','federated_id', p_federated_id),\n     jsonb_build_object('account_type','DilMart_federated_customer','DilMart_user_id', p_DilMart_user_id::text),\n     now(), now(), '', '', '', '', '', '', '', '');\n\n  RETURN QUERY SELECT v_id, NULL::TEXT;\n  RETURN;\n\nEXCEPTION WHEN unique_violation THEN\n  -- Concurrent creation: re-run ownership recovery; reuse if it is now ours, else collision.\n  SELECT u.id INTO v_id\n  FROM auth.users u JOIN public.profiles p ON p.id = u.id\n  WHERE lower(btrim(u.email)) = lower(v_email)\n    AND (u.raw_user_meta_data ->> 'DilMart_user_id') = p_DilMart_user_id::text\n    AND (u.raw_app_meta_data ->> 'origin') = 'DilMart_federated'\n    AND p.role = 'customer'\n  LIMIT 1;\n  IF FOUND THEN RETURN QUERY SELECT v_id, NULL::TEXT; ELSE RETURN QUERY SELECT NULL::UUID, 'IDENTITY_BLOCKED'::TEXT; END IF;\n  RETURN;\nEND;\n$function$\n",
+      "identity": "provision_dilmart_federated_customer(uuid,text)",
+      "proname": "provision_dilmart_federated_customer"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.redeem_and_create_federated_session(p_code_hash text, p_state_hash text, p_family_id uuid, p_refresh_token_id uuid, p_refresh_token_hash text, p_access_jti uuid, p_device_hash text, p_expected_handoff_id uuid, p_expected_store_customer_id uuid, p_expected_linked_profile_id uuid, p_expected_dilmart_user_id uuid, p_expected_target_path text, p_request_id uuid)\n RETURNS TABLE(status text, error_code text, store_customer_id uuid, linked_profile_id uuid, dilmart_user_id uuid, target_path text, display_name text, session_version integer, refresh_expires_in_seconds integer)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  c_refresh CONSTANT INTEGER := 2592000;  -- 30d, approved\n  c_abs     CONSTANT INTEGER := 7776000;  -- 90d, approved\n  v_h    public.DilMart_customer_handoffs%ROWTYPE;\n  v_link public.store_linked_profiles%ROWTYPE;\n  v_prole TEXT;\n  v_now  TIMESTAMPTZ;\n  v_abs  TIMESTAMPTZ;\n  v_rexp TIMESTAMPTZ;\n  v_rsecs INTEGER;\nBEGIN\n  SELECT * INTO v_h FROM public.DilMart_customer_handoffs WHERE code_hash = p_code_hash FOR UPDATE;\n  IF NOT FOUND THEN\n    RETURN QUERY SELECT 'ERROR','HANDOFF_INVALID',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n  IF v_h.state_hash IS DISTINCT FROM p_state_hash AND v_h.redeemed_at IS NULL THEN\n    RETURN QUERY SELECT 'ERROR','HANDOFF_STATE_MISMATCH',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n  IF v_h.redeemed_at IS NOT NULL THEN\n    RETURN QUERY SELECT 'ERROR','HANDOFF_ALREADY_REDEEMED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n  IF v_h.expires_at <= clock_timestamp() THEN\n    RETURN QUERY SELECT 'ERROR','HANDOFF_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n  IF v_h.identity_outcome <> 'LINKED' OR v_h.linked_profile_id IS NULL OR v_h.store_customer_id IS NULL THEN\n    RETURN QUERY SELECT 'ERROR','HANDOFF_INVALID',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- B6: the context the caller pre-signed the access token for must still match the locked handoff, EXACTLY.\n  IF v_h.id                IS DISTINCT FROM p_expected_handoff_id\n     OR v_h.store_customer_id IS DISTINCT FROM p_expected_store_customer_id\n     OR v_h.linked_profile_id IS DISTINCT FROM p_expected_linked_profile_id\n     OR v_h.DilMart_user_id    IS DISTINCT FROM p_expected_DilMart_user_id\n     OR v_h.target_path       IS DISTINCT FROM p_expected_target_path THEN\n    RETURN QUERY SELECT 'ERROR','HANDOFF_CONTEXT_MISMATCH',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- Recheck the link + customer are still LINKED and Customer-compatible under lock.\n  SELECT * INTO v_link FROM public.store_linked_profiles WHERE id = v_h.linked_profile_id FOR UPDATE;\n  IF NOT FOUND\n     OR upper(coalesce(v_link.DilMart_role,'')) <> 'CUSTOMER'\n     OR upper(coalesce(v_link.link_status,'')) <> 'LINKED'\n     OR v_link.store_customer_id IS DISTINCT FROM v_h.store_customer_id THEN\n    RETURN QUERY SELECT 'ERROR','IDENTITY_BLOCKED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n  SELECT role INTO v_prole FROM public.profiles WHERE id = v_h.store_customer_id;\n  IF v_prole IS DISTINCT FROM 'customer' THEN\n    RETURN QUERY SELECT 'ERROR','IDENTITY_BLOCKED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::TEXT,NULL::TEXT,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- Consume the handoff.\n  UPDATE public.DilMart_customer_handoffs\n     SET redeemed_at = clock_timestamp(), status = 'REDEEMED', updated_at = now()\n   WHERE id = v_h.id;\n\n  v_now  := clock_timestamp();\n  v_abs  := v_now + make_interval(secs => c_abs);\n  v_rexp := LEAST(v_now + make_interval(secs => c_refresh), v_abs);\n  v_rsecs := GREATEST(0, floor(extract(epoch FROM (v_rexp - v_now))))::INTEGER;\n\n  INSERT INTO public.store_federated_session_families\n    (id, store_customer_id, linked_profile_id, DilMart_user_id, device_id_hash, session_version, status,\n     last_used_at, absolute_expires_at, refresh_window_started_at, refresh_count, created_at, updated_at)\n  VALUES\n    (p_family_id, v_h.store_customer_id, v_h.linked_profile_id, v_h.DilMart_user_id, p_device_hash, 1, 'ACTIVE',\n     v_now, v_abs, v_now, 0, v_now, v_now);\n\n  INSERT INTO public.store_federated_refresh_tokens\n    (id, session_family_id, token_hash, parent_token_id, expires_at, created_at)\n  VALUES\n    (p_refresh_token_id, p_family_id, p_refresh_token_hash, NULL, v_rexp, v_now);\n\n  UPDATE public.store_linked_profiles SET last_handoff_at = clock_timestamp(), updated_at = now() WHERE id = v_link.id;\n\n  INSERT INTO public.DilMart_customer_handoff_audit_events\n    (request_id, handoff_id, linked_profile_id, event_type, status, source_surface, campaign, metadata)\n  VALUES\n    (p_request_id, v_h.id, v_h.linked_profile_id, 'HANDOFF_REDEEMED', 'REDEEMED', v_h.source_surface, v_h.campaign,\n     jsonb_build_object('sessionFamilyId', p_family_id));\n\n  INSERT INTO public.store_federated_session_audit_events\n    (request_id, session_family_id, refresh_token_id, handoff_id, linked_profile_id, store_customer_id, event_type, status, metadata)\n  VALUES\n    (p_request_id, p_family_id, p_refresh_token_id, v_h.id, v_h.linked_profile_id, v_h.store_customer_id,\n     'FEDERATED_SESSION_CREATED', 'ACTIVE', jsonb_build_object('accessJti', p_access_jti));\n\n  RETURN QUERY SELECT 'OK', NULL::TEXT, v_h.store_customer_id, v_h.linked_profile_id, v_h.DilMart_user_id,\n                      v_h.target_path, v_link.display_name, 1, v_rsecs;\n  RETURN;\nEND;\n$function$\n",
+      "identity": "redeem_and_create_federated_session(text,text,uuid,uuid,text,uuid,text,uuid,uuid,uuid,uuid,text,uuid)",
+      "proname": "redeem_and_create_federated_session"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.redeem_barber_handoff_and_create_session(p_code_hash text, p_state_hash text, p_session_token_hash text, p_session_ttl_seconds integer)\n RETURNS TABLE(outcome_status text, error_code text, handoff_id uuid, linked_profile_id uuid, dilmart_user_id uuid, dilmart_barbershop_id uuid, role text, display_name text, target_path text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_row     public.DilMart_barber_handoffs%ROWTYPE;\n  v_profile public.store_linked_profiles%ROWTYPE;\nBEGIN\n  IF p_session_ttl_seconds IS NULL OR p_session_ttl_seconds < 300 OR p_session_ttl_seconds > 86400 THEN\n    RAISE EXCEPTION 'barber web session ttl out of bounds' USING ERRCODE = 'check_violation';\n  END IF;\n  IF p_session_token_hash IS NULL OR length(p_session_token_hash) <> 64 THEN\n    RAISE EXCEPTION 'barber web session token hash must be sha256 hex' USING ERRCODE = 'check_violation';\n  END IF;\n\n  UPDATE public.DilMart_barber_handoffs h\n     SET redeemed_at = clock_timestamp(),\n         status = 'REDEEMED',\n         updated_at = now()\n   WHERE h.code_hash = p_code_hash\n     AND h.redeemed_at IS NULL\n     AND h.status = 'PENDING'\n     AND h.expires_at > clock_timestamp()\n     AND h.state_hash = p_state_hash\n  RETURNING h.* INTO v_row;\n\n  IF FOUND THEN\n    SELECT * INTO v_profile FROM public.store_linked_profiles\n     WHERE id = v_row.linked_profile_id FOR UPDATE;\n    -- Fail closed WITHOUT consuming: raising rolls back the consume above, so a corrupted /\n    -- concurrently-mutated profile row never burns a valid code. A NULL DilMart_barbershop_id\n    -- (legacy/partial row) is included here explicitly — without it the NOT NULL session insert\n    -- below would raise an unclassified 23502 instead of this deliberate check_violation.\n    IF NOT FOUND\n       OR upper(coalesce(v_profile.DilMart_role, '')) NOT IN ('OWNER', 'BARBER')\n       OR v_profile.DilMart_barbershop_id IS NULL THEN\n      RAISE EXCEPTION 'barber handoff linked profile is not a complete Barber/Owner identity'\n        USING ERRCODE = 'check_violation';\n    END IF;\n\n    -- Single-active-session: every prior ACTIVE session for this user dies with this redeem.\n    -- Aliased + qualified: `DilMart_user_id` is also a RETURNS TABLE output name; unqualified it\n    -- is ambiguous (42702) under plpgsql.variable_conflict = error.\n    UPDATE public.DilMart_barber_web_sessions s\n       SET status = 'REVOKED', revoked_at = clock_timestamp()\n     WHERE s.DilMart_user_id = v_profile.DilMart_user_id\n       AND s.status = 'ACTIVE';\n\n    INSERT INTO public.DilMart_barber_web_sessions\n      (session_token_hash, linked_profile_id, DilMart_user_id, DilMart_barbershop_id, role, expires_at)\n    VALUES\n      (p_session_token_hash, v_profile.id, v_profile.DilMart_user_id, v_profile.DilMart_barbershop_id,\n       upper(v_profile.DilMart_role), clock_timestamp() + make_interval(secs => p_session_ttl_seconds));\n\n    INSERT INTO public.DilMart_barber_handoff_audit_events\n      (handoff_id, linked_profile_id, event_type, status, source_surface, metadata)\n    VALUES\n      (v_row.id, v_row.linked_profile_id, 'HANDOFF_REDEEMED', 'REDEEMED', v_row.source_surface, '{}'::jsonb);\n\n    RETURN QUERY SELECT\n      'REDEEMED', NULL::TEXT, v_row.id, v_profile.id, v_profile.DilMart_user_id,\n      v_profile.DilMart_barbershop_id, upper(v_profile.DilMart_role), v_profile.display_name,\n      v_row.target_path;\n    RETURN;\n  END IF;\n\n  SELECT * INTO v_row FROM public.DilMart_barber_handoffs WHERE code_hash = p_code_hash;\n\n  IF NOT FOUND THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_INVALID', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT, NULL::TEXT;\n  ELSIF v_row.state_hash IS DISTINCT FROM p_state_hash AND v_row.redeemed_at IS NULL THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_STATE_MISMATCH', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT, NULL::TEXT;\n  ELSIF v_row.redeemed_at IS NOT NULL THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_ALREADY_REDEEMED', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT, NULL::TEXT;\n  ELSIF v_row.expires_at <= clock_timestamp() THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_EXPIRED', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT, NULL::TEXT;\n  ELSE\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_INVALID', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT, NULL::TEXT;\n  END IF;\nEND;\n$function$\n",
+      "identity": "redeem_barber_handoff_and_create_session(text,text,text,integer)",
+      "proname": "redeem_barber_handoff_and_create_session"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.redeem_customer_handoff(p_code_hash text, p_state_hash text)\n RETURNS TABLE(outcome_status text, error_code text, handoff_id uuid, linked_profile_id uuid, store_customer_id uuid, dilmart_user_id uuid, target_path text, identity_outcome text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_row public.DilMart_customer_handoffs%ROWTYPE;\n  v_event TEXT;\nBEGIN\n  UPDATE public.DilMart_customer_handoffs h\n     SET redeemed_at = clock_timestamp(),\n         status = CASE WHEN h.identity_outcome = 'LINKED' THEN 'REDEEMED' ELSE h.status END,\n         updated_at = now()\n   WHERE h.code_hash = p_code_hash\n     AND h.redeemed_at IS NULL\n     AND h.status IN ('PENDING','LINK_REQUIRED','BLOCKED')\n     AND h.expires_at > clock_timestamp()\n     AND h.state_hash = p_state_hash\n  RETURNING h.* INTO v_row;\n\n  IF FOUND THEN\n    -- Exactly ONE correctly-typed audit event per consumed outcome (task B5).\n    v_event := CASE v_row.identity_outcome\n                 WHEN 'LINKED'        THEN 'HANDOFF_REDEEMED'\n                 WHEN 'LINK_REQUIRED' THEN 'HANDOFF_REDEEM_LINK_REQUIRED'\n                 WHEN 'BLOCKED'       THEN 'HANDOFF_REDEEM_BLOCKED'\n               END;\n    INSERT INTO public.DilMart_customer_handoff_audit_events\n      (handoff_id, linked_profile_id, event_type, status, source_surface, campaign, metadata)\n    VALUES\n      (v_row.id, v_row.linked_profile_id, v_event, v_row.identity_outcome,\n       v_row.source_surface, v_row.campaign, '{}'::jsonb);\n\n    RETURN QUERY SELECT\n      CASE v_row.identity_outcome WHEN 'LINKED' THEN 'REDEEMED' ELSE v_row.identity_outcome END,\n      NULL::TEXT,\n      v_row.id, v_row.linked_profile_id, v_row.store_customer_id,\n      v_row.DilMart_user_id, v_row.target_path, v_row.identity_outcome;\n    RETURN;\n  END IF;\n\n  SELECT * INTO v_row FROM public.DilMart_customer_handoffs WHERE code_hash = p_code_hash;\n\n  IF NOT FOUND THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_INVALID', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT;\n  ELSIF v_row.state_hash IS DISTINCT FROM p_state_hash AND v_row.redeemed_at IS NULL THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_STATE_MISMATCH', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT;\n  ELSIF v_row.redeemed_at IS NOT NULL THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_ALREADY_REDEEMED', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT;\n  ELSIF v_row.expires_at <= clock_timestamp() THEN\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_EXPIRED', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT;\n  ELSE\n    RETURN QUERY SELECT 'ERROR', 'HANDOFF_INVALID', NULL::UUID, NULL::UUID, NULL::UUID, NULL::UUID, NULL::TEXT, NULL::TEXT;\n  END IF;\nEND;\n$function$\n",
+      "identity": "redeem_customer_handoff(text,text)",
+      "proname": "redeem_customer_handoff"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.reject_barber_handoff_audit_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'DilMart_barber_handoff_audit_events is append-only (immutable audit trail).';\nEND;\n$function$\n",
+      "identity": "reject_barber_handoff_audit_mutation()",
+      "proname": "reject_barber_handoff_audit_mutation"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.reject_federated_session_audit_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'store_federated_session_audit_events is append-only (immutable audit trail).';\nEND;\n$function$\n",
+      "identity": "reject_federated_session_audit_mutation()",
+      "proname": "reject_federated_session_audit_mutation"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.reject_handoff_audit_mutation()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n  RAISE EXCEPTION 'DilMart_customer_handoff_audit_events is append-only (immutable audit trail).';\nEND;\n$function$\n",
+      "identity": "reject_handoff_audit_mutation()",
+      "proname": "reject_handoff_audit_mutation"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.reject_reserved_federated_email()\n RETURNS trigger\n LANGUAGE plpgsql\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  v_fed_id        TEXT;\n  v_expected_email TEXT;\nBEGIN\n  IF NEW.email IS NULL OR lower(btrim(NEW.email)) NOT LIKE '%@federated.DilMart.internal' THEN\n    RETURN NEW;  -- not a reserved-domain row → unaffected\n  END IF;\n\n  v_fed_id := NEW.raw_app_meta_data ->> 'federated_id';\n\n  IF (NEW.raw_app_meta_data ->> 'account_type') IS DISTINCT FROM 'DilMart_federated_customer'\n     OR (NEW.raw_app_meta_data ->> 'origin') IS DISTINCT FROM 'DilMart_federated'\n     OR v_fed_id IS NULL\n     OR (NEW.raw_user_meta_data ->> 'DilMart_user_id') IS NULL\n     OR (NEW.raw_user_meta_data ->> 'DilMart_user_id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'\n  THEN\n    RAISE EXCEPTION 'The federated.DilMart.internal domain requires complete federation ownership metadata.';\n  END IF;\n\n  v_expected_email := 'DilMart-federated+' || v_fed_id || '@federated.DilMart.internal';\n  IF lower(btrim(NEW.email)) IS DISTINCT FROM lower(v_expected_email) THEN\n    RAISE EXCEPTION 'Reserved federated email does not match its federated_id.';\n  END IF;\n\n  RETURN NEW;\nEND;\n$function$\n",
+      "identity": "reject_reserved_federated_email()",
+      "proname": "reject_reserved_federated_email"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.resolve_dilmart_federated_customer(p_dilmart_user_id uuid, p_internal_email text)\n RETURNS uuid\n LANGUAGE sql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\n  SELECT u.id\n  FROM auth.users u\n  JOIN public.profiles p ON p.id = u.id\n  WHERE lower(btrim(u.email)) = lower(btrim(p_internal_email))\n    AND (u.raw_app_meta_data ->> 'account_type') = 'DilMart_federated_customer'\n    AND (u.raw_app_meta_data ->> 'origin') = 'DilMart_federated'\n    AND (u.raw_user_meta_data ->> 'DilMart_user_id') = p_DilMart_user_id::text\n    AND u.deleted_at IS NULL\n    AND (u.banned_until IS NULL OR u.banned_until < now())\n    AND p.role = 'customer'\n  LIMIT 1;\n$function$\n",
+      "identity": "resolve_dilmart_federated_customer(uuid,text)",
+      "proname": "resolve_dilmart_federated_customer"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.revoke_barber_web_sessions_for_user(p_dilmart_user_id uuid)\n RETURNS integer\n LANGUAGE sql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\n  WITH updated AS (\n    UPDATE public.DilMart_barber_web_sessions\n       SET status = 'REVOKED', revoked_at = clock_timestamp()\n     WHERE DilMart_user_id = p_DilMart_user_id\n       AND status = 'ACTIVE'\n    RETURNING id\n  )\n  SELECT count(*)::INTEGER FROM updated;\n$function$\n",
+      "identity": "revoke_barber_web_sessions_for_user(uuid)",
+      "proname": "revoke_barber_web_sessions_for_user"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.revoke_federated_sessions_for_identity(p_dilmart_user_id uuid, p_linked_profile_id uuid, p_reason text, p_request_id uuid)\n RETURNS TABLE(revoked_count integer)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE r RECORD; v_n INTEGER := 0;\nBEGIN\n  IF p_DilMart_user_id IS NULL AND p_linked_profile_id IS NULL THEN\n    RAISE EXCEPTION 'an identity key is required' USING ERRCODE = 'check_violation';\n  END IF;\n  FOR r IN\n    SELECT id, linked_profile_id, store_customer_id FROM public.store_federated_session_families\n     WHERE status = 'ACTIVE'\n       AND (p_DilMart_user_id    IS NULL OR DilMart_user_id    = p_DilMart_user_id)\n       AND (p_linked_profile_id IS NULL OR linked_profile_id = p_linked_profile_id)\n     ORDER BY id\n     FOR UPDATE\n  LOOP\n    UPDATE public.store_federated_session_families\n       SET status = 'REVOKED', revoked_at = clock_timestamp(), revoke_reason = COALESCE(p_reason,'INTERNAL_REVOKE'),\n           session_version = store_federated_session_families.session_version + 1, updated_at = now()\n     WHERE id = r.id;\n    UPDATE public.store_federated_refresh_tokens SET revoked_at = clock_timestamp()\n      WHERE session_family_id = r.id AND revoked_at IS NULL;\n    INSERT INTO public.store_federated_session_audit_events\n      (request_id, session_family_id, linked_profile_id, store_customer_id, event_type, status, error_code)\n    VALUES (p_request_id, r.id, r.linked_profile_id, r.store_customer_id, 'FEDERATED_SESSION_REVOKED', 'REVOKED', p_reason);\n    v_n := v_n + 1;\n  END LOOP;\n  RETURN QUERY SELECT v_n; RETURN;\nEND;\n$function$\n",
+      "identity": "revoke_federated_sessions_for_identity(uuid,uuid,text,uuid)",
+      "proname": "revoke_federated_sessions_for_identity"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.rotate_federated_refresh_token(p_current_token_hash text, p_new_token_id uuid, p_new_token_hash text, p_device_hash text, p_expected_family_id uuid, p_expected_store_customer_id uuid, p_expected_linked_profile_id uuid, p_expected_dilmart_user_id uuid, p_expected_session_version integer, p_request_id uuid)\n RETURNS TABLE(status text, error_code text, family_id uuid, store_customer_id uuid, linked_profile_id uuid, dilmart_user_id uuid, session_version integer, refresh_expires_in_seconds integer)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  c_refresh  CONSTANT INTEGER := 2592000;  -- 30d\n  c_inactive CONSTANT INTEGER := 2592000;  -- 30d inactivity\n  c_rate     CONSTANT INTEGER := 30;\n  c_window   CONSTANT INTEGER := 3600;\n  v_fam_id UUID;\n  v_tok public.store_federated_refresh_tokens%ROWTYPE;\n  v_fam public.store_federated_session_families%ROWTYPE;\n  v_link public.store_linked_profiles%ROWTYPE;\n  v_prole TEXT;\n  v_now TIMESTAMPTZ;\n  v_new_exp TIMESTAMPTZ;\n  v_rsecs INTEGER;\nBEGIN\n  -- (1) Read token → family id WITHOUT a row lock.\n  SELECT session_family_id INTO v_fam_id FROM public.store_federated_refresh_tokens WHERE token_hash = p_current_token_hash;\n  IF v_fam_id IS NULL THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- (2) Lock the family FIRST (deterministic order → no deadlock across lifecycle RPCs).\n  SELECT * INTO v_fam FROM public.store_federated_session_families WHERE id = v_fam_id FOR UPDATE;\n  IF NOT FOUND THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- (3) Lock the exact token row. (4) Revalidate it still belongs to the locked family.\n  SELECT * INTO v_tok FROM public.store_federated_refresh_tokens WHERE token_hash = p_current_token_hash FOR UPDATE;\n  IF NOT FOUND OR v_tok.session_family_id IS DISTINCT FROM v_fam.id THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- REUSE DETECTION (precedes everything else). A used token presented again compromises the family.\n  IF v_tok.used_at IS NOT NULL THEN\n    UPDATE public.store_federated_session_families\n       SET status = 'COMPROMISED', revoked_at = clock_timestamp(), revoke_reason = 'REFRESH_REUSE',\n           session_version = store_federated_session_families.session_version + 1, updated_at = now()\n     WHERE id = v_fam.id;\n    UPDATE public.store_federated_refresh_tokens\n       SET revoked_at = clock_timestamp()\n     WHERE session_family_id = v_fam.id AND revoked_at IS NULL;\n    UPDATE public.store_federated_refresh_tokens SET reuse_detected_at = clock_timestamp() WHERE id = v_tok.id;\n    INSERT INTO public.store_federated_session_audit_events\n      (request_id, session_family_id, refresh_token_id, linked_profile_id, store_customer_id, event_type, status, error_code)\n    VALUES (p_request_id, v_fam.id, v_tok.id, v_fam.linked_profile_id, v_fam.store_customer_id,\n            'FEDERATED_REFRESH_REUSE_DETECTED', 'COMPROMISED', 'FEDERATED_REFRESH_REUSE_DETECTED');\n    RETURN QUERY SELECT 'ERROR','FEDERATED_REFRESH_REUSE_DETECTED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- Token/family validity (fail closed; no enumeration oracle → all map to FEDERATED_SESSION_EXPIRED).\n  IF v_tok.revoked_at IS NOT NULL\n     OR v_tok.expires_at <= clock_timestamp()\n     OR v_fam.status <> 'ACTIVE'\n     OR v_fam.revoked_at IS NOT NULL\n     OR v_fam.absolute_expires_at <= clock_timestamp()\n     OR (v_fam.last_used_at + make_interval(secs => c_inactive)) <= clock_timestamp() THEN\n    IF v_fam.status = 'ACTIVE'\n       AND (v_fam.absolute_expires_at <= clock_timestamp()\n            OR (v_fam.last_used_at + make_interval(secs => c_inactive)) <= clock_timestamp()) THEN\n      UPDATE public.store_federated_session_families SET status = 'EXPIRED', updated_at = now() WHERE id = v_fam.id;\n      UPDATE public.store_federated_refresh_tokens SET revoked_at = clock_timestamp()\n        WHERE session_family_id = v_fam.id AND revoked_at IS NULL;\n      INSERT INTO public.store_federated_session_audit_events\n        (request_id, session_family_id, refresh_token_id, linked_profile_id, store_customer_id, event_type, status, error_code)\n      VALUES (p_request_id, v_fam.id, v_tok.id, v_fam.linked_profile_id, v_fam.store_customer_id,\n              'FEDERATED_SESSION_EXPIRED', 'EXPIRED', 'FEDERATED_SESSION_EXPIRED');\n    END IF;\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- B6: the pre-signed access-token context must match the locked family EXACTLY (incl. session_version).\n  IF v_fam.id                IS DISTINCT FROM p_expected_family_id\n     OR v_fam.store_customer_id IS DISTINCT FROM p_expected_store_customer_id\n     OR v_fam.linked_profile_id IS DISTINCT FROM p_expected_linked_profile_id\n     OR v_fam.DilMart_user_id    IS DISTINCT FROM p_expected_DilMart_user_id\n     OR v_fam.session_version   IS DISTINCT FROM p_expected_session_version THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- Device binding: a bound family requires the same device hash at refresh.\n  IF v_fam.device_id_hash IS NOT NULL AND v_fam.device_id_hash IS DISTINCT FROM p_device_hash THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- Link/customer still LINKED + Customer-compatible.\n  SELECT * INTO v_link FROM public.store_linked_profiles WHERE id = v_fam.linked_profile_id;\n  IF NOT FOUND OR upper(coalesce(v_link.DilMart_role,'')) <> 'CUSTOMER' OR upper(coalesce(v_link.link_status,'')) <> 'LINKED' THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n  SELECT role INTO v_prole FROM public.profiles WHERE id = v_fam.store_customer_id;\n  IF v_prole IS DISTINCT FROM 'customer' THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_SESSION_EXPIRED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- RATE LIMIT (DB fixed window, under the family lock). Reset the window if elapsed.\n  IF (v_fam.refresh_window_started_at + make_interval(secs => c_window)) <= clock_timestamp() THEN\n    UPDATE public.store_federated_session_families\n       SET refresh_window_started_at = clock_timestamp(), refresh_count = 0, updated_at = now()\n     WHERE id = v_fam.id;\n    v_fam.refresh_count := 0;\n  END IF;\n  IF v_fam.refresh_count >= c_rate THEN\n    RETURN QUERY SELECT 'ERROR','FEDERATED_REFRESH_RATE_LIMITED',NULL::UUID,NULL::UUID,NULL::UUID,NULL::UUID,NULL::INTEGER,NULL::INTEGER; RETURN;\n  END IF;\n\n  -- ROTATE. New token expiry may not extend beyond the family's absolute expiry.\n  v_now := clock_timestamp();\n  v_new_exp := LEAST(v_now + make_interval(secs => c_refresh), v_fam.absolute_expires_at);\n  v_rsecs := GREATEST(0, floor(extract(epoch FROM (v_new_exp - v_now))))::INTEGER;\n\n  -- Insert the child token FIRST so the old token's replaced_by_token_id FK is satisfiable.\n  INSERT INTO public.store_federated_refresh_tokens\n    (id, session_family_id, token_hash, parent_token_id, expires_at, created_at)\n  VALUES (p_new_token_id, v_fam.id, p_new_token_hash, v_tok.id, v_new_exp, v_now);\n\n  UPDATE public.store_federated_refresh_tokens\n     SET used_at = clock_timestamp(), replaced_by_token_id = p_new_token_id\n   WHERE id = v_tok.id;\n\n  UPDATE public.store_federated_session_families\n     SET last_used_at = clock_timestamp(), last_rotated_at = clock_timestamp(),\n         refresh_count = refresh_count + 1, updated_at = now()\n   WHERE id = v_fam.id;\n\n  INSERT INTO public.store_federated_session_audit_events\n    (request_id, session_family_id, refresh_token_id, linked_profile_id, store_customer_id, event_type, status)\n  VALUES (p_request_id, v_fam.id, p_new_token_id, v_fam.linked_profile_id, v_fam.store_customer_id,\n          'FEDERATED_SESSION_REFRESHED', 'ACTIVE');\n\n  RETURN QUERY SELECT 'OK', NULL::TEXT, v_fam.id, v_fam.store_customer_id, v_fam.linked_profile_id,\n                      v_fam.DilMart_user_id, v_fam.session_version, v_rsecs;\n  RETURN;\nEND;\n$function$\n",
+      "identity": "rotate_federated_refresh_token(text,uuid,text,text,uuid,uuid,uuid,uuid,integer,uuid)",
+      "proname": "rotate_federated_refresh_token"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.validate_federated_session_family(p_family_id uuid, p_session_version integer)\n RETURNS TABLE(valid boolean, store_customer_id uuid, linked_profile_id uuid, dilmart_user_id uuid, session_version integer, email text, phone text)\n LANGUAGE plpgsql\n STABLE SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nDECLARE\n  c_inactive CONSTANT INTEGER := 2592000;  -- 30d\n  v_fam public.store_federated_session_families%ROWTYPE;\n  v_link public.store_linked_profiles%ROWTYPE;\n  v_prole TEXT; v_email TEXT; v_phone TEXT;\nBEGIN\n  SELECT * INTO v_fam FROM public.store_federated_session_families WHERE id = p_family_id;\n  IF NOT FOUND\n     OR v_fam.status <> 'ACTIVE'\n     OR v_fam.session_version <> p_session_version\n     OR v_fam.revoked_at IS NOT NULL\n     OR v_fam.absolute_expires_at <= clock_timestamp()\n     OR (v_fam.last_used_at + make_interval(secs => c_inactive)) <= clock_timestamp() THEN\n    RETURN QUERY SELECT FALSE, NULL::UUID, NULL::UUID, NULL::UUID, NULL::INTEGER, NULL::TEXT, NULL::TEXT; RETURN;\n  END IF;\n\n  SELECT * INTO v_link FROM public.store_linked_profiles WHERE id = v_fam.linked_profile_id;\n  IF NOT FOUND OR upper(coalesce(v_link.DilMart_role,'')) <> 'CUSTOMER' OR upper(coalesce(v_link.link_status,'')) <> 'LINKED' THEN\n    RETURN QUERY SELECT FALSE, NULL::UUID, NULL::UUID, NULL::UUID, NULL::INTEGER, NULL::TEXT, NULL::TEXT; RETURN;\n  END IF;\n\n  SELECT p.role, p.email, p.phone INTO v_prole, v_email, v_phone FROM public.profiles p WHERE p.id = v_fam.store_customer_id;\n  IF v_prole IS DISTINCT FROM 'customer' THEN\n    RETURN QUERY SELECT FALSE, NULL::UUID, NULL::UUID, NULL::UUID, NULL::INTEGER, NULL::TEXT, NULL::TEXT; RETURN;\n  END IF;\n\n  RETURN QUERY SELECT TRUE, v_fam.store_customer_id, v_fam.linked_profile_id, v_fam.DilMart_user_id, v_fam.session_version, v_email, v_phone;\n  RETURN;\nEND;\n$function$\n",
+      "identity": "validate_federated_session_family(uuid,integer)",
+      "proname": "validate_federated_session_family"
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.verify_barber_web_session(p_session_token_hash text)\n RETURNS TABLE(linked_profile_id uuid, dilmart_user_id uuid, dilmart_barbershop_id uuid, role text)\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'pg_catalog', 'public'\nAS $function$\nBEGIN\n  RETURN QUERY\n  UPDATE public.DilMart_barber_web_sessions s\n     SET last_seen_at = clock_timestamp()\n   WHERE s.session_token_hash = p_session_token_hash\n     AND s.status = 'ACTIVE'\n     AND s.expires_at > clock_timestamp()\n  RETURNING s.linked_profile_id, s.DilMart_user_id, s.DilMart_barbershop_id, s.role;\nEND;\n$function$\n",
+      "identity": "verify_barber_web_session(text)",
+      "proname": "verify_barber_web_session"
+    }
+  ],
+  "database": "postgres",
+  "legacy_tables_ddl": [
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "request_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "handoff_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "event_type",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "error_code",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "source_surface",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "'{}'::jsonb",
+          "column_name": "metadata",
+          "data_type": "jsonb",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "dilmart_barber_handoff_audit_events"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "code_hash",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "state_hash",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "assertion_jti",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "target_path",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "source_surface",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "'PENDING'::text",
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "expires_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "redeemed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "dilmart_barber_handoffs"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "session_token_hash",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_barbershop_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "role",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "'ACTIVE'::text",
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "expires_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "last_seen_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "revoked_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        }
+      ],
+      "table_name": "dilmart_barber_web_sessions"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "request_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "handoff_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "event_type",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "error_code",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "source_surface",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "campaign",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "'{}'::jsonb",
+          "column_name": "metadata",
+          "data_type": "jsonb",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "dilmart_customer_handoff_audit_events"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "code_hash",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "state_hash",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "assertion_jti",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "store_customer_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "target_path",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "source_surface",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "campaign",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "'PENDING'::text",
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "identity_outcome",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "expires_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "redeemed_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "dilmart_customer_handoffs"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "cart_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "product_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "merchant_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "quantity",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "product_name",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "product_slug",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "product_image_url",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "unit_price",
+          "data_type": "numeric",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "effective_unit_price",
+          "data_type": "numeric",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "line_total",
+          "data_type": "numeric",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "store_cart_items"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "store_linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "'barber_app'::text",
+          "column_name": "source_app",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "segment",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "business_type",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "merchant_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "'active'::text",
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "store_carts"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "session_family_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "token_hash",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "parent_token_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "expires_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "used_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "revoked_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "replaced_by_token_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "reuse_detected_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        }
+      ],
+      "table_name": "store_federated_refresh_tokens"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "request_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "session_family_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "refresh_token_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "handoff_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "store_customer_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "event_type",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "error_code",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "'{}'::jsonb",
+          "column_name": "metadata",
+          "data_type": "jsonb",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "store_federated_session_audit_events"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "store_customer_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_profile_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_user_id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "device_id_hash",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "1",
+          "column_name": "session_version",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "'ACTIVE'::text",
+          "column_name": "status",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "last_used_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "absolute_expires_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "revoked_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "revoke_reason",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "last_rotated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "refresh_window_started_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "0",
+          "column_name": "refresh_count",
+          "data_type": "integer",
+          "is_nullable": "NO"
+        }
+      ],
+      "table_name": "store_federated_session_families"
+    },
+    {
+      "columns": [
+        {
+          "column_default": "gen_random_uuid()",
+          "column_name": "id",
+          "data_type": "uuid",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_user_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_role",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "dilmart_barbershop_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "store_customer_id",
+          "data_type": "uuid",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "segment",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "display_name",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "phone",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "city",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "business_type",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": "'store_web'::text",
+          "column_name": "source_app",
+          "data_type": "text",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "last_synced_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "created_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": "now()",
+          "column_name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "NO"
+        },
+        {
+          "column_default": null,
+          "column_name": "link_status",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "link_method",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "identity_assurance",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "email",
+          "data_type": "text",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "phone_verified_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "email_verified_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "linked_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "last_handoff_at",
+          "data_type": "timestamp with time zone",
+          "is_nullable": "YES"
+        },
+        {
+          "column_default": null,
+          "column_name": "conflict_reason",
+          "data_type": "text",
+          "is_nullable": "YES"
+        }
+      ],
+      "table_name": "store_linked_profiles"
+    }
+  ],
+  "place_order_authority": [
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.place_order(p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid DEFAULT NULL::uuid, p_latitude double precision DEFAULT NULL::double precision, p_longitude double precision DEFAULT NULL::double precision, p_map_url text DEFAULT NULL::text, p_points_spent integer DEFAULT 0, p_points_discount numeric DEFAULT 0, p_points_earned integer DEFAULT 0, p_merchant_id uuid DEFAULT NULL::uuid, p_payment_method text DEFAULT NULL::text, p_merchant_notes text DEFAULT NULL::text, p_merchandise_subtotal numeric DEFAULT NULL::numeric, p_discount_total numeric DEFAULT NULL::numeric, p_delivery_fee_charged numeric DEFAULT NULL::numeric, p_platform_commission_type text DEFAULT NULL::text, p_platform_commission_rate numeric DEFAULT NULL::numeric, p_platform_commission_amount numeric DEFAULT NULL::numeric, p_platform_assisted_fee_amount numeric DEFAULT NULL::numeric, p_platform_extra_fee_amount numeric DEFAULT NULL::numeric, p_courier_fee_payable numeric DEFAULT NULL::numeric, p_merchant_gross_amount numeric DEFAULT NULL::numeric, p_merchant_net_amount numeric DEFAULT NULL::numeric, p_gross_collected_amount numeric DEFAULT NULL::numeric, p_platform_net_revenue_amount numeric DEFAULT NULL::numeric, p_currency_code text DEFAULT 'IQD'::text, p_financial_snapshot_version integer DEFAULT 0, p_payment_status text DEFAULT 'unpaid'::text, p_collection_status text DEFAULT 'not_collected'::text, p_settlement_status text DEFAULT 'not_accrued'::text, p_cash_expected_amount numeric DEFAULT NULL::numeric, p_commission_rule_id uuid DEFAULT NULL::uuid, p_assisted_fee_rule_id uuid DEFAULT NULL::uuid, p_platform_fee_rule_id uuid DEFAULT NULL::uuid, p_delivery_billing_rule_id uuid DEFAULT NULL::uuid, p_resolved_plan_id uuid DEFAULT NULL::uuid, p_resolved_plan_code text DEFAULT NULL::text, p_commercial_snapshot_version integer DEFAULT 0, p_channel text DEFAULT NULL::text)\n RETURNS text\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  v_order_id                UUID;\r\n  v_order_number            TEXT;\r\n  v_item                    JSONB;\r\n  v_merchant_id             UUID;\r\n  v_distinct_merchant_count INT;\r\n  v_product                 RECORD;\r\n  v_qty                     INT;\r\n  v_unit                    NUMERIC;\r\n  v_line_total              NUMERIC;\r\n  v_db_merchandise          NUMERIC := 0;\r\n  v_lines                   JSONB   := '[]'::JSONB;\r\n  v_expected_merch          NUMERIC;\r\nBEGIN\r\n  IF p_items IS NULL OR jsonb_array_length(p_items) = 0 THEN\r\n    RAISE EXCEPTION 'Order items cannot be empty';\r\n  END IF;\r\n\r\n  SELECT COUNT(DISTINCT p.merchant_id), MIN(p.merchant_id::text)::uuid\r\n  INTO v_distinct_merchant_count, v_merchant_id\r\n  FROM jsonb_array_elements(p_items) AS arr(elem)\r\n  INNER JOIN public.products p ON p.id = (arr.elem->>'product_id')::UUID;\r\n\r\n  IF v_distinct_merchant_count <> 1 OR v_merchant_id IS NULL THEN\r\n    RAISE EXCEPTION 'Cart must contain products from exactly one merchant';\r\n  END IF;\r\n\r\n  IF NOT EXISTS (\r\n    SELECT 1 FROM public.merchants m WHERE m.id = v_merchant_id AND m.status = 'active'\r\n  ) THEN\r\n    RAISE EXCEPTION 'Merchant is not available for orders';\r\n  END IF;\r\n\r\n  IF p_merchant_id IS NOT NULL AND p_merchant_id <> v_merchant_id THEN\r\n    RAISE EXCEPTION 'Merchant scope mismatch';\r\n  END IF;\r\n\r\n  FOR v_item IN\r\n    SELECT arr.elem\r\n    FROM jsonb_array_elements(p_items) AS arr(elem)\r\n    ORDER BY (arr.elem->>'product_id')::text\r\n  LOOP\r\n    v_qty := GREATEST(1, COALESCE((v_item->>'quantity')::INT, 1));\r\n\r\n    SELECT\r\n      p.id,\r\n      p.merchant_id,\r\n      p.name,\r\n      p.price,\r\n      p.discount_price,\r\n      p.offer_ends_at,\r\n      p.stock,\r\n      p.is_active,\r\n      p.visibility_status,\r\n      p.sold_count,\r\n      m.status AS merchant_status\r\n    INTO v_product\r\n    FROM public.products p\r\n    INNER JOIN public.merchants m ON m.id = p.merchant_id\r\n    WHERE p.id = (v_item->>'product_id')::UUID\r\n    FOR UPDATE OF p;\r\n\r\n    IF NOT FOUND THEN\r\n      RAISE EXCEPTION 'Product not found: %', (v_item->>'product_id');\r\n    END IF;\r\n\r\n    IF NOT v_product.is_active THEN\r\n      RAISE EXCEPTION 'Product is not available: %', v_product.id;\r\n    END IF;\r\n\r\n    IF (v_product.visibility_status IS NOT NULL AND v_product.visibility_status = 'archived') THEN\r\n      RAISE EXCEPTION 'Product is not available for sale: %', v_product.id;\r\n    END IF;\r\n\r\n    IF v_product.merchant_status <> 'active' THEN\r\n      RAISE EXCEPTION 'Merchant is not available for orders';\r\n    END IF;\r\n\r\n    DECLARE\r\n      v_price      NUMERIC := COALESCE(v_product.price, 0);\r\n      v_disc       NUMERIC;\r\n      v_offer_ok   BOOLEAN;\r\n    BEGIN\r\n      IF v_product.discount_price IS NOT NULL AND v_product.discount_price::text <> '' THEN\r\n        v_disc := v_product.discount_price::NUMERIC;\r\n      ELSE\r\n        v_disc := NULL;\r\n      END IF;\r\n\r\n      v_offer_ok := (v_product.offer_ends_at IS NULL OR v_product.offer_ends_at::TIMESTAMPTZ > NOW());\r\n\r\n      IF v_disc IS NOT NULL AND v_disc >= 0 AND v_disc < v_price AND v_offer_ok THEN\r\n        v_unit := v_disc;\r\n      ELSE\r\n        v_unit := v_price;\r\n      END IF;\r\n    END;\r\n\r\n    IF v_unit <= 0 OR v_unit IS NULL THEN\r\n      RAISE EXCEPTION 'Invalid catalog price for product: %', v_product.id;\r\n    END IF;\r\n\r\n    IF COALESCE(v_product.stock, 0) < v_qty THEN\r\n      RAISE EXCEPTION 'Insufficient stock for product: %', v_product.id;\r\n    END IF;\r\n\r\n    v_line_total      := v_unit * v_qty;\r\n    v_db_merchandise  := v_db_merchandise + v_line_total;\r\n\r\n    UPDATE public.products\r\n    SET\r\n      stock      = stock - v_qty,\r\n      sold_count = COALESCE(sold_count, 0) + v_qty,\r\n      updated_at = NOW()\r\n    WHERE id = v_product.id;\r\n\r\n    v_lines := v_lines || jsonb_build_object(\r\n      'product_id',   v_product.id,\r\n      'product_name', COALESCE(TRIM(v_product.name), 'Product'),\r\n      'quantity',     v_qty,\r\n      'price',        v_unit\r\n    );\r\n  END LOOP;\r\n\r\n  v_expected_merch := COALESCE(p_merchandise_subtotal, p_subtotal);\r\n  IF v_expected_merch IS NOT NULL AND ABS(v_db_merchandise - v_expected_merch) > 1 THEN\r\n    RAISE EXCEPTION 'Order merchandise total does not match catalog pricing';\r\n  END IF;\r\n\r\n  INSERT INTO public.orders (\r\n    -- ── Customer / Delivery ──────────────────────────────────────────────────\r\n    customer_name, customer_phone, governorate_id, area,\r\n    nearest_landmark, notes, subtotal, delivery_cost,\r\n    discount, total, coupon_id, order_number, user_id,\r\n    latitude, longitude, map_url,\r\n    -- ── Loyalty ─────────────────────────────────────────────────────────────\r\n    points_spent, points_discount, points_earned,\r\n    -- ── Merchant / Payment ──────────────────────────────────────────────────\r\n    merchant_id, payment_method, merchant_notes,\r\n    -- ── Financial Snapshot ──────────────────────────────────────────────────\r\n    merchandise_subtotal, discount_total, delivery_fee_charged,\r\n    platform_commission_type, platform_commission_rate, platform_commission_amount,\r\n    platform_assisted_fee_amount, platform_extra_fee_amount, courier_fee_payable,\r\n    merchant_gross_amount, merchant_net_amount, gross_collected_amount, platform_net_revenue_amount,\r\n    currency_code, financial_snapshot_version,\r\n    -- ── Status ──────────────────────────────────────────────────────────────\r\n    payment_status, collection_status, settlement_status, cash_expected_amount,\r\n    -- ── Commercial Rules ────────────────────────────────────────────────────\r\n    commission_rule_id, assisted_fee_rule_id, platform_fee_rule_id, delivery_billing_rule_id,\r\n    resolved_plan_id, resolved_plan_code, commercial_snapshot_version,\r\n    -- ── Active Modern Channel Attribution ───────────────────────────────────\r\n    channel\r\n  ) VALUES (\r\n    -- ── Customer / Delivery ──────────────────────────────────────────────────\r\n    p_customer_name, p_customer_phone, p_governorate_id, p_area,\r\n    p_nearest_landmark, p_notes, v_db_merchandise, p_delivery_cost,\r\n    p_discount, p_total, p_coupon_id, 'TEMP', p_user_id,\r\n    p_latitude, p_longitude, p_map_url,\r\n    -- ── Loyalty ─────────────────────────────────────────────────────────────\r\n    p_points_spent, p_points_discount, p_points_earned,\r\n    -- ── Merchant / Payment ──────────────────────────────────────────────────\r\n    v_merchant_id, p_payment_method, p_merchant_notes,\r\n    -- ── Financial Snapshot ──────────────────────────────────────────────────\r\n    v_db_merchandise,\r\n    COALESCE(p_discount_total, p_discount),\r\n    COALESCE(p_delivery_fee_charged, p_delivery_cost),\r\n    p_platform_commission_type,\r\n    COALESCE(p_platform_commission_rate, 0),\r\n    COALESCE(p_platform_commission_amount, 0),\r\n    COALESCE(p_platform_assisted_fee_amount, 0),\r\n    COALESCE(p_platform_extra_fee_amount, 0),\r\n    COALESCE(p_courier_fee_payable, 0),\r\n    COALESCE(p_merchant_gross_amount, GREATEST(0, v_db_merchandise - p_discount)),\r\n    COALESCE(p_merchant_net_amount, GREATEST(0, v_db_merchandise - p_discount)),\r\n    COALESCE(p_gross_collected_amount, p_total),\r\n    COALESCE(p_platform_net_revenue_amount, 0),\r\n    COALESCE(p_currency_code, 'IQD'),\r\n    COALESCE(p_financial_snapshot_version, 0),\r\n    -- ── Status ──────────────────────────────────────────────────────────────\r\n    COALESCE(p_payment_status, 'unpaid'),\r\n    COALESCE(p_collection_status, 'not_collected'),\r\n    COALESCE(p_settlement_status, 'not_accrued'),\r\n    COALESCE(p_cash_expected_amount, COALESCE(p_gross_collected_amount, p_total)),\r\n    -- ── Commercial Rules ────────────────────────────────────────────────────\r\n    p_commission_rule_id, p_assisted_fee_rule_id, p_platform_fee_rule_id, p_delivery_billing_rule_id,\r\n    p_resolved_plan_id, p_resolved_plan_code, COALESCE(p_commercial_snapshot_version, 0),\r\n    -- ── Active Modern Channel Attribution ───────────────────────────────────\r\n    COALESCE(p_channel, 'web_checkout')\r\n  ) RETURNING id, order_number INTO v_order_id, v_order_number;\r\n\r\n  IF p_user_id IS NOT NULL AND p_points_spent > 0 THEN\r\n    INSERT INTO public.loyalty_transactions (user_id, order_id, amount, transaction_type, description)\r\n    VALUES (p_user_id, v_order_id, -p_points_spent, 'spend', 'نقاط مستخدمة في الطلب #' || v_order_number);\r\n    UPDATE public.profiles SET points = public.get_available_points(p_user_id) WHERE id = p_user_id;\r\n  END IF;\r\n\r\n  FOR v_item IN SELECT * FROM jsonb_array_elements(v_lines)\r\n  LOOP\r\n    INSERT INTO public.order_items (order_id, product_id, product_name, quantity, price, merchant_id)\r\n    VALUES (\r\n      v_order_id,\r\n      (v_item->>'product_id')::UUID,\r\n      (v_item->>'product_name'),\r\n      (v_item->>'quantity')::INT,\r\n      (v_item->>'price')::NUMERIC,\r\n      v_merchant_id\r\n    );\r\n  END LOOP;\r\n\r\n  IF p_coupon_id IS NOT NULL THEN\r\n    PERFORM public.increment_coupon_usage(p_coupon_id);\r\n  END IF;\r\n\r\n  RETURN v_order_number;\r\nEND;\r\n$function$\n",
+      "identity_args": "p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text",
+      "owner": "postgres",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "proname": "place_order",
+      "pronargs": 49,
+      "prosecdef": true
+    },
+    {
+      "definition": "CREATE OR REPLACE FUNCTION public.place_order_idempotent(p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text DEFAULT NULL::text, p_notes text DEFAULT NULL::text, p_subtotal numeric DEFAULT 0, p_delivery_cost numeric DEFAULT 0, p_discount numeric DEFAULT 0, p_total numeric DEFAULT 0, p_coupon_id uuid DEFAULT NULL::uuid, p_items jsonb DEFAULT '[]'::jsonb, p_user_id uuid DEFAULT NULL::uuid, p_latitude double precision DEFAULT NULL::double precision, p_longitude double precision DEFAULT NULL::double precision, p_map_url text DEFAULT NULL::text, p_points_spent integer DEFAULT 0, p_points_discount numeric DEFAULT 0, p_points_earned integer DEFAULT 0, p_merchant_id uuid DEFAULT NULL::uuid, p_payment_method text DEFAULT 'cod'::text, p_merchant_notes text DEFAULT NULL::text, p_merchandise_subtotal numeric DEFAULT 0, p_discount_total numeric DEFAULT 0, p_delivery_fee_charged numeric DEFAULT 0, p_platform_commission_type text DEFAULT 'fixed'::text, p_platform_commission_rate numeric DEFAULT 0, p_platform_commission_amount numeric DEFAULT 0, p_platform_assisted_fee_amount numeric DEFAULT 0, p_platform_extra_fee_amount numeric DEFAULT 0, p_courier_fee_payable numeric DEFAULT 0, p_merchant_gross_amount numeric DEFAULT 0, p_merchant_net_amount numeric DEFAULT 0, p_gross_collected_amount numeric DEFAULT 0, p_platform_net_revenue_amount numeric DEFAULT 0, p_currency_code text DEFAULT 'IQD'::text, p_financial_snapshot_version integer DEFAULT 1, p_payment_status text DEFAULT 'unpaid'::text, p_collection_status text DEFAULT 'not_collected'::text, p_settlement_status text DEFAULT 'not_accrued'::text, p_cash_expected_amount numeric DEFAULT 0, p_commission_rule_id uuid DEFAULT NULL::uuid, p_assisted_fee_rule_id uuid DEFAULT NULL::uuid, p_platform_fee_rule_id uuid DEFAULT NULL::uuid, p_delivery_billing_rule_id uuid DEFAULT NULL::uuid, p_resolved_plan_id uuid DEFAULT NULL::uuid, p_resolved_plan_code text DEFAULT NULL::text, p_commercial_snapshot_version integer DEFAULT 1, p_channel text DEFAULT 'web_checkout'::text)\n RETURNS jsonb\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO 'public', 'pg_temp'\nAS $function$\r\nDECLARE\r\n  v_attempt RECORD;\r\n  v_order_number TEXT;\r\n  v_order_id UUID;\r\n  v_stale_threshold INTERVAL := INTERVAL '5 minutes';\r\n  v_inserted_attempt_id UUID;\r\n  v_attempt_created BOOLEAN := false;\r\nBEGIN\r\n  -- 1. Lock Attempt if ID provided\r\n  IF p_checkout_attempt_id IS NOT NULL THEN\r\n    INSERT INTO public.checkout_attempts (\r\n      id, user_id, request_hash, status, created_at, updated_at\r\n    ) VALUES (\r\n      p_checkout_attempt_id, p_user_id, p_checkout_request_hash, 'processing', now(), now()\r\n    ) ON CONFLICT (id) DO NOTHING\r\n    RETURNING id INTO v_inserted_attempt_id;\r\n\r\n    v_attempt_created := v_inserted_attempt_id IS NOT NULL;\r\n\r\n    SELECT * INTO v_attempt\r\n    FROM public.checkout_attempts\r\n    WHERE id = p_checkout_attempt_id\r\n    FOR UPDATE;\r\n\r\n    IF NOT FOUND THEN\r\n      RAISE EXCEPTION 'CHECKOUT_ATTEMPT_NOT_FOUND: Attempt ID does not exist';\r\n    END IF;\r\n\r\n    IF p_user_id IS NOT NULL AND v_attempt.user_id <> p_user_id THEN\r\n      RAISE EXCEPTION 'CHECKOUT_ATTEMPT_OWNERSHIP_MISMATCH: Attempt belongs to a different user';\r\n    END IF;\r\n\r\n    IF v_attempt.request_hash <> p_checkout_request_hash THEN\r\n      RAISE EXCEPTION 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD: Attempt key used with different payload';\r\n    END IF;\r\n\r\n    IF NOT v_attempt_created THEN\r\n      IF v_attempt.status = 'completed' AND v_attempt.order_number IS NOT NULL THEN\r\n        RETURN jsonb_build_object(\r\n          'order_number', v_attempt.order_number,\r\n          'order_id', v_attempt.order_id,\r\n          'reused', true\r\n        );\r\n      END IF;\r\n\r\n      IF v_attempt.status = 'processing' AND (now() - v_attempt.updated_at) < v_stale_threshold THEN\r\n        RAISE EXCEPTION 'CHECKOUT_IN_PROGRESS: Attempt is actively being processed';\r\n      END IF;\r\n\r\n      UPDATE public.checkout_attempts\r\n      SET status = 'processing',\r\n          error_code = NULL,\r\n          updated_at = now()\r\n      WHERE id = p_checkout_attempt_id;\r\n    END IF;\r\n  END IF;\r\n\r\n  -- 2. Execute canonical place_order logic via Clean Named Parameters (49 parameters)\r\n  v_order_number := public.place_order(\r\n    p_customer_name          => p_customer_name,\r\n    p_customer_phone         => p_customer_phone,\r\n    p_governorate_id         => p_governorate_id,\r\n    p_area                   => p_area,\r\n    p_nearest_landmark       => p_nearest_landmark,\r\n    p_notes                  => p_notes,\r\n    p_subtotal               => p_subtotal,\r\n    p_delivery_cost          => p_delivery_cost,\r\n    p_discount               => p_discount,\r\n    p_total                  => p_total,\r\n    p_coupon_id              => p_coupon_id,\r\n    p_items                  => p_items,\r\n    p_user_id                => p_user_id,\r\n    p_latitude               => p_latitude,\r\n    p_longitude              => p_longitude,\r\n    p_map_url                => p_map_url,\r\n    p_points_spent           => p_points_spent,\r\n    p_points_discount        => p_points_discount,\r\n    p_points_earned          => p_points_earned,\r\n    p_merchant_id            => p_merchant_id,\r\n    p_payment_method         => p_payment_method,\r\n    p_merchant_notes         => p_merchant_notes,\r\n    p_merchandise_subtotal   => p_merchandise_subtotal,\r\n    p_discount_total         => p_discount_total,\r\n    p_delivery_fee_charged   => p_delivery_fee_charged,\r\n    p_platform_commission_type   => p_platform_commission_type,\r\n    p_platform_commission_rate   => p_platform_commission_rate,\r\n    p_platform_commission_amount => p_platform_commission_amount,\r\n    p_platform_assisted_fee_amount => p_platform_assisted_fee_amount,\r\n    p_platform_extra_fee_amount    => p_platform_extra_fee_amount,\r\n    p_courier_fee_payable          => p_courier_fee_payable,\r\n    p_merchant_gross_amount        => p_merchant_gross_amount,\r\n    p_merchant_net_amount          => p_merchant_net_amount,\r\n    p_gross_collected_amount       => p_gross_collected_amount,\r\n    p_platform_net_revenue_amount  => p_platform_net_revenue_amount,\r\n    p_currency_code                => p_currency_code,\r\n    p_financial_snapshot_version   => p_financial_snapshot_version,\r\n    p_payment_status               => p_payment_status,\r\n    p_collection_status            => p_collection_status,\r\n    p_settlement_status            => p_settlement_status,\r\n    p_cash_expected_amount         => p_cash_expected_amount,\r\n    p_commission_rule_id           => p_commission_rule_id,\r\n    p_assisted_fee_rule_id         => p_assisted_fee_rule_id,\r\n    p_platform_fee_rule_id         => p_platform_fee_rule_id,\r\n    p_delivery_billing_rule_id     => p_delivery_billing_rule_id,\r\n    p_resolved_plan_id             => p_resolved_plan_id,\r\n    p_resolved_plan_code           => p_resolved_plan_code,\r\n    p_commercial_snapshot_version  => p_commercial_snapshot_version,\r\n    p_channel                      => p_channel\r\n  );\r\n\r\n  SELECT id INTO v_order_id FROM public.orders WHERE order_number = v_order_number;\r\n\r\n  -- 3. Link Order to Attempt & Complete Attempt inside the SAME transaction\r\n  IF p_checkout_attempt_id IS NOT NULL THEN\r\n    UPDATE public.checkout_attempts\r\n    SET status = 'completed',\r\n        order_id = v_order_id,\r\n        order_number = v_order_number,\r\n        completed_at = now(),\r\n        updated_at = now()\r\n    WHERE id = p_checkout_attempt_id;\r\n\r\n    UPDATE public.orders\r\n    SET checkout_attempt_id = p_checkout_attempt_id,\r\n        checkout_request_hash = p_checkout_request_hash\r\n    WHERE id = v_order_id;\r\n  END IF;\r\n\r\n  RETURN jsonb_build_object(\r\n    'order_number', v_order_number,\r\n    'order_id', v_order_id,\r\n    'reused', false\r\n  );\r\nEND;\r\n$function$\n",
+      "identity_args": "p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text",
+      "owner": "postgres",
+      "proconfig": [
+        "search_path=public, pg_temp"
+      ],
+      "proname": "place_order_idempotent",
+      "pronargs": 51,
+      "prosecdef": true
+    }
+  ],
+  "project_ref": "ztplxqlthuqkuktbznbo",
+  "timestamp": "2026-08-31T12:52:07.461291+00:00"
+}
