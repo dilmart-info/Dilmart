@@ -373,7 +373,7 @@ BEGIN
   END IF;
 
   IF v_po_rec.owner_name <> 'postgres' OR v_po_rec.prosecdef IS NOT TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order must be SECURITY DEFINER owned by postgres';
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order owner=[%] (expected postgres), prosecdef=[%] (expected true)', v_po_rec.owner_name, v_po_rec.prosecdef;
   END IF;
 
   IF v_po_rec.proconfig IS NULL OR NOT (array_to_string(v_po_rec.proconfig, ',') ~* 'search_path=public,\s*pg_temp') THEN
@@ -387,7 +387,7 @@ BEGIN
   WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
 
   IF v_poi_count <> 1 THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent count must be exactly 1';
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent count must be exactly 1 (found %)', v_poi_count;
   END IF;
 
   SELECT
@@ -406,7 +406,7 @@ BEGIN
   END IF;
 
   IF v_poi_rec.owner_name <> 'postgres' OR v_poi_rec.prosecdef IS NOT TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent owner=[%] (expected postgres), prosecdef=[%] (expected true)', v_poi_rec.owner_name, v_poi_rec.prosecdef;
   END IF;
 END;
 $postconditions$;
