@@ -54,9 +54,9 @@ export default function CategoryGrid({
   if (items.length === 0) return null;
 
   return (
-    <section className="container py-5 md:py-8" dir="rtl">
+    <section className="container py-3.5 md:py-5" dir="rtl">
       {/* Section Header */}
-      <div className="mb-4 md:mb-6 flex items-end justify-between gap-3 text-right">
+      <div className="mb-3 md:mb-4 flex items-end justify-between gap-3 text-right">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="h-6 w-1 rounded-full bg-primary" />
@@ -78,7 +78,7 @@ export default function CategoryGrid({
       </div>
 
       {/* Mobile — 4 columns compact grid */}
-      <div className="grid grid-cols-4 gap-2.5 sm:gap-3 md:hidden">
+      <div className="grid grid-cols-4 gap-2 sm:gap-2.5 md:hidden">
         {items.slice(0, MOBILE_VISIBLE).map((cat) => (
           <Link
             key={cat.id}
@@ -87,18 +87,18 @@ export default function CategoryGrid({
             title={cat.name}
             className="group flex flex-col items-center text-center p-2 rounded-xl bg-white border border-border/80 shadow-sm transition-all active:scale-95 hover:border-primary/40"
           >
-            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-surface-light flex items-center justify-center p-2 mb-1.5 overflow-hidden group-hover:scale-105 transition-transform">
+            <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-xl bg-surface-light flex items-center justify-center mb-1.5 overflow-hidden group-hover:scale-105 transition-transform">
               <img
                 src={cat.image_url || fallbackImage}
                 alt={cat.name}
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover"
                 loading="lazy"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src = fallbackImage;
                 }}
               />
             </div>
-            <span className="font-tajawal text-[11px] font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+            <span className="font-tajawal text-[11px] sm:text-xs font-extrabold text-navy leading-tight line-clamp-1 group-hover:text-primary transition-colors">
               {cat.name}
             </span>
           </Link>
@@ -109,7 +109,7 @@ export default function CategoryGrid({
       <div className="relative hidden md:block">
         <div
           ref={railRef}
-          className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-3.5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((cat) => (
             <Link
@@ -117,20 +117,20 @@ export default function CategoryGrid({
               to={categoryHref(cat.slug)}
               aria-label={cat.name}
               title={cat.name}
-              className="group flex w-[120px] shrink-0 flex-col items-center text-center p-3 rounded-2xl bg-white border border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-1"
+              className="group flex w-[136px] shrink-0 flex-col items-center text-center p-2.5 rounded-2xl bg-white border border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-1"
             >
-              <div className="h-20 w-20 rounded-2xl bg-surface-light flex items-center justify-center p-3 mb-2 overflow-hidden group-hover:scale-105 transition-transform">
+              <div className="h-24 w-24 rounded-xl bg-surface-light flex items-center justify-center mb-2 overflow-hidden group-hover:scale-105 transition-transform">
                 <img
                   src={cat.image_url || fallbackImage}
                   alt={cat.name}
-                  className="h-full w-full object-contain"
+                  className="h-full w-full object-cover"
                   loading="lazy"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src = fallbackImage;
                   }}
                 />
               </div>
-              <span className="font-tajawal text-xs font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+              <span className="font-tajawal text-xs sm:text-sm font-extrabold text-navy leading-tight line-clamp-1 group-hover:text-primary transition-colors">
                 {cat.name}
               </span>
             </Link>

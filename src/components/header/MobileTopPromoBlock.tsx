@@ -69,9 +69,7 @@ export default function MobileTopPromoBlock({
             </div>
 
             {/* Brand Logo */}
-            <Link to="/" className="flex shrink-0">
-              <BrandMark variant="mobile" asHomeLink theme="navy" />
-            </Link>
+            <BrandMark variant="mobile" asHomeLink theme="navy" />
 
             {/* Track Order Shortcut */}
             <Link

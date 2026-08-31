@@ -59,13 +59,16 @@ const PLACEHOLDER_IMG = "/placeholder.svg";
 const ProductCard = ({ product }: Props) => {
   const merchantEmbed = product.merchants;
   const { attemptAdd, dialogNode } = useMerchantSwitchCart();
-  const { addItem, removeItem, hasItem } = useWishlistStore();
-  const [imgSrc, setImgSrc] = useState(() => product.images?.[0] || PLACEHOLDER_IMG);
+  const resolveImage = (p: ProductCardProduct) => {
+    const raw = (p as any).image_url || p.images?.[0];
+    return typeof raw === "string" && raw.trim() ? raw : PLACEHOLDER_IMG;
+  };
+  const [imgSrc, setImgSrc] = useState(() => resolveImage(product));
   const [isAdded, setIsAdded] = useState(false);
 
   useEffect(() => {
-    setImgSrc(product.images?.[0] || PLACEHOLDER_IMG);
-  }, [product.id, product.images]);
+    setImgSrc(resolveImage(product));
+  }, [product.id, product.images, (product as any).image_url]);
 
   const hasDiscount = product.discount_price != null && product.discount_price < product.price;
   const discountPercent = hasDiscount

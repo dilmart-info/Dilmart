@@ -26,8 +26,8 @@ export default function MerchantSection({
   if (merchants.length === 0) return null;
 
   return (
-    <section className="container py-5 md:py-8" dir="rtl">
-      <div className="mb-4 md:mb-6 flex items-end justify-between gap-3 text-right">
+    <section className="container py-3.5 md:py-5" dir="rtl">
+      <div className="mb-3 md:mb-4 flex items-end justify-between gap-3 text-right">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <div className="h-6 w-1 rounded-full bg-primary" />

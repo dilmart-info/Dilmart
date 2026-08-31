@@ -113,7 +113,7 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
                       loading="lazy"
                     />
                     {/* Lighter, high-contrast overlay for vibrant retail text legibility */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-navy/90 via-navy/65 to-transparent sm:to-black/20" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-navy/80 via-navy/55 to-transparent sm:to-black/10" />
 
                     {/* Content Box */}
                     <div className="relative z-10 flex h-full flex-col justify-center p-5 sm:p-7 md:p-10 text-right max-w-xl text-white">
@@ -211,7 +211,7 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
                 className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/50 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy/85 via-navy/40 to-transparent" />
               <div className="relative z-10 text-right">
                 {card.badge && (
                   <span className="mb-1.5 inline-block rounded-md bg-accent px-2 py-0.5 text-[10px] font-black text-white">
@@ -224,7 +224,7 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
                 {card.subtitle && (
                   <p className="text-[11px] text-blue-200 mt-0.5 line-clamp-1">{card.subtitle}</p>
                 )}
-                <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-blue-200 group-hover:underline">
+                <span className="mt-1.5 inline-flex items-center gap-1 text-xs font-bold text-blue-200 group-hover:text-accent group-hover:underline">
                   <span>تسوق الآن</span>
                   <ChevronLeft size={13} />
                 </span>

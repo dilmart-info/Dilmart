@@ -57,9 +57,7 @@ export default function MobileHeader({ searchQuery, setSearchQuery, onSearch }: 
               <span>المحفظة</span>
             </Link>
 
-            <Link to="/" className="flex shrink-0">
-              <BrandMark variant="header" asHomeLink />
-            </Link>
+            <BrandMark variant="header" asHomeLink />
 
             <Link
               to="/track-order"
