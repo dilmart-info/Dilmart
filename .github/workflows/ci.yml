@@ -122,12 +122,19 @@ jobs:
           mv temp_stageb/20260831100000_stage_b_place_order_authority_refactor.sql supabase/migrations/
           supabase migration up
 
-          # Restore Migration B and apply over post-A state
+          # Verify Migration B is NOT present in migration history before upgrade
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c "DO \$\$ BEGIN IF EXISTS (SELECT 1 FROM supabase_migrations.schema_migrations WHERE version = '20260831120000') THEN RAISE EXCEPTION 'Migration B must not be in schema_migrations before application'; END IF; END \$\$;"
+
+          # Restore Migration B and apply over post-A state using actual migration engine
           mv temp_stageb/20260831120000_stage_b_legacy_destructive_cleanup.sql supabase/migrations/
           rmdir temp_stageb
-          psql "$DB_URL" \
-            -v ON_ERROR_STOP=1 \
-            -f supabase/migrations/20260831120000_stage_b_legacy_destructive_cleanup.sql
+          supabase migration up
+
+          # Verify Migration B history entry recorded exactly once
+          psql "$DB_URL" -v ON_ERROR_STOP=1 -c "DO \$\$ DECLARE v_c INT; BEGIN SELECT count(*) INTO v_c FROM supabase_migrations.schema_migrations WHERE version = '20260831120000'; IF v_c <> 1 THEN RAISE EXCEPTION 'Migration B must be recorded exactly once in schema_migrations (found %)', v_c; END IF; END \$\$;"
+
+          # Prove migration engine idempotency: re-running migration up must not re-apply Migration B
+          supabase migration up
 
           # 6. Run SQL schema gate — fails with nonzero exit if any assertion fails
           psql "$DB_URL" \

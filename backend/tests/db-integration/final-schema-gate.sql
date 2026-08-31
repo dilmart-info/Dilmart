@@ -780,8 +780,10 @@ DECLARE
   v_legacy_fn_count INT;
   v_legacy_tbl_count INT;
   v_legacy_col_count INT;
+  v_user_id_nullable TEXT;
+  v_auth_guard_count INT;
 BEGIN
-  -- 1. Assert zero legacy functions exist
+  -- 1. Assert zero Migration-B-target legacy functions exist (17 removed functions)
   SELECT count(*) INTO v_legacy_fn_count
   FROM pg_catalog.pg_proc p
   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
@@ -790,6 +792,7 @@ BEGIN
       'finalize_barber_handoff',
       'finalize_customer_handoff',
       'logout_all_federated_sessions',
+      'logout_federated_session',
       'place_b2b_cart_order_idempotent',
       'provision_dilmart_federated_customer',
       'redeem_and_create_federated_session',
@@ -798,7 +801,6 @@ BEGIN
       'reject_barber_handoff_audit_mutation',
       'reject_handoff_audit_mutation',
       'reject_federated_session_audit_mutation',
-      'reject_reserved_federated_email',
       'resolve_dilmart_federated_customer',
       'revoke_barber_web_sessions_for_user',
       'revoke_federated_sessions_for_identity',
@@ -811,7 +813,7 @@ BEGIN
     RAISE EXCEPTION 'Stage B Migration B Gate: % legacy functions still exist', v_legacy_fn_count;
   END IF;
 
-  -- 2. Assert zero legacy tables exist
+  -- 2. Assert zero legacy tables exist (all 11 target tables removed)
   SELECT count(*) INTO v_legacy_tbl_count
   FROM information_schema.tables
   WHERE table_schema = 'public'
@@ -833,7 +835,7 @@ BEGIN
     RAISE EXCEPTION 'Stage B Migration B Gate: % legacy tables still exist', v_legacy_tbl_count;
   END IF;
 
-  -- 3. Assert zero legacy columns exist
+  -- 3. Assert zero Migration-B-target legacy columns exist (7 active-table columns)
   SELECT count(*) INTO v_legacy_col_count
   FROM information_schema.columns
   WHERE table_schema = 'public'
@@ -845,6 +847,27 @@ BEGIN
 
   IF v_legacy_col_count <> 0 THEN
     RAISE EXCEPTION 'Stage B Migration B Gate: % legacy columns still exist', v_legacy_col_count;
+  END IF;
+
+  -- 4. Assert checkout_attempts.user_id is NOT NULL
+  SELECT is_nullable INTO v_user_id_nullable
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+    AND table_name = 'checkout_attempts'
+    AND column_name = 'user_id';
+
+  IF v_user_id_nullable <> 'NO' THEN
+    RAISE EXCEPTION 'Stage B Migration B Gate: checkout_attempts.user_id must be NOT NULL (found is_nullable=%)', v_user_id_nullable;
+  END IF;
+
+  -- 5. Assert reject_reserved_federated_email auth guard remains intact (deferred to Migration F)
+  SELECT count(*) INTO v_auth_guard_count
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'reject_reserved_federated_email';
+
+  IF v_auth_guard_count <> 1 THEN
+    RAISE EXCEPTION 'Stage B Migration B Gate: public.reject_reserved_federated_email must be preserved for separate Migration F (found %)', v_auth_guard_count;
   END IF;
 END;
 $stage_b_migration_b_gate$;

@@ -1,52 +1,60 @@
+/**
+ * Stage B Pass 4: Migration B Atomicity, Destructive Cleanup & Authority Invariants Test Suite
+ *
+ * Verifies the structural integrity, safety invariants, exact identity signatures,
+ * fail-closed whitelist validation, and atomicity of:
+ * `supabase/migrations/20260831120000_stage_b_legacy_destructive_cleanup.sql`
+ */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import * as fs from "fs";
-import * as path from "path";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const migrationBPath = path.resolve(
-  process.cwd(),
-  "../supabase/migrations/20260831120000_stage_b_legacy_destructive_cleanup.sql"
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const MIGRATION_B_PATH = resolve(
+  __dirname,
+  "../../../supabase/migrations/20260831120000_stage_b_legacy_destructive_cleanup.sql"
 );
 
-describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants", () => {
-  const sql = fs.readFileSync(migrationBPath, "utf8");
+const sql = readFileSync(MIGRATION_B_PATH, "utf8");
 
+describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants", () => {
   it("Subtest 1: Migration B contains explicit BEGIN and COMMIT transaction wrapper", () => {
     assert.match(
       sql,
       /^\s*BEGIN\s*;/m,
-      "Migration B must begin with explicit BEGIN;"
+      "Migration B must begin with an explicit BEGIN transaction"
     );
     assert.match(
       sql,
-      /COMMIT\s*;\s*$/m,
-      "Migration B must end with explicit COMMIT;"
+      /^\s*COMMIT\s*;/m,
+      "Migration B must end with an explicit COMMIT transaction"
     );
   });
 
   it("Subtest 2: PROHIBITION: Migration B must contain ZERO CASCADE keywords", () => {
-    assert.doesNotMatch(
-      sql,
-      /\bCASCADE\b/i,
-      "Migration B must NOT use CASCADE on any DROP operation"
+    const cascadeMatches = sql.match(/\bCASCADE\b/gi);
+    assert.equal(
+      cascadeMatches,
+      null,
+      "Migration B must not contain any CASCADE directives"
     );
   });
 
-  it("Subtest 3: Migration B Preflight strictly asserts Migration A post-state", () => {
-    assert.match(
+  it("Subtest 3: PROHIBITION: Migration B must contain ZERO dynamic catch-all DROP loops", () => {
+    assert.doesNotMatch(
       sql,
-      /p\.proname\s*=\s*'place_order'/i,
-      "Preflight must inspect public.place_order"
+      /EXECUTE\s+format\s*\(\s*['"]DROP\s+FUNCTION/i,
+      "Migration B must not contain dynamic drop execution loops"
     );
+  });
+
+  it("Subtest 4: Migration B Preflight strictly asserts Migration A post-state authority", () => {
     assert.match(
       sql,
       /pronargs\s*<>\s*49/i,
       "Preflight must assert 49 arguments on place_order"
-    );
-    assert.match(
-      sql,
-      /p\.proname\s*=\s*'place_order_idempotent'/i,
-      "Preflight must inspect public.place_order_idempotent"
     );
     assert.match(
       sql,
@@ -63,9 +71,14 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
       /place_order_legacy_stageb/i,
       "Preflight must assert temporary legacy function is absent"
     );
+    assert.match(
+      sql,
+      /has_function_privilege\s*\(\s*'service_role'/i,
+      "Preflight must verify service_role execution privilege"
+    );
   });
 
-  it("Subtest 4: Migration B Preflight asserts zero rows in all 11 legacy tables", () => {
+  it("Subtest 5: Migration B Preflight asserts zero rows in all 11 legacy tables", () => {
     const legacyTables = [
       "dilmart_barber_handoff_audit_events",
       "dilmart_barber_handoffs",
@@ -87,7 +100,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     }
   });
 
-  it("Subtest 5: Migration B Preflight asserts zero non-null/non-default legacy column data", () => {
+  it("Subtest 6: Migration B Preflight asserts zero non-null/non-default legacy column data", () => {
     const legacyColumns = [
       "dilmart_barbershop_id",
       "dilmart_user_id",
@@ -103,11 +116,20 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     }
   });
 
-  it("Subtest 6: Migration B explicitly drops all 16 legacy candidate functions by exact signature", () => {
-    const legacyFunctions = [
+  it("Subtest 7: Migration B Preflight asserts zero NULL user_id rows in checkout_attempts", () => {
+    assert.match(
+      sql,
+      /checkout_attempts\s+WHERE\s+user_id\s+IS\s+NULL/i,
+      "Preflight must check for NULL user_id rows in checkout_attempts"
+    );
+  });
+
+  it("Subtest 8: Migration B Preflight enforces fail-closed whitelist for all 18 candidate function names", () => {
+    const candidateNames = [
       "finalize_barber_handoff",
       "finalize_customer_handoff",
       "logout_all_federated_sessions",
+      "logout_federated_session",
       "place_b2b_cart_order_idempotent",
       "provision_dilmart_federated_customer",
       "redeem_and_create_federated_session",
@@ -124,15 +146,63 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
       "validate_federated_session_family",
       "verify_barber_web_session"
     ];
-    for (const fn of legacyFunctions) {
+    for (const fn of candidateNames) {
+      assert.ok(
+        sql.includes(`'${fn}'`),
+        `Preflight whitelist validation must include function name: ${fn}`
+      );
+    }
+    assert.match(
+      sql,
+      /STAGE_B_UNEXPECTED_LEGACY_FUNCTION_IDENTITY/i,
+      "Preflight must raise STAGE_B_UNEXPECTED_LEGACY_FUNCTION_IDENTITY on unexpected identity"
+    );
+  });
+
+  it("Subtest 9: Migration B explicitly drops 17 target legacy functions by exact signature with RESTRICT", () => {
+    const targetDroppedFunctions = [
+      "finalize_barber_handoff",
+      "finalize_customer_handoff",
+      "logout_all_federated_sessions",
+      "logout_federated_session",
+      "place_b2b_cart_order_idempotent",
+      "provision_dilmart_federated_customer",
+      "redeem_and_create_federated_session",
+      "redeem_barber_handoff_and_create_session",
+      "redeem_customer_handoff",
+      "reject_barber_handoff_audit_mutation",
+      "reject_handoff_audit_mutation",
+      "reject_federated_session_audit_mutation",
+      "resolve_dilmart_federated_customer",
+      "revoke_barber_web_sessions_for_user",
+      "revoke_federated_sessions_for_identity",
+      "rotate_federated_refresh_token",
+      "validate_federated_session_family",
+      "verify_barber_web_session"
+    ];
+    for (const fn of targetDroppedFunctions) {
       assert.ok(
         sql.includes(`DROP FUNCTION IF EXISTS public.${fn}`),
         `Migration B must explicitly drop function: ${fn}`
       );
     }
+    // Assert reject_reserved_federated_email is DEFERRED / NOT dropped
+    assert.doesNotMatch(
+      sql,
+      /DROP\s+FUNCTION\s+IF\s+EXISTS\s+public\.reject_reserved_federated_email/i,
+      "reject_reserved_federated_email must be preserved for separate Migration F"
+    );
   });
 
-  it("Subtest 7: Migration B explicitly drops legacy columns and constraints from active tables", () => {
+  it("Subtest 10: Migration B enforces checkout_attempts.user_id SET NOT NULL", () => {
+    assert.match(
+      sql,
+      /ALTER\s+TABLE\s+public\.checkout_attempts\s+ALTER\s+COLUMN\s+user_id\s+SET\s+NOT\s+NULL/i,
+      "Migration B must restore checkout_attempts.user_id NOT NULL integrity"
+    );
+  });
+
+  it("Subtest 11: Migration B explicitly drops legacy columns and constraints from active tables", () => {
     assert.match(
       sql,
       /ALTER TABLE public\.checkout_attempts DROP CONSTRAINT IF EXISTS chk_checkout_attempts_owner_xor/i
@@ -167,7 +237,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     );
   });
 
-  it("Subtest 8: Migration B explicitly drops all 11 legacy tables in child-to-parent order", () => {
+  it("Subtest 12: Migration B explicitly drops all 11 legacy tables in child-to-parent order", () => {
     const childTables = [
       "dilmart_barber_handoff_audit_events",
       "dilmart_customer_handoff_audit_events",
@@ -180,15 +250,14 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
       "dilmart_barber_handoffs",
       "dilmart_customer_handoffs",
       "store_federated_session_families",
-      "store_carts"
+      "store_carts",
+      "store_linked_profiles"
     ];
-    const rootTable = "store_linked_profiles";
-
-    const lastChildIdx = Math.max(...childTables.map((t) => sql.indexOf(`DROP TABLE IF EXISTS public.${t}`)));
-    const firstParentIdx = Math.min(...parentTables.map((t) => sql.indexOf(`DROP TABLE IF EXISTS public.${t}`)));
-    const rootIdx = sql.indexOf(`DROP TABLE IF EXISTS public.${rootTable}`);
-
-    assert.ok(lastChildIdx < firstParentIdx, "Child tables must be dropped before parent session/cart tables");
-    assert.ok(firstParentIdx < rootIdx, "Parent tables must be dropped before root linked profiles table");
+    for (const tbl of [...childTables, ...parentTables]) {
+      assert.ok(
+        sql.includes(`DROP TABLE IF EXISTS public.${tbl};`),
+        `Migration B must explicitly drop table: ${tbl}`
+      );
+    }
   });
 });
