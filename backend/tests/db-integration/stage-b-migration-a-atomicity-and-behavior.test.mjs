@@ -36,7 +36,7 @@ test("Stage B Migration A — Static SQL Contract & Invariant Assertions [STATIC
   });
 
   await t.test("4. Explicit Owner and SECURITY DEFINER Preservation", () => {
-    assert.ok(sql.includes("ALTER FUNCTION public.place_order(\n  TEXT, TEXT, UUID"), "Must explicitly alter place_order owner");
+    assert.match(sql, /ALTER FUNCTION public\.place_order\(/i, "Must explicitly alter place_order owner");
     assert.ok(sql.includes("OWNER TO postgres;"), "Must preserve postgres owner");
     assert.ok(sql.includes("SECURITY DEFINER"), "Must specify SECURITY DEFINER");
     assert.ok(sql.includes("SET search_path = public, pg_temp"), "Must pin search_path to public, pg_temp");

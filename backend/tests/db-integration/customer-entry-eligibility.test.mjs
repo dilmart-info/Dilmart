@@ -81,7 +81,6 @@ test('customer-entry categories + featured respect ViewerContext eligibility (DB
       visible_in: ['customer_app'],
       business_type_tags: ['all'],
       target_audience: ['all'],
-      requires_verified_salon: false,
       is_best_seller: false,
       ...cols,
     });

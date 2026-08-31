@@ -1,0 +1,296 @@
+[
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 15,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_dilmart_user_id uuid, p_dilmart_role text, p_barbershop_id uuid, p_segment text, p_display_name text, p_phone text, p_city text, p_business_type text, p_code_hash text, p_state_hash text, p_assertion_jti text, p_target_path text, p_source_surface text, p_code_ttl_seconds integer, p_request_id uuid",
+    "function_name": "finalize_barber_handoff",
+    "identity_arguments": "p_dilmart_user_id uuid, p_dilmart_role text, p_barbershop_id uuid, p_segment text, p_display_name text, p_phone text, p_city text, p_business_type text, p_code_hash text, p_state_hash text, p_assertion_jti text, p_target_path text, p_source_surface text, p_code_ttl_seconds integer, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19793",
+    "owner_name": "postgres",
+    "regprocedure_identity": "finalize_barber_handoff(uuid,text,uuid,text,text,text,text,text,text,text,text,text,text,integer,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 20,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_dilmart_user_id uuid, p_store_customer_id uuid, p_identity_outcome text, p_link_method text, p_link_status text, p_identity_assurance text, p_reuse_existing boolean, p_conflict_reason text, p_code_hash text, p_state_hash text, p_assertion_jti text, p_target_path text, p_source_surface text, p_campaign text, p_code_ttl_seconds integer, p_kid text, p_email text, p_phone_verified_at timestamp with time zone, p_email_verified_at timestamp with time zone, p_request_id uuid",
+    "function_name": "finalize_customer_handoff",
+    "identity_arguments": "p_dilmart_user_id uuid, p_store_customer_id uuid, p_identity_outcome text, p_link_method text, p_link_status text, p_identity_assurance text, p_reuse_existing boolean, p_conflict_reason text, p_code_hash text, p_state_hash text, p_assertion_jti text, p_target_path text, p_source_surface text, p_campaign text, p_code_ttl_seconds integer, p_kid text, p_email text, p_phone_verified_at timestamp with time zone, p_email_verified_at timestamp with time zone, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19608",
+    "owner_name": "postgres",
+    "regprocedure_identity": "finalize_customer_handoff(uuid,uuid,text,text,text,text,boolean,text,text,text,text,text,text,text,integer,text,text,timestamp with time zone,timestamp with time zone,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 2,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_refresh_token_hash text, p_request_id uuid",
+    "function_name": "logout_all_federated_sessions",
+    "identity_arguments": "p_refresh_token_hash text, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19676",
+    "owner_name": "postgres",
+    "regprocedure_identity": "logout_all_federated_sessions(text,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 2,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_refresh_token_hash text, p_request_id uuid",
+    "function_name": "logout_federated_session",
+    "identity_arguments": "p_refresh_token_hash text, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19671",
+    "owner_name": "postgres",
+    "regprocedure_identity": "logout_federated_session(text,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 53,
+    "configuration": [
+      "search_path=public"
+    ],
+    "full_arguments": "p_checkout_attempt_id uuid, p_checkout_request_hash text, p_store_linked_profile_id uuid, p_store_cart_id uuid, p_expected_cart_updated_at timestamp with time zone, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_subtotal numeric, p_delivery_cost numeric, p_total numeric, p_items jsonb, p_nearest_landmark text DEFAULT NULL::text, p_notes text DEFAULT NULL::text, p_discount numeric DEFAULT 0, p_coupon_id uuid DEFAULT NULL::uuid, p_latitude double precision DEFAULT NULL::double precision, p_longitude double precision DEFAULT NULL::double precision, p_map_url text DEFAULT NULL::text, p_merchant_id uuid DEFAULT NULL::uuid, p_merchandise_subtotal numeric DEFAULT 0, p_discount_total numeric DEFAULT 0, p_delivery_fee_charged numeric DEFAULT 0, p_platform_commission_type text DEFAULT 'fixed'::text, p_platform_commission_rate numeric DEFAULT 0, p_platform_commission_amount numeric DEFAULT 0, p_platform_assisted_fee_amount numeric DEFAULT 0, p_platform_extra_fee_amount numeric DEFAULT 0, p_courier_fee_payable numeric DEFAULT 0, p_merchant_gross_amount numeric DEFAULT 0, p_merchant_net_amount numeric DEFAULT 0, p_gross_collected_amount numeric DEFAULT 0, p_platform_net_revenue_amount numeric DEFAULT 0, p_currency_code text DEFAULT 'IQD'::text, p_financial_snapshot_version integer DEFAULT 1, p_payment_status text DEFAULT 'unpaid'::text, p_collection_status text DEFAULT 'not_collected'::text, p_settlement_status text DEFAULT 'not_accrued'::text, p_cash_expected_amount numeric DEFAULT 0, p_commission_rule_id uuid DEFAULT NULL::uuid, p_assisted_fee_rule_id uuid DEFAULT NULL::uuid, p_platform_fee_rule_id uuid DEFAULT NULL::uuid, p_delivery_billing_rule_id uuid DEFAULT NULL::uuid, p_resolved_plan_id uuid DEFAULT NULL::uuid, p_resolved_plan_code text DEFAULT NULL::text, p_commercial_snapshot_version integer DEFAULT 1, p_source_app text DEFAULT 'barber_app'::text, p_channel text DEFAULT 'barber_app_checkout'::text, p_dilmart_user_id uuid DEFAULT NULL::uuid, p_dilmart_barbershop_id uuid DEFAULT NULL::uuid, p_segment text DEFAULT NULL::text, p_business_type text DEFAULT NULL::text",
+    "function_name": "place_b2b_cart_order_idempotent",
+    "identity_arguments": "p_checkout_attempt_id uuid, p_checkout_request_hash text, p_store_linked_profile_id uuid, p_store_cart_id uuid, p_expected_cart_updated_at timestamp with time zone, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_subtotal numeric, p_delivery_cost numeric, p_total numeric, p_items jsonb, p_nearest_landmark text, p_notes text, p_discount numeric, p_coupon_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_merchant_id uuid, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_source_app text, p_channel text, p_dilmart_user_id uuid, p_dilmart_barbershop_id uuid, p_segment text, p_business_type text",
+    "is_security_definer": true,
+    "oid": "19748",
+    "owner_name": "postgres",
+    "regprocedure_identity": "place_b2b_cart_order_idempotent(uuid,text,uuid,uuid,timestamp with time zone,text,text,uuid,text,numeric,numeric,numeric,jsonb,text,text,numeric,uuid,double precision,double precision,text,uuid,numeric,numeric,numeric,text,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,integer,text,text,text,numeric,uuid,uuid,uuid,uuid,uuid,text,integer,text,text,uuid,uuid,text,text)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 49,
+    "configuration": [
+      "search_path=public, pg_temp"
+    ],
+    "full_arguments": "p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid DEFAULT NULL::uuid, p_latitude double precision DEFAULT NULL::double precision, p_longitude double precision DEFAULT NULL::double precision, p_map_url text DEFAULT NULL::text, p_points_spent integer DEFAULT 0, p_points_discount numeric DEFAULT 0, p_points_earned integer DEFAULT 0, p_merchant_id uuid DEFAULT NULL::uuid, p_payment_method text DEFAULT NULL::text, p_merchant_notes text DEFAULT NULL::text, p_merchandise_subtotal numeric DEFAULT NULL::numeric, p_discount_total numeric DEFAULT NULL::numeric, p_delivery_fee_charged numeric DEFAULT NULL::numeric, p_platform_commission_type text DEFAULT NULL::text, p_platform_commission_rate numeric DEFAULT NULL::numeric, p_platform_commission_amount numeric DEFAULT NULL::numeric, p_platform_assisted_fee_amount numeric DEFAULT NULL::numeric, p_platform_extra_fee_amount numeric DEFAULT NULL::numeric, p_courier_fee_payable numeric DEFAULT NULL::numeric, p_merchant_gross_amount numeric DEFAULT NULL::numeric, p_merchant_net_amount numeric DEFAULT NULL::numeric, p_gross_collected_amount numeric DEFAULT NULL::numeric, p_platform_net_revenue_amount numeric DEFAULT NULL::numeric, p_currency_code text DEFAULT 'IQD'::text, p_financial_snapshot_version integer DEFAULT 0, p_payment_status text DEFAULT 'unpaid'::text, p_collection_status text DEFAULT 'not_collected'::text, p_settlement_status text DEFAULT 'not_accrued'::text, p_cash_expected_amount numeric DEFAULT NULL::numeric, p_commission_rule_id uuid DEFAULT NULL::uuid, p_assisted_fee_rule_id uuid DEFAULT NULL::uuid, p_platform_fee_rule_id uuid DEFAULT NULL::uuid, p_delivery_billing_rule_id uuid DEFAULT NULL::uuid, p_resolved_plan_id uuid DEFAULT NULL::uuid, p_resolved_plan_code text DEFAULT NULL::text, p_commercial_snapshot_version integer DEFAULT 0, p_channel text DEFAULT NULL::text",
+    "function_name": "place_order",
+    "identity_arguments": "p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text",
+    "is_security_definer": true,
+    "oid": "19909",
+    "owner_name": "postgres",
+    "regprocedure_identity": "place_order(text,text,uuid,text,text,text,numeric,numeric,numeric,numeric,uuid,jsonb,uuid,double precision,double precision,text,integer,numeric,integer,uuid,text,text,numeric,numeric,numeric,text,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,integer,text,text,text,numeric,uuid,uuid,uuid,uuid,uuid,text,integer,text)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 51,
+    "configuration": [
+      "search_path=public, pg_temp"
+    ],
+    "full_arguments": "p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text DEFAULT NULL::text, p_notes text DEFAULT NULL::text, p_subtotal numeric DEFAULT 0, p_delivery_cost numeric DEFAULT 0, p_discount numeric DEFAULT 0, p_total numeric DEFAULT 0, p_coupon_id uuid DEFAULT NULL::uuid, p_items jsonb DEFAULT '[]'::jsonb, p_user_id uuid DEFAULT NULL::uuid, p_latitude double precision DEFAULT NULL::double precision, p_longitude double precision DEFAULT NULL::double precision, p_map_url text DEFAULT NULL::text, p_points_spent integer DEFAULT 0, p_points_discount numeric DEFAULT 0, p_points_earned integer DEFAULT 0, p_merchant_id uuid DEFAULT NULL::uuid, p_payment_method text DEFAULT 'cod'::text, p_merchant_notes text DEFAULT NULL::text, p_merchandise_subtotal numeric DEFAULT 0, p_discount_total numeric DEFAULT 0, p_delivery_fee_charged numeric DEFAULT 0, p_platform_commission_type text DEFAULT 'fixed'::text, p_platform_commission_rate numeric DEFAULT 0, p_platform_commission_amount numeric DEFAULT 0, p_platform_assisted_fee_amount numeric DEFAULT 0, p_platform_extra_fee_amount numeric DEFAULT 0, p_courier_fee_payable numeric DEFAULT 0, p_merchant_gross_amount numeric DEFAULT 0, p_merchant_net_amount numeric DEFAULT 0, p_gross_collected_amount numeric DEFAULT 0, p_platform_net_revenue_amount numeric DEFAULT 0, p_currency_code text DEFAULT 'IQD'::text, p_financial_snapshot_version integer DEFAULT 1, p_payment_status text DEFAULT 'unpaid'::text, p_collection_status text DEFAULT 'not_collected'::text, p_settlement_status text DEFAULT 'not_accrued'::text, p_cash_expected_amount numeric DEFAULT 0, p_commission_rule_id uuid DEFAULT NULL::uuid, p_assisted_fee_rule_id uuid DEFAULT NULL::uuid, p_platform_fee_rule_id uuid DEFAULT NULL::uuid, p_delivery_billing_rule_id uuid DEFAULT NULL::uuid, p_resolved_plan_id uuid DEFAULT NULL::uuid, p_resolved_plan_code text DEFAULT NULL::text, p_commercial_snapshot_version integer DEFAULT 1, p_channel text DEFAULT 'web_checkout'::text",
+    "function_name": "place_order_idempotent",
+    "identity_arguments": "p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text",
+    "is_security_definer": true,
+    "oid": "19289",
+    "owner_name": "postgres",
+    "regprocedure_identity": "place_order_idempotent(uuid,text,text,text,uuid,text,text,text,numeric,numeric,numeric,numeric,uuid,jsonb,uuid,double precision,double precision,text,integer,numeric,integer,uuid,text,text,numeric,numeric,numeric,text,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,numeric,text,integer,text,text,text,numeric,uuid,uuid,uuid,uuid,uuid,text,integer,text)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 2,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_dilmart_user_id uuid, p_federated_id text",
+    "function_name": "provision_dilmart_federated_customer",
+    "identity_arguments": "p_dilmart_user_id uuid, p_federated_id text",
+    "is_security_definer": true,
+    "oid": "19619",
+    "owner_name": "postgres",
+    "regprocedure_identity": "provision_dilmart_federated_customer(uuid,text)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 13,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_code_hash text, p_state_hash text, p_family_id uuid, p_refresh_token_id uuid, p_refresh_token_hash text, p_access_jti uuid, p_device_hash text, p_expected_handoff_id uuid, p_expected_store_customer_id uuid, p_expected_linked_profile_id uuid, p_expected_dilmart_user_id uuid, p_expected_target_path text, p_request_id uuid",
+    "function_name": "redeem_and_create_federated_session",
+    "identity_arguments": "p_code_hash text, p_state_hash text, p_family_id uuid, p_refresh_token_id uuid, p_refresh_token_hash text, p_access_jti uuid, p_device_hash text, p_expected_handoff_id uuid, p_expected_store_customer_id uuid, p_expected_linked_profile_id uuid, p_expected_dilmart_user_id uuid, p_expected_target_path text, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19663",
+    "owner_name": "postgres",
+    "regprocedure_identity": "redeem_and_create_federated_session(text,text,uuid,uuid,text,uuid,text,uuid,uuid,uuid,uuid,text,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 4,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_code_hash text, p_state_hash text, p_session_token_hash text, p_session_ttl_seconds integer",
+    "function_name": "redeem_barber_handoff_and_create_session",
+    "identity_arguments": "p_code_hash text, p_state_hash text, p_session_token_hash text, p_session_ttl_seconds integer",
+    "is_security_definer": true,
+    "oid": "19824",
+    "owner_name": "postgres",
+    "regprocedure_identity": "redeem_barber_handoff_and_create_session(text,text,text,integer)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 2,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_code_hash text, p_state_hash text",
+    "function_name": "redeem_customer_handoff",
+    "identity_arguments": "p_code_hash text, p_state_hash text",
+    "is_security_definer": true,
+    "oid": "19603",
+    "owner_name": "postgres",
+    "regprocedure_identity": "redeem_customer_handoff(text,text)"
+  },
+  {
+    "access_control_list": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "argument_count": 0,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "",
+    "function_name": "reject_barber_handoff_audit_mutation",
+    "identity_arguments": "",
+    "is_security_definer": false,
+    "oid": "19790",
+    "owner_name": "postgres",
+    "regprocedure_identity": "reject_barber_handoff_audit_mutation()"
+  },
+  {
+    "access_control_list": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "argument_count": 0,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "",
+    "function_name": "reject_federated_session_audit_mutation",
+    "identity_arguments": "",
+    "is_security_definer": false,
+    "oid": "19647",
+    "owner_name": "postgres",
+    "regprocedure_identity": "reject_federated_session_audit_mutation()"
+  },
+  {
+    "access_control_list": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "argument_count": 0,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "",
+    "function_name": "reject_handoff_audit_mutation",
+    "identity_arguments": "",
+    "is_security_definer": false,
+    "oid": "19614",
+    "owner_name": "postgres",
+    "regprocedure_identity": "reject_handoff_audit_mutation()"
+  },
+  {
+    "access_control_list": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}",
+    "argument_count": 0,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "",
+    "function_name": "reject_reserved_federated_email",
+    "identity_arguments": "",
+    "is_security_definer": false,
+    "oid": "19617",
+    "owner_name": "postgres",
+    "regprocedure_identity": "reject_reserved_federated_email()"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 2,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_dilmart_user_id uuid, p_internal_email text",
+    "function_name": "resolve_dilmart_federated_customer",
+    "identity_arguments": "p_dilmart_user_id uuid, p_internal_email text",
+    "is_security_definer": true,
+    "oid": "19606",
+    "owner_name": "postgres",
+    "regprocedure_identity": "resolve_dilmart_federated_customer(uuid,text)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 1,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_dilmart_user_id uuid",
+    "function_name": "revoke_barber_web_sessions_for_user",
+    "identity_arguments": "p_dilmart_user_id uuid",
+    "is_security_definer": true,
+    "oid": "19830",
+    "owner_name": "postgres",
+    "regprocedure_identity": "revoke_barber_web_sessions_for_user(uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 4,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_dilmart_user_id uuid, p_linked_profile_id uuid, p_reason text, p_request_id uuid",
+    "function_name": "revoke_federated_sessions_for_identity",
+    "identity_arguments": "p_dilmart_user_id uuid, p_linked_profile_id uuid, p_reason text, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19673",
+    "owner_name": "postgres",
+    "regprocedure_identity": "revoke_federated_sessions_for_identity(uuid,uuid,text,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 10,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_current_token_hash text, p_new_token_id uuid, p_new_token_hash text, p_device_hash text, p_expected_family_id uuid, p_expected_store_customer_id uuid, p_expected_linked_profile_id uuid, p_expected_dilmart_user_id uuid, p_expected_session_version integer, p_request_id uuid",
+    "function_name": "rotate_federated_refresh_token",
+    "identity_arguments": "p_current_token_hash text, p_new_token_id uuid, p_new_token_hash text, p_device_hash text, p_expected_family_id uuid, p_expected_store_customer_id uuid, p_expected_linked_profile_id uuid, p_expected_dilmart_user_id uuid, p_expected_session_version integer, p_request_id uuid",
+    "is_security_definer": true,
+    "oid": "19667",
+    "owner_name": "postgres",
+    "regprocedure_identity": "rotate_federated_refresh_token(text,uuid,text,text,uuid,uuid,uuid,uuid,integer,uuid)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 2,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_family_id uuid, p_session_version integer",
+    "function_name": "validate_federated_session_family",
+    "identity_arguments": "p_family_id uuid, p_session_version integer",
+    "is_security_definer": true,
+    "oid": "19674",
+    "owner_name": "postgres",
+    "regprocedure_identity": "validate_federated_session_family(uuid,integer)"
+  },
+  {
+    "access_control_list": "{postgres=X/postgres,service_role=X/postgres}",
+    "argument_count": 1,
+    "configuration": [
+      "search_path=pg_catalog, public"
+    ],
+    "full_arguments": "p_session_token_hash text",
+    "function_name": "verify_barber_web_session",
+    "identity_arguments": "p_session_token_hash text",
+    "is_security_definer": true,
+    "oid": "19823",
+    "owner_name": "postgres",
+    "regprocedure_identity": "verify_barber_web_session(text)"
+  }
+]
