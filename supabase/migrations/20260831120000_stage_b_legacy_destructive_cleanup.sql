@@ -2,21 +2,25 @@
 -- DILMART — STAGE B MIGRATION B: LEGACY DESTRUCTIVE CLEANUP (AUTHORITY CORRECTED)
 -- Migration: 20260831120000_stage_b_legacy_destructive_cleanup.sql
 -- ============================================================================
--- Fail-Closed Invariants:
--- 1. Preflight asserts Migration A post-state authority (place_order 49 args,
---    place_order_idempotent 51 args, exact identity arguments, postgres owner,
---    search_path=public, pg_temp, strict ACLs: service_role execute only).
--- 2. Preflight asserts all 11 legacy tables contain exactly 0 rows.
--- 3. Preflight asserts all target legacy columns contain zero non-default data.
--- 4. Preflight asserts checkout_attempts contains zero rows with NULL user_id.
--- 5. Preflight validates exact function identities against approved whitelist;
+-- Accounting & Authority Invariants:
+-- 1. Total legacy candidate function names in family: 19
+-- 2. Migration B disposition: 18 REMOVE, 1 KEEP/DEFER (reject_reserved_federated_email)
+-- 3. Preflight strictly asserts Migration A post-state authority by comparing the
+--    COMPLETE literal pg_get_function_identity_arguments() for place_order (49 args)
+--    and place_order_idempotent (51 args), postgres owner, prosecdef=true,
+--    search_path=public, pg_temp, strict ACLs: service_role execute only.
+-- 4. Preflight asserts all 11 legacy tables contain exactly 0 rows.
+-- 5. Preflight asserts all target legacy columns contain zero non-default data.
+-- 6. Preflight asserts checkout_attempts contains zero rows with NULL user_id.
+-- 7. Preflight validates exact function identities against approved whitelist;
 --    any unexpected identity or overload aborts migration (FAIL CLOSED).
--- 6. Enforces checkout_attempts.user_id SET NOT NULL to restore modern integrity.
--- 7. Explicitly drops dependent triggers, exact-signature legacy functions (RESTRICT),
+-- 8. Enforces checkout_attempts.user_id SET NOT NULL to restore modern integrity.
+-- 9. Explicitly drops dependent triggers, exact-signature legacy functions (RESTRICT),
 --    constraints, indexes, columns, child tables, and parent tables with RESTRICT.
--- 8. Preserves auth.users trigger & reject_reserved_federated_email() for Migration F.
--- 9. Postconditions assert 0 legacy functions, 0 legacy tables, 0 legacy columns,
---    checkout_attempts.user_id NOT NULL, preserved auth guard, and intact place_order.
+-- 10. Preserves auth.users trigger & reject_reserved_federated_email() for Migration F.
+-- 11. Postconditions assert 0 legacy functions for 18 removed names, 0 legacy tables,
+--     0 legacy columns, checkout_attempts.user_id NOT NULL, preserved auth guard,
+--     and intact place_order & place_order_idempotent authority.
 -- ============================================================================
 
 BEGIN;
@@ -28,17 +32,17 @@ DO $preflight$
 DECLARE
   v_po_count            INT;
   v_po_rec              RECORD;
-  v_po_ident_args       TEXT;
   v_po_legacy_count     INT;
   v_poi_count           INT;
   v_poi_rec             RECORD;
-  v_poi_ident_args      TEXT;
   v_tbl                 RECORD;
   v_tbl_count           BIGINT;
   v_col_non_null        BIGINT;
   v_salon_true_count    BIGINT;
   v_null_user_id_count  BIGINT;
   v_fn                  RECORD;
+  c_po_expected_args    CONSTANT TEXT := 'p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
+  c_poi_expected_args   CONSTANT TEXT := 'p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
 BEGIN
   -- ── 1.1 Protect Migration A Modern place_order Authority ───────────────────
   SELECT count(*) INTO v_po_count
@@ -74,9 +78,10 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order search_path not pinned to public, pg_temp (found %)', v_po_rec.proconfig;
   END IF;
 
-  -- Verify exact identity arguments for place_order (49 args)
-  IF v_po_rec.identity_args !~* '^p_customer_name text,\s*p_customer_phone text,\s*p_governorate_id uuid' THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order identity arguments do not match approved Migration A schema';
+  -- Verify COMPLETE literal identity arguments for place_order (49 args)
+  IF v_po_rec.identity_args <> c_po_expected_args THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order identity arguments do not match exact approved Migration A signature. Found [%], Expected [%]',
+      v_po_rec.identity_args, c_po_expected_args;
   END IF;
 
   -- Verify ACL privileges: PUBLIC, anon, authenticated must NOT have execute; service_role MUST have execute
@@ -137,9 +142,10 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp (found %)', v_poi_rec.proconfig;
   END IF;
 
-  -- Verify exact identity arguments for place_order_idempotent (51 args)
-  IF v_poi_rec.identity_args !~* '^p_checkout_attempt_id uuid,\s*p_checkout_request_hash text,\s*p_customer_name text' THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent identity arguments do not match approved Migration A schema';
+  -- Verify COMPLETE literal identity arguments for place_order_idempotent (51 args)
+  IF v_poi_rec.identity_args <> c_poi_expected_args THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent identity arguments do not match exact approved Migration A signature. Found [%], Expected [%]',
+      v_poi_rec.identity_args, c_poi_expected_args;
   END IF;
 
   -- Verify ACL privileges: PUBLIC, anon, authenticated must NOT have execute; service_role MUST have execute
@@ -241,9 +247,9 @@ BEGIN
     END IF;
   END IF;
 
-  -- ── 1.6 Fail-Closed Whitelist Validation of Legacy Functions ──────────────
+  -- ── 1.6 Fail-Closed Whitelist Validation of Legacy Functions (19 Names) ─────
   -- Assert that every single function currently existing in the catalog for the
-  -- legacy candidate family EXACTLY matches an approved regprocedure identity.
+  -- 19 legacy candidate names EXACTLY matches an approved regprocedure identity.
   -- If ANY unexpected function identity or unreviewed overload exists: FAIL CLOSED.
   FOR v_fn IN
     SELECT
@@ -313,7 +319,7 @@ DROP TRIGGER IF EXISTS trg_reject_federated_session_audit_mutation ON public.sto
 -- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 3: DROP LEGACY FUNCTIONS BY EXACT APPROVED IDENTITIES (STRICT RESTRICT)
 -- ────────────────────────────────────────────────────────────────────────────
--- Explicit DROP of 17 target legacy functions by exact verified signature.
+-- Explicit DROP of 18 target legacy functions by exact verified signature.
 -- Note: public.reject_reserved_federated_email() is DEFERRED to Migration F.
 DROP FUNCTION IF EXISTS public.finalize_barber_handoff(uuid, text, uuid, text, text, text, text, text, text, text, text, text, text, integer, uuid) RESTRICT;
 DROP FUNCTION IF EXISTS public.finalize_customer_handoff(uuid, uuid, text, text, text, text, boolean, text, text, text, text, text, text, text, integer, text, text, timestamp with time zone, timestamp with time zone, uuid) RESTRICT;
@@ -370,7 +376,7 @@ ALTER TABLE public.orders DROP COLUMN IF EXISTS store_linked_profile_id;
 ALTER TABLE public.products DROP COLUMN IF EXISTS requires_verified_salon;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- SECTION 6: DROP LEGACY TABLES IN STRICT DEPENDENCY ORDER (WITHOUT CASCADING)
+-- SECTION 6: DROP LEGACY TABLES IN STRICT DEPENDENCY ORDER (STRICT RESTRICT)
 -- ────────────────────────────────────────────────────────────────────────────
 -- 6.1 Child audit, token, and items tables
 DROP TABLE IF EXISTS public.dilmart_barber_handoff_audit_events;
@@ -403,8 +409,10 @@ DECLARE
   v_poi_rec             RECORD;
   v_is_nullable         TEXT;
   v_auth_guard_count    INT;
+  c_po_expected_args    CONSTANT TEXT := 'p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
+  c_poi_expected_args   CONSTANT TEXT := 'p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
 BEGIN
-  -- ── 7.1 Verify Zero Target Legacy Functions Remain (17 target functions) ────
+  -- ── 7.1 Verify Zero Target Legacy Functions Remain (18 target functions) ────
   SELECT count(*) INTO v_remaining_fn_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -506,7 +514,8 @@ BEGIN
     p.pronargs,
     p.prosecdef,
     pg_get_userbyid(p.proowner) AS owner_name,
-    p.proconfig
+    p.proconfig,
+    pg_get_function_identity_arguments(p.oid) AS identity_args
   INTO v_po_rec
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -524,6 +533,10 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order search_path not pinned to public, pg_temp (found %)', v_po_rec.proconfig;
   END IF;
 
+  IF v_po_rec.identity_args <> c_po_expected_args THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order identity arguments altered during Migration B';
+  END IF;
+
   -- ── 7.7 Re-Verify Pristine place_order_idempotent Authority ────────────────
   SELECT count(*) INTO v_poi_count
   FROM pg_proc p
@@ -539,7 +552,8 @@ BEGIN
     p.pronargs,
     p.prosecdef,
     pg_get_userbyid(p.proowner) AS owner_name,
-    p.proconfig
+    p.proconfig,
+    pg_get_function_identity_arguments(p.oid) AS identity_args
   INTO v_poi_rec
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -551,6 +565,10 @@ BEGIN
 
   IF v_poi_rec.owner_name <> 'postgres' OR v_poi_rec.prosecdef IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent owner=[%] (expected postgres), prosecdef=[%] (expected true)', v_poi_rec.owner_name, v_poi_rec.prosecdef;
+  END IF;
+
+  IF v_poi_rec.identity_args <> c_poi_expected_args THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent identity arguments altered during Migration B';
   END IF;
 END;
 $postconditions$;

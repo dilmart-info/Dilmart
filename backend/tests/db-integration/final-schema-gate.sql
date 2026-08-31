@@ -783,7 +783,7 @@ DECLARE
   v_user_id_nullable TEXT;
   v_auth_guard_count INT;
 BEGIN
-  -- 1. Assert zero Migration-B-target legacy functions exist (17 removed functions)
+  -- 1. Assert zero Migration-B-target legacy functions exist (18 removed functions)
   SELECT count(*) INTO v_legacy_fn_count
   FROM pg_catalog.pg_proc p
   JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace

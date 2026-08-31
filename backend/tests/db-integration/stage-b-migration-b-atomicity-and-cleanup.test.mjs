@@ -50,7 +50,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     );
   });
 
-  it("Subtest 4: Migration B Preflight strictly asserts Migration A post-state authority", () => {
+  it("Subtest 4: Migration B Preflight strictly asserts Migration A post-state authority with complete literal signatures", () => {
     assert.match(
       sql,
       /pronargs\s*<>\s*49/i,
@@ -65,6 +65,16 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
       sql,
       /owner_name\s*<>\s*'postgres'/i,
       "Preflight must assert owner is postgres"
+    );
+    assert.match(
+      sql,
+      /identity_args\s*<>\s*c_po_expected_args/i,
+      "Preflight must assert complete literal identity arguments on place_order"
+    );
+    assert.match(
+      sql,
+      /identity_args\s*<>\s*c_poi_expected_args/i,
+      "Preflight must assert complete literal identity arguments on place_order_idempotent"
     );
     assert.match(
       sql,
@@ -124,7 +134,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     );
   });
 
-  it("Subtest 8: Migration B Preflight enforces fail-closed whitelist for all 18 candidate function names", () => {
+  it("Subtest 8: Migration B Preflight enforces fail-closed whitelist for all 19 candidate function names", () => {
     const candidateNames = [
       "finalize_barber_handoff",
       "finalize_customer_handoff",
@@ -146,6 +156,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
       "validate_federated_session_family",
       "verify_barber_web_session"
     ];
+    assert.equal(candidateNames.length, 19, "Total candidate function names must be exactly 19");
     for (const fn of candidateNames) {
       assert.ok(
         sql.includes(`'${fn}'`),
@@ -159,7 +170,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     );
   });
 
-  it("Subtest 9: Migration B explicitly drops 17 target legacy functions by exact signature with RESTRICT", () => {
+  it("Subtest 9: Migration B explicitly drops all 18 target legacy functions by exact signature with RESTRICT", () => {
     const targetDroppedFunctions = [
       "finalize_barber_handoff",
       "finalize_customer_handoff",
@@ -180,6 +191,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
       "validate_federated_session_family",
       "verify_barber_web_session"
     ];
+    assert.equal(targetDroppedFunctions.length, 18, "Total dropped functions must be exactly 18");
     for (const fn of targetDroppedFunctions) {
       assert.ok(
         sql.includes(`DROP FUNCTION IF EXISTS public.${fn}`),

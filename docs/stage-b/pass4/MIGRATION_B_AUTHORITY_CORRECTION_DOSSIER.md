@@ -4,15 +4,15 @@
 
 ## 1. Executive Summary
 
-This dossier provides the authoritative machine-verified catalog and fingerprint analysis for **Stage B Migration B (`20260831120000_stage_b_legacy_destructive_cleanup.sql`)** following the separation of the Netlify trust-boundary fix into dedicated PR #4.
+This dossier provides the authoritative machine-verified catalog and fingerprint analysis for **Stage B Migration B (`20260831120000_stage_b_legacy_destructive_cleanup.sql`)** following the merge of dedicated Netlify trust-boundary PR #4 into `main` and the final micro-correction of function accounting and complete literal argument signature comparison.
 
 All findings are based on direct read-only inspection of the live Production database (`ztplxqlthuqkuktbznbo`) and clean local migration replay.
 
 ---
 
-## 2. Exact Candidate Function Family Inventory (18 Names)
+## 2. Exact Candidate Function Family Inventory (19 Names Total)
 
-The legacy candidate cleanup family contains **exactly 18 function names** (19 function overloads including `logout_federated_session`):
+The legacy candidate cleanup family contains **exactly 19 function names** (19 function overloads):
 
 | # | Function Name | Live Production Identity | Clean Replay Identity | Action in Migration B |
 |---|:---|:---|:---|:---|
@@ -36,10 +36,10 @@ The legacy candidate cleanup family contains **exactly 18 function names** (19 f
 | 18 | `validate_federated_session_family` | `(uuid,integer)` | Identical | **REMOVE (RESTRICT)** |
 | 19 | `verify_barber_web_session` | `(text)` | Identical | **REMOVE (RESTRICT)** |
 
-### Target Counts Summary
-- **Total Candidate Function Names:** 18
-- **Total Function Overloads Target for Removal in Migration B:** 17
-- **Preserved / Deferred Functions (`auth.users` guard):** 1 (`reject_reserved_federated_email()`)
+### Final Accounting Summary
+- **Total Candidate Function Names in Family:** **19**
+- **Migration B Target Functions Dropped:** **18**
+- **Preserved / Deferred Functions (`auth.users` guard):** **1** (`reject_reserved_federated_email()`)
 
 ---
 
@@ -48,7 +48,7 @@ The legacy candidate cleanup family contains **exactly 18 function names** (19 f
 Both live production and clean migration replay produce identical regprocedure signatures due to the migration hardening applied in `20260806100200` and `20260819100200`.
 
 ### Fail-Closed Whitelist Policy
-Migration B Preflight enumerates every function present in `pg_proc` under `public` matching any candidate name and asserts that its `p.oid::regprocedure::text` is strictly contained within the reviewed whitelist. If an unreviewed signature or overload appears, the migration fails immediately with `STAGE_B_UNEXPECTED_LEGACY_FUNCTION_IDENTITY`.
+Migration B Preflight enumerates every function present in `pg_proc` under `public` matching any of the 19 candidate names and asserts that its `p.oid::regprocedure::text` is strictly contained within the reviewed whitelist. If an unreviewed signature or overload appears, the migration fails immediately with `STAGE_B_UNEXPECTED_LEGACY_FUNCTION_IDENTITY`.
 
 ---
 
@@ -63,7 +63,7 @@ Migration B Preflight enumerates every function present in `pg_proc` under `publ
 
 ## 5. Migration A Authority Protection Fingerprint
 
-Migration B verifies the exact authority fingerprint of the surviving modern functions before executing any DDL:
+Migration B verifies the COMPLETE literal identity arguments string of the surviving modern functions before executing any DDL:
 
 | Check | `public.place_order` | `public.place_order_idempotent` |
 |:---|:---|:---|
@@ -72,7 +72,7 @@ Migration B verifies the exact authority fingerprint of the surviving modern fun
 | **Security Mode** | `SECURITY DEFINER` | `SECURITY DEFINER` |
 | **Owner** | `postgres` | `postgres` |
 | **Search Path** | `public, pg_temp` | `public, pg_temp` |
-| **Identity Arguments** | Matches Migration A signature | Matches Migration A signature |
+| **Identity Arguments** | COMPLETE literal 49-arg Migration A signature string | COMPLETE literal 51-arg Migration A signature string |
 | **Execute ACL** | `service_role` ONLY (`PUBLIC`, `anon`, `authenticated` revoked) | `service_role` ONLY (`PUBLIC`, `anon`, `authenticated` revoked) |
 | **Legacy Stubs** | `place_order_legacy_stageb` = 0 | 55-arg `place_order` = 0 |
 
