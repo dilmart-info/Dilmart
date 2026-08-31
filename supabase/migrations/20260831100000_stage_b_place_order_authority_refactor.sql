@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- DILMART — STAGE B PASS 3
--- MIGRATION A: PLACE_ORDER AUTHORITY & SIGNATURE REFACTOR (HARDENED)
+-- MIGRATION A: PLACE_ORDER AUTHORITY & SIGNATURE REFACTOR (CANONICAL)
 -- ==============================================================================
 -- 1. Refactors public.place_order to remove 6 obsolete StylAi / Barber / B2B arguments:
 --    - p_source_app
@@ -10,10 +10,11 @@
 --    - p_segment
 --    - p_business_type
 --    Retains modern p_channel (Total parameters: 55 -> 49).
--- 2. Removes writes to orders legacy columns from function body.
--- 3. Updates public.place_order_idempotent wrapper.
--- 4. Enforces strict atomic rename-first sequence to prevent ambiguous overloads.
--- 5. Exact identity verification in preflight and postconditions.
+-- 2. Preserves EXACT Live Production Parameter Defaults for all surviving arguments.
+-- 3. Removes writes to orders legacy columns from function body.
+-- 4. Updates public.place_order_idempotent wrapper with pinned search_path hardening.
+-- 5. Enforces strict atomic rename-first sequence to prevent ambiguous overloads.
+-- 6. Exact identity and postcondition verification inside transaction.
 -- ==============================================================================
 
 BEGIN;
@@ -70,66 +71,59 @@ ALTER FUNCTION public.place_order(
 RENAME TO place_order_legacy_stageb;
 
 -- ─── 3. CREATE CLEAN 49-PARAMETER PUBLIC.PLACE_ORDER ──────────────────────────
+-- Note: Preserves exact Live Production parameter defaults for surviving parameters.
 CREATE FUNCTION public.place_order(
-  -- ── Customer / Delivery ────────────────────────────────────────────────────
+  -- ── Customer / Delivery (12 parameters with NO defaults in live production) ───
   p_customer_name           TEXT,
   p_customer_phone          TEXT,
   p_governorate_id          UUID,
   p_area                    TEXT,
-  p_nearest_landmark        TEXT    DEFAULT NULL,
-  p_notes                   TEXT    DEFAULT NULL,
-  -- ── Financials ─────────────────────────────────────────────────────────────
-  p_subtotal                NUMERIC DEFAULT 0,
-  p_delivery_cost           NUMERIC DEFAULT 0,
-  p_discount                NUMERIC DEFAULT 0,
-  p_total                   NUMERIC DEFAULT 0,
-  p_coupon_id               UUID    DEFAULT NULL,
-  p_items                   JSONB   DEFAULT '[]'::jsonb,
-  -- ── Identity ───────────────────────────────────────────────────────────────
-  p_user_id                 UUID    DEFAULT NULL,
-  -- ── GPS ────────────────────────────────────────────────────────────────────
+  p_nearest_landmark        TEXT,
+  p_notes                   TEXT,
+  p_subtotal                NUMERIC,
+  p_delivery_cost           NUMERIC,
+  p_discount                NUMERIC,
+  p_total                   NUMERIC,
+  p_coupon_id               UUID,
+  p_items                   JSONB,
+  -- ── Surviving Parameters with Exact Live Defaults ───────────────────────────
+  p_user_id                 UUID             DEFAULT NULL,
   p_latitude                DOUBLE PRECISION DEFAULT NULL,
   p_longitude               DOUBLE PRECISION DEFAULT NULL,
-  p_map_url                 TEXT    DEFAULT NULL,
-  -- ── Loyalty ────────────────────────────────────────────────────────────────
-  p_points_spent            INTEGER DEFAULT 0,
-  p_points_discount         NUMERIC DEFAULT 0,
-  p_points_earned           INTEGER DEFAULT 0,
-  -- ── Merchant / Payment ─────────────────────────────────────────────────────
-  p_merchant_id             UUID    DEFAULT NULL,
-  p_payment_method          TEXT    DEFAULT 'cod',
-  p_merchant_notes          TEXT    DEFAULT NULL,
-  -- ── Financial Snapshot ─────────────────────────────────────────────────────
-  p_merchandise_subtotal    NUMERIC DEFAULT NULL,
-  p_discount_total          NUMERIC DEFAULT NULL,
-  p_delivery_fee_charged    NUMERIC DEFAULT NULL,
-  p_platform_commission_type    TEXT    DEFAULT 'fixed',
-  p_platform_commission_rate    NUMERIC DEFAULT 0,
-  p_platform_commission_amount  NUMERIC DEFAULT 0,
-  p_platform_assisted_fee_amount NUMERIC DEFAULT 0,
-  p_platform_extra_fee_amount   NUMERIC DEFAULT 0,
-  p_courier_fee_payable         NUMERIC DEFAULT 0,
-  p_merchant_gross_amount       NUMERIC DEFAULT NULL,
-  p_merchant_net_amount         NUMERIC DEFAULT NULL,
-  p_gross_collected_amount      NUMERIC DEFAULT NULL,
-  p_platform_net_revenue_amount NUMERIC DEFAULT 0,
-  p_currency_code               TEXT    DEFAULT 'IQD',
-  p_financial_snapshot_version  INTEGER DEFAULT 1,
-  -- ── Status ──────────────────────────────────────────────────────────────────
-  p_payment_status          TEXT    DEFAULT 'unpaid',
-  p_collection_status       TEXT    DEFAULT 'not_collected',
-  p_settlement_status       TEXT    DEFAULT 'not_accrued',
-  p_cash_expected_amount    NUMERIC DEFAULT NULL,
-  -- ── Commercial Rules ───────────────────────────────────────────────────────
-  p_commission_rule_id      UUID    DEFAULT NULL,
-  p_assisted_fee_rule_id    UUID    DEFAULT NULL,
-  p_platform_fee_rule_id    UUID    DEFAULT NULL,
-  p_delivery_billing_rule_id UUID   DEFAULT NULL,
-  p_resolved_plan_id        UUID    DEFAULT NULL,
-  p_resolved_plan_code      TEXT    DEFAULT NULL,
-  p_commercial_snapshot_version INTEGER DEFAULT 1,
-  -- ── Channel Attribution ────────────────────────────────────────────────────
-  p_channel                 TEXT    DEFAULT 'web_checkout'
+  p_map_url                 TEXT             DEFAULT NULL,
+  p_points_spent            INTEGER          DEFAULT 0,
+  p_points_discount         NUMERIC          DEFAULT 0,
+  p_points_earned           INTEGER          DEFAULT 0,
+  p_merchant_id             UUID             DEFAULT NULL,
+  p_payment_method          TEXT             DEFAULT NULL,
+  p_merchant_notes          TEXT             DEFAULT NULL,
+  p_merchandise_subtotal    NUMERIC          DEFAULT NULL,
+  p_discount_total          NUMERIC          DEFAULT NULL,
+  p_delivery_fee_charged    NUMERIC          DEFAULT NULL,
+  p_platform_commission_type    TEXT         DEFAULT NULL,
+  p_platform_commission_rate    NUMERIC      DEFAULT NULL,
+  p_platform_commission_amount  NUMERIC      DEFAULT NULL,
+  p_platform_assisted_fee_amount NUMERIC     DEFAULT NULL,
+  p_platform_extra_fee_amount   NUMERIC      DEFAULT NULL,
+  p_courier_fee_payable         NUMERIC      DEFAULT NULL,
+  p_merchant_gross_amount       NUMERIC      DEFAULT NULL,
+  p_merchant_net_amount         NUMERIC      DEFAULT NULL,
+  p_gross_collected_amount      NUMERIC      DEFAULT NULL,
+  p_platform_net_revenue_amount NUMERIC      DEFAULT NULL,
+  p_currency_code               TEXT         DEFAULT 'IQD',
+  p_financial_snapshot_version  INTEGER      DEFAULT 0,
+  p_payment_status          TEXT             DEFAULT 'unpaid',
+  p_collection_status       TEXT             DEFAULT 'not_collected',
+  p_settlement_status       TEXT             DEFAULT 'not_accrued',
+  p_cash_expected_amount    NUMERIC          DEFAULT NULL,
+  p_commission_rule_id      UUID             DEFAULT NULL,
+  p_assisted_fee_rule_id    UUID             DEFAULT NULL,
+  p_platform_fee_rule_id    UUID             DEFAULT NULL,
+  p_delivery_billing_rule_id UUID            DEFAULT NULL,
+  p_resolved_plan_id        UUID             DEFAULT NULL,
+  p_resolved_plan_code      TEXT             DEFAULT NULL,
+  p_commercial_snapshot_version INTEGER      DEFAULT 0,
+  p_channel                 TEXT             DEFAULT NULL
 )
 RETURNS TEXT
 LANGUAGE plpgsql
@@ -313,7 +307,7 @@ BEGIN
     COALESCE(p_gross_collected_amount, p_total),
     COALESCE(p_platform_net_revenue_amount, 0),
     COALESCE(p_currency_code, 'IQD'),
-    COALESCE(p_financial_snapshot_version, 1),
+    COALESCE(p_financial_snapshot_version, 0),
     -- ── Status ──────────────────────────────────────────────────────────────
     COALESCE(p_payment_status, 'unpaid'),
     COALESCE(p_collection_status, 'not_collected'),
@@ -321,7 +315,7 @@ BEGIN
     COALESCE(p_cash_expected_amount, COALESCE(p_gross_collected_amount, p_total)),
     -- ── Commercial Rules ────────────────────────────────────────────────────
     p_commission_rule_id, p_assisted_fee_rule_id, p_platform_fee_rule_id, p_delivery_billing_rule_id,
-    p_resolved_plan_id, p_resolved_plan_code, COALESCE(p_commercial_snapshot_version, 1),
+    p_resolved_plan_id, p_resolved_plan_code, COALESCE(p_commercial_snapshot_version, 0),
     -- ── Active Modern Channel Attribution ───────────────────────────────────
     COALESCE(p_channel, 'web_checkout')
   ) RETURNING id, order_number INTO v_order_id, v_order_number;
@@ -686,6 +680,10 @@ BEGIN
 
   IF v_poi_rec.owner_name <> 'postgres' THEN
     RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order_idempotent owner [%] is not postgres', v_poi_rec.owner_name;
+  END IF;
+
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order_idempotent search_path is not pinned to public, pg_temp';
   END IF;
 
   -- Assert ACL Privileges on both functions

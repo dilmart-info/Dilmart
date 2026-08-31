@@ -652,4 +652,117 @@ BEGIN
 END;
 $fra_pis_001$;
 
+-- ── Stage B Migration A: place_order Authority & ACL Gate ────────────────────
+DO $stage_b_place_order_gate$
+DECLARE
+  v_po_count INT;
+  v_poi_count INT;
+  v_po_rec RECORD;
+  v_poi_rec RECORD;
+  v_expected_po_identity TEXT := 'p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
+  v_expected_idempotent_identity TEXT := 'p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
+BEGIN
+  -- 1. Assert exactly 1 public.place_order function
+  SELECT count(*) INTO v_po_count
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order';
+
+  IF v_po_count <> 1 THEN
+    RAISE EXCEPTION 'Stage B Gate: Expected exactly 1 public.place_order, found %', v_po_count;
+  END IF;
+
+  -- 2. Inspect public.place_order attributes
+  SELECT
+    p.oid,
+    p.pronargs,
+    pg_get_function_identity_arguments(p.oid) AS identity_args,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_po_rec
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order';
+
+  IF v_po_rec.pronargs <> 49 THEN
+    RAISE EXCEPTION 'Stage B Gate: Expected 49 arguments on public.place_order, found %', v_po_rec.pronargs;
+  END IF;
+
+  IF v_po_rec.identity_args <> v_expected_po_identity THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order identity arguments [%] do not match expected [%]', v_po_rec.identity_args, v_expected_po_identity;
+  END IF;
+
+  IF NOT v_po_rec.prosecdef THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order is not SECURITY DEFINER';
+  END IF;
+
+  IF v_po_rec.owner_name <> 'postgres' THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order owner [%] is not postgres', v_po_rec.owner_name;
+  END IF;
+
+  IF NOT ('search_path=public, pg_temp' = ANY(v_po_rec.proconfig)) THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order search_path is not pinned to public, pg_temp';
+  END IF;
+
+  -- 3. Assert temporary legacy function absent
+  IF EXISTS (
+    SELECT 1 FROM pg_catalog.pg_proc p
+    JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'place_order_legacy_stageb'
+  ) THEN
+    RAISE EXCEPTION 'Stage B Gate: Temporary legacy function place_order_legacy_stageb still exists';
+  END IF;
+
+  -- 4. Inspect public.place_order_idempotent
+  SELECT
+    p.oid,
+    p.pronargs,
+    pg_get_function_identity_arguments(p.oid) AS identity_args,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_poi_rec
+  FROM pg_catalog.pg_proc p
+  JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_poi_rec.pronargs <> 51 THEN
+    RAISE EXCEPTION 'Stage B Gate: Expected 51 arguments on public.place_order_idempotent, found %', v_poi_rec.pronargs;
+  END IF;
+
+  IF v_poi_rec.identity_args <> v_expected_idempotent_identity THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent identity arguments [%] do not match expected [%]', v_poi_rec.identity_args, v_expected_idempotent_identity;
+  END IF;
+
+  IF NOT v_poi_rec.prosecdef THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent is not SECURITY DEFINER';
+  END IF;
+
+  IF v_poi_rec.owner_name <> 'postgres' THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent owner [%] is not postgres', v_poi_rec.owner_name;
+  END IF;
+
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent search_path is not pinned to public, pg_temp';
+  END IF;
+
+  -- 5. ACL assertions
+  IF NOT has_function_privilege('service_role', v_po_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'Stage B Gate: service_role lacks EXECUTE on public.place_order';
+  END IF;
+  IF has_function_privilege('anon', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_po_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'Stage B Gate: Non-service-role role has EXECUTE on public.place_order';
+  END IF;
+
+  IF NOT has_function_privilege('service_role', v_poi_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'Stage B Gate: service_role lacks EXECUTE on public.place_order_idempotent';
+  END IF;
+  IF has_function_privilege('anon', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_poi_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'Stage B Gate: Non-service-role role has EXECUTE on public.place_order_idempotent';
+  END IF;
+END;
+$stage_b_place_order_gate$;
+
+
 
