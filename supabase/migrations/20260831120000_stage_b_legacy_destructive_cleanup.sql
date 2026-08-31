@@ -269,13 +269,6 @@ DROP TABLE IF EXISTS public.store_carts;
 DROP TABLE IF EXISTS public.store_linked_profiles;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL & SEARCH_PATH ON MODERN CHECKOUT RPCs
--- ────────────────────────────────────────────────────────────────────────────
-ALTER FUNCTION public.place_order_idempotent SET search_path = public, pg_temp;
-REVOKE ALL ON FUNCTION public.place_order_idempotent FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.place_order_idempotent TO service_role;
-
--- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 7: FAIL-CLOSED POSTCONDITION CATALOG ASSERTIONS
 -- ────────────────────────────────────────────────────────────────────────────
 DO $postconditions$
