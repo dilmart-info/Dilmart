@@ -279,25 +279,11 @@ DO $postconditions$
 DECLARE
   v_remaining_fn_count  INT;
   v_remaining_tbl_count INT;
-  v_remaining_col_count INT;
+  v_tbl                 RECORD;
   v_po_count            INT;
-  v_po_49_count         INT;
+  v_po_rec              RECORD;
   v_poi_count           INT;
-  v_poi_51_count        INT;
-  v_po_owner            TEXT;
-  v_poi_owner           TEXT;
-  v_po_secdef           BOOLEAN;
-  v_poi_secdef          BOOLEAN;
-  v_po_svc              BOOLEAN;
-  v_poi_svc             BOOLEAN;
-  v_po_anon             BOOLEAN;
-  v_poi_anon            BOOLEAN;
-  v_po_auth             BOOLEAN;
-  v_poi_auth            BOOLEAN;
-  v_po_pub              BOOLEAN;
-  v_poi_pub             BOOLEAN;
-  v_po_cfg              TEXT[];
-  v_poi_cfg             TEXT[];
+  v_poi_rec             RECORD;
 BEGIN
   -- ── 7.1 Verify Zero Legacy Functions Remain ────────────────────────────────
   SELECT count(*) INTO v_remaining_fn_count
