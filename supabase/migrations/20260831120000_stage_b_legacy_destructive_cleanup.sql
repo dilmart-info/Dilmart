@@ -272,27 +272,27 @@ DROP TABLE IF EXISTS public.store_linked_profiles;
 -- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL & SEARCH_PATH ON MODERN CHECKOUT RPCs
 -- ────────────────────────────────────────────────────────────────────────────
 ALTER FUNCTION public.place_order_idempotent(
-  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
-  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
-  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
-  numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric,
-  uuid, uuid, uuid, uuid, uuid, text, integer, text
+  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
+  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
+  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
 ) SET search_path = public, pg_temp;
 
 REVOKE ALL ON FUNCTION public.place_order_idempotent(
-  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
-  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
-  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
-  numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric,
-  uuid, uuid, uuid, uuid, uuid, text, integer, text
+  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
+  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
+  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
 ) FROM PUBLIC, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.place_order_idempotent(
-  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
-  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
-  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
-  numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric,
-  uuid, uuid, uuid, uuid, uuid, text, integer, text
+  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
+  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
+  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
 ) TO service_role;
 
 -- ────────────────────────────────────────────────────────────────────────────
