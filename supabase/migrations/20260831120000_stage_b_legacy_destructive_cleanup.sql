@@ -273,6 +273,25 @@ DROP TABLE IF EXISTS public.store_carts;
 DROP TABLE IF EXISTS public.store_linked_profiles;
 
 -- ────────────────────────────────────────────────────────────────────────────
+-- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL ON MODERN CHECKOUT RPCs
+-- ────────────────────────────────────────────────────────────────────────────
+REVOKE EXECUTE ON FUNCTION public.place_order_idempotent(
+  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
+  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
+  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
+  numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric, uuid, uuid,
+  uuid, uuid, uuid, text, integer, text
+) FROM public, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.place_order_idempotent(
+  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
+  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
+  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
+  numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric, uuid, uuid,
+  uuid, uuid, uuid, text, integer, text
+) TO service_role;
+
+-- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 7: FAIL-CLOSED POSTCONDITION CATALOG ASSERTIONS
 -- ────────────────────────────────────────────────────────────────────────────
 DO $postconditions$
