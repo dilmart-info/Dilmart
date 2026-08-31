@@ -20,16 +20,18 @@ interface PendingSwitch {
   triggerElement: HTMLElement | null;
   /** Optional callback invoked after successful addition (both direct add and confirmed switch). */
   onSuccess?: () => void;
+  /** Explicit quantity to add */
+  quantity?: number;
 }
 
 /**
- * Shared hook + dialog for the merchant-switch cart flow.
+ * Shared hook + dialog for the single-merchant switch cart flow.
  *
  * Usage in any consumer:
  * ```tsx
  * const { attemptAdd, dialogNode } = useMerchantSwitchCart();
  * // in JSX: {dialogNode}
- * // on click: attemptAdd(product, e.currentTarget)
+ * // on click: attemptAdd(product, e.currentTarget, onSuccess, quantity)
  * ```
  */
 export function useMerchantSwitchCart() {
@@ -40,14 +42,19 @@ export function useMerchantSwitchCart() {
   const pendingRef = useRef<PendingSwitch | null>(null);
 
   const attemptAdd = useCallback(
-    (product: CartLineProduct, triggerElement: HTMLElement | null, onSuccess?: () => void): boolean => {
-      const result = addItem(product);
+    (
+      product: CartLineProduct,
+      triggerElement: HTMLElement | null,
+      onSuccess?: () => void,
+      quantity = 1,
+    ): boolean => {
+      const result = addItem(product, quantity);
       if (result.success) {
         onSuccess?.();
         return true;
       }
       if (result.reason === "DIFFERENT_MERCHANT") {
-        const entry: PendingSwitch = { product, triggerElement, onSuccess };
+        const entry: PendingSwitch = { product, triggerElement, onSuccess, quantity };
         pendingRef.current = entry;
         setPending(entry);
         return false;
@@ -62,7 +69,7 @@ export function useMerchantSwitchCart() {
     const entry = pendingRef.current;
     if (!entry) return;
     clearCart();
-    const result = addItem(entry.product);
+    const result = addItem(entry.product, entry.quantity ?? 1);
     if (result.success) {
       if (entry.triggerElement) {
         triggerCartAnimation(entry.triggerElement);
@@ -80,30 +87,30 @@ export function useMerchantSwitchCart() {
 
   const dialogNode = (
     <AlertDialog open={!!pending} onOpenChange={(open) => !open && handleCancel()}>
-      <AlertDialogContent className="max-w-[92vw] rounded-2xl border-DilMart-store-gold/20 bg-card sm:max-w-md" dir="rtl">
+      <AlertDialogContent className="max-w-[92vw] rounded-2xl border-border bg-white sm:max-w-md shadow-lg" dir="rtl">
         <AlertDialogHeader className="text-right">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full border border-DilMart-store-gold/30 bg-DilMart-store-gold/10">
-            <ArrowLeftRight className="h-5 w-5 text-DilMart-store-gold-bright" strokeWidth={1.5} />
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-primary/20 bg-primary/10">
+            <ArrowLeftRight className="h-5 w-5 text-primary" strokeWidth={2} />
           </div>
-          <AlertDialogTitle className="text-center text-lg font-semibold">
+          <AlertDialogTitle className="text-center font-tajawal text-lg font-black text-navy">
             لديك منتجات من متجر آخر في السلة
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-center text-sm leading-relaxed text-muted-foreground">
+          <AlertDialogDescription className="text-center text-xs sm:text-sm leading-relaxed text-muted-foreground">
             لإضافة هذا المنتج، يجب بدء سلة جديدة. سيتم حذف المنتجات الموجودة حاليًا من السلة.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex flex-col-reverse gap-2 sm:flex-row sm:gap-2">
           <AlertDialogCancel
             onClick={handleCancel}
-            className="rounded-full border-DilMart-store-gold/20 text-sm"
+            className="rounded-xl border-border font-bold text-xs"
           >
             الاحتفاظ بالسلة الحالية
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleConfirmSwitch}
-            className="gap-2 rounded-full bg-primary text-sm text-primary-foreground"
+            className="gap-2 rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white"
           >
-            <ShoppingBag size={16} strokeWidth={1.5} />
+            <ShoppingBag size={15} strokeWidth={2} />
             تفريغ السلة وإضافة المنتج
           </AlertDialogAction>
         </AlertDialogFooter>

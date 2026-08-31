@@ -3,12 +3,32 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { formatPrice } from "@/lib/format";
 import { useWishlistStore } from "@/lib/wishlist-store";
-import { ShoppingBag, MessageCircle, ArrowRight, Heart, Gift } from "lucide-react";
+import { useCartStore } from "@/lib/cart-store";
+import {
+  ShoppingBag,
+  MessageCircle,
+  ChevronLeft,
+  Heart,
+  Gift,
+  Truck,
+  CreditCard,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Minus,
+  Plus,
+  Share2,
+  Sparkles,
+  ShieldCheck,
+  Store,
+  Tag,
+  RefreshCw,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { triggerCartAnimation } from "@/components/FlyingCartAnimation";
 import { useMerchantSwitchCart } from "@/components/MerchantSwitchCartDialog";
 import { apiClient } from "@/lib/api-client";
@@ -26,6 +46,9 @@ const ProductDetail = () => {
     data: product,
     isLoading,
     isError,
+    error,
+    refetch,
+    isFetching,
   } = useQuery({
     queryKey: ["marketplace-product", slug],
     queryFn: () => apiClient.getMarketplaceProductBySlug(slug!),
@@ -35,15 +58,32 @@ const ProductDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
         <Header />
-        <main className="flex-1 container py-10">
-          <div className="grid gap-10 md:grid-cols-2">
-            <Skeleton className="aspect-square rounded-2xl bg-muted/30" />
-            <div className="space-y-4">
-              <Skeleton className="h-10 w-3/4 bg-muted/30" />
-              <Skeleton className="h-8 w-1/2 bg-muted/30" />
-              <Skeleton className="h-28 w-full bg-muted/30" />
+        <main className="flex-1 container py-6 md:py-10">
+          <div className="mb-6 flex items-center gap-2">
+            <Skeleton className="h-4 w-20 rounded" />
+            <Skeleton className="h-4 w-4 rounded-full" />
+            <Skeleton className="h-4 w-28 rounded" />
+          </div>
+          <div className="grid gap-8 md:grid-cols-12 md:gap-12">
+            <div className="md:col-span-6 space-y-4">
+              <Skeleton className="aspect-square w-full rounded-2xl bg-muted/40" />
+              <div className="flex gap-3">
+                <Skeleton className="h-16 w-16 rounded-xl bg-muted/30" />
+                <Skeleton className="h-16 w-16 rounded-xl bg-muted/30" />
+                <Skeleton className="h-16 w-16 rounded-xl bg-muted/30" />
+              </div>
+            </div>
+            <div className="md:col-span-6 space-y-5">
+              <Skeleton className="h-8 w-3/4 rounded-xl bg-muted/40" />
+              <Skeleton className="h-5 w-1/3 rounded bg-muted/30" />
+              <Skeleton className="h-9 w-1/2 rounded-xl bg-muted/40" />
+              <Skeleton className="h-24 w-full rounded-2xl bg-muted/30" />
+              <div className="flex gap-4 pt-4">
+                <Skeleton className="h-12 flex-1 rounded-xl bg-muted/40" />
+                <Skeleton className="h-12 w-12 rounded-xl bg-muted/30" />
+              </div>
             </div>
           </div>
         </main>
@@ -53,18 +93,64 @@ const ProductDetail = () => {
   }
 
   if (isError || !product) {
+    const errAny = error as any;
+    const isNotFound =
+      errAny?.status === 404 ||
+      errAny?.statusCode === 404 ||
+      errAny?.message?.includes("404") ||
+      errAny?.message?.toLowerCase()?.includes("not found") ||
+      errAny?.message?.includes("NOT_FOUND") ||
+      (!isError && !product);
+
+    if (isNotFound) {
+      return (
+        <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
+          <Header />
+          <main className="flex-1 container py-20 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <AlertCircle size={32} />
+            </div>
+            <h1 className="font-tajawal text-2xl md:text-3xl font-black text-navy">المنتج غير موجود</h1>
+            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+              قد يكون الرابط غير صحيح أو تم إيقاف توفر هذا المنتج مؤقتاً.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <Button asChild className="rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs h-10 px-6">
+                <Link to="/products">العودة للمنتجات</Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl border-border font-bold text-xs h-10 px-6">
+                <Link to="/stores">استعراض المتاجر</Link>
+              </Button>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
         <Header />
-        <main className="flex-1 container py-24 text-center">
-          <h1 className="font-display text-2xl font-semibold">المنتج غير موجود</h1>
-          <p className="mt-2 text-sm text-muted-foreground">قد يكون الرابط غير صحيح أو المنتج غير متاح حالياً.</p>
+        <main className="flex-1 container py-20 text-center">
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+            <RefreshCw size={32} className={isFetching ? "animate-spin" : ""} />
+          </div>
+          <h1 className="font-tajawal text-2xl md:text-3xl font-black text-navy">تعذر تحميل المنتج</h1>
+          <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+            حدث خطأ أثناء الاتصال بالخادم، يرجى المحاولة مرة أخرى.
+          </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild className="rounded-full">
-              <Link to="/products">العودة للمنتجات</Link>
+            <Button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs h-10 px-6 gap-2"
+            >
+              <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+              <span>حاول مرة أخرى</span>
             </Button>
-            <Button asChild variant="outline" className="rounded-full border-DilMart-store-gold/30">
-              <Link to="/stores">استعراض المتاجر</Link>
+            <Button asChild variant="outline" className="rounded-xl border-border font-bold text-xs h-10 px-6">
+              <Link to="/products">العودة للمنتجات</Link>
             </Button>
           </div>
         </main>
@@ -78,10 +164,13 @@ const ProductDetail = () => {
 
 function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct }) {
   const { attemptAdd, dialogNode } = useMerchantSwitchCart();
-  const navigate = useNavigate();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, hasItem: isInWishlist } = useWishlistStore();
+  const cartItems = useCartStore((state) => state.items);
   const [selectedImage, setSelectedImage] = useState(0);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
+  const [quantity, setQuantity] = useState(1);
+  const addToCartBtnRef = useRef<HTMLButtonElement | null>(null);
+
   const displaySrc = useCallback(
     (url: string) => (failedUrls[url] ? PLACEHOLDER_IMG : url),
     [failedUrls],
@@ -94,8 +183,9 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
     queryKey: ["marketplace-suggested", product.category_id, product.id],
     queryFn: async () => {
       try {
+        if (!product.category_id) return MARKETPLACE_EMPTY_SUGGESTED;
         return await apiClient.getMarketplaceSuggested({
-          category_id: product.category_id!,
+          category_id: product.category_id,
           exclude_id: product.id,
         });
       } catch {
@@ -107,10 +197,28 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
 
   const suggested = suggestedPayload?.items ?? [];
 
+  // Calculate stock limits accounting for what's already in the cart
+  const existingCartItem = cartItems.find((item) => item.product.id === product.id);
+  const existingInCart = existingCartItem?.quantity ?? 0;
+  const isStockKnown = typeof product.stock === "number" && product.stock >= 0;
+  const isOutOfStock = isStockKnown && product.stock === 0;
+  const remainingAddable = isStockKnown ? Math.max(0, product.stock! - existingInCart) : 99;
+  const isAllStockInCart = isStockKnown && product.stock! > 0 && remainingAddable === 0;
+  const maxSelectableQuantity = isStockKnown ? Math.max(1, Math.min(remainingAddable, 99)) : 99;
+
+  const isLowStock = isStockKnown && product.stock! > 0 && product.stock! <= 5;
+
   useEffect(() => {
     setFailedUrls({});
     setSelectedImage(0);
+    setQuantity(1);
   }, [product.id]);
+
+  useEffect(() => {
+    if (quantity > maxSelectableQuantity && remainingAddable > 0) {
+      setQuantity(maxSelectableQuantity);
+    }
+  }, [maxSelectableQuantity, quantity, remainingAddable]);
 
   useEffect(() => {
     trackGrowthHookEvent("product.viewed", {
@@ -128,83 +236,211 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   }, [product.id, product.slug, product.name, product.merchant_id]);
 
   const merchantEmbed = product.merchants;
-
   const hasDiscount = product.discount_price != null && product.discount_price < product.price;
-  const images = product.images && product.images.length > 0 ? product.images : ["/placeholder.svg"];
+  const images = product.images && product.images.length > 0 ? product.images : [PLACEHOLDER_IMG];
   const productUrl = `${window.location.origin}/product/${product.slug}`;
-  const isOutOfStock = product.stock !== null && product.stock <= 0;
-  const loyaltyPts =
-    product.loyalty_points_enabled !== false && !isOutOfStock
-      ? Math.floor((product.discount_price ?? product.price) / 100)
-      : null;
 
-  const handleWhatsAppIntent = async (mode: "order" | "inquiry") => {
+  const inWishlist = isInWishlist(product.id);
+
+  const handleWishlistToggle = () => {
+    if (inWishlist) {
+      removeFromWishlist(product.id);
+      toast.success("تمت الإزالة من المفضلة");
+    } else {
+      addToWishlist(product.id, { sourceSurface: "product_detail" });
+      toast.success("تمت الإضافة إلى المفضلة");
+    }
+  };
+
+  const handleAddToCart = (targetEl?: HTMLElement | null) => {
+    if (isOutOfStock || isAllStockInCart) return;
+    const trigger = targetEl ?? addToCartBtnRef.current;
+    const directAdded = attemptAdd(
+      product,
+      trigger,
+      () => {
+        toast.success(`تمت إضافة ${quantity > 1 ? `${quantity} قطع` : "المنتج"} إلى السلة`);
+      },
+      quantity,
+    );
+    if (directAdded && trigger) {
+      triggerCartAnimation(trigger);
+    }
+  };
+
+  const handleQuantityDecrease = () => {
+    setQuantity((q) => Math.max(1, q - 1));
+  };
+
+  const handleQuantityIncrease = () => {
+    setQuantity((q) => Math.min(maxSelectableQuantity, q + 1));
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          url: productUrl,
+        });
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      navigator.clipboard.writeText(productUrl);
+      toast.success("تم نسخ رابط المنتج");
+    }
+  };
+
+  const handleWhatsAppInquiry = async () => {
     try {
       await startTrackedWhatsAppIntent({
         merchantId: product.merchant_id,
         merchantName: merchantEmbed?.display_name ?? "",
         sourceSurface: "product",
         product: { id: product.id, name: product.name },
-        completionLink: mode === "order" ? `${window.location.origin}/checkout` : productUrl,
+        completionLink: productUrl,
       });
     } catch (error: any) {
       toast.error(error?.message || "تعذّر فتح واتساب حالياً");
     }
   };
 
-  return (
-    <div className="flex min-h-screen flex-col bg-background">
-      <Header />
-      <main className="flex-1">
-        <div className="container py-8 md:py-12">
-          <nav className="mb-8 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-            <Link to="/" className="transition-colors hover:text-DilMart-store-gold">
-              الرئيسية
-            </Link>
-            <ArrowRight size={12} className="opacity-50" />
-            <Link to="/products" className="transition-colors hover:text-DilMart-store-gold">
-              المنتجات
-            </Link>
-            {merchantEmbed?.slug ? (
-              <>
-                <ArrowRight size={12} className="opacity-50" />
-                <Link to={`/store/${merchantEmbed.slug}`} className="transition-colors hover:text-DilMart-store-gold line-clamp-1">
-                  {merchantEmbed.display_name}
-                </Link>
-              </>
-            ) : null}
-            <ArrowRight size={12} className="opacity-50" />
-            <span className="line-clamp-1 text-foreground">{product.name}</span>
-          </nav>
+  // Build clean specifications list from actual available contract fields
+  const specs = [
+    product.brand ? { label: "العلامة التجارية", value: String(product.brand).trim() } : null,
+    product.dimensions ? { label: "الأبعاد", value: String(product.dimensions).trim() } : null,
+    product.weight_grams
+      ? {
+          label: "الوزن",
+          value:
+            product.weight_grams >= 1000
+              ? `${(product.weight_grams / 1000).toFixed(1)} كغ`
+              : `${product.weight_grams} غرام`,
+        }
+      : null,
+    product.colors && product.colors.length > 0
+      ? { label: "الألوان المتوفرة", value: product.colors.join("، ") }
+      : null,
+    product.sizes && product.sizes.length > 0
+      ? { label: "المقاسات المتوفرة", value: product.sizes.join("، ") }
+      : null,
+  ].filter(Boolean) as { label: string; value: string }[];
 
-          <div className="grid gap-10 md:grid-cols-2 md:gap-14 lg:gap-16">
-            <div>
-              <div className="overflow-hidden rounded-2xl border border-DilMart-store-gold/15 bg-card shadow-2xl shadow-black/40">
-                <div className="aspect-square">
+  const discountPercentage = hasDiscount
+    ? Math.round(((product.price - product.discount_price!) / product.price) * 100)
+    : 0;
+
+  const isAddBlocked = isOutOfStock || isAllStockInCart;
+  const buttonLabel = isOutOfStock
+    ? "نفد من المخزون"
+    : isAllStockInCart
+      ? "الكمية المتاحة بالكامل في السلة"
+      : "أضف إلى السلة";
+
+  return (
+    <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
+      {dialogNode}
+      <Header />
+
+      <main className="flex-1 pb-24 md:pb-16">
+        {/* 1. Breadcrumbs Nav */}
+        <div className="border-b border-border/70 bg-white shadow-xs">
+          <div className="container py-3 md:py-4">
+            <nav className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground font-medium" aria-label="مسار المنتج">
+              <Link to="/" className="hover:text-primary transition-colors">
+                الرئيسية
+              </Link>
+              <ChevronLeft size={13} className="text-muted-foreground/60" />
+              <Link to="/products" className="hover:text-primary transition-colors">
+                المنتجات
+              </Link>
+              {merchantEmbed?.slug ? (
+                <>
+                  <ChevronLeft size={13} className="text-muted-foreground/60" />
+                  <Link
+                    to={`/store/${merchantEmbed.slug}`}
+                    className="hover:text-primary transition-colors line-clamp-1 max-w-[140px]"
+                  >
+                    {merchantEmbed.display_name}
+                  </Link>
+                </>
+              ) : null}
+              <ChevronLeft size={13} className="text-muted-foreground/60" />
+              <span className="font-bold text-navy line-clamp-1 max-w-[200px] sm:max-w-md">{product.name}</span>
+            </nav>
+          </div>
+        </div>
+
+        {/* 2. Product Main Container: Gallery + Identity & Purchase Panel */}
+        <div className="container py-6 md:py-10">
+          <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+            {/* Gallery Column (Desktop: 6 cols, Mobile: full width) */}
+            <div className="lg:col-span-6 space-y-4">
+              {/* Main Image Container */}
+              <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-white p-3 shadow-xs">
+                {/* Discount Badge */}
+                <div className="absolute top-5 right-5 z-10 flex flex-col gap-1.5">
+                  {hasDiscount && (
+                    <span className="inline-flex items-center rounded-lg bg-accent px-2.5 py-1 text-xs font-black text-white shadow-sm">
+                      خصم %{discountPercentage}
+                    </span>
+                  )}
+                </div>
+
+                {/* Wishlist & Share Quick Actions */}
+                <div className="absolute top-5 left-5 z-10 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleWishlistToggle}
+                    className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/90 backdrop-blur-xs border border-border/60 shadow-xs transition-all ${
+                      inWishlist ? "text-rose-600" : "text-muted-foreground hover:text-rose-600"
+                    }`}
+                    aria-label={inWishlist ? "إزالة من المفضلة" : "إضافة للمفضلة"}
+                  >
+                    <Heart size={18} fill={inWishlist ? "currentColor" : "none"} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/90 backdrop-blur-xs border border-border/60 shadow-xs text-muted-foreground hover:text-navy transition-all"
+                    aria-label="مشاركة المنتج"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                </div>
+
+                {/* Main Image */}
+                <div className="aspect-square w-full overflow-hidden rounded-xl bg-slate-50 flex items-center justify-center">
                   <img
                     src={displaySrc(images[selectedImage])}
                     alt={product.name}
                     onError={() => onImgError(images[selectedImage])}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain md:object-cover transition-all duration-300"
                   />
                 </div>
               </div>
+
+              {/* Thumbnails Row */}
               {images.length > 1 && (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {images.map((img, i) => (
+                <div className="flex gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+                  {images.map((img, idx) => (
                     <button
-                      key={i}
+                      key={idx}
                       type="button"
-                      onClick={() => setSelectedImage(i)}
-                      className={`h-16 w-16 overflow-hidden rounded-lg border-2 transition-colors ${
-                        i === selectedImage ? "border-DilMart-store-gold" : "border-transparent opacity-70 hover:opacity-100"
+                      onClick={() => setSelectedImage(idx)}
+                      className={`relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-xl border-2 bg-white p-1 transition-all ${
+                        idx === selectedImage
+                          ? "border-primary ring-2 ring-primary/20 shadow-xs"
+                          : "border-border/70 opacity-70 hover:opacity-100 hover:border-primary/40"
                       }`}
+                      aria-label={`عرض الصورة ${idx + 1}`}
                     >
                       <img
                         src={displaySrc(img)}
                         alt=""
                         onError={() => onImgError(img)}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover rounded-lg"
                       />
                     </button>
                   ))}
@@ -212,169 +448,323 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
               )}
             </div>
 
-            <div className="space-y-6 text-right">
-              <div className="space-y-2">
-                <h1 className="font-display text-3xl font-semibold leading-tight text-foreground md:text-4xl lg:text-[2.4rem]">
+            {/* Product Purchase & Details Column (Desktop: 6 cols) */}
+            <div className="lg:col-span-6 space-y-6">
+              {/* Identity Header: Title, Brand, Store & Stock */}
+              <div className="space-y-3">
+                {/* Brand & Stock Row */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {String(product.brand ?? "").trim() ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-navy">
+                      <Tag size={12} className="text-primary" />
+                      <span>{String(product.brand).trim()}</span>
+                    </span>
+                  ) : <span />}
+
+                  {/* Stock Status Badge */}
+                  {isOutOfStock ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-rose-50 border border-rose-200 px-2.5 py-1 text-xs font-bold text-rose-700">
+                      <AlertCircle size={13} />
+                      <span>نفد من المخزون</span>
+                    </span>
+                  ) : isLowStock ? (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2.5 py-1 text-xs font-bold text-amber-700">
+                      <Clock size={13} />
+                      <span>متبقي كمية محدودة ({product.stock} فقط)</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-xs font-bold text-emerald-700">
+                      <CheckCircle2 size={13} />
+                      <span>متوفر في المخزون</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* H1 Title */}
+                <h1 className="font-tajawal text-xl sm:text-2xl lg:text-3xl font-black text-navy leading-tight">
                   {product.name}
                 </h1>
+
+                {/* Merchant Link (Neutral authority: يُباع بواسطة) */}
                 {merchantEmbed?.slug ? (
-                  <p className="text-sm text-muted-foreground">
-                    من متجر:{" "}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Store size={14} className="text-primary" />
+                    <span>يُباع بواسطة:</span>
                     <Link
                       to={`/store/${merchantEmbed.slug}`}
-                      className="font-medium text-DilMart-store-gold transition-colors hover:text-DilMart-store-gold-bright hover:underline"
+                      className="font-bold text-primary hover:underline"
                     >
                       {merchantEmbed.display_name}
                     </Link>
-                  </p>
+                  </div>
                 ) : null}
-                {String(product.brand ?? "").trim() ? (
-                  <p className="text-sm text-muted-foreground">{String(product.brand).trim()}</p>
-                ) : null}
+
+                {/* Short Description */}
                 {String(product.short_description ?? "").trim() ? (
-                  <p className="text-sm leading-relaxed text-muted-foreground">
+                  <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground pt-1">
                     {String(product.short_description).trim()}
                   </p>
                 ) : null}
               </div>
 
-              <div className="flex flex-wrap items-baseline gap-3">
-                {hasDiscount ? (
-                  <>
-                    <span className="font-display text-3xl font-semibold text-DilMart-store-gold-bright md:text-4xl">
-                      {formatPrice(product.discount_price!)}
-                    </span>
-                    <span className="text-lg text-muted-foreground line-through">{formatPrice(product.price)}</span>
-                    <span className="rounded-full border border-DilMart-store-gold/25 bg-DilMart-store-gold/10 px-3 py-1 text-xs font-medium text-DilMart-store-gold-bright">
-                      خصم {Math.round(((product.price - product.discount_price!) / product.price) * 100)}%
-                    </span>
-                  </>
-                ) : (
-                  <span className="font-display text-3xl font-semibold text-DilMart-store-gold-bright md:text-4xl">{formatPrice(product.price)}</span>
+              {/* Price Panel */}
+              <div className="rounded-2xl border border-border/80 bg-slate-50/50 p-4 space-y-2">
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <span className="font-tajawal text-2xl sm:text-3xl lg:text-4xl font-black text-navy">
+                    {formatPrice(hasDiscount ? product.discount_price! : product.price)}
+                  </span>
+                  {hasDiscount && (
+                    <>
+                      <span className="text-base sm:text-lg text-muted-foreground line-through font-medium">
+                        {formatPrice(product.price)}
+                      </span>
+                      <span className="rounded-lg bg-accent/15 px-2.5 py-1 text-xs font-black text-accent">
+                        وفر %{discountPercentage}
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {/* Loyalty Info Note (Informational only — No fake client formula) */}
+                {product.loyalty_points_enabled !== false && !isOutOfStock && (
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700 pt-1">
+                    <Gift size={14} className="text-emerald-600" />
+                    <span>قد تحصل على نقاط مكافآت عند إتمام الشراء</span>
+                  </div>
                 )}
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                {isOutOfStock
-                  ? "غير متوفر"
-                  : product.stock != null && product.stock > 0 && product.stock < 5
-                    ? `المتبقي: ${product.stock}`
-                    : "متوفر"}
-              </p>
-
-              <Button
-                size="lg"
-                className="w-full gap-2 rounded-full"
-                disabled={isOutOfStock}
-                onClick={(e) => {
-                  const added = attemptAdd(product, e.currentTarget);
-                  if (added) {
-                    triggerCartAnimation(e.currentTarget);
-                  }
-                }}
-              >
-                <ShoppingBag size={18} strokeWidth={1.5} />
-                {isOutOfStock ? "غير متوفر" : "أضف إلى السلة"}
-              </Button>
-
-              {(() => {
-                const detailed = String(product.description ?? "").trim();
-                const short = String(product.short_description ?? "").trim();
-                if (!detailed || detailed === short) return null;
-                return (
-                  <div className="rounded-2xl border border-DilMart-store-gold/10 bg-card/40 p-5">
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wider text-DilMart-store-gold">وصف تفصيلي</p>
-                    <div className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">{detailed}</div>
-                  </div>
-                );
-              })()}
-
-              {loyaltyPts != null && loyaltyPts > 0 ? (
-                <div className="flex items-center justify-between gap-4 rounded-2xl border border-DilMart-store-gold/15 bg-DilMart-store-gold/5 px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-DilMart-store-gold/30 bg-background/50">
-                      <Gift className="h-5 w-5 text-DilMart-store-gold-bright" strokeWidth={1.25} />
+              {/* Informational Product Attributes (Colors & Sizes) */}
+              {(product.colors?.length || product.sizes?.length) ? (
+                <div className="space-y-3.5 border-t border-border/60 pt-4">
+                  {/* Colors List */}
+                  {product.colors && product.colors.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-bold text-navy">الألوان المتوفرة:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.colors.map((c) => (
+                          <span
+                            key={c}
+                            className="inline-flex items-center rounded-lg border border-border/80 bg-white px-2.5 py-1 text-xs font-medium text-navy"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">نقاط الولاء</p>
-                      <p className="text-xs text-muted-foreground">تُضاف عند إتمام الشراء</p>
+                  )}
+
+                  {/* Sizes List */}
+                  {product.sizes && product.sizes.length > 0 && (
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-bold text-navy">المقاسات المتوفرة:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.sizes.map((s) => (
+                          <span
+                            key={s}
+                            className="inline-flex items-center rounded-lg border border-border/80 bg-white px-2.5 py-1 text-xs font-medium text-navy"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  <span className="font-display text-2xl font-semibold text-DilMart-store-gold-bright">+{loyaltyPts}</span>
+                  )}
                 </div>
               ) : null}
 
-              <div className="flex flex-col gap-2 border-t border-DilMart-store-gold/10 pt-4">
-                <div className="flex flex-wrap gap-2">
+              {/* Quantity Stepper & Add to Cart Action */}
+              <div className="space-y-4 border-t border-border/60 pt-4">
+                {!isOutOfStock && (
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-navy">الكمية:</span>
+                      <div className="flex items-center rounded-xl border border-border bg-white shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={handleQuantityDecrease}
+                          disabled={quantity <= 1 || isAllStockInCart}
+                          className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-navy disabled:opacity-40 transition-colors"
+                          aria-label="تقليل الكمية"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-10 text-center text-sm font-bold text-navy" data-testid="product-quantity-display">
+                          {isAllStockInCart ? 0 : quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleQuantityIncrease}
+                          disabled={quantity >= maxSelectableQuantity || isAllStockInCart}
+                          className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-navy disabled:opacity-40 transition-colors"
+                          aria-label="زيادة الكمية"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Stock note if user has units in cart */}
+                    {existingInCart > 0 && isStockKnown && (
+                      <span className="text-[11px] text-muted-foreground">
+                        (لديك {existingInCart} في السلة)
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Primary & Secondary Action CTAs */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    ref={addToCartBtnRef}
+                    type="button"
+                    onClick={() => handleAddToCart()}
+                    disabled={isAddBlocked}
+                    className="h-12 flex-1 rounded-xl bg-primary hover:bg-primary-hover font-bold text-sm text-white gap-2 shadow-xs disabled:opacity-50"
+                  >
+                    <ShoppingBag size={18} strokeWidth={2} />
+                    <span>{buttonLabel}</span>
+                  </Button>
+
+                  {/* Secondary WhatsApp Inquiry */}
                   <Button
                     type="button"
-                    size="sm"
                     variant="outline"
-                    className={`rounded-full border-DilMart-store-gold/25 px-3 ${
-                      isInWishlist(product.id) ? "border-DilMart-store-gold/50 bg-DilMart-store-gold/10 text-DilMart-store-gold-bright" : "text-muted-foreground"
-                    }`}
-                    onClick={() =>
-                      isInWishlist(product.id)
-                        ? removeFromWishlist(product.id, { sourceSurface: "product_detail" })
-                        : addToWishlist(product.id, { sourceSurface: "product_detail" })
-                    }
+                    onClick={handleWhatsAppInquiry}
+                    className="h-12 rounded-xl border-border hover:bg-slate-50 font-bold text-xs text-navy gap-2"
                   >
-                    <Heart size={16} strokeWidth={1.5} className="ms-1" fill={isInWishlist(product.id) ? "currentColor" : "none"} />
-                    المفضلة
+                    <MessageCircle size={18} className="text-emerald-600" />
+                    <span>استفسار عبر واتساب</span>
                   </Button>
-                  {!isOutOfStock ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full border-DilMart-store-gold/25 text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        attemptAdd(product, null, () => navigate("/checkout"));
-                      }}
-                    >
-                      إتمام الطلب
-                    </Button>
-                  ) : null}
-                  {!isOutOfStock ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 rounded-full border-DilMart-store-gold/25 text-muted-foreground hover:text-foreground"
-                      onClick={() => void handleWhatsAppIntent("order")}
-                    >
-                      <MessageCircle size={15} strokeWidth={1.5} />
-                      واتساب
-                    </Button>
-                  ) : null}
                 </div>
-                <Button
-                  variant="link"
-                  size="sm"
-                  className="h-auto self-start px-0 py-1 text-xs text-muted-foreground hover:text-DilMart-store-gold"
-                  onClick={() => void handleWhatsAppIntent("inquiry")}
-                >
-                  استفسار عن المنتج
-                </Button>
+              </div>
+
+              {/* Neutral Delivery & Trust Highlights */}
+              <div className="rounded-2xl border border-border/80 bg-white p-4 space-y-3 shadow-xs">
+                <div className="flex items-center gap-3 text-xs text-navy font-medium">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Truck size={16} />
+                  </div>
+                  <span>توصيل موثوق — تفاصيل التوصيل تظهر أثناء إتمام الطلب</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-navy font-medium">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <CreditCard size={16} />
+                  </div>
+                  <span>خيارات دفع متاحة عند إتمام الطلب</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-navy font-medium">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <ShieldCheck size={16} />
+                  </div>
+                  <span>تسوق بثقة عبر ديل مارت</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {suggested.length > 0 ? (
-            <section className="mt-20 border-t border-DilMart-store-gold/10 pt-14">
-              <div className="mb-8 text-right">
-                <h2 className="font-display text-2xl font-semibold">قد يعجبك أيضاً</h2>
-                <p className="mt-1 text-sm text-muted-foreground">من نفس الفئة</p>
+          {/* 3. Description & Specifications Section */}
+          <div className="mt-12 space-y-6">
+            <div className="border-b border-border/80 pb-3">
+              <h2 className="font-tajawal text-lg sm:text-xl font-black text-navy">
+                تفاصيل ومواصفات المنتج
+              </h2>
+            </div>
+
+            <div className="grid gap-8 lg:grid-cols-12">
+              {/* Full Description */}
+              <div className="lg:col-span-7 space-y-3">
+                <h3 className="text-sm font-bold text-navy">وصف المنتج</h3>
+                <div className="rounded-2xl border border-border/80 bg-white p-5 text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-line shadow-xs">
+                  {product.description || product.short_description || "لا يوجد وصف إضافي متوفر لهذا المنتج حالياً."}
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6">
-                {suggested.map((p) => (
-                  <ProductCard key={p.id} product={p} />
+
+              {/* Specifications Table (Built only from real existing fields) */}
+              <div className="lg:col-span-5 space-y-3">
+                <h3 className="text-sm font-bold text-navy">المواصفات الفنية</h3>
+                {specs.length > 0 ? (
+                  <div className="overflow-hidden rounded-2xl border border-border/80 bg-white shadow-xs">
+                    <table className="w-full text-right text-xs">
+                      <tbody>
+                        {specs.map((spec, idx) => (
+                          <tr
+                            key={spec.label}
+                            className={idx % 2 === 0 ? "bg-slate-50/60" : "bg-white"}
+                          >
+                            <td className="py-3 px-4 font-bold text-navy border-b border-border/50 w-1/3">
+                              {spec.label}
+                            </td>
+                            <td className="py-3 px-4 text-muted-foreground border-b border-border/50">
+                              {spec.value}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-border/80 bg-white p-5 text-center text-xs text-muted-foreground shadow-xs">
+                    المواصفات الأساسية موضحة في الوصف أعلاه.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Suggested Products Section */}
+          {suggested.length > 0 && (
+            <div className="mt-16 space-y-6">
+              <div className="flex items-center justify-between border-b border-border/80 pb-3">
+                <h2 className="font-tajawal text-lg sm:text-xl font-black text-navy flex items-center gap-2">
+                  <Sparkles size={18} className="text-primary" />
+                  <span>منتجات قد تعجبك</span>
+                </h2>
+                <Link
+                  to="/products"
+                  className="text-xs font-bold text-primary hover:underline"
+                >
+                  عرض الكل
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                {suggested.map((item) => (
+                  <ProductCard key={item.id} product={item} />
                 ))}
               </div>
-            </section>
-          ) : null}
+            </div>
+          )}
         </div>
       </main>
+
+      {/* 5. Mobile Sticky Purchase Bar (with safe-area-inset-bottom support) */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-border/80 p-3 shadow-lg"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        dir="rtl"
+      >
+        <div className="container flex items-center justify-between gap-3">
+          <div>
+            <span className="text-[10px] text-muted-foreground font-medium block">السعر</span>
+            <span className="font-tajawal text-lg font-black text-navy">
+              {formatPrice(hasDiscount ? product.discount_price! : product.price)}
+            </span>
+          </div>
+
+          <Button
+            type="button"
+            onClick={() => handleAddToCart()}
+            disabled={isAddBlocked}
+            className="h-11 flex-1 max-w-[220px] rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white gap-2 shadow-xs disabled:opacity-50"
+          >
+            <ShoppingBag size={16} strokeWidth={2} />
+            <span>{buttonLabel}</span>
+          </Button>
+        </div>
+      </div>
+
       <Footer />
-      {dialogNode}
     </div>
   );
 }

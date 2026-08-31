@@ -11,6 +11,8 @@ import {
   FIXTURE_BRANDS,
   FIXTURE_DISCOVERY_PRODUCTS,
   FIXTURE_CATEGORIES,
+  getFixtureProductDetailBySlug,
+  getFixtureSuggestedProducts,
   isMarketplaceVisualFixturesEnabled,
 } from "@/lib/marketplace-fixtures";
 
@@ -112,8 +114,16 @@ export const marketplaceApi = {
   },
 
   /** Public product detail — `GET /marketplace/products/slug/:slug` only (global resolution; no legacy catalog fallback). */
-  getMarketplaceProductBySlug(slug: string) {
-    return request<MarketplacePublicProduct>(`/marketplace/products/slug/${encodeURIComponent(slug)}`, "GET");
+  async getMarketplaceProductBySlug(slug: string) {
+    try {
+      return await request<MarketplacePublicProduct>(`/marketplace/products/slug/${encodeURIComponent(slug)}`, "GET");
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) {
+        const fixture = getFixtureProductDetailBySlug(slug);
+        if (fixture) return fixture;
+      }
+      throw err;
+    }
   },
 
   /** @deprecated No active storefront callers; prefer `/products?category=` browse flow. */
@@ -121,9 +131,16 @@ export const marketplaceApi = {
     return request<{ category: any; subcategories: Array<any>; products: Array<any> }>(`/marketplace/category/${encodeURIComponent(slug)}`, "GET");
   },
 
-  getMarketplaceSuggested(payload: { category_id: string; exclude_id: string }) {
+  async getMarketplaceSuggested(payload: { category_id: string; exclude_id: string }) {
     const params = new URLSearchParams(payload);
-    return request<MarketplaceSuggestedProductsResponse>(`/marketplace/suggested?${params.toString()}`, "GET");
+    try {
+      return await request<MarketplaceSuggestedProductsResponse>(`/marketplace/suggested?${params.toString()}`, "GET");
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) {
+        return getFixtureSuggestedProducts(payload.exclude_id);
+      }
+      throw err;
+    }
   },
 
   getMarketplaceOffers() {

@@ -61,7 +61,7 @@ interface CartStore {
   activeMerchantId: string | null;
   items: CartItem[];
   coupon: Coupon | null;
-  addItem: (product: CartLineProduct) => AddItemResult;
+  addItem: (product: CartLineProduct, quantity?: number) => AddItemResult;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -81,7 +81,7 @@ export const useCartStore = create<CartStore>()(
       activeMerchantId: null,
       items: [],
       coupon: null,
-      addItem: (product) => {
+      addItem: (product, quantity = 1) => {
         const incomingMerchantId = getMerchantId(product);
         const activeMerchantId = get().activeMerchantId;
 
@@ -94,15 +94,21 @@ export const useCartStore = create<CartStore>()(
           return { success: false, reason: "DIFFERENT_MERCHANT" } as const;
         }
 
+        const addQty = Math.max(1, Math.floor(quantity || 1));
+        const knownStock = typeof product.stock === "number" && product.stock >= 0 ? product.stock : null;
+
         set((state) => {
           const existing = state.items.find((i) => i.product.id === product.id);
           if (existing) {
+            const desiredQty = existing.quantity + addQty;
+            const finalQty = knownStock !== null ? Math.min(knownStock, desiredQty) : desiredQty;
             return {
-              items: state.items.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)),
+              items: state.items.map((i) => (i.product.id === product.id ? { ...i, quantity: finalQty } : i)),
             };
           }
+          const initialQty = knownStock !== null ? Math.min(knownStock, addQty) : addQty;
           return {
-            items: [...state.items, { product, quantity: 1 }],
+            items: [...state.items, { product, quantity: initialQty }],
             activeMerchantId: state.activeMerchantId || incomingMerchantId,
           };
         });
@@ -135,8 +141,12 @@ export const useCartStore = create<CartStore>()(
         }
 
         set((state) => {
+          const item = state.items.find((i) => i.product.id === productId);
+          const knownStock = item && typeof item.product.stock === "number" && item.product.stock >= 0 ? item.product.stock : null;
+          const targetQty = knownStock !== null ? Math.min(knownStock, quantity) : quantity;
+
           const nextState = {
-            items: state.items.map((i) => (i.product.id === productId ? { ...i, quantity } : i)),
+            items: state.items.map((i) => (i.product.id === productId ? { ...i, quantity: targetQty } : i)),
             activeMerchantId: state.activeMerchantId,
             coupon: state.coupon,
           };

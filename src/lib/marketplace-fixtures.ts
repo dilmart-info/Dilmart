@@ -343,3 +343,37 @@ export const FIXTURE_DISCOVERY_PRODUCTS: MarketplaceStorefrontProductsResult = {
   offset: 0,
   limit: 24,
 };
+
+export const getFixtureProductDetailBySlug = (slug: string): any | null => {
+  const all = [...FIXTURE_OFFER_PRODUCTS, ...FIXTURE_BEST_SELLERS, ...FIXTURE_NEW_ARRIVALS];
+  const found = all.find((p) => p.slug === slug);
+  if (!found) return null;
+
+  return {
+    ...found,
+    category_id: "cat-1",
+    short_description: "منتج أصلي عالي الجودة مع ضمان حقيقي وخيارات دفع آمنة متوفرة عند إتمام الطلب.",
+    description: "صُمم هذا المنتج ليوفر أعلى مستويات الأداء والراحة في الاستخدام اليومي. يتميز بجودة تصنيع متينة ومواد فائقة التحمل تلبي احتياجاتك بكل كفاءة وسهولة مع مظهر عصري أنيق.",
+    dimensions: "18 × 12 × 5 سم",
+    weight_grams: 350,
+    colors: ["أسود", "أزرق داكن", "فضي"],
+    sizes: ["قياسي", "كبير"],
+    loyalty_points_enabled: true,
+    images: [
+      found.images?.[0] ?? "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&q=80&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=800&q=80&auto=format&fit=crop",
+      "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=800&q=80&auto=format&fit=crop",
+    ],
+  };
+};
+
+export const getFixtureSuggestedProducts = (excludeId?: string): MarketplaceSuggestedProductsResponse => {
+  const all = [...FIXTURE_OFFER_PRODUCTS, ...FIXTURE_BEST_SELLERS, ...FIXTURE_NEW_ARRIVALS];
+  const filtered = all.filter((p) => p.id !== excludeId).slice(0, 4);
+  return {
+    items: filtered as any[],
+    total: filtered.length,
+    offset: 0,
+    limit: 4,
+  };
+};
