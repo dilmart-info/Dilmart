@@ -32,6 +32,10 @@ function getMerchantId(product: CartLineProduct): string | null {
   return product.merchant_id ?? null;
 }
 
+export type AddItemResult =
+  | { success: true }
+  | { success: false; reason: "DIFFERENT_MERCHANT" | "INVALID_PRODUCT" | "OUT_OF_STOCK" };
+
 function sanitizeCartState(state: CartIntegrityState) {
   if (state.items.length === 0) {
     return { ...state, activeMerchantId: null, coupon: null, hadInvalidMix: false };
@@ -42,20 +46,46 @@ function sanitizeCartState(state: CartIntegrityState) {
     return { items: [], activeMerchantId: null, coupon: null, hadInvalidMix: true };
   }
 
-  const consistentItems = state.items.filter((item) => getMerchantId(item.product) === baseMerchantId);
-  const hadInvalidMix = consistentItems.length !== state.items.length;
+  const consistentItems: CartItem[] = [];
+  let hadInvalidMix = false;
+
+  for (const item of state.items) {
+    if (getMerchantId(item.product) !== baseMerchantId) {
+      hadInvalidMix = true;
+      continue;
+    }
+    const knownStock =
+      typeof item.product.stock === "number" && item.product.stock >= 0 ? item.product.stock : null;
+    if (knownStock === 0) {
+      hadInvalidMix = true;
+      continue;
+    }
+    const rawQty = Math.floor(item.quantity || 0);
+    if (rawQty <= 0) {
+      hadInvalidMix = true;
+      continue;
+    }
+    const validQty = knownStock !== null ? Math.min(knownStock, rawQty) : rawQty;
+    if (validQty <= 0) {
+      hadInvalidMix = true;
+      continue;
+    }
+    if (validQty !== item.quantity) {
+      hadInvalidMix = true;
+    }
+    consistentItems.push({
+      product: item.product,
+      quantity: validQty,
+    });
+  }
 
   return {
     items: consistentItems,
     activeMerchantId: consistentItems.length > 0 ? baseMerchantId : null,
     coupon: consistentItems.length > 0 ? state.coupon : null,
-    hadInvalidMix,
+    hadInvalidMix: hadInvalidMix || consistentItems.length !== state.items.length,
   };
 }
-
-export type AddItemResult =
-  | { success: true }
-  | { success: false; reason: "DIFFERENT_MERCHANT" | "INVALID_PRODUCT" };
 
 interface CartStore {
   activeMerchantId: string | null;
@@ -90,23 +120,31 @@ export const useCartStore = create<CartStore>()(
           return { success: false, reason: "INVALID_PRODUCT" } as const;
         }
 
+        const knownStock =
+          typeof product.stock === "number" && product.stock >= 0 ? product.stock : null;
+        if (knownStock === 0) {
+          toast.error("هذا المنتج غير متوفر في المخزون حالياً.");
+          return { success: false, reason: "OUT_OF_STOCK" } as const;
+        }
+
         if (activeMerchantId && activeMerchantId !== incomingMerchantId) {
           return { success: false, reason: "DIFFERENT_MERCHANT" } as const;
         }
 
         const addQty = Math.max(1, Math.floor(quantity || 1));
-        const knownStock = typeof product.stock === "number" && product.stock >= 0 ? product.stock : null;
 
         set((state) => {
           const existing = state.items.find((i) => i.product.id === product.id);
           if (existing) {
             const desiredQty = existing.quantity + addQty;
-            const finalQty = knownStock !== null ? Math.min(knownStock, desiredQty) : desiredQty;
+            const finalQty =
+              knownStock !== null ? Math.max(1, Math.min(knownStock, desiredQty)) : Math.max(1, desiredQty);
             return {
               items: state.items.map((i) => (i.product.id === product.id ? { ...i, quantity: finalQty } : i)),
             };
           }
-          const initialQty = knownStock !== null ? Math.min(knownStock, addQty) : addQty;
+          const initialQty =
+            knownStock !== null ? Math.max(1, Math.min(knownStock, addQty)) : Math.max(1, addQty);
           return {
             items: [...state.items, { product, quantity: initialQty }],
             activeMerchantId: state.activeMerchantId || incomingMerchantId,
@@ -142,8 +180,23 @@ export const useCartStore = create<CartStore>()(
 
         set((state) => {
           const item = state.items.find((i) => i.product.id === productId);
-          const knownStock = item && typeof item.product.stock === "number" && item.product.stock >= 0 ? item.product.stock : null;
-          const targetQty = knownStock !== null ? Math.min(knownStock, quantity) : quantity;
+          if (!item) return state;
+          const knownStock =
+            typeof item.product.stock === "number" && item.product.stock >= 0 ? item.product.stock : null;
+          if (knownStock === 0) {
+            const sanitized = sanitizeCartState({
+              items: state.items.filter((i) => i.product.id !== productId),
+              activeMerchantId: state.activeMerchantId,
+              coupon: state.coupon,
+            });
+            return {
+              items: sanitized.items,
+              activeMerchantId: sanitized.activeMerchantId,
+              coupon: sanitized.coupon,
+            };
+          }
+          const targetQty =
+            knownStock !== null ? Math.max(1, Math.min(knownStock, quantity)) : Math.max(1, quantity);
 
           const nextState = {
             items: state.items.map((i) => (i.product.id === productId ? { ...i, quantity: targetQty } : i)),
