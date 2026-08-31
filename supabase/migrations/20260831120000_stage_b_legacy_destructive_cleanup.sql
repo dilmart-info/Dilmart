@@ -210,6 +210,42 @@ DROP FUNCTION IF EXISTS public.rotate_federated_refresh_token(text, text, text, 
 DROP FUNCTION IF EXISTS public.validate_federated_session_family(uuid, text, integer, integer);
 DROP FUNCTION IF EXISTS public.verify_barber_web_session(text, text, integer, integer);
 
+-- 3.2 Dynamic Catalog Exhaustive Clean (Without Cascading)
+DO $drop_legacy_functions$
+DECLARE
+  v_fn RECORD;
+BEGIN
+  FOR v_fn IN
+    SELECT p.oid::regprocedure AS ident
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public'
+      AND p.proname IN (
+        'finalize_barber_handoff',
+        'finalize_customer_handoff',
+        'logout_all_federated_sessions',
+        'place_b2b_cart_order_idempotent',
+        'provision_dilmart_federated_customer',
+        'redeem_and_create_federated_session',
+        'redeem_barber_handoff_and_create_session',
+        'redeem_customer_handoff',
+        'reject_barber_handoff_audit_mutation',
+        'reject_handoff_audit_mutation',
+        'reject_federated_session_audit_mutation',
+        'reject_reserved_federated_email',
+        'resolve_dilmart_federated_customer',
+        'revoke_barber_web_sessions_for_user',
+        'revoke_federated_sessions_for_identity',
+        'rotate_federated_refresh_token',
+        'validate_federated_session_family',
+        'verify_barber_web_session'
+      )
+  LOOP
+    EXECUTE format('DROP FUNCTION IF EXISTS %s RESTRICT', v_fn.ident);
+  END LOOP;
+END;
+$drop_legacy_functions$;
+
 -- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 4: DROP CONSTRAINTS & INDEXES ON ACTIVE TABLES
 -- ────────────────────────────────────────────────────────────────────────────
