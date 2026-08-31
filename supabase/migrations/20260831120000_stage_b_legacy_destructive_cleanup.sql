@@ -269,24 +269,31 @@ DROP TABLE IF EXISTS public.store_carts;
 DROP TABLE IF EXISTS public.store_linked_profiles;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL ON MODERN CHECKOUT RPCs
+-- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL & SEARCH_PATH ON MODERN CHECKOUT RPCs
 -- ────────────────────────────────────────────────────────────────────────────
-DO $$
-DECLARE
-  v_fn RECORD;
-BEGIN
-  FOR v_fn IN
-    SELECT p.oid::regprocedure AS ident
-    FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent'
-  LOOP
-    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', v_fn.ident);
-    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', v_fn.ident);
-    EXECUTE format('ALTER FUNCTION %s SET search_path = public, pg_temp', v_fn.ident);
-  END LOOP;
-END;
-$$;
+ALTER FUNCTION public.place_order_idempotent(
+  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
+  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
+  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
+  numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric,
+  uuid, uuid, uuid, uuid, uuid, text, integer, text
+) SET search_path = public, pg_temp;
+
+REVOKE ALL ON FUNCTION public.place_order_idempotent(
+  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
+  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
+  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
+  numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric,
+  uuid, uuid, uuid, uuid, uuid, text, integer, text
+) FROM PUBLIC, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.place_order_idempotent(
+  uuid, text, text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
+  uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer,
+  uuid, text, text, numeric, numeric, numeric, text, numeric, numeric, numeric, numeric,
+  numeric, numeric, numeric, numeric, numeric, text, integer, text, text, text, numeric,
+  uuid, uuid, uuid, uuid, uuid, text, integer, text
+) TO service_role;
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 7: FAIL-CLOSED POSTCONDITION CATALOG ASSERTIONS
