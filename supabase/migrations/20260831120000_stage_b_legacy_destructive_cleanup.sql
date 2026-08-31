@@ -436,8 +436,8 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
   END IF;
 
-  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
+  IF v_poi_rec.proconfig IS NULL OR NOT (array_to_string(v_poi_rec.proconfig, ',') ~* 'search_path=public,\s*pg_temp') THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp (found %)', v_poi_rec.proconfig;
   END IF;
 END;
 $postconditions$;
