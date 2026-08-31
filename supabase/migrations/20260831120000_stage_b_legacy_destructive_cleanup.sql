@@ -21,48 +21,45 @@ BEGIN;
 DO $preflight$
 DECLARE
   v_po_count            INT;
-  v_po_49_count         INT;
-  v_po_55_count         INT;
+  v_po_rec              RECORD;
   v_po_legacy_count     INT;
   v_poi_count           INT;
-  v_poi_51_count        INT;
-  v_po_owner            TEXT;
-  v_poi_owner           TEXT;
-  v_po_secdef           BOOLEAN;
-  v_poi_secdef          BOOLEAN;
-  v_po_cfg_ok           BOOLEAN;
-  v_poi_cfg_ok          BOOLEAN;
+  v_poi_rec             RECORD;
   v_tbl                 RECORD;
   v_tbl_count           BIGINT;
   v_col_non_null        BIGINT;
   v_salon_true_count    BIGINT;
 BEGIN
   -- ── 1.1 Protect Migration A Modern place_order Authority ───────────────────
-  SELECT
-    count(*),
-    count(*) FILTER (WHERE p.pronargs = 49),
-    count(*) FILTER (WHERE p.pronargs = 55),
-    MAX(pg_get_userbyid(p.proowner)),
-    BOOL_AND(p.prosecdef),
-    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
-  INTO
-    v_po_count, v_po_49_count, v_po_55_count,
-    v_po_owner, v_po_secdef, v_po_cfg_ok
+  SELECT count(*) INTO v_po_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order';
 
-  IF v_po_count <> 1 OR v_po_49_count <> 1 OR v_po_55_count <> 0 THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order must have exactly 1 function with 49 arguments (found total=%, 49-arg=%, 55-arg=%)',
-      v_po_count, v_po_49_count, v_po_55_count;
+  IF v_po_count <> 1 THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order count must be exactly 1 (found %)', v_po_count;
   END IF;
 
-  IF v_po_owner <> 'postgres' OR v_po_secdef IS NOT TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order must be SECURITY DEFINER owned by postgres (found owner=%, secdef=%)',
-      v_po_owner, v_po_secdef;
+  SELECT
+    p.oid,
+    p.pronargs,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_po_rec
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order';
+
+  IF v_po_rec.pronargs <> 49 THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order must have exactly 49 arguments (found %)', v_po_rec.pronargs;
   END IF;
 
-  IF v_po_cfg_ok IS NOT TRUE THEN
+  IF v_po_rec.owner_name <> 'postgres' OR v_po_rec.prosecdef IS NOT TRUE THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order must be SECURITY DEFINER owned by postgres';
+  END IF;
+
+  IF NOT ('search_path=public, pg_temp' = ANY(v_po_rec.proconfig)) THEN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order search_path not pinned to public, pg_temp';
   END IF;
 
@@ -76,30 +73,35 @@ BEGIN
   END IF;
 
   -- ── 1.2 Protect Migration A place_order_idempotent Wrapper Authority ───────
-  SELECT
-    count(*),
-    count(*) FILTER (WHERE p.pronargs = 51),
-    MAX(pg_get_userbyid(p.proowner)),
-    BOOL_AND(p.prosecdef),
-    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
-  INTO
-    v_poi_count, v_poi_51_count,
-    v_poi_owner, v_poi_secdef, v_poi_cfg_ok
+  SELECT count(*) INTO v_poi_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
 
-  IF v_poi_count <> 1 OR v_poi_51_count <> 1 THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must have exactly 1 function with 51 arguments (found total=%, 51-arg=%)',
-      v_poi_count, v_poi_51_count;
+  IF v_poi_count <> 1 THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent count must be exactly 1 (found %)', v_poi_count;
   END IF;
 
-  IF v_poi_owner <> 'postgres' OR v_poi_secdef IS NOT TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres (found owner=%, secdef=%)',
-      v_poi_owner, v_poi_secdef;
+  SELECT
+    p.oid,
+    p.pronargs,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_poi_rec
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_poi_rec.pronargs <> 51 THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must have exactly 51 arguments (found %)', v_poi_rec.pronargs;
   END IF;
 
-  IF v_poi_cfg_ok IS NOT TRUE THEN
+  IF v_poi_rec.owner_name <> 'postgres' OR v_poi_rec.prosecdef IS NOT TRUE THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
+  END IF;
+
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
   END IF;
 
@@ -364,79 +366,85 @@ BEGIN
   END IF;
 
   -- ── 7.4 Re-Verify Pristine Modern place_order Authority ───────────────────
-  SELECT
-    count(*),
-    count(*) FILTER (WHERE p.pronargs = 49),
-    MAX(pg_get_userbyid(p.proowner)),
-    BOOL_AND(p.prosecdef),
-    BOOL_AND(has_function_privilege('service_role', p.oid, 'EXECUTE')),
-    BOOL_OR(has_function_privilege('anon', p.oid, 'EXECUTE')),
-    BOOL_OR(has_function_privilege('authenticated', p.oid, 'EXECUTE')),
-    BOOL_OR(has_function_privilege('public', p.oid, 'EXECUTE')),
-    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
-  INTO
-    v_po_count, v_po_49_count,
-    v_po_owner, v_po_secdef,
-    v_po_svc, v_po_anon, v_po_auth, v_po_pub,
-    v_po_cfg_ok
+  SELECT count(*) INTO v_po_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order';
 
-  IF v_po_count <> 1 OR v_po_49_count <> 1 THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order must have exactly 1 function with 49 arguments (found total=%, 49-arg=%)',
-      v_po_count, v_po_49_count;
+  IF v_po_count <> 1 THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order count must be exactly 1';
   END IF;
 
-  IF v_po_owner <> 'postgres' OR v_po_secdef IS NOT TRUE THEN
+  SELECT
+    p.oid,
+    p.pronargs,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_po_rec
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order';
+
+  IF v_po_rec.pronargs <> 49 THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order must have exactly 49 arguments (found %)', v_po_rec.pronargs;
+  END IF;
+
+  IF v_po_rec.owner_name <> 'postgres' OR v_po_rec.prosecdef IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order must be SECURITY DEFINER owned by postgres';
   END IF;
 
-  IF v_po_svc IS NOT TRUE OR v_po_anon IS TRUE OR v_po_auth IS TRUE OR v_po_pub IS TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order ACL violation (svc=%, anon=%, auth=%, pub=%)',
-      v_po_svc, v_po_anon, v_po_auth, v_po_pub;
-  END IF;
-
-  IF v_po_cfg_ok IS NOT TRUE THEN
+  IF NOT ('search_path=public, pg_temp' = ANY(v_po_rec.proconfig)) THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order search_path not pinned to public, pg_temp';
   END IF;
 
+  IF NOT has_function_privilege('service_role', v_po_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order lacks EXECUTE privilege for service_role';
+  END IF;
+
+  IF has_function_privilege('anon', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_po_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order must not be executable by anon, authenticated, or public';
+  END IF;
+
   -- ── 7.5 Re-Verify Pristine place_order_idempotent Authority ────────────────
-  SELECT
-    count(*),
-    count(*) FILTER (WHERE p.pronargs = 51),
-    MAX(pg_get_userbyid(p.proowner)),
-    BOOL_AND(p.prosecdef),
-    BOOL_AND(has_function_privilege('service_role', p.oid, 'EXECUTE')),
-    BOOL_OR(has_function_privilege('anon', p.oid, 'EXECUTE')),
-    BOOL_OR(has_function_privilege('authenticated', p.oid, 'EXECUTE')),
-    BOOL_OR(has_function_privilege('public', p.oid, 'EXECUTE')),
-    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
-  INTO
-    v_poi_count, v_poi_51_count,
-    v_poi_owner, v_poi_secdef,
-    v_poi_svc, v_poi_anon, v_poi_auth, v_poi_pub,
-    v_poi_cfg_ok
+  SELECT count(*) INTO v_poi_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
 
-  IF v_poi_count <> 1 OR v_poi_51_count <> 1 THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must have exactly 1 function with 51 arguments (found total=%, 51-arg=%)',
-      v_poi_count, v_poi_51_count;
+  IF v_poi_count <> 1 THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent count must be exactly 1';
   END IF;
 
-  IF v_poi_owner <> 'postgres' OR v_poi_secdef IS NOT TRUE THEN
+  SELECT
+    p.oid,
+    p.pronargs,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_poi_rec
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_poi_rec.pronargs <> 51 THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must have exactly 51 arguments (found %)', v_poi_rec.pronargs;
+  END IF;
+
+  IF v_poi_rec.owner_name <> 'postgres' OR v_poi_rec.prosecdef IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
   END IF;
 
-  IF v_poi_svc IS NOT TRUE OR v_poi_anon IS TRUE OR v_poi_auth IS TRUE OR v_poi_pub IS TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent ACL violation (svc=%, anon=%, auth=%, pub=%)',
-      v_poi_svc, v_poi_anon, v_poi_auth, v_poi_pub;
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
   END IF;
 
-  IF v_poi_cfg_ok IS NOT TRUE THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
+  IF NOT has_function_privilege('service_role', v_poi_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent lacks EXECUTE privilege for service_role';
+  END IF;
+
+  IF has_function_privilege('anon', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_poi_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must not be executable by anon, authenticated, or public';
   END IF;
 END;
 $postconditions$;

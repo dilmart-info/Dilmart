@@ -40,7 +40,7 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     );
     assert.match(
       sql,
-      /p\.pronargs\s*=\s*49/i,
+      /pronargs\s*<>\s*49/i,
       "Preflight must assert 49 arguments on place_order"
     );
     assert.match(
@@ -50,12 +50,12 @@ describe("Stage B Pass 4: Migration B Atomicity & Destructive Cleanup Invariants
     );
     assert.match(
       sql,
-      /p\.pronargs\s*=\s*51/i,
+      /pronargs\s*<>\s*51/i,
       "Preflight must assert 51 arguments on place_order_idempotent"
     );
     assert.match(
       sql,
-      /v_po_owner\s*<>\s*'postgres'/i,
+      /owner_name\s*<>\s*'postgres'/i,
       "Preflight must assert owner is postgres"
     );
     assert.match(
