@@ -220,10 +220,6 @@ ALTER TABLE public.checkout_attempts DROP CONSTRAINT IF EXISTS checkout_attempts
 DROP INDEX IF EXISTS public.idx_checkout_attempts_linked_profile;
 DROP INDEX IF EXISTS public.idx_checkout_attempts_store_cart_id;
 
-ALTER TABLE public.checkout_attempts
-  ADD CONSTRAINT chk_checkout_attempts_user_id_not_null
-  CHECK (user_id IS NOT NULL);
-
 -- 4.2 orders
 ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_store_cart_id_fkey;
 ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_store_linked_profile_id_fkey;
