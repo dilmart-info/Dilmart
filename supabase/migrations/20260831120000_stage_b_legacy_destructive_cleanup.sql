@@ -101,6 +101,10 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
   END IF;
 
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
+  END IF;
+
   -- ── 1.3 Assert Zero Rows in All 11 Legacy Tables ───────────────────────────
   FOR v_tbl IN
     SELECT unnest(ARRAY[
@@ -269,16 +273,8 @@ DROP TABLE IF EXISTS public.store_carts;
 DROP TABLE IF EXISTS public.store_linked_profiles;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL & SEARCH_PATH ON MODERN CHECKOUT RPCs
+-- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL ON MODERN CHECKOUT RPCs
 -- ────────────────────────────────────────────────────────────────────────────
-ALTER FUNCTION public.place_order_idempotent(
-  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
-  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
-  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
-) SET search_path = public, pg_temp;
-
 REVOKE ALL ON FUNCTION public.place_order_idempotent(
   UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
   UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
@@ -436,8 +432,8 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres';
   END IF;
 
-  IF v_poi_rec.proconfig IS NULL OR NOT (array_to_string(v_poi_rec.proconfig, ',') ~* 'search_path=public,\s*pg_temp') THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp (found %)', v_poi_rec.proconfig;
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
   END IF;
 END;
 $postconditions$;

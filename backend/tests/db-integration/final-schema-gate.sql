@@ -753,8 +753,8 @@ BEGIN
     RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent owner [%] is not postgres', v_poi_rec.owner_name;
   END IF;
 
-  IF v_poi_rec.proconfig IS NULL OR NOT (array_to_string(v_poi_rec.proconfig, ',') ~* 'search_path=public,\s*pg_temp') THEN
-    RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent search_path [%] is not pinned to public, pg_temp', v_poi_rec.proconfig;
+  IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
+    RAISE EXCEPTION 'Stage B Gate: public.place_order_idempotent search_path is not pinned to public, pg_temp';
   END IF;
 
   -- 5. ACL assertions
