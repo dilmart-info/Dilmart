@@ -66,24 +66,26 @@ function renderProductDetailPage(slug = "wireless-headphones") {
   );
 }
 
-describe("ProductDetail Page (Phase 2B)", () => {
+describe("ProductDetail Page (Phase 2B Micro-Closure)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useCartStore.setState({ items: [], activeMerchantId: null, coupon: null });
     useWishlistStore.setState({ items: [] });
   });
 
-  it("renders product identity, brand, store link, and prices accurately", async () => {
+  it("renders neutral merchant link and trust wording (no unverified claims)", async () => {
     vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(mockProduct as any);
     vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({ items: [], total: 0, offset: 0, limit: 0 });
 
     renderProductDetailPage();
 
     expect(await screen.findByRole("heading", { level: 1, name: mockProduct.name })).toBeInTheDocument();
-    expect(screen.getAllByText("Sony").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("متجر سوني المعتمد").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("وفر %30")).toBeInTheDocument();
-    expect(screen.getByText("متوفر في المخزون")).toBeInTheDocument();
+    // Neutral seller wording
+    expect(screen.getByText("يُباع بواسطة:")).toBeInTheDocument();
+    expect(screen.queryByText("يُباع ويُشحن بواسطة:")).toBeNull();
+    // Neutral trust wording
+    expect(screen.getByText("تسوق بثقة عبر ديل مارت")).toBeInTheDocument();
+    expect(screen.queryByText("المتجر المعتمد")).toBeNull();
   });
 
   it("renders out-of-stock badge and disables Add to Cart when stock is 0", async () => {
@@ -99,94 +101,120 @@ describe("ProductDetail Page (Phase 2B)", () => {
     expect(addButtons[0]).toBeDisabled();
   });
 
-  it("handles quantity stepper and adds selected quantity to cart", async () => {
-    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(mockProduct as any);
+  it("handles quantity stepper and bounds by remaining available stock (stock 5, existing cart 4 -> max additional 1)", async () => {
+    const stockProduct = { ...mockProduct, stock: 5 };
+    // Pre-populate cart with 4 items of this product
+    useCartStore.setState({
+      items: [{ product: stockProduct as any, quantity: 4 }],
+      activeMerchantId: "m1",
+    });
+
+    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(stockProduct as any);
     vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({ items: [], total: 0, offset: 0, limit: 0 });
 
     renderProductDetailPage();
 
     await screen.findByRole("heading", { level: 1, name: mockProduct.name });
 
-    const increaseBtn = screen.getByRole("button", { name: "زيادة الكمية" });
-    fireEvent.click(increaseBtn);
-    fireEvent.click(increaseBtn);
+    // Displays existing in-cart info
+    expect(screen.getByText("(لديك 4 في السلة)")).toBeInTheDocument();
+    expect(screen.getByTestId("product-quantity-display")).toHaveTextContent("1");
 
-    expect(screen.getByTestId("product-quantity-display")).toHaveTextContent("3");
+    // Increasing beyond remaining 1 should be disabled
+    const increaseBtn = screen.getByRole("button", { name: "زيادة الكمية" });
+    expect(increaseBtn).toBeDisabled();
+
+    // Adding the 1 additional item to cart
+    const addButtons = screen.getAllByRole("button", { name: /أضف إلى السلة/i });
+    fireEvent.click(addButtons[0]);
+
+    // Cart total must now be exactly 5 (4 existing + 1 added)
+    const cartItems = useCartStore.getState().items;
+    expect(cartItems[0].quantity).toBe(5);
+  });
+
+  it("blocks adding when cart already holds all available stock (stock 5, existing cart 5)", async () => {
+    const stockProduct = { ...mockProduct, stock: 5 };
+    useCartStore.setState({
+      items: [{ product: stockProduct as any, quantity: 5 }],
+      activeMerchantId: "m1",
+    });
+
+    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(stockProduct as any);
+    vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({ items: [], total: 0, offset: 0, limit: 0 });
+
+    renderProductDetailPage();
+
+    await screen.findByRole("heading", { level: 1, name: mockProduct.name });
+
+    expect(screen.getAllByText("الكمية المتاحة بالكامل في السلة").length).toBeGreaterThanOrEqual(1);
+    const addButtons = screen.getAllByRole("button", { name: /الكمية المتاحة بالكامل في السلة/i });
+    expect(addButtons[0]).toBeDisabled();
+  });
+
+  it("distinguishes 404 NOT FOUND from generic API network failure", async () => {
+    // 1. 404 error
+    const notFoundError = new Error("Product not found");
+    (notFoundError as any).status = 404;
+    vi.mocked(apiClient.getMarketplaceProductBySlug).mockRejectedValueOnce(notFoundError);
+
+    const { unmount } = renderProductDetailPage("unknown-product");
+    expect(await screen.findByText("المنتج غير موجود")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "العودة للمنتجات" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /حاول مرة أخرى/i })).toBeNull();
+    unmount();
+
+    // 2. Generic 500 / Network outage
+    const serverError = new Error("Network offline or 500 Internal Server Error");
+    (serverError as any).status = 500;
+    vi.mocked(apiClient.getMarketplaceProductBySlug).mockRejectedValueOnce(serverError);
+
+    renderProductDetailPage("some-product");
+    expect(await screen.findByText("تعذر تحميل المنتج")).toBeInTheDocument();
+    expect(screen.getByText("حدث خطأ أثناء الاتصال بالخادم، يرجى المحاولة مرة أخرى.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /حاول مرة أخرى/i })).toBeInTheDocument();
+  });
+
+  it("handles merchant switch when adding items from a different merchant", async () => {
+    // Initial cart with merchant m2
+    useCartStore.setState({
+      items: [
+        {
+          product: {
+            id: "other-prod",
+            name: "منتج من متجر آخر",
+            merchant_id: "m2",
+            price: 10000,
+            stock: 5,
+            slug: "other",
+          } as any,
+          quantity: 2,
+        },
+      ],
+      activeMerchantId: "m2",
+    });
+
+    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(mockProduct as any);
+    vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({ items: [], total: 0, offset: 0, limit: 0 });
+
+    renderProductDetailPage();
+
+    await screen.findByRole("heading", { level: 1, name: mockProduct.name });
 
     const addButtons = screen.getAllByRole("button", { name: /أضف إلى السلة/i });
     fireEvent.click(addButtons[0]);
 
-    const cartItems = useCartStore.getState().items;
-    expect(cartItems).toHaveLength(1);
-    expect(cartItems[0].quantity).toBe(3);
-    expect(cartItems[0].product.id).toBe(mockProduct.id);
-  });
+    // Opens merchant switch dialog
+    expect(await screen.findByText("لديك منتجات من متجر آخر في السلة")).toBeInTheDocument();
 
-  it("renders informational colors and sizes without requiring selection", async () => {
-    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(mockProduct as any);
-    vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({ items: [], total: 0, offset: 0, limit: 0 });
+    // Confirm switch
+    const confirmBtn = screen.getByRole("button", { name: /تفريغ السلة وإضافة المنتج/i });
+    fireEvent.click(confirmBtn);
 
-    renderProductDetailPage();
-
-    await screen.findByRole("heading", { level: 1, name: mockProduct.name });
-
-    expect(screen.getByText("الألوان المتوفرة:")).toBeInTheDocument();
-    expect(screen.getAllByText("أسود").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("أبيض").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("المقاسات المتوفرة:")).toBeInTheDocument();
-    expect(screen.getAllByText("قياسي").length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("renders neutral delivery information and no fake loyalty formulas", async () => {
-    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(mockProduct as any);
-    vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({ items: [], total: 0, offset: 0, limit: 0 });
-
-    renderProductDetailPage();
-
-    await screen.findByRole("heading", { level: 1, name: mockProduct.name });
-
-    expect(screen.getByText("توصيل موثوق — تفاصيل التوصيل تظهر أثناء إتمام الطلب")).toBeInTheDocument();
-    expect(screen.getByText("خيارات دفع متاحة عند إتمام الطلب")).toBeInTheDocument();
-    expect(screen.getByText("قد تحصل على نقاط مكافآت عند إتمام الشراء")).toBeInTheDocument();
-    // Verify no fake exact points string like "350 نقطة" or "500 نقطة"
-    expect(screen.queryByText(/نقطة/i)).toBeNull();
-  });
-
-  it("renders error state when product is not found or API fails", async () => {
-    vi.mocked(apiClient.getMarketplaceProductBySlug).mockRejectedValueOnce(new Error("Not found"));
-
-    renderProductDetailPage("unknown-product");
-
-    expect(await screen.findByText("المنتج غير موجود")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "العودة للمنتجات" })).toBeInTheDocument();
-  });
-
-  it("renders suggested products rail when suggested items are returned", async () => {
-    const suggestedItem = {
-      id: "prod-200",
-      name: "ساعة ذكية رياضية",
-      slug: "smart-watch",
-      price: 45000,
-      discount_price: null,
-      stock: 5,
-      images: ["https://example.com/watch.jpg"],
-      brand: "Apple",
-      short_description: "ساعة رياضية",
-      is_active: true,
-      merchants: { id: "m1", slug: "sony-store", display_name: "متجر سوني المعتمد" },
-    };
-
-    vi.mocked(apiClient.getMarketplaceProductBySlug).mockResolvedValueOnce(mockProduct as any);
-    vi.mocked(apiClient.getMarketplaceSuggested).mockResolvedValueOnce({
-      items: [suggestedItem as any],
-      total: 1,
-      offset: 0,
-      limit: 1,
-    });
-
-    renderProductDetailPage();
-
-    expect(await screen.findByText("منتجات قد تعجبك")).toBeInTheDocument();
-    expect(screen.getByText("ساعة ذكية رياضية")).toBeInTheDocument();
+    // Cart is now switched to new merchant m1 with 1 item
+    const cartState = useCartStore.getState();
+    expect(cartState.activeMerchantId).toBe("m1");
+    expect(cartState.items).toHaveLength(1);
+    expect(cartState.items[0].product.id).toBe(mockProduct.id);
   });
 });

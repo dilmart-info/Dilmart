@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams, Link } from "react-router-dom";
 import { formatPrice } from "@/lib/format";
 import { useWishlistStore } from "@/lib/wishlist-store";
+import { useCartStore } from "@/lib/cart-store";
 import {
   ShoppingBag,
   MessageCircle,
@@ -24,6 +25,7 @@ import {
   ShieldCheck,
   Store,
   Tag,
+  RefreshCw,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -44,6 +46,9 @@ const ProductDetail = () => {
     data: product,
     isLoading,
     isError,
+    error,
+    refetch,
+    isFetching,
   } = useQuery({
     queryKey: ["marketplace-product", slug],
     queryFn: () => apiClient.getMarketplaceProductBySlug(slug!),
@@ -88,23 +93,64 @@ const ProductDetail = () => {
   }
 
   if (isError || !product) {
+    const errAny = error as any;
+    const isNotFound =
+      errAny?.status === 404 ||
+      errAny?.statusCode === 404 ||
+      errAny?.message?.includes("404") ||
+      errAny?.message?.toLowerCase()?.includes("not found") ||
+      errAny?.message?.includes("NOT_FOUND") ||
+      (!isError && !product);
+
+    if (isNotFound) {
+      return (
+        <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
+          <Header />
+          <main className="flex-1 container py-20 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <AlertCircle size={32} />
+            </div>
+            <h1 className="font-tajawal text-2xl md:text-3xl font-black text-navy">المنتج غير موجود</h1>
+            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+              قد يكون الرابط غير صحيح أو تم إيقاف توفر هذا المنتج مؤقتاً.
+            </p>
+            <div className="mt-8 flex flex-wrap justify-center gap-3">
+              <Button asChild className="rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs h-10 px-6">
+                <Link to="/products">العودة للمنتجات</Link>
+              </Button>
+              <Button asChild variant="outline" className="rounded-xl border-border font-bold text-xs h-10 px-6">
+                <Link to="/stores">استعراض المتاجر</Link>
+              </Button>
+            </div>
+          </main>
+          <Footer />
+        </div>
+      );
+    }
+
     return (
       <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
         <Header />
         <main className="flex-1 container py-20 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-            <AlertCircle size={32} />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+            <RefreshCw size={32} className={isFetching ? "animate-spin" : ""} />
           </div>
-          <h1 className="font-tajawal text-2xl md:text-3xl font-black text-navy">المنتج غير موجود</h1>
+          <h1 className="font-tajawal text-2xl md:text-3xl font-black text-navy">تعذر تحميل المنتج</h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-            قد يكون الرابط غير صحيح أو تم إيقاف توفر هذا المنتج مؤقتاً.
+            حدث خطأ أثناء الاتصال بالخادم، يرجى المحاولة مرة أخرى.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild className="rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs h-10 px-6">
-              <Link to="/products">العودة للمنتجات</Link>
+            <Button
+              type="button"
+              onClick={() => refetch()}
+              disabled={isFetching}
+              className="rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs h-10 px-6 gap-2"
+            >
+              <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+              <span>حاول مرة أخرى</span>
             </Button>
             <Button asChild variant="outline" className="rounded-xl border-border font-bold text-xs h-10 px-6">
-              <Link to="/stores">استعراض المتاجر</Link>
+              <Link to="/products">العودة للمنتجات</Link>
             </Button>
           </div>
         </main>
@@ -119,6 +165,7 @@ const ProductDetail = () => {
 function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct }) {
   const { attemptAdd, dialogNode } = useMerchantSwitchCart();
   const { addItem: addToWishlist, removeItem: removeFromWishlist, hasItem: isInWishlist } = useWishlistStore();
+  const cartItems = useCartStore((state) => state.items);
   const [selectedImage, setSelectedImage] = useState(0);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
   const [quantity, setQuantity] = useState(1);
@@ -150,11 +197,28 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
 
   const suggested = suggestedPayload?.items ?? [];
 
+  // Calculate stock limits accounting for what's already in the cart
+  const existingCartItem = cartItems.find((item) => item.product.id === product.id);
+  const existingInCart = existingCartItem?.quantity ?? 0;
+  const isStockKnown = typeof product.stock === "number" && product.stock >= 0;
+  const isOutOfStock = isStockKnown && product.stock === 0;
+  const remainingAddable = isStockKnown ? Math.max(0, product.stock! - existingInCart) : 99;
+  const isAllStockInCart = isStockKnown && product.stock! > 0 && remainingAddable === 0;
+  const maxSelectableQuantity = isStockKnown ? Math.max(1, Math.min(remainingAddable, 99)) : 99;
+
+  const isLowStock = isStockKnown && product.stock! > 0 && product.stock! <= 5;
+
   useEffect(() => {
     setFailedUrls({});
     setSelectedImage(0);
     setQuantity(1);
   }, [product.id]);
+
+  useEffect(() => {
+    if (quantity > maxSelectableQuantity && remainingAddable > 0) {
+      setQuantity(maxSelectableQuantity);
+    }
+  }, [maxSelectableQuantity, quantity, remainingAddable]);
 
   useEffect(() => {
     trackGrowthHookEvent("product.viewed", {
@@ -175,9 +239,6 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   const hasDiscount = product.discount_price != null && product.discount_price < product.price;
   const images = product.images && product.images.length > 0 ? product.images : [PLACEHOLDER_IMG];
   const productUrl = `${window.location.origin}/product/${product.slug}`;
-  const isOutOfStock = product.stock !== null && product.stock <= 0;
-  const isLowStock = product.stock !== null && product.stock > 0 && product.stock <= 5;
-  const maxAvailableQuantity = product.stock !== null && product.stock > 0 ? Math.min(product.stock, 99) : 99;
 
   const inWishlist = isInWishlist(product.id);
 
@@ -192,17 +253,19 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   };
 
   const handleAddToCart = (targetEl?: HTMLElement | null) => {
-    if (isOutOfStock) return;
+    if (isOutOfStock || isAllStockInCart) return;
     const trigger = targetEl ?? addToCartBtnRef.current;
-    attemptAdd(
+    const directAdded = attemptAdd(
       product,
       trigger,
       () => {
-        if (trigger) triggerCartAnimation(trigger);
         toast.success(`تمت إضافة ${quantity > 1 ? `${quantity} قطع` : "المنتج"} إلى السلة`);
       },
       quantity,
     );
+    if (directAdded && trigger) {
+      triggerCartAnimation(trigger);
+    }
   };
 
   const handleQuantityDecrease = () => {
@@ -210,7 +273,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   };
 
   const handleQuantityIncrease = () => {
-    setQuantity((q) => Math.min(maxAvailableQuantity, q + 1));
+    setQuantity((q) => Math.min(maxSelectableQuantity, q + 1));
   };
 
   const handleShare = async () => {
@@ -268,6 +331,13 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
     ? Math.round(((product.price - product.discount_price!) / product.price) * 100)
     : 0;
 
+  const isAddBlocked = isOutOfStock || isAllStockInCart;
+  const buttonLabel = isOutOfStock
+    ? "نفد من المخزون"
+    : isAllStockInCart
+      ? "الكمية المتاحة بالكامل في السلة"
+      : "أضف إلى السلة";
+
   return (
     <div className="flex min-h-screen flex-col bg-background selection:bg-primary selection:text-white" dir="rtl">
       {dialogNode}
@@ -309,7 +379,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
             <div className="lg:col-span-6 space-y-4">
               {/* Main Image Container */}
               <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-white p-3 shadow-xs">
-                {/* Discount & Status Badges */}
+                {/* Discount Badge */}
                 <div className="absolute top-5 right-5 z-10 flex flex-col gap-1.5">
                   {hasDiscount && (
                     <span className="inline-flex items-center rounded-lg bg-accent px-2.5 py-1 text-xs font-black text-white shadow-sm">
@@ -415,11 +485,11 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
                   {product.name}
                 </h1>
 
-                {/* Merchant Link */}
+                {/* Merchant Link (Neutral authority: يُباع بواسطة) */}
                 {merchantEmbed?.slug ? (
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Store size={14} className="text-primary" />
-                    <span>يُباع ويُشحن بواسطة:</span>
+                    <span>يُباع بواسطة:</span>
                     <Link
                       to={`/store/${merchantEmbed.slug}`}
                       className="font-bold text-primary hover:underline"
@@ -506,31 +576,40 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
               {/* Quantity Stepper & Add to Cart Action */}
               <div className="space-y-4 border-t border-border/60 pt-4">
                 {!isOutOfStock && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-navy">الكمية:</span>
-                    <div className="flex items-center rounded-xl border border-border bg-white shadow-2xs">
-                      <button
-                        type="button"
-                        onClick={handleQuantityDecrease}
-                        disabled={quantity <= 1}
-                        className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-navy disabled:opacity-40 transition-colors"
-                        aria-label="تقليل الكمية"
-                      >
-                        <Minus size={14} />
-                      </button>
-                      <span className="w-10 text-center text-sm font-bold text-navy" data-testid="product-quantity-display">
-                        {quantity}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleQuantityIncrease}
-                        disabled={quantity >= maxAvailableQuantity}
-                        className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-navy disabled:opacity-40 transition-colors"
-                        aria-label="زيادة الكمية"
-                      >
-                        <Plus size={14} />
-                      </button>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-navy">الكمية:</span>
+                      <div className="flex items-center rounded-xl border border-border bg-white shadow-2xs">
+                        <button
+                          type="button"
+                          onClick={handleQuantityDecrease}
+                          disabled={quantity <= 1 || isAllStockInCart}
+                          className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-navy disabled:opacity-40 transition-colors"
+                          aria-label="تقليل الكمية"
+                        >
+                          <Minus size={14} />
+                        </button>
+                        <span className="w-10 text-center text-sm font-bold text-navy" data-testid="product-quantity-display">
+                          {isAllStockInCart ? 0 : quantity}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleQuantityIncrease}
+                          disabled={quantity >= maxSelectableQuantity || isAllStockInCart}
+                          className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-navy disabled:opacity-40 transition-colors"
+                          aria-label="زيادة الكمية"
+                        >
+                          <Plus size={14} />
+                        </button>
+                      </div>
                     </div>
+
+                    {/* Stock note if user has units in cart */}
+                    {existingInCart > 0 && isStockKnown && (
+                      <span className="text-[11px] text-muted-foreground">
+                        (لديك {existingInCart} في السلة)
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -540,11 +619,11 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
                     ref={addToCartBtnRef}
                     type="button"
                     onClick={() => handleAddToCart()}
-                    disabled={isOutOfStock}
+                    disabled={isAddBlocked}
                     className="h-12 flex-1 rounded-xl bg-primary hover:bg-primary-hover font-bold text-sm text-white gap-2 shadow-xs disabled:opacity-50"
                   >
                     <ShoppingBag size={18} strokeWidth={2} />
-                    <span>{isOutOfStock ? "نفد من المخزون" : "أضف إلى السلة"}</span>
+                    <span>{buttonLabel}</span>
                   </Button>
 
                   {/* Secondary WhatsApp Inquiry */}
@@ -578,7 +657,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <ShieldCheck size={16} />
                   </div>
-                  <span>تسوق آمن ومباشر من المتجر المعتمد</span>
+                  <span>تسوق بثقة عبر ديل مارت</span>
                 </div>
               </div>
             </div>
@@ -659,8 +738,12 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
         </div>
       </main>
 
-      {/* 5. Mobile Sticky Purchase Bar */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-border/80 p-3 shadow-lg" dir="rtl">
+      {/* 5. Mobile Sticky Purchase Bar (with safe-area-inset-bottom support) */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-border/80 p-3 shadow-lg"
+        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        dir="rtl"
+      >
         <div className="container flex items-center justify-between gap-3">
           <div>
             <span className="text-[10px] text-muted-foreground font-medium block">السعر</span>
@@ -672,11 +755,11 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
           <Button
             type="button"
             onClick={() => handleAddToCart()}
-            disabled={isOutOfStock}
-            className="h-11 flex-1 max-w-[200px] rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white gap-2 shadow-xs disabled:opacity-50"
+            disabled={isAddBlocked}
+            className="h-11 flex-1 max-w-[220px] rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white gap-2 shadow-xs disabled:opacity-50"
           >
             <ShoppingBag size={16} strokeWidth={2} />
-            <span>{isOutOfStock ? "نفد من المخزون" : "أضف إلى السلة"}</span>
+            <span>{buttonLabel}</span>
           </Button>
         </div>
       </div>
