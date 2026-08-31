@@ -179,8 +179,9 @@ END;
 $preflight$;
 
 -- ────────────────────────────────────────────────────────────────────────────
--- SECTION 2: DROP DEPENDENT TRIGGERS ON LEGACY TABLES
+-- SECTION 2: DROP DEPENDENT TRIGGERS ON LEGACY TABLES & AUTH.USERS
 -- ────────────────────────────────────────────────────────────────────────────
+DROP TRIGGER IF EXISTS trg_reject_reserved_federated_email ON auth.users;
 DROP TRIGGER IF EXISTS trg_reject_barber_handoff_audit_mutation ON public.dilmart_barber_handoff_audit_events;
 DROP TRIGGER IF EXISTS trg_reject_handoff_audit_mutation ON public.dilmart_customer_handoff_audit_events;
 DROP TRIGGER IF EXISTS trg_reject_federated_session_audit_mutation ON public.store_federated_session_audit_events;
