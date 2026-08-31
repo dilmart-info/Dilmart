@@ -271,29 +271,22 @@ DROP TABLE IF EXISTS public.store_linked_profiles;
 -- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 6.4: RE-AFFIRM SERVICE_ROLE ONLY ACL & SEARCH_PATH ON MODERN CHECKOUT RPCs
 -- ────────────────────────────────────────────────────────────────────────────
-ALTER FUNCTION public.place_order_idempotent(
-  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
-  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
-  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
-) SET search_path = public, pg_temp;
-
-REVOKE ALL ON FUNCTION public.place_order_idempotent(
-  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
-  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
-  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
-) FROM PUBLIC, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION public.place_order_idempotent(
-  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
-  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
-  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
-  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
-) TO service_role;
+DO $$
+DECLARE
+  v_fn RECORD;
+BEGIN
+  FOR v_fn IN
+    SELECT p.oid::regprocedure AS ident
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent'
+  LOOP
+    EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC, anon, authenticated', v_fn.ident);
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO service_role', v_fn.ident);
+    EXECUTE format('ALTER FUNCTION %s SET search_path = public, pg_temp', v_fn.ident);
+  END LOOP;
+END;
+$$;
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- SECTION 7: FAIL-CLOSED POSTCONDITION CATALOG ASSERTIONS
@@ -335,7 +328,7 @@ BEGIN
     );
 
   IF v_remaining_fn_count <> 0 THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: % legacy functions still remain', v_remaining_fn_count;
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: % legacy functions still exist in public schema', v_remaining_fn_count;
   END IF;
 
   -- ── 7.2 Verify Zero Legacy Tables Remain ───────────────────────────────────
@@ -357,7 +350,7 @@ BEGIN
     );
 
   IF v_remaining_tbl_count <> 0 THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: % legacy tables still remain', v_remaining_tbl_count;
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: % legacy tables still exist in public schema', v_remaining_tbl_count;
   END IF;
 
   -- ── 7.3 Verify Zero Legacy Columns Remain ──────────────────────────────────
