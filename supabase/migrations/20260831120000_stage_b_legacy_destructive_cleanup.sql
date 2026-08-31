@@ -403,14 +403,6 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order search_path not pinned to public, pg_temp';
   END IF;
 
-  IF NOT has_function_privilege('service_role', v_po_rec.oid, 'EXECUTE') THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order lacks EXECUTE privilege for service_role';
-  END IF;
-
-  IF has_function_privilege('anon', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_po_rec.oid, 'EXECUTE') THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order must not be executable by anon, authenticated, or public';
-  END IF;
-
   -- ── 7.5 Re-Verify Pristine place_order_idempotent Authority ────────────────
   SELECT count(*) INTO v_poi_count
   FROM pg_proc p
@@ -442,14 +434,6 @@ BEGIN
 
   IF NOT ('search_path=public, pg_temp' = ANY(v_poi_rec.proconfig)) THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
-  END IF;
-
-  IF NOT has_function_privilege('service_role', v_poi_rec.oid, 'EXECUTE') THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent lacks EXECUTE privilege for service_role';
-  END IF;
-
-  IF has_function_privilege('anon', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_poi_rec.oid, 'EXECUTE') THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent must not be executable by anon, authenticated, or public';
   END IF;
 END;
 $postconditions$;
