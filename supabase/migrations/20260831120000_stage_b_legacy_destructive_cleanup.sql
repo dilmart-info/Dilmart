@@ -352,18 +352,18 @@ BEGIN
   END IF;
 
   -- ── 7.3 Verify Zero Legacy Columns Remain ──────────────────────────────────
-  SELECT count(*) INTO v_remaining_col_count
-  FROM information_schema.columns
-  WHERE table_schema = 'public'
-    AND (
-      (table_name = 'products' AND column_name = 'requires_verified_salon')
-      OR (table_name = 'orders' AND column_name IN ('dilmart_barbershop_id', 'dilmart_user_id', 'store_cart_id', 'store_linked_profile_id'))
-      OR (table_name = 'checkout_attempts' AND column_name IN ('store_cart_id', 'store_linked_profile_id'))
-    );
-
-  IF v_remaining_col_count <> 0 THEN
-    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: % legacy columns still remain', v_remaining_col_count;
-  END IF;
+  FOR v_tbl IN
+    SELECT table_name, column_name
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND (
+        (table_name = 'products' AND column_name = 'requires_verified_salon')
+        OR (table_name = 'orders' AND column_name IN ('dilmart_barbershop_id', 'dilmart_user_id', 'store_cart_id', 'store_linked_profile_id'))
+        OR (table_name = 'checkout_attempts' AND column_name IN ('store_cart_id', 'store_linked_profile_id'))
+      )
+  LOOP
+    RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: Legacy column %.% still exists in schema', v_tbl.table_name, v_tbl.column_name;
+  END LOOP;
 
   -- ── 7.4 Re-Verify Pristine Modern place_order Authority ───────────────────
   SELECT count(*) INTO v_po_count
