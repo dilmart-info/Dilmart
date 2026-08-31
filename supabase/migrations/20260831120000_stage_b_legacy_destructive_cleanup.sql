@@ -30,10 +30,8 @@ DECLARE
   v_poi_owner           TEXT;
   v_po_secdef           BOOLEAN;
   v_poi_secdef          BOOLEAN;
-  v_po_args             TEXT;
-  v_poi_args            TEXT;
-  v_po_cfg              TEXT[];
-  v_poi_cfg             TEXT[];
+  v_po_cfg_ok           BOOLEAN;
+  v_poi_cfg_ok          BOOLEAN;
   v_tbl                 RECORD;
   v_tbl_count           BIGINT;
   v_col_non_null        BIGINT;
@@ -46,11 +44,10 @@ BEGIN
     count(*) FILTER (WHERE p.pronargs = 55),
     MAX(pg_get_userbyid(p.proowner)),
     BOOL_AND(p.prosecdef),
-    MAX(pg_get_function_identity_arguments(p.oid)),
-    MAX(p.proconfig::text)::text[]
+    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
   INTO
     v_po_count, v_po_49_count, v_po_55_count,
-    v_po_owner, v_po_secdef, v_po_args, v_po_cfg
+    v_po_owner, v_po_secdef, v_po_cfg_ok
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order';
@@ -63,6 +60,10 @@ BEGIN
   IF v_po_owner <> 'postgres' OR v_po_secdef IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order must be SECURITY DEFINER owned by postgres (found owner=%, secdef=%)',
       v_po_owner, v_po_secdef;
+  END IF;
+
+  IF v_po_cfg_ok IS NOT TRUE THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order search_path not pinned to public, pg_temp';
   END IF;
 
   SELECT count(*) INTO v_po_legacy_count
@@ -80,11 +81,10 @@ BEGIN
     count(*) FILTER (WHERE p.pronargs = 51),
     MAX(pg_get_userbyid(p.proowner)),
     BOOL_AND(p.prosecdef),
-    MAX(pg_get_function_identity_arguments(p.oid)),
-    MAX(p.proconfig::text)::text[]
+    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
   INTO
     v_poi_count, v_poi_51_count,
-    v_poi_owner, v_poi_secdef, v_poi_args, v_poi_cfg
+    v_poi_owner, v_poi_secdef, v_poi_cfg_ok
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
@@ -97,6 +97,10 @@ BEGIN
   IF v_poi_owner <> 'postgres' OR v_poi_secdef IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent must be SECURITY DEFINER owned by postgres (found owner=%, secdef=%)',
       v_poi_owner, v_poi_secdef;
+  END IF;
+
+  IF v_poi_cfg_ok IS NOT TRUE THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
   END IF;
 
   -- ── 1.3 Assert Zero Rows in All 11 Legacy Tables ───────────────────────────
@@ -369,12 +373,12 @@ BEGIN
     BOOL_OR(has_function_privilege('anon', p.oid, 'EXECUTE')),
     BOOL_OR(has_function_privilege('authenticated', p.oid, 'EXECUTE')),
     BOOL_OR(has_function_privilege('public', p.oid, 'EXECUTE')),
-    MAX(p.proconfig::text)::text[]
+    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
   INTO
     v_po_count, v_po_49_count,
     v_po_owner, v_po_secdef,
     v_po_svc, v_po_anon, v_po_auth, v_po_pub,
-    v_po_cfg
+    v_po_cfg_ok
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order';
@@ -393,7 +397,7 @@ BEGIN
       v_po_svc, v_po_anon, v_po_auth, v_po_pub;
   END IF;
 
-  IF v_po_cfg IS NULL OR NOT (v_po_cfg @> ARRAY['search_path=public, pg_temp']) THEN
+  IF v_po_cfg_ok IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order search_path not pinned to public, pg_temp';
   END IF;
 
@@ -407,12 +411,12 @@ BEGIN
     BOOL_OR(has_function_privilege('anon', p.oid, 'EXECUTE')),
     BOOL_OR(has_function_privilege('authenticated', p.oid, 'EXECUTE')),
     BOOL_OR(has_function_privilege('public', p.oid, 'EXECUTE')),
-    MAX(p.proconfig::text)::text[]
+    BOOL_AND('search_path=public, pg_temp' = ANY(p.proconfig))
   INTO
     v_poi_count, v_poi_51_count,
     v_poi_owner, v_poi_secdef,
     v_poi_svc, v_poi_anon, v_poi_auth, v_poi_pub,
-    v_poi_cfg
+    v_poi_cfg_ok
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
@@ -431,7 +435,7 @@ BEGIN
       v_poi_svc, v_poi_anon, v_poi_auth, v_poi_pub;
   END IF;
 
-  IF v_poi_cfg IS NULL OR NOT (v_poi_cfg @> ARRAY['search_path=public, pg_temp']) THEN
+  IF v_poi_cfg_ok IS NOT TRUE THEN
     RAISE EXCEPTION 'STAGE_B_POSTCONDITION_FAIL: public.place_order_idempotent search_path not pinned to public, pg_temp';
   END IF;
 END;
