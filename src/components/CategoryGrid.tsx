@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid } from "lucide-react";
 import { Link } from "react-router-dom";
-
 import CategoryTileVisual, { type CategoryTileItem } from "@/components/category/CategoryTileVisual";
 
 export type CategoryGridItem = CategoryTileItem & {
@@ -19,7 +18,6 @@ type CategoryGridProps = {
   viewAllLabel?: string;
 };
 
-/** Mobile shows two dense rows; the rest stay one tap away behind "view all". */
 const MOBILE_VISIBLE = 8;
 
 function categoryHref(slug: string) {
@@ -27,17 +25,16 @@ function categoryHref(slug: string) {
 }
 
 export default function CategoryGrid({
-  title,
-  subtitle,
+  title = "تسوق حسب الفئات",
+  subtitle = "استكشف تشكيلاتنا المتنوعة من المنتجات الأصلية",
   items,
   fallbackImage,
-  viewAllHref,
+  viewAllHref = "/products",
   viewAllLabel = "عرض كل الأقسام",
 }: CategoryGridProps) {
   const railRef = useRef<HTMLDivElement>(null);
   const [railOverflows, setRailOverflows] = useState(false);
 
-  // Arrows only appear when the rail actually has hidden items.
   useEffect(() => {
     const rail = railRef.current;
     if (!rail || typeof ResizeObserver === "undefined") return;
@@ -57,35 +54,62 @@ export default function CategoryGrid({
   if (items.length === 0) return null;
 
   return (
-    <section className="container py-6 md:py-8">
-      {(title || subtitle) && (
-        <div className="mb-4 flex items-end justify-between gap-3 text-right">
-          <div className="space-y-1">
-            {title && <h2 className="font-display text-2xl font-semibold md:text-3xl">{title}</h2>}
-            {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+    <section className="container py-5 md:py-8" dir="rtl">
+      {/* Section Header */}
+      <div className="mb-4 md:mb-6 flex items-end justify-between gap-3 text-right">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-1 rounded-full bg-primary" />
+            <h2 className="font-tajawal text-xl sm:text-2xl md:text-3xl font-extrabold text-navy">
+              {title}
+            </h2>
           </div>
-          {viewAllHref ? (
-            <Link to={viewAllHref} className="shrink-0 text-xs font-semibold text-DilMart-store-gold hover:underline">
-              {viewAllLabel}
-            </Link>
-          ) : null}
+          {subtitle && <p className="text-xs sm:text-sm text-muted-foreground font-medium pr-3">{subtitle}</p>}
         </div>
-      )}
+        {viewAllHref && (
+          <Link
+            to={viewAllHref}
+            className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover hover:underline transition-colors shrink-0"
+          >
+            <span>{viewAllLabel}</span>
+            <ChevronLeft size={14} />
+          </Link>
+        )}
+      </div>
 
-      {/* Mobile — compact four-column discovery grid. */}
-      <div className="grid grid-cols-4 gap-x-2 gap-y-4 md:hidden">
+      {/* Mobile — 4 columns compact grid */}
+      <div className="grid grid-cols-4 gap-2.5 sm:gap-3 md:hidden">
         {items.slice(0, MOBILE_VISIBLE).map((cat) => (
-          <Link key={cat.id} to={categoryHref(cat.slug)} aria-label={cat.name} title={cat.name} className="group block">
-            <CategoryTileVisual category={cat} fallbackImage={fallbackImage} labelClassName="text-[11px] md:text-[12px]" />
+          <Link
+            key={cat.id}
+            to={categoryHref(cat.slug)}
+            aria-label={cat.name}
+            title={cat.name}
+            className="group flex flex-col items-center text-center p-2 rounded-xl bg-white border border-border/80 shadow-sm transition-all active:scale-95 hover:border-primary/40"
+          >
+            <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-surface-light flex items-center justify-center p-2 mb-1.5 overflow-hidden group-hover:scale-105 transition-transform">
+              <img
+                src={cat.image_url || fallbackImage}
+                alt={cat.name}
+                className="h-full w-full object-contain"
+                loading="lazy"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = fallbackImage;
+                }}
+              />
+            </div>
+            <span className="font-tajawal text-[11px] font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+              {cat.name}
+            </span>
           </Link>
         ))}
       </div>
 
-      {/* Desktop — horizontal category rail. */}
+      {/* Desktop & Tablet — Horizontal Rail / Grid */}
       <div className="relative hidden md:block">
         <div
           ref={railRef}
-          className="flex gap-3 overflow-x-auto scroll-smooth pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex gap-4 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((cat) => (
             <Link
@@ -93,32 +117,46 @@ export default function CategoryGrid({
               to={categoryHref(cat.slug)}
               aria-label={cat.name}
               title={cat.name}
-              className="group block w-[104px] shrink-0"
+              className="group flex w-[120px] shrink-0 flex-col items-center text-center p-3 rounded-2xl bg-white border border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-1"
             >
-              <CategoryTileVisual category={cat} fallbackImage={fallbackImage} labelClassName="text-[11px] md:text-[12px]" />
+              <div className="h-20 w-20 rounded-2xl bg-surface-light flex items-center justify-center p-3 mb-2 overflow-hidden group-hover:scale-105 transition-transform">
+                <img
+                  src={cat.image_url || fallbackImage}
+                  alt={cat.name}
+                  className="h-full w-full object-contain"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = fallbackImage;
+                  }}
+                />
+              </div>
+              <span className="font-tajawal text-xs font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
+                {cat.name}
+              </span>
             </Link>
           ))}
         </div>
-        {railOverflows ? (
+
+        {railOverflows && (
           <>
             <button
               type="button"
-              aria-label="الأقسام السابقة"
               onClick={() => scrollRail(1)}
-              className="absolute -right-3 top-[40%] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-DilMart-store-gold/25 bg-background/95 text-foreground shadow-sm hover:border-DilMart-store-gold/60"
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-border text-foreground hover:text-primary transition-all"
+              aria-label="تمرير لليمين"
             >
               <ChevronRight size={18} />
             </button>
             <button
               type="button"
-              aria-label="الأقسام التالية"
               onClick={() => scrollRail(-1)}
-              className="absolute -left-3 top-[40%] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-DilMart-store-gold/25 bg-background/95 text-foreground shadow-sm hover:border-DilMart-store-gold/60"
+              className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md border border-border text-foreground hover:text-primary transition-all"
+              aria-label="تمرير لليسار"
             >
               <ChevronLeft size={18} />
             </button>
           </>
-        ) : null}
+        )}
       </div>
     </section>
   );

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Store } from "lucide-react";
 
 export type MerchantSectionMerchant = {
   id: string;
@@ -16,56 +16,68 @@ type MerchantSectionProps = {
   viewAllLabel?: string;
 };
 
-/**
- * Seller/store entities on the platform — NOT product brands. See `BrandRail` for
- * the real brands section. Was previously mislabeled "العلامات التجارية".
- */
 export default function MerchantSection({
   merchants,
-  title = "المتاجر الموثوقة",
-  subtitle = "متاجر وشركات موثوقة داخل المنصة",
+  title = "المتاجر المعتمدة في ديلمارت",
+  subtitle = "تسوق مباشرة من كبرى الشركات والمتاجر الموثوقة",
   viewAllHref = "/stores",
-  viewAllLabel = "عرض الكل",
+  viewAllLabel = "عرض كل المتاجر",
 }: MerchantSectionProps) {
+  if (merchants.length === 0) return null;
+
   return (
-    <section className="container py-4 md:py-5" dir="rtl">
-      <div className="mb-3 flex items-end justify-between gap-2">
-        <div className="space-y-0.5">
-          <h2 className="font-display text-lg font-semibold md:text-xl">{title}</h2>
-          <p className="text-xs text-muted-foreground md:text-sm">{subtitle}</p>
+    <section className="container py-5 md:py-8" dir="rtl">
+      <div className="mb-4 md:mb-6 flex items-end justify-between gap-3 text-right">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-1 rounded-full bg-primary" />
+            <h2 className="font-tajawal text-xl sm:text-2xl md:text-3xl font-extrabold text-navy">
+              {title}
+            </h2>
+          </div>
+          {subtitle && (
+            <p className="text-xs sm:text-sm text-muted-foreground font-medium pr-3">{subtitle}</p>
+          )}
         </div>
         <Link
           to={viewAllHref}
-          className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-DilMart-store-gold hover:text-DilMart-store-gold-bright md:text-sm"
+          className="inline-flex shrink-0 items-center gap-1 text-xs font-bold text-primary hover:text-primary-hover hover:underline transition-colors"
         >
           <span>{viewAllLabel}</span>
-          <ChevronLeft size={16} />
+          <ChevronLeft size={14} />
         </Link>
       </div>
-      {merchants.length > 0 ? (
-        <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] md:gap-3">
-          {merchants.map((m) => (
-            <Link
-              key={m.id}
-              to={`/store/${m.slug}`}
-              className="flex w-[9rem] shrink-0 items-center gap-2 rounded-xl border border-DilMart-store-gold/15 bg-card/85 p-2 text-right shadow-sm transition-colors hover:border-DilMart-store-gold/35 md:w-[10rem]"
-            >
-              {m.logo_url ? (
-                <img src={m.logo_url} alt={m.display_name} loading="lazy" className="h-9 w-9 rounded-full object-cover md:h-10 md:w-10" />
-              ) : (
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-xs font-semibold md:h-10 md:w-10">
-                  {m.display_name.slice(0, 2)}
-                </div>
-              )}
-              <span className="line-clamp-2 text-xs font-semibold leading-snug">{m.display_name}</span>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-xl border border-dashed border-DilMart-store-gold/20 bg-card/40 p-4 text-center text-sm text-muted-foreground">
-          لا توجد متاجر موثوقة للعرض حالياً.
-        </div>
-      )}
+
+      <div className="flex gap-3 overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        {merchants.map((m) => (
+          <Link
+            key={m.id}
+            to={`/store/${m.slug}`}
+            className="flex w-[11rem] sm:w-[13rem] shrink-0 items-center gap-3 rounded-2xl border border-border/80 bg-white p-3 text-right shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-0.5"
+          >
+            {m.logo_url ? (
+              <img
+                src={m.logo_url}
+                alt={m.display_name}
+                loading="lazy"
+                className="h-11 w-11 rounded-xl object-cover border border-border shrink-0 bg-surface-light"
+              />
+            ) : (
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary shrink-0">
+                <Store size={20} strokeWidth={2} />
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <span className="line-clamp-1 text-xs sm:text-sm font-extrabold text-navy group-hover:text-primary">
+                {m.display_name}
+              </span>
+              <span className="text-[10px] font-semibold text-muted-foreground block mt-0.5">
+                متجر معتمد ✓
+              </span>
+            </div>
+          </Link>
+        ))}
+      </div>
     </section>
   );
 }

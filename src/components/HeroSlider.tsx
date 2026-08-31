@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, Zap, ShieldCheck, Truck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type HeroSlide = {
@@ -13,6 +13,7 @@ type HeroSlide = {
   href: string;
   image: string;
   valueProps?: string[];
+  badge?: string;
 };
 
 type SideCard = {
@@ -20,6 +21,7 @@ type SideCard = {
   title: string;
   href: string;
   image: string;
+  badge?: string;
 };
 
 type HeroSliderProps = {
@@ -44,8 +46,6 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
   useEffect(() => {
     if (!api) return;
 
-    // Autoplay must never start a transition on top of a drag or an in-flight
-    // transition — that is what tears a slide in half mid-scroll.
     let interacting = false;
     const onPointerDown = () => {
       interacting = true;
@@ -57,11 +57,10 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
     api.on("pointerDown", onPointerDown);
     api.on("settle", onSettle);
 
-    // RTL autoplay should move visually from right to left.
     const interval = window.setInterval(() => {
       if (interacting) return;
       api.scrollPrev();
-    }, 7200);
+    }, 6000);
 
     return () => {
       window.clearInterval(interval);
@@ -72,12 +71,12 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
 
   if (loading) {
     return (
-      <section className="container py-5 md:py-7">
+      <section className="container py-4 md:py-6">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
-          <Skeleton className="h-[19rem] rounded-2xl md:h-[24rem]" />
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-1">
-            <Skeleton className="h-36 rounded-2xl md:h-[11.5rem]" />
-            <Skeleton className="h-36 rounded-2xl md:h-[11.5rem]" />
+          <Skeleton className="h-[20rem] rounded-2xl md:h-[26rem] bg-muted/40" />
+          <div className="hidden lg:grid grid-cols-1 gap-4">
+            <Skeleton className="h-[12.5rem] rounded-2xl bg-muted/40" />
+            <Skeleton className="h-[12.5rem] rounded-2xl bg-muted/40" />
           </div>
         </div>
       </section>
@@ -85,109 +84,142 @@ export default function HeroSlider({ slides, sideCards, loading = false }: HeroS
   }
 
   return (
-    <section className="container py-5 md:py-7" dir="rtl">
-      <div className="space-y-4">
-        <div className="hidden grid-cols-3 gap-4 lg:grid">
-          {sideCards.slice(0, 3).map((card) => (
-            <Link
-              key={card.id}
-              to={card.href}
-              className="group relative overflow-hidden rounded-2xl border border-DilMart-store-gold/15 bg-card"
-            >
-              <img src={card.image} alt="" className="h-44 w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/30 to-transparent" />
-              <p className="absolute bottom-3 right-3 text-sm font-semibold text-white">{card.title}</p>
-            </Link>
-          ))}
-        </div>
-
-        <div className="relative overflow-hidden rounded-2xl border border-DilMart-store-gold/15 bg-card">
-          {/*
-            The shared carousel ships an LTR gutter idiom: -ml-4 on the track and pl-4 on
-            every item. Under direction:"rtl" both land on the trailing edge instead of
-            straddling the slides, so the track runs 1rem wider than its viewport and the
-            gutter shows through as a black vertical seam mid-transition. The hero is a
-            full-bleed panel with no gutter at all, so both are cancelled here rather than
-            in the shared component.
-          */}
-          <Carousel opts={{ loop: true, align: "start", direction: "rtl" }} setApi={setApi}>
-            <CarouselContent className="ml-0" data-testid="hero-carousel-track">
+    <section className="container py-3 md:py-5" dir="rtl">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,3fr)]">
+        {/* Main Hero Slider */}
+        <div className="relative overflow-hidden rounded-2xl bg-navy shadow-md">
+          <Carousel
+            setApi={setApi}
+            opts={{
+              direction: "rtl",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent>
               {slides.map((slide) => (
-                <CarouselItem key={slide.id} className="basis-full pl-0" data-testid="hero-carousel-item">
-                  <div className="relative z-10 flex min-h-[19rem] items-center overflow-hidden p-6 md:min-h-[24rem] md:p-10 lg:min-h-[31rem]">
+                <CarouselItem key={slide.id}>
+                  <div className="relative h-[20rem] sm:h-[22rem] md:h-[26rem] w-full overflow-hidden">
+                    {/* Background Banner Image */}
                     <img
                       src={slide.image}
                       alt=""
+                      className="absolute inset-0 h-full w-full object-cover object-center"
                       loading="lazy"
-                      className="absolute inset-0 h-full w-full object-cover opacity-75"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-l from-black/60 via-black/35 to-black/15" />
-                    <div className="max-w-xl space-y-4 rounded-2xl bg-black/35 p-4 text-right backdrop-blur-[1px] md:p-5">
-                      <h1 className="font-display text-3xl font-semibold leading-tight text-white [text-shadow:0_2px_14px_rgba(0,0,0,0.7)] md:text-5xl">
+                    {/* Gradient Overlay for crisp text legibility */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/80 to-transparent sm:to-black/30" />
+
+                    {/* Content Box */}
+                    <div className="relative z-10 flex h-full flex-col justify-center p-6 sm:p-8 md:p-12 text-right max-w-xl text-white">
+                      {slide.badge && (
+                        <div className="mb-3 inline-flex items-center gap-1.5 self-start rounded-full bg-accent px-3 py-1 text-xs font-black text-white shadow-sm">
+                          <Zap size={13} fill="currentColor" />
+                          <span>{slide.badge}</span>
+                        </div>
+                      )}
+
+                      <h1 className="font-tajawal text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black leading-tight tracking-tight text-white mb-3 drop-shadow-sm">
                         {slide.title}
                       </h1>
-                      <p className="text-sm leading-relaxed text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.75)] md:text-base">
+
+                      <p className="font-tajawal text-xs sm:text-sm md:text-base font-normal text-blue-100/90 leading-relaxed mb-6 max-w-md line-clamp-2">
                         {slide.subtitle}
                       </p>
+
                       {slide.valueProps && slide.valueProps.length > 0 && (
-                        <ul className="space-y-1.5 text-xs text-white/95 [text-shadow:0_1px_8px_rgba(0,0,0,0.75)] md:text-sm">
-                          {slide.valueProps.slice(0, 4).map((point) => (
-                            <li key={point} className="flex flex-row-reverse items-center justify-end gap-2 text-right">
-                              <span>{point}</span>
-                            </li>
+                        <div className="hidden sm:grid grid-cols-2 gap-2 mb-6 text-xs text-blue-200">
+                          {slide.valueProps.slice(0, 4).map((prop, idx) => (
+                            <div key={idx} className="flex items-center gap-1.5">
+                              <ShieldCheck size={14} className="text-accent shrink-0" />
+                              <span>{prop}</span>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       )}
-                      <Link to={slide.href}>
-                        <Button className="h-11 rounded-xl px-7">{slide.ctaLabel}</Button>
-                      </Link>
+
+                      <div>
+                        <Link to={slide.href}>
+                          <Button
+                            size="lg"
+                            className="bg-accent hover:bg-accent-hover text-white font-extrabold text-sm sm:text-base px-7 py-6 rounded-xl shadow-lg shadow-accent/25 transition-all hover:scale-105 active:scale-95"
+                          >
+                            {slide.ctaLabel}
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 </CarouselItem>
               ))}
             </CarouselContent>
-          </Carousel>
 
-          <button
-            type="button"
-            onClick={() => api?.scrollNext()}
-            className="absolute left-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-DilMart-store-gold/20 bg-background/80 backdrop-blur hover:bg-background md:flex"
-            aria-label="السابق"
-          >
-            <ChevronLeft size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => api?.scrollPrev()}
-            className="absolute right-3 top-1/2 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-DilMart-store-gold/20 bg-background/80 backdrop-blur hover:bg-background md:flex"
-            aria-label="التالي"
-          >
-            <ChevronRight size={18} />
-          </button>
-
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
-            {Array.from({ length: snapCount }).map((_, idx) => (
+            {/* Carousel Navigation Arrows (Desktop) */}
+            <div className="hidden md:flex items-center gap-2 absolute bottom-4 left-4 z-20">
               <button
-                key={idx}
                 type="button"
-                onClick={() => api?.scrollTo(idx)}
-                className={`h-2.5 rounded-full transition-all ${idx === activeIndex ? "w-6 bg-DilMart-store-gold" : "w-2.5 bg-muted-foreground/40"}`}
-                aria-label={`الانتقال إلى الشريحة ${idx + 1}`}
-              />
-            ))}
-          </div>
+                onClick={() => api?.scrollPrev()}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 hover:bg-white text-white hover:text-navy backdrop-blur-md transition-all shadow-sm"
+                aria-label="السابق"
+              >
+                <ChevronRight size={20} />
+              </button>
+              <button
+                type="button"
+                onClick={() => api?.scrollNext()}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-white/20 hover:bg-white text-white hover:text-navy backdrop-blur-md transition-all shadow-sm"
+                aria-label="التالي"
+              >
+                <ChevronLeft size={20} />
+              </button>
+            </div>
+
+            {/* Pagination Dots */}
+            <div className="absolute bottom-4 right-6 z-20 flex items-center gap-1.5">
+              {Array.from({ length: snapCount }).map((_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => api?.scrollTo(i)}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    activeIndex === i ? "w-6 bg-accent" : "w-2 bg-white/40 hover:bg-white/70"
+                  }`}
+                  aria-label={`شريحة ${i + 1}`}
+                />
+              ))}
+            </div>
+          </Carousel>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:hidden">
-          {sideCards.slice(0, 3).map((card) => (
+        {/* Side Promo Tiles (Desktop / Tablet) */}
+        <div className="hidden lg:grid grid-cols-1 gap-4">
+          {sideCards.slice(0, 2).map((card) => (
             <Link
               key={card.id}
               to={card.href}
-              className="group relative overflow-hidden rounded-2xl border border-DilMart-store-gold/15 bg-card"
+              className="group relative flex flex-col justify-end overflow-hidden rounded-2xl bg-navy p-5 text-white shadow-sm transition-all hover:shadow-md"
             >
-              <img src={card.image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/30 to-transparent" />
-              <p className="absolute bottom-3 right-3 text-sm font-semibold text-white">{card.title}</p>
+              <img
+                src={card.image}
+                alt=""
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-navy/90 via-navy/50 to-transparent" />
+              <div className="relative z-10 text-right">
+                {card.badge && (
+                  <span className="mb-2 inline-block rounded-md bg-accent px-2 py-0.5 text-[10px] font-extrabold text-white">
+                    {card.badge}
+                  </span>
+                )}
+                <h3 className="font-tajawal text-base font-extrabold text-white group-hover:text-accent transition-colors">
+                  {card.title}
+                </h3>
+                <span className="mt-1 inline-flex items-center gap-1 text-xs font-bold text-blue-200 group-hover:underline">
+                  <span>تسوق الآن</span>
+                  <ChevronLeft size={14} />
+                </span>
+              </div>
             </Link>
           ))}
         </div>

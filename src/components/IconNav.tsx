@@ -43,16 +43,25 @@ const IconButton = ({
   icon: typeof ShoppingCart;
   badge?: number;
 }) => (
-  <Link to={to} className="group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-colors hover:bg-DilMart-store-gold/10">
+  <Link
+    to={to}
+    className="group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition-all hover:bg-primary/10 hover:text-primary text-foreground/80"
+  >
     <span className="relative">
-      <Icon size={20} strokeWidth={1.75} className="text-foreground/90 transition-colors group-hover:text-DilMart-store-gold" />
+      <Icon
+        size={20}
+        strokeWidth={1.8}
+        className="transition-colors group-hover:text-primary text-foreground/80"
+      />
       {badge != null && badge > 0 && (
-        <span className="absolute -right-2 -top-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full border border-background bg-DilMart-store-gold px-1 text-[10px] font-bold text-primary-foreground">
+        <span className="absolute -right-2 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-white shadow-sm ring-2 ring-white">
           {badge}
         </span>
       )}
     </span>
-    <span className="text-[10px] font-semibold text-muted-foreground md:text-xs">{label}</span>
+    <span className="text-[11px] font-semibold text-foreground/80 group-hover:text-primary transition-colors">
+      {label}
+    </span>
   </Link>
 );
 
@@ -75,56 +84,108 @@ function CartTrigger({
         <button
           id="cart-icon-header"
           type="button"
-          className="group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-colors hover:bg-DilMart-store-gold/10"
+          className="group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition-all hover:bg-primary/10 text-foreground/80"
           aria-label="السلة"
         >
           <span className="relative">
-            <ShoppingCart size={20} strokeWidth={1.75} className="text-foreground/90 transition-colors group-hover:text-DilMart-store-gold" />
+            <ShoppingCart
+              size={20}
+              strokeWidth={1.8}
+              className="transition-colors group-hover:text-primary text-foreground/80"
+            />
             {itemCount > 0 && (
-              <span className="absolute -right-2 -top-2 flex h-[17px] min-w-[17px] items-center justify-center rounded-full border border-background bg-DilMart-store-gold px-1 text-[10px] font-bold text-primary-foreground">
+              <span className="absolute -right-2 -top-2 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-extrabold text-white shadow-sm ring-2 ring-white animate-in zoom-in">
                 {itemCount}
               </span>
             )}
           </span>
-          <span className="text-[10px] font-semibold text-muted-foreground md:text-xs">السلة</span>
+          <span className="text-[11px] font-semibold text-foreground/80 group-hover:text-primary transition-colors">
+            السلة
+          </span>
         </button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-full overflow-y-auto border-DilMart-store-gold/15 bg-card sm:max-w-md">
+      <SheetContent side="left" className="w-full overflow-y-auto border-border bg-white sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-right font-display text-xl">سلة التسوق</SheetTitle>
+          <SheetTitle className="text-right font-tajawal text-xl font-bold text-navy">
+            سلة التسوق ({itemCount})
+          </SheetTitle>
         </SheetHeader>
         {items.length === 0 ? (
-          <p className="mt-12 text-center text-muted-foreground">السلة فارغة</p>
+          <div className="mt-16 flex flex-col items-center justify-center text-center p-6 space-y-3">
+            <div className="h-16 w-16 rounded-full bg-surface-light flex items-center justify-center text-muted-foreground">
+              <ShoppingCart size={32} strokeWidth={1.5} />
+            </div>
+            <p className="text-base font-bold text-foreground">سلتك فارغة حالياً</p>
+            <p className="text-xs text-muted-foreground">استكشف آلاف المنتجات وأضف ما يعجبك إلى السلة</p>
+            <Link to="/products" className="pt-3 w-full">
+              <Button className="w-full bg-primary hover:bg-primary-hover text-white font-bold">
+                تصفح المنتجات
+              </Button>
+            </Link>
+          </div>
         ) : (
-          <div className="mt-6 space-y-4">
-            {items.map((item) => (
-              <div key={item.product.id} className="flex gap-3 border-b border-border pb-4">
-                <img src={item.product.images?.[0] || "/placeholder.svg"} alt={item.product.name} className="h-16 w-16 rounded-md object-cover ring-1 ring-DilMart-store-gold/10" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium leading-snug">{item.product.name}</p>
-                  <p className="text-sm text-muted-foreground">{formatPrice(item.product.discount_price ?? item.product.price)}</p>
-                  <div className="mt-1 flex items-center gap-2">
-                    <button type="button" onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="flex h-7 w-7 items-center justify-center rounded border border-border text-xs">
-                      −
-                    </button>
-                    <span className="text-sm">{item.quantity}</span>
-                    <button type="button" onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="flex h-7 w-7 items-center justify-center rounded border border-border text-xs">
-                      +
-                    </button>
-                    <button type="button" onClick={() => removeItem(item.product.id)} className="mr-auto text-xs text-destructive">
-                      حذف
-                    </button>
+          <div className="mt-6 flex flex-col h-[calc(100vh-140px)] justify-between">
+            <div className="space-y-4 overflow-y-auto pr-1">
+              {items.map((item) => (
+                <div
+                  key={item.product.id}
+                  className="flex gap-3 border border-border/80 rounded-xl p-3 bg-surface-light/50 transition-all hover:bg-surface-light"
+                >
+                  <img
+                    src={item.product.images?.[0] || "/placeholder.svg"}
+                    alt={item.product.name}
+                    className="h-16 w-16 rounded-lg object-cover bg-white border border-border shrink-0"
+                  />
+                  <div className="flex-1 min-w-0 flex flex-col justify-between">
+                    <div>
+                      <p className="text-xs font-bold leading-snug text-foreground line-clamp-2">
+                        {item.product.name}
+                      </p>
+                      <p className="text-sm font-extrabold text-primary mt-1">
+                        {formatPrice(item.product.discount_price ?? item.product.price)}
+                      </p>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 bg-white border border-border rounded-lg p-0.5">
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                          className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold hover:bg-muted"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-xs font-bold">{item.quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                          className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold hover:bg-muted"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.product.id)}
+                        className="text-xs text-destructive hover:underline font-medium"
+                      >
+                        حذف
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+
+            <div className="border-t border-border pt-4 bg-white mt-4 space-y-3">
+              <div className="flex justify-between items-center text-base font-extrabold text-navy">
+                <span>المجموع الفرعي</span>
+                <span className="text-primary text-lg">{formatPrice(getTotal())}</span>
               </div>
-            ))}
-            <div className="border-t border-border pt-4">
-              <div className="flex justify-between text-lg font-semibold">
-                <span>المجموع</span>
-                <span>{formatPrice(getTotal())}</span>
-              </div>
-              <Link to="/checkout">
-                <Button className="mt-4 w-full bg-primary text-primary-foreground hover:bg-primary/90" size="lg">
+              <Link to="/checkout" className="block">
+                <Button
+                  className="w-full bg-accent hover:bg-accent-hover text-white font-extrabold text-sm h-12 shadow-sm rounded-xl"
+                  size="lg"
+                >
                   إتمام الطلب
                 </Button>
               </Link>
@@ -142,27 +203,39 @@ export function CategoryDrawerTrigger({ categories, className = "" }: CategoryTr
       <SheetTrigger asChild>
         <button
           type="button"
-          className={`group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-colors hover:bg-DilMart-store-gold/10 ${className}`}
+          className={`inline-flex items-center gap-2 rounded-xl bg-surface-light border border-border/80 px-3.5 py-2 font-bold text-xs text-navy hover:bg-primary hover:text-white hover:border-primary transition-all shadow-sm ${className}`}
           aria-label="الأقسام"
         >
-          <LayoutGrid size={20} strokeWidth={1.75} className="text-foreground/90 transition-colors group-hover:text-DilMart-store-gold" />
-          <span className="text-[10px] font-semibold text-muted-foreground md:text-xs">الأقسام</span>
+          <LayoutGrid size={17} strokeWidth={2.2} />
+          <span>الأقسام</span>
         </button>
       </SheetTrigger>
-      <SheetContent side="right" className="w-[92vw] overflow-y-auto border-DilMart-store-gold/15 bg-card sm:max-w-md">
+      <SheetContent side="right" className="w-[92vw] overflow-y-auto border-border bg-white sm:max-w-md">
         <SheetHeader>
-          <SheetTitle className="text-right font-display text-xl">الأقسام</SheetTitle>
+          <SheetTitle className="text-right font-tajawal text-xl font-extrabold text-navy">
+            أقسام ديلمارت
+          </SheetTitle>
         </SheetHeader>
-        <div className="mt-4 space-y-4">
+        <div className="mt-5 space-y-3">
           {categories.map((cat) => (
-            <div key={cat.id} className="space-y-2 rounded-xl border border-DilMart-store-gold/15 p-3">
-              <Link to={`/products?category=${cat.slug}`} className="block text-right text-sm font-semibold hover:text-DilMart-store-gold">
+            <div
+              key={cat.id}
+              className="space-y-2 rounded-xl border border-border/80 bg-surface-light/40 p-3.5 transition-all hover:border-primary/40 hover:bg-surface-light"
+            >
+              <Link
+                to={`/products?category=${cat.slug}`}
+                className="block text-right text-sm font-extrabold text-navy hover:text-primary transition-colors"
+              >
                 {cat.name}
               </Link>
               {cat.children && cat.children.length > 0 && (
-                <div className="grid grid-cols-2 gap-2 border-r border-DilMart-store-gold/20 pr-3">
+                <div className="grid grid-cols-2 gap-1.5 border-r-2 border-primary/30 pr-3 mt-2">
                   {cat.children.map((child) => (
-                    <Link key={child.id} to={`/products?category=${child.slug}`} className="rounded-lg bg-muted/30 px-2 py-1 text-right text-xs text-muted-foreground hover:text-foreground">
+                    <Link
+                      key={child.id}
+                      to={`/products?category=${child.slug}`}
+                      className="rounded-lg bg-white border border-border/60 px-2.5 py-1 text-right text-xs font-semibold text-foreground/80 hover:text-primary hover:border-primary/40 transition-colors"
+                    >
                       {child.name}
                     </Link>
                   ))}
@@ -176,7 +249,11 @@ export function CategoryDrawerTrigger({ categories, className = "" }: CategoryTr
   );
 }
 
-export default function IconNav({ categories = [], showCategoryTrigger = false, categoryTriggerClassName = "" }: IconNavProps) {
+export default function IconNav({
+  categories = [],
+  showCategoryTrigger = false,
+  categoryTriggerClassName = "",
+}: IconNavProps) {
   const { items, getItemCount, getTotal, removeItem, updateQuantity } = useCartStore();
   const { user, session, isMerchantUser, logoutCurrentDevice } = useAuth();
   const itemCount = getItemCount();
@@ -185,37 +262,60 @@ export default function IconNav({ categories = [], showCategoryTrigger = false, 
 
   return (
     <div dir="rtl" className="flex items-center gap-1 md:gap-1.5">
-      {showCategoryTrigger && categories.length > 0 && <CategoryDrawerTrigger categories={categories} className={categoryTriggerClassName} />}
+      {showCategoryTrigger && categories.length > 0 && (
+        <CategoryDrawerTrigger
+          categories={categories}
+          className={categoryTriggerClassName}
+        />
+      )}
 
       {!native && (
-        <IconButton to={isMerchantUser ? "/merchant" : "/merchant/login"} icon={Store} label="التاجر" />
+        <IconButton
+          to={isMerchantUser ? "/merchant" : "/merchant/login"}
+          icon={Store}
+          label="التاجر"
+        />
       )}
       <IconButton to="/wishlist" icon={Heart} label="المفضلة" />
 
       <DropdownMenu dir="rtl">
         <DropdownMenuTrigger asChild>
-          <button type="button" className="group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-colors hover:bg-DilMart-store-gold/10" aria-label="حسابي">
-            <User size={20} strokeWidth={1.75} className="text-foreground/90 transition-colors group-hover:text-DilMart-store-gold" />
-            <span className="text-[10px] font-semibold text-muted-foreground md:text-xs">{hasSession ? "حسابي" : "تسجيل الدخول"}</span>
+          <button
+            type="button"
+            className="group flex min-w-[3.5rem] flex-col items-center justify-center gap-1 rounded-xl px-2.5 py-1.5 transition-all hover:bg-primary/10 text-foreground/80"
+            aria-label="حسابي"
+          >
+            <User
+              size={20}
+              strokeWidth={1.8}
+              className="transition-colors group-hover:text-primary text-foreground/80"
+            />
+            <span className="text-[11px] font-semibold text-foreground/80 group-hover:text-primary transition-colors">
+              {hasSession ? "حسابي" : "دخول"}
+            </span>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56 border-DilMart-store-gold/15 bg-card">
+        <DropdownMenuContent align="end" className="w-56 border-border bg-white shadow-lg rounded-xl p-1.5">
           {hasSession ? (
             <>
               <DropdownMenuItem asChild>
-                <Link to="/profile" className="w-full cursor-pointer">الملف الشخصي</Link>
+                <Link to="/profile" className="w-full cursor-pointer font-bold text-xs py-2">
+                  الملف الشخصي
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link to="/my-account/orders" className="w-full cursor-pointer">طلباتي</Link>
+                <Link to="/my-account/orders" className="w-full cursor-pointer font-bold text-xs py-2">
+                  طلباتي ومشترياتي
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="cursor-pointer text-destructive focus:text-destructive"
+                className="cursor-pointer text-destructive focus:text-destructive font-bold text-xs py-2"
                 onClick={async () => {
                   try {
                     await logoutCurrentDevice();
-                    toast.success("تم تسجيل الخروج");
+                    toast.success("تم تسجيل الخروج بنجاح");
                   } catch {
-                    // Secure-clear failure surfaces as storage_error — never toast success.
+                    // ignore
                   }
                 }}
               >
@@ -224,13 +324,21 @@ export default function IconNav({ categories = [], showCategoryTrigger = false, 
             </>
           ) : (
             <DropdownMenuItem asChild>
-              <Link to="/auth" className="w-full cursor-pointer">تسجيل الدخول / إنشاء حساب</Link>
+              <Link to="/auth" className="w-full cursor-pointer font-bold text-xs py-2 text-primary">
+                تسجيل الدخول / إنشاء حساب جديد
+              </Link>
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <CartTrigger itemCount={itemCount} items={items} getTotal={getTotal} removeItem={removeItem} updateQuantity={updateQuantity} />
+      <CartTrigger
+        itemCount={itemCount}
+        items={items}
+        getTotal={getTotal}
+        removeItem={removeItem}
+        updateQuantity={updateQuantity}
+      />
     </div>
   );
 }

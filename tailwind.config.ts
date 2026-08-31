@@ -9,13 +9,18 @@ export default {
       center: true,
       padding: "1rem",
       screens: {
+        sm: "640px",
+        md: "768px",
+        lg: "1024px",
+        xl: "1280px",
         "2xl": "1400px",
       },
     },
     extend: {
       fontFamily: {
         tajawal: ["Tajawal", "sans-serif"],
-        display: ['"Cormorant Garamond"', "Tajawal", "serif"],
+        manrope: ["Manrope", "sans-serif"],
+        display: ["Tajawal", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -26,6 +31,14 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
+          hover: "hsl(var(--primary-hover))",
+          light: "hsl(var(--primary-light))",
+        },
+        navy: {
+          DEFAULT: "hsl(var(--navy))",
+          foreground: "hsl(var(--navy-foreground))",
+          light: "hsl(var(--navy-light))",
+          surface: "hsl(var(--navy-surface))",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
@@ -42,6 +55,8 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          hover: "hsl(var(--accent-hover))",
+          light: "hsl(var(--accent-light))",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
@@ -50,6 +65,18 @@ export default {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        dilmart: {
+          blue: "#1261D8",
+          "blue-hover": "#0E4EB0",
+          "blue-light": "#EBF2FC",
+          navy: "#071A3D",
+          "navy-light": "#0D234D",
+          orange: "#FF8A00",
+          "orange-hover": "#E67C00",
+          "orange-light": "#FFF4E6",
+          surface: "#F5F7FA",
+          text: "#111827",
         },
         "DilMart-store": {
           gold: "hsl(var(--DilMart-store-gold))",
@@ -72,6 +99,7 @@ export default {
         },
       },
       borderRadius: {
+        xl: "1rem",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
@@ -86,14 +114,19 @@ export default {
           to: { height: "0" },
         },
         "fade-in": {
-          "0%": { opacity: "0", transform: "translateY(10px)" },
+          "0%": { opacity: "0", transform: "translateY(8px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "pulse-subtle": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.8" },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.4s ease-out",
+        "fade-in": "fade-in 0.3s ease-out",
+        "pulse-subtle": "pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
     },
   },

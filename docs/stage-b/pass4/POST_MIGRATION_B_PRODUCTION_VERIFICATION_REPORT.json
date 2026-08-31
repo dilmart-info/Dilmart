@@ -1,0 +1,38 @@
+{
+  "active_table_legacy_columns_remaining": null,
+  "checkout_attempts_user_id_is_nullable": "NO",
+  "legacy_candidate_functions_remaining": null,
+  "legacy_tables_remaining": null,
+  "migration_history_20260831120000_count": 1,
+  "place_order_authority": {
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "count": 1,
+    "identity_args": "p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text",
+    "owner": "postgres",
+    "proconfig": [
+      "search_path=public, pg_temp"
+    ],
+    "pronargs": 49,
+    "prosecdef": true,
+    "public_execute": false,
+    "service_role_execute": true
+  },
+  "place_order_idempotent_authority": {
+    "anon_execute": false,
+    "authenticated_execute": false,
+    "count": 1,
+    "identity_args": "p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text",
+    "owner": "postgres",
+    "proconfig": [
+      "search_path=public, pg_temp"
+    ],
+    "pronargs": 51,
+    "prosecdef": true,
+    "public_execute": false,
+    "service_role_execute": true
+  },
+  "preserved_auth_users_trigger_count": 1,
+  "preserved_reject_reserved_federated_email_count": 1,
+  "unexpected_place_order_overloads": null
+}
