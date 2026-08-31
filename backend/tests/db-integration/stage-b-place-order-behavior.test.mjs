@@ -314,6 +314,8 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
       p_delivery_cost: 4000,
       p_discount: 0,
       p_total: 24000,
+      p_coupon_id: null,
+      p_items: items,
       p_merchandise_subtotal: 20000,
       p_delivery_fee_charged: 4000,
       p_platform_commission_type: "percentage",
@@ -325,11 +327,10 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
       p_platform_net_revenue_amount: 2000,
       p_currency_code: "IQD",
       p_financial_snapshot_version: 1,
-      p_items: items,
       p_user_id: userId,
     });
 
-    assert.equal(error, null);
+    assert.equal(error, null, "Financial snapshot place_order must succeed");
 
     const { data: order } = await supabase.from("orders").select("*").eq("order_number", orderNumber).single();
     assert.equal(Number(order.merchandise_subtotal), 20000);
@@ -339,27 +340,27 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
   });
 
   await t.test("7. Coupon Usage Increment [REAL POSTGRESQL]", async () => {
-    const { govId, prodId, merchantId, userId, phone } = await createFixtures();
+    const { govId, prodId, userId, phone } = await createFixtures();
 
     // Create a coupon fixture
     const couponId = crypto.randomUUID();
-    await supabase.from("coupons").insert({
+    const { error: cpnErr } = await supabase.from("coupons").insert({
       id: couponId,
       code: `TESTCPN-${crypto.randomBytes(3).toString("hex").toUpperCase()}`,
       discount_type: "fixed",
-      discount_value: 5000,
+      value: 5000,
       min_order_amount: 10000,
       max_uses: 100,
-      times_used: 3,
+      used_count: 3,
       is_active: true,
-      merchant_id: merchantId,
-      start_date: new Date(Date.now() - 3600000).toISOString(),
-      end_date: new Date(Date.now() + 3600000).toISOString(),
+      starts_at: new Date(Date.now() - 3600000).toISOString(),
+      expires_at: new Date(Date.now() + 3600000).toISOString(),
     });
+    assert.equal(cpnErr, null, "coupon fixture insertion must succeed");
 
     const items = [{ product_id: prodId, quantity: 1 }];
 
-    const { error: poErr } = await supabase.rpc("place_order", {
+    const { data: orderNumber, error: poErr } = await supabase.rpc("place_order", {
       p_customer_name: "مستخدم الكوبون",
       p_customer_phone: phone,
       p_governorate_id: govId,
@@ -375,11 +376,12 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
       p_user_id: userId,
     });
 
-    assert.equal(poErr, null);
+    assert.equal(poErr, null, "place_order with coupon must succeed");
+    assert.ok(orderNumber, "order number returned");
 
-    // Verify times_used incremented from 3 to 4
-    const { data: couponAfter } = await supabase.from("coupons").select("times_used").eq("id", couponId).single();
-    assert.equal(couponAfter.times_used, 4, "coupon times_used must be incremented by 1");
+    // Verify used_count incremented from 3 to 4
+    const { data: couponAfter } = await supabase.from("coupons").select("used_count").eq("id", couponId).single();
+    assert.equal(couponAfter.used_count, 4, "coupon used_count must be incremented by 1");
   });
 
   await t.test("8. Loyalty Points Spend & Ledger [REAL POSTGRESQL]", async () => {
