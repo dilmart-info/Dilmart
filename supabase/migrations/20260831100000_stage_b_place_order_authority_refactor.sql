@@ -1,6 +1,6 @@
 -- ==============================================================================
 -- DILMART — STAGE B PASS 3
--- MIGRATION A: PLACE_ORDER AUTHORITY & SIGNATURE REFACTOR
+-- MIGRATION A: PLACE_ORDER AUTHORITY & SIGNATURE REFACTOR (HARDENED)
 -- ==============================================================================
 -- 1. Refactors public.place_order to remove 6 obsolete StylAi / Barber / B2B arguments:
 --    - p_source_app
@@ -13,14 +13,21 @@
 -- 2. Removes writes to orders legacy columns from function body.
 -- 3. Updates public.place_order_idempotent wrapper.
 -- 4. Enforces strict atomic rename-first sequence to prevent ambiguous overloads.
+-- 5. Exact identity verification in preflight and postconditions.
 -- ==============================================================================
 
--- ─── 1. PREFLIGHT ASSERTIONS ──────────────────────────────────────────────────
+BEGIN;
+
+-- ─── 1. PREFLIGHT EXACT IDENTITY ASSERTIONS ──────────────────────────────────
 DO $$
 DECLARE
   v_old_count INT;
-  v_idempotent_exists BOOLEAN;
+  v_old_identity TEXT;
+  v_expected_old_identity TEXT := 'p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_source_app text, p_channel text, p_store_linked_profile_id uuid, p_dilmart_user_id uuid, p_dilmart_barbershop_id uuid, p_segment text, p_business_type text';
+  v_idempotent_identity TEXT;
+  v_expected_idempotent_identity TEXT := 'p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
 BEGIN
+  -- Assert exactly 1 place_order function exists
   SELECT count(*) INTO v_old_count
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
@@ -30,22 +37,24 @@ BEGIN
     RAISE EXCEPTION 'PREFLIGHT FAILED: Expected exactly 1 public.place_order function, found %', v_old_count;
   END IF;
 
-  SELECT EXISTS (
-    SELECT 1 FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'place_order' AND p.pronargs = 55
-  ) INTO v_idempotent_exists;
+  -- Assert exact identity arguments of old place_order
+  SELECT pg_get_function_identity_arguments(p.oid) INTO v_old_identity
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order';
 
-  IF NOT v_idempotent_exists THEN
-    RAISE EXCEPTION 'PREFLIGHT FAILED: Current public.place_order does not match expected 55-argument signature';
+  IF v_old_identity <> v_expected_old_identity THEN
+    RAISE EXCEPTION 'PREFLIGHT FAILED: Current public.place_order identity arguments [%] do not match reviewed live authority [%]', v_old_identity, v_expected_old_identity;
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent'
-  ) THEN
-    RAISE EXCEPTION 'PREFLIGHT FAILED: public.place_order_idempotent not found';
+  -- Assert exact identity arguments of place_order_idempotent
+  SELECT pg_get_function_identity_arguments(p.oid) INTO v_idempotent_identity
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_idempotent_identity IS NULL OR v_idempotent_identity <> v_expected_idempotent_identity THEN
+    RAISE EXCEPTION 'PREFLIGHT FAILED: public.place_order_idempotent identity arguments [%] do not match expected [%]', v_idempotent_identity, v_expected_idempotent_identity;
   END IF;
 END $$;
 
@@ -539,7 +548,24 @@ BEGIN
 END;
 $$;
 
--- ─── 5. APPLY STRICT SECURITY & PRIVILEGE ACLs ────────────────────────────────
+-- ─── 5. EXPLICIT OWNER PRESERVATION ───────────────────────────────────────────
+ALTER FUNCTION public.place_order(
+  TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
+  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
+  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
+) OWNER TO postgres;
+
+ALTER FUNCTION public.place_order_idempotent(
+  UUID, TEXT, TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
+  TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
+  NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT,
+  NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
+) OWNER TO postgres;
+
+-- ─── 6. APPLY STRICT SECURITY & PRIVILEGE ACLs ────────────────────────────────
 REVOKE ALL ON FUNCTION public.place_order(
   TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC,
   UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID,
@@ -572,7 +598,7 @@ GRANT EXECUTE ON FUNCTION public.place_order_idempotent(
   NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT
 ) TO service_role;
 
--- ─── 6. DROP TEMPORARY LEGACY FUNCTION UNDER RESTRICT ─────────────────────────
+-- ─── 7. DROP TEMPORARY LEGACY FUNCTION UNDER RESTRICT ─────────────────────────
 DROP FUNCTION public.place_order_legacy_stageb(
   text, text, uuid, text, text, text, numeric, numeric, numeric, numeric,
   uuid, jsonb, uuid, double precision, double precision, text, integer, numeric, integer, uuid,
@@ -582,38 +608,100 @@ DROP FUNCTION public.place_order_legacy_stageb(
   uuid, uuid, uuid, text, text
 ) RESTRICT;
 
--- ─── 7. POST-TRANSITION INVARIANT ASSERTIONS ──────────────────────────────────
+-- ─── 8. POST-TRANSITION HARDENED ASSERTIONS ───────────────────────────────────
 DO $$
 DECLARE
-  v_new_count INT;
-  v_new_args INT;
+  v_po_rec RECORD;
+  v_poi_rec RECORD;
+  v_expected_po_identity TEXT := 'p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
+  v_expected_poi_identity TEXT := 'p_checkout_attempt_id uuid, p_checkout_request_hash text, p_customer_name text, p_customer_phone text, p_governorate_id uuid, p_area text, p_nearest_landmark text, p_notes text, p_subtotal numeric, p_delivery_cost numeric, p_discount numeric, p_total numeric, p_coupon_id uuid, p_items jsonb, p_user_id uuid, p_latitude double precision, p_longitude double precision, p_map_url text, p_points_spent integer, p_points_discount numeric, p_points_earned integer, p_merchant_id uuid, p_payment_method text, p_merchant_notes text, p_merchandise_subtotal numeric, p_discount_total numeric, p_delivery_fee_charged numeric, p_platform_commission_type text, p_platform_commission_rate numeric, p_platform_commission_amount numeric, p_platform_assisted_fee_amount numeric, p_platform_extra_fee_amount numeric, p_courier_fee_payable numeric, p_merchant_gross_amount numeric, p_merchant_net_amount numeric, p_gross_collected_amount numeric, p_platform_net_revenue_amount numeric, p_currency_code text, p_financial_snapshot_version integer, p_payment_status text, p_collection_status text, p_settlement_status text, p_cash_expected_amount numeric, p_commission_rule_id uuid, p_assisted_fee_rule_id uuid, p_platform_fee_rule_id uuid, p_delivery_billing_rule_id uuid, p_resolved_plan_id uuid, p_resolved_plan_code text, p_commercial_snapshot_version integer, p_channel text';
 BEGIN
-  SELECT count(*), MIN(p.pronargs) INTO v_new_count, v_new_args
+  -- Assert exactly 1 place_order exists
+  IF (SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'place_order') <> 1 THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected exactly 1 public.place_order function';
+  END IF;
+
+  -- Inspect place_order
+  SELECT
+    p.oid,
+    p.pronargs,
+    pg_get_function_identity_arguments(p.oid) AS identity_args,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_po_rec
   FROM pg_proc p
   JOIN pg_namespace n ON n.oid = p.pronamespace
   WHERE n.nspname = 'public' AND p.proname = 'place_order';
 
-  IF v_new_count <> 1 THEN
-    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected exactly 1 public.place_order function, found %', v_new_count;
+  IF v_po_rec.pronargs <> 49 THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected 49 arguments on public.place_order, found %', v_po_rec.pronargs;
   END IF;
 
-  IF v_new_args <> 49 THEN
-    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected 49 arguments on public.place_order, found %', v_new_args;
+  IF v_po_rec.identity_args <> v_expected_po_identity THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order identity arguments [%] do not match expected [%]', v_po_rec.identity_args, v_expected_po_identity;
   END IF;
 
-  IF EXISTS (
-    SELECT 1 FROM pg_proc p
-    JOIN pg_namespace n ON n.oid = p.pronamespace
-    WHERE n.nspname = 'public' AND p.proname = 'place_order_legacy_stageb'
-  ) THEN
+  IF NOT v_po_rec.prosecdef THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order is not SECURITY DEFINER';
+  END IF;
+
+  IF v_po_rec.owner_name <> 'postgres' THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order owner [%] is not postgres', v_po_rec.owner_name;
+  END IF;
+
+  IF NOT ('search_path=public, pg_temp' = ANY(v_po_rec.proconfig)) THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order search_path is not pinned to public, pg_temp';
+  END IF;
+
+  -- Assert temporary function is absent
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'public' AND p.proname = 'place_order_legacy_stageb') THEN
     RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Temporary legacy function place_order_legacy_stageb still exists';
   END IF;
 
-  IF NOT has_function_privilege('service_role', 'public.place_order(TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT, NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT)', 'EXECUTE') THEN
-    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: service_role does not hold EXECUTE on public.place_order';
+  -- Inspect place_order_idempotent
+  SELECT
+    p.oid,
+    p.pronargs,
+    pg_get_function_identity_arguments(p.oid) AS identity_args,
+    p.prosecdef,
+    pg_get_userbyid(p.proowner) AS owner_name,
+    p.proconfig
+  INTO v_poi_rec
+  FROM pg_proc p
+  JOIN pg_namespace n ON n.oid = p.pronamespace
+  WHERE n.nspname = 'public' AND p.proname = 'place_order_idempotent';
+
+  IF v_poi_rec.pronargs <> 51 THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Expected 51 arguments on public.place_order_idempotent, found %', v_poi_rec.pronargs;
   END IF;
 
-  IF has_function_privilege('anon', 'public.place_order(TEXT, TEXT, UUID, TEXT, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, UUID, JSONB, UUID, DOUBLE PRECISION, DOUBLE PRECISION, TEXT, INTEGER, NUMERIC, INTEGER, UUID, TEXT, TEXT, NUMERIC, NUMERIC, NUMERIC, TEXT, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, NUMERIC, TEXT, INTEGER, TEXT, TEXT, TEXT, NUMERIC, UUID, UUID, UUID, UUID, UUID, TEXT, INTEGER, TEXT)', 'EXECUTE') THEN
-    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: anon was granted EXECUTE on public.place_order';
+  IF v_poi_rec.identity_args <> v_expected_idempotent_identity THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order_idempotent identity arguments [%] do not match expected [%]', v_poi_rec.identity_args, v_expected_idempotent_identity;
+  END IF;
+
+  IF NOT v_poi_rec.prosecdef THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order_idempotent is not SECURITY DEFINER';
+  END IF;
+
+  IF v_poi_rec.owner_name <> 'postgres' THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: public.place_order_idempotent owner [%] is not postgres', v_poi_rec.owner_name;
+  END IF;
+
+  -- Assert ACL Privileges on both functions
+  IF NOT has_function_privilege('service_role', v_po_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: service_role lacks EXECUTE on public.place_order';
+  END IF;
+  IF has_function_privilege('anon', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_po_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_po_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Non-service-role role has EXECUTE on public.place_order';
+  END IF;
+
+  IF NOT has_function_privilege('service_role', v_poi_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: service_role lacks EXECUTE on public.place_order_idempotent';
+  END IF;
+  IF has_function_privilege('anon', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('authenticated', v_poi_rec.oid, 'EXECUTE') OR has_function_privilege('public', v_poi_rec.oid, 'EXECUTE') THEN
+    RAISE EXCEPTION 'POST-TRANSITION ASSERTION FAILED: Non-service-role role has EXECUTE on public.place_order_idempotent';
   END IF;
 END $$;
+
+COMMIT;

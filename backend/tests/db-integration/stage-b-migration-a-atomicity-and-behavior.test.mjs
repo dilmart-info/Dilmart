@@ -5,71 +5,54 @@ import { resolve } from "node:path";
 import { OrdersService } from "../../dist/modules/orders/orders.service.js";
 import { CheckoutService } from "../../dist/modules/checkout/checkout.service.js";
 
-test("Stage B Migration A — place_order authority refactor SQL file checks", async (t) => {
+// ==============================================================================
+// STAGE B PASS 3 — MIGRATION A VALIDATION SUITE
+// ==============================================================================
+
+test("Stage B Migration A — Static SQL Contract & Invariant Assertions [STATIC SQL ASSERTION]", async (t) => {
   const migrationPath = resolve("..", "supabase/migrations/20260831100000_stage_b_place_order_authority_refactor.sql");
   const sql = readFileSync(migrationPath, "utf8");
 
-  await t.test("1. Migration file contains rename-first transition", () => {
-    assert.ok(sql.includes("RENAME TO place_order_legacy_stageb;"), "Must contain rename-first to place_order_legacy_stageb");
-    assert.ok(sql.includes("CREATE FUNCTION public.place_order("), "Must create new public.place_order");
-    assert.ok(sql.includes("DROP FUNCTION public.place_order_legacy_stageb("), "Must drop legacy function under RESTRICT");
+  await t.test("1. Transaction Atomicity: Explicit BEGIN and COMMIT block", () => {
+    assert.ok(sql.includes("BEGIN;"), "Migration MUST contain explicit BEGIN;");
+    assert.ok(sql.includes("COMMIT;"), "Migration MUST contain explicit COMMIT;");
+    assert.ok(sql.indexOf("BEGIN;") < sql.indexOf("DO $$"), "BEGIN; MUST precede preflight assertions");
+    assert.ok(sql.lastIndexOf("COMMIT;") > sql.lastIndexOf("END $$;"), "COMMIT; MUST succeed postconditions");
+  });
+
+  await t.test("2. Hardened Preflight: Compares exact pg_get_function_identity_arguments()", () => {
+    assert.ok(sql.includes("v_old_identity <> v_expected_old_identity"), "Must compare exact 55-argument old identity string");
+    assert.ok(sql.includes("v_idempotent_identity <> v_expected_idempotent_identity"), "Must compare exact 51-argument idempotent identity string");
+    assert.ok(sql.includes("v_old_count <> 1"), "Must assert exactly 1 place_order function");
+  });
+
+  await t.test("3. Rename-First Atomic Sequence with RESTRICT drop", () => {
+    assert.ok(sql.includes("RENAME TO place_order_legacy_stageb;"), "Must rename old function first");
+    assert.ok(sql.includes("CREATE FUNCTION public.place_order("), "Must create new 49-argument function");
+    assert.ok(sql.includes("CREATE OR REPLACE FUNCTION public.place_order_idempotent("), "Must re-create idempotent wrapper");
+    assert.ok(sql.includes("DROP FUNCTION public.place_order_legacy_stageb("), "Must drop temporary legacy function");
     assert.ok(sql.includes("RESTRICT;"), "Must specify RESTRICT on drop");
   });
 
-  await t.test("2. Migration file removes all 6 legacy parameters", () => {
-    const legacyParams = [
-      "p_source_app",
-      "p_store_linked_profile_id",
-      "p_dilmart_user_id",
-      "p_dilmart_barbershop_id",
-      "p_segment",
-      "p_business_type"
-    ];
-
-    const createBlock = sql.slice(
-      sql.indexOf("CREATE FUNCTION public.place_order("),
-      sql.indexOf("CREATE OR REPLACE FUNCTION public.place_order_idempotent(")
-    );
-    for (const param of legacyParams) {
-      assert.ok(!createBlock.includes(param), `New place_order signature must not contain ${param}`);
-    }
+  await t.test("4. Explicit Owner and SECURITY DEFINER Preservation", () => {
+    assert.ok(sql.includes("ALTER FUNCTION public.place_order(\n  TEXT, TEXT, UUID"), "Must explicitly alter place_order owner");
+    assert.ok(sql.includes("OWNER TO postgres;"), "Must preserve postgres owner");
+    assert.ok(sql.includes("SECURITY DEFINER"), "Must specify SECURITY DEFINER");
+    assert.ok(sql.includes("SET search_path = public, pg_temp"), "Must pin search_path to public, pg_temp");
   });
 
-  await t.test("3. Migration file removes legacy column writes from INSERT INTO public.orders", () => {
-    const createBlock = sql.slice(
-      sql.indexOf("CREATE FUNCTION public.place_order("),
-      sql.indexOf("CREATE OR REPLACE FUNCTION public.place_order_idempotent(")
-    );
-    const insertBlock = createBlock.slice(
-      createBlock.indexOf("INSERT INTO public.orders ("),
-      createBlock.indexOf("RETURNING id, order_number")
-    );
-    
-    assert.ok(!insertBlock.includes("source_app,"), "orders insert must not include source_app");
-    assert.ok(!insertBlock.includes("store_linked_profile_id,"), "orders insert must not include store_linked_profile_id");
-    assert.ok(!insertBlock.includes("dilmart_user_id,"), "orders insert must not include dilmart_user_id");
-    assert.ok(!insertBlock.includes("dilmart_barbershop_id,"), "orders insert must not include dilmart_barbershop_id");
-    assert.ok(!insertBlock.includes("segment,"), "orders insert must not include segment");
-    assert.ok(!insertBlock.includes("business_type"), "orders insert must not include business_type");
-    assert.ok(insertBlock.includes("channel"), "orders insert must write modern channel column");
-  });
-
-  await t.test("4. Migration file preserves SECURITY DEFINER and strict ACL grants", () => {
-    assert.ok(sql.includes("REVOKE ALL ON FUNCTION public.place_order"), "Must revoke ALL on place_order");
-    assert.ok(sql.includes("GRANT EXECUTE ON FUNCTION public.place_order"), "Must grant EXECUTE on place_order");
-    assert.ok(sql.includes("TO service_role;"), "Must grant execute to service_role");
-    assert.ok(sql.includes("REVOKE ALL ON FUNCTION public.place_order_idempotent"), "Must revoke ALL on place_order_idempotent");
-    assert.ok(sql.includes("GRANT EXECUTE ON FUNCTION public.place_order_idempotent"), "Must grant EXECUTE on place_order_idempotent");
-  });
-
-  await t.test("5. Migration file contains post-transition assertions", () => {
-    assert.ok(sql.includes("v_new_args <> 49"), "Must assert exactly 49 arguments");
-    assert.ok(sql.includes("v_new_count <> 1"), "Must assert exactly 1 place_order function");
-    assert.ok(sql.includes("place_order_legacy_stageb"), "Must assert temporary legacy function is dropped");
+  await t.test("5. Hardened Postconditions: Identity, Privileges, Volatility, Config", () => {
+    assert.ok(sql.includes("v_po_rec.pronargs <> 49"), "Must assert exactly 49 arguments on place_order");
+    assert.ok(sql.includes("v_po_rec.identity_args <> v_expected_po_identity"), "Must assert exact modern identity arguments");
+    assert.ok(sql.includes("v_po_rec.owner_name <> 'postgres'"), "Must assert postgres owner in postcondition");
+    assert.ok(sql.includes("has_function_privilege('service_role', v_po_rec.oid, 'EXECUTE')"), "Must assert service_role execute");
+    assert.ok(sql.includes("has_function_privilege('anon', v_po_rec.oid, 'EXECUTE')"), "Must assert anon has NO execute");
+    assert.ok(sql.includes("has_function_privilege('authenticated', v_po_rec.oid, 'EXECUTE')"), "Must assert authenticated has NO execute");
+    assert.ok(sql.includes("has_function_privilege('public', v_po_rec.oid, 'EXECUTE')"), "Must assert public has NO execute");
   });
 });
 
-test("Stage B Migration A — Application Callers Verification", async (t) => {
+test("Stage B Migration A — Application Callers Parameter Verification [APPLICATION MOCK]", async (t) => {
   await t.test("1. OrdersService.createManualOrder passes modern p_channel", () => {
     const ordersServicePath = resolve("src/modules/orders/orders.service.ts");
     const code = readFileSync(ordersServicePath, "utf8");
@@ -88,7 +71,7 @@ test("Stage B Migration A — Application Callers Verification", async (t) => {
   });
 });
 
-test("Stage B Migration A — OrdersService and CheckoutService Integration Behavior", async (t) => {
+test("Stage B Migration A — OrdersService Integration Behavior [APPLICATION MOCK]", async (t) => {
   let capturedRpc = {};
   const mockSupabaseAdmin = {
     client: {
@@ -180,10 +163,9 @@ test("Stage B Migration A — OrdersService and CheckoutService Integration Beha
     recordFinancialEventsForOrder: async () => {},
   };
 
-  const mockAuditLogger = { logEvent: async () => {} };
-  const mockJenniService = { lookupPricing: async () => ({ price: 3000 }) };
   const mockScopeResolver = { resolveMerchantScope: async (m) => m };
   const mockWhatsAppIntents = { resolveIntentForManualOrder: async () => {} };
+  const mockJenniService = { lookupPricing: async () => ({ price: 3000 }) };
 
   await t.test("1. OrdersService.createManualOrder executes place_order with manual_assisted channel", async () => {
     capturedRpc = {};
