@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION public.place_order_idempotent(p_checkout_attempt_id u
  RETURNS jsonb
  LANGUAGE plpgsql
  SECURITY DEFINER
- SET search_path TO 'public'
+ SET search_path TO 'public', 'pg_temp'
 AS $function$
 DECLARE
   v_attempt RECORD;
@@ -14,7 +14,6 @@ DECLARE
 BEGIN
   -- 1. Lock Attempt if ID provided
   IF p_checkout_attempt_id IS NOT NULL THEN
-    -- Race-safe insert: ignore duplicate (concurrent request already inserted)
     INSERT INTO public.checkout_attempts (
       id, user_id, request_hash, status, created_at, updated_at
     ) VALUES (
@@ -24,7 +23,6 @@ BEGIN
 
     v_attempt_created := v_inserted_attempt_id IS NOT NULL;
 
-    -- Now lock the row to read authoritative state
     SELECT * INTO v_attempt
     FROM public.checkout_attempts
     WHERE id = p_checkout_attempt_id
@@ -34,18 +32,15 @@ BEGIN
       RAISE EXCEPTION 'CHECKOUT_ATTEMPT_NOT_FOUND: Attempt ID does not exist';
     END IF;
 
-    -- Verify Ownership
     IF p_user_id IS NOT NULL AND v_attempt.user_id <> p_user_id THEN
       RAISE EXCEPTION 'CHECKOUT_ATTEMPT_OWNERSHIP_MISMATCH: Attempt belongs to a different user';
     END IF;
 
-    -- Verify Request Hash
     IF v_attempt.request_hash <> p_checkout_request_hash THEN
       RAISE EXCEPTION 'IDEMPOTENCY_KEY_REUSED_WITH_DIFFERENT_PAYLOAD: Attempt key used with different payload';
     END IF;
 
     IF NOT v_attempt_created THEN
-      -- If already completed, return existing order_number directly
       IF v_attempt.status = 'completed' AND v_attempt.order_number IS NOT NULL THEN
         RETURN jsonb_build_object(
           'order_number', v_attempt.order_number,
@@ -54,12 +49,10 @@ BEGIN
         );
       END IF;
 
-      -- If status is 'processing', check if it is stale (> 5 mins). If not stale, raise CHECKOUT_IN_PROGRESS.
       IF v_attempt.status = 'processing' AND (now() - v_attempt.updated_at) < v_stale_threshold THEN
         RAISE EXCEPTION 'CHECKOUT_IN_PROGRESS: Attempt is actively being processed';
       END IF;
 
-      -- Reset attempt back to processing and clear errors
       UPDATE public.checkout_attempts
       SET status = 'processing',
           error_code = NULL,
@@ -68,7 +61,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 2. Execute canonical place_order logic via Named Parameters (safe against signature changes)
+  -- 2. Execute canonical place_order logic via Clean Named Parameters (49 parameters)
   v_order_number := public.place_order(
     p_customer_name          => p_customer_name,
     p_customer_phone         => p_customer_phone,
