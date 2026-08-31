@@ -24,6 +24,10 @@ const BottomNav = () => {
 
   const gridCols = navItems.length;
 
+  if (location.pathname.startsWith("/product/") || location.pathname.startsWith("/checkout")) {
+    return null;
+  }
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-[60] bg-white/95 backdrop-blur-lg border-t border-border shadow-[0_-4px_16px_rgba(7,26,61,0.06)] h-16 safe-area-inset-bottom">
       <div

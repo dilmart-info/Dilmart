@@ -61,7 +61,7 @@ interface CartStore {
   activeMerchantId: string | null;
   items: CartItem[];
   coupon: Coupon | null;
-  addItem: (product: CartLineProduct) => AddItemResult;
+  addItem: (product: CartLineProduct, quantity?: number) => AddItemResult;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -81,7 +81,7 @@ export const useCartStore = create<CartStore>()(
       activeMerchantId: null,
       items: [],
       coupon: null,
-      addItem: (product) => {
+      addItem: (product, quantity = 1) => {
         const incomingMerchantId = getMerchantId(product);
         const activeMerchantId = get().activeMerchantId;
 
@@ -94,15 +94,17 @@ export const useCartStore = create<CartStore>()(
           return { success: false, reason: "DIFFERENT_MERCHANT" } as const;
         }
 
+        const addQty = Math.max(1, Math.floor(quantity || 1));
+
         set((state) => {
           const existing = state.items.find((i) => i.product.id === product.id);
           if (existing) {
             return {
-              items: state.items.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i)),
+              items: state.items.map((i) => (i.product.id === product.id ? { ...i, quantity: i.quantity + addQty } : i)),
             };
           }
           return {
-            items: [...state.items, { product, quantity: 1 }],
+            items: [...state.items, { product, quantity: addQty }],
             activeMerchantId: state.activeMerchantId || incomingMerchantId,
           };
         });
