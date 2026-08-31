@@ -59,8 +59,8 @@ BEGIN
     RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order must be SECURITY DEFINER owned by postgres';
   END IF;
 
-  IF NOT ('search_path=public, pg_temp' = ANY(v_po_rec.proconfig)) THEN
-    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order search_path not pinned to public, pg_temp';
+  IF v_po_rec.proconfig IS NULL OR NOT (array_to_string(v_po_rec.proconfig, ',') ~* 'search_path=public,\s*pg_temp') THEN
+    RAISE EXCEPTION 'STAGE_B_PREFLIGHT_FAIL: public.place_order search_path not pinned to public, pg_temp (found %)', v_po_rec.proconfig;
   END IF;
 
   SELECT count(*) INTO v_po_legacy_count
