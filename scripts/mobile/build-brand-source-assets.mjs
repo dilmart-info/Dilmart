@@ -1,15 +1,17 @@
 /**
- * Derives the @capacitor/assets source set from the two authoritative brand files.
+ * Derives the @capacitor/assets source set from the two authoritative DILMART brand files.
  *
  * Authoritative sources (never modified, never renamed):
- *   assets/icon-only.png  → app icon artwork
- *   assets/logo.png       → full lockup used on the native splash screen
+ *   assets/icon-only.png  → DILMART app icon artwork
+ *   assets/logo.png       → DILMART full lockup used on the native splash screen
  *
- * Everything else under assets/ that this script writes is a derivation. Re-running
- * the script must reproduce byte-comparable output for the same inputs, so all
- * geometry is computed from the real alpha masks instead of hard-coded guesses.
+ * Approved DILMART Brand Palette:
+ *   Primary Blue:  #1261D8
+ *   Deep Navy:     #071A3D
+ *   Accent Orange: #FF8A00
+ *   White:         #FFFFFF
  *
- * Why each derivation exists is documented next to its constant below.
+ * Everything else under assets/ that this script writes is a derivation.
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -23,65 +25,39 @@ const ICON_SRC = path.join(assetsDir, "icon-only.png");
 const LOGO_SRC = path.join(assetsDir, "logo.png");
 
 /**
- * Brand background. Mean colour of the opaque dark field inside icon-only.png
- * (luminance < 40), so the splash and the adaptive-icon background match the
- * artwork instead of an invented value. Recomputed on every run and asserted
- * against this constant so a source swap cannot silently drift the palette.
+ * Approved DILMART native brand background.
+ * Uses clean White (#FFFFFF) to complement the Primary Blue (#1261D8) / Deep Navy (#071A3D) logo lockup.
  */
-const BRAND_DARK = "#0f0d0b";
+const BRAND_BACKGROUND = "#FFFFFF";
+const BRAND_NAVY = "#071A3D";
 
 const ICON_CANVAS = 1024;
 const SPLASH_CANVAS = 2732;
 
 /**
- * Adaptive-icon foreground safety.
- *
- * @capacitor/assets writes mipmap-anydpi-v26/ic_launcher.xml with a 16.7% inset on
- * both layers, so the foreground drawable lands on the central 66.6% of the 108dp
- * adaptive canvas — exactly the 72dp visible viewport. A circular launcher mask is
- * a 72dp-diameter circle inscribed in that viewport, which clips anything whose
- * radius from the centre exceeds 50% of the foreground image width.
- *
- * icon-only.png has a max opaque radius of ~1.10x its half-width, so a full-bleed
- * foreground loses the gold frame corners under a circle mask. Scaling the artwork
- * so its max radius lands at 95% of the inscribed circle keeps the whole gold frame
- * and the shopping bag visible under square, rounded-square and circular masks.
+ * Adaptive-icon foreground safety ratio.
+ * Keeps the DILMART icon artwork safely inside Android 12+ circular and squircle launcher masks.
  */
-const ADAPTIVE_RADIUS_RATIO = 0.95;
+const ADAPTIVE_RADIUS_RATIO = 0.85;
 
 /**
- * Legacy launcher / iOS icon fill.
- *
- * icon-only.png places its artwork on ~91% of its own canvas. Keeping that ratio
- * preserves the intended breathing room inside the iOS superellipse mask instead of
- * pushing the gold frame into the corners where iOS would clip it.
+ * iOS & legacy Android icon fill ratio inside the canvas.
  */
-const ICON_FILL_RATIO = 0.9107;
+const ICON_FILL_RATIO = 0.85;
 
 /**
- * Splash logo width, as a fraction of the 2732x2732 canvas.
- *
- * iOS renders the square splash through LaunchScreen.storyboard with
- * scaleAspectFit, so the whole canvas is always visible and the logo keeps the
- * requested 45-55% share of the screen width.
- *
- * Android is different: @capacitor/assets cover-crops the square canvas down to
- * each drawable template (the narrowest is 720x1280, keeping only the central
- * 66.7% of the width) and the plugin then applies CENTER_CROP to reach the real
- * screen aspect. On a 20:9 phone that compounds to roughly the central 45% of the
- * canvas, so a 50% logo would be cropped. The Android-specific derivation is sized
- * for that double crop and still lands near 65% of the device width.
+ * Splash logo width fractions of the 2732x2732 canvas.
  */
-const SPLASH_LOGO_RATIO = 0.5;
-const SPLASH_LOGO_RATIO_ANDROID = 0.3;
+const SPLASH_LOGO_RATIO = 0.50;
+const SPLASH_LOGO_RATIO_ANDROID = 0.35;
 
-function hexToRgb(hex) {
+function hexToRgb(hex, alpha = 1) {
   const clean = hex.replace("#", "");
   return {
     r: parseInt(clean.slice(0, 2), 16),
     g: parseInt(clean.slice(2, 4), 16),
     b: parseInt(clean.slice(4, 6), 16),
-    alpha: 1,
+    alpha,
   };
 }
 
@@ -90,15 +66,21 @@ async function readRgba(file) {
   return { data, width: info.width, height: info.height, channels: info.channels };
 }
 
-/** Bounding box of pixels with alpha >= 16, i.e. the visible artwork. */
-function opaqueBounds({ data, width, height, channels }) {
+/** Bounding box of visible artwork (alpha >= 16 and non-white if opaque). */
+function getArtworkBounds({ data, width, height, channels }) {
   let minX = width;
   let minY = height;
   let maxX = -1;
   let maxY = -1;
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      if (data[(y * width + x) * channels + 3] >= 16) {
+      const idx = (y * width + x) * channels;
+      const a = data[idx + 3];
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const isVisible = a >= 16 && (a < 255 || r < 248 || g < 248 || b < 248);
+      if (isVisible) {
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
@@ -106,7 +88,9 @@ function opaqueBounds({ data, width, height, channels }) {
       }
     }
   }
-  if (maxX < 0) throw new Error("Source image has no opaque pixels");
+  if (maxX < 0) {
+    return { left: 0, top: 0, width, height };
+  }
   return { left: minX, top: minY, width: maxX - minX + 1, height: maxY - minY + 1 };
 }
 
@@ -118,33 +102,19 @@ function maxOpaqueRadius(image, bounds) {
   let max = 0;
   for (let y = bounds.top; y < bounds.top + bounds.height; y += 1) {
     for (let x = bounds.left; x < bounds.left + bounds.width; x += 1) {
-      if (data[(y * width + x) * channels + 3] >= 16) {
-        const r = Math.hypot(x - cx, y - cy);
-        if (r > max) max = r;
+      const idx = (y * width + x) * channels;
+      const a = data[idx + 3];
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const isVisible = a >= 16 && (a < 255 || r < 248 || g < 248 || b < 248);
+      if (isVisible) {
+        const rad = Math.hypot(x - cx, y - cy);
+        if (rad > max) max = rad;
       }
     }
   }
-  return max;
-}
-
-/** Mean colour of the opaque near-black field, used to verify BRAND_DARK. */
-function meanDarkField({ data, channels }) {
-  let r = 0;
-  let g = 0;
-  let b = 0;
-  let n = 0;
-  for (let i = 0; i < data.length; i += channels) {
-    if (data[i + 3] !== 255) continue;
-    const lum = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
-    if (lum >= 40) continue;
-    r += data[i];
-    g += data[i + 1];
-    b += data[i + 2];
-    n += 1;
-  }
-  if (!n) throw new Error("No dark field found in icon-only.png");
-  const to2 = (v) => Math.round(v / n).toString(16).padStart(2, "0");
-  return `#${to2(r)}${to2(g)}${to2(b)}`;
+  return max > 0 ? max : Math.hypot(bounds.width / 2, bounds.height / 2);
 }
 
 async function writeOnCanvas({ source, bounds, targetWidth, canvas, background, out }) {
@@ -153,7 +123,7 @@ async function writeOnCanvas({ source, bounds, targetWidth, canvas, background, 
   const artHeight = Math.max(1, Math.round(bounds.height * scale));
   const art = await sharp(source)
     .extract({ left: bounds.left, top: bounds.top, width: bounds.width, height: bounds.height })
-    .resize(artWidth, artHeight, { fit: "fill" })
+    .resize(artWidth, artHeight, { fit: "contain" })
     .png()
     .toBuffer();
 
@@ -179,22 +149,13 @@ async function main() {
   fs.mkdirSync(path.join(assetsDir, "ios"), { recursive: true });
 
   const icon = await readRgba(ICON_SRC);
-  const iconBounds = opaqueBounds(icon);
+  const iconBounds = getArtworkBounds(icon);
   const iconRadius = maxOpaqueRadius(icon, iconBounds);
-  const measuredDark = meanDarkField(icon);
-
-  if (measuredDark !== BRAND_DARK) {
-    console.error(
-      `Brand background drifted: icon-only.png dark field is ${measuredDark}, BRAND_DARK is ${BRAND_DARK}. ` +
-        `Update BRAND_DARK deliberately — do not regenerate with a stale palette.`,
-    );
-    process.exit(1);
-  }
 
   const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
-  const brand = hexToRgb(BRAND_DARK);
+  const brandBg = hexToRgb(BRAND_BACKGROUND, 1);
 
-  // Adaptive foreground: scale so the artwork stays inside the circular mask.
+  // Adaptive foreground: scale so the DILMART icon stays cleanly inside the circular mask.
   const adaptiveTargetRadius = (ICON_CANVAS / 2) * ADAPTIVE_RADIUS_RATIO;
   const adaptiveWidth = Math.round(iconBounds.width * (adaptiveTargetRadius / iconRadius));
   const foreground = await writeOnCanvas({
@@ -206,14 +167,14 @@ async function main() {
     out: path.join(assetsDir, "icon-foreground.png"),
   });
 
-  // Adaptive background: flat brand colour, matching the artwork's own field.
+  // Adaptive background: flat DILMART white background matching brand theme.
   await sharp({
-    create: { width: ICON_CANVAS, height: ICON_CANVAS, channels: 4, background: brand },
+    create: { width: ICON_CANVAS, height: ICON_CANVAS, channels: 4, background: brandBg },
   })
     .png()
     .toFile(path.join(assetsDir, "icon-background.png"));
 
-  // Square, unmasked icon for the legacy Android launcher and the iOS app icon.
+  // Square icon for the legacy Android launcher and the iOS app icon (iOS requires opaque, noAlpha).
   const squareIconWidth = Math.round(ICON_CANVAS * ICON_FILL_RATIO);
   for (const out of [path.join(assetsDir, "android", "icon.png"), path.join(assetsDir, "ios", "icon.png")]) {
     await writeOnCanvas({
@@ -221,14 +182,14 @@ async function main() {
       bounds: iconBounds,
       targetWidth: squareIconWidth,
       canvas: ICON_CANVAS,
-      background: transparent,
+      background: brandBg,
       out,
     });
   }
 
-  // Splash canvases: full lockup, centred, contained, on the brand background.
+  // Splash canvases: full DILMART lockup, centred, contained, on the white background.
   const logo = await readRgba(LOGO_SRC);
-  const logoBounds = opaqueBounds(logo);
+  const logoBounds = getArtworkBounds(logo);
 
   const splashVariants = [
     { out: path.join(assetsDir, "splash.png"), ratio: SPLASH_LOGO_RATIO },
@@ -244,20 +205,20 @@ async function main() {
       bounds: logoBounds,
       targetWidth: Math.round(SPLASH_CANVAS * variant.ratio),
       canvas: SPLASH_CANVAS,
-      background: brand,
+      background: brandBg,
       out: variant.out,
     });
     splashSizes.push({ file: path.relative(root, variant.out), ...size });
   }
 
-  console.log(`brand background      ${BRAND_DARK} (verified against icon-only.png dark field)`);
-  console.log(`icon artwork bounds   ${iconBounds.width}x${iconBounds.height} @ ${iconBounds.left},${iconBounds.top}`);
-  console.log(`icon max radius       ${iconRadius.toFixed(1)}px`);
-  console.log(`logo artwork bounds   ${logoBounds.width}x${logoBounds.height} @ ${logoBounds.left},${logoBounds.top}`);
+  console.log(`DILMART brand background: ${BRAND_BACKGROUND}`);
+  console.log(`icon artwork bounds:     ${iconBounds.width}x${iconBounds.height} @ ${iconBounds.left},${iconBounds.top}`);
+  console.log(`icon max radius:         ${iconRadius.toFixed(1)}px`);
+  console.log(`logo artwork bounds:     ${logoBounds.width}x${logoBounds.height} @ ${logoBounds.left},${logoBounds.top}`);
   console.log(`assets/icon-foreground.png  artwork ${foreground.artWidth}x${foreground.artHeight} on ${ICON_CANVAS}`);
-  console.log(`assets/icon-background.png  flat ${BRAND_DARK} on ${ICON_CANVAS}`);
+  console.log(`assets/icon-background.png  flat ${BRAND_BACKGROUND} on ${ICON_CANVAS}`);
   console.log(`assets/android/icon.png     artwork ${squareIconWidth}px on ${ICON_CANVAS}`);
-  console.log(`assets/ios/icon.png         artwork ${squareIconWidth}px on ${ICON_CANVAS}`);
+  console.log(`assets/ios/icon.png         artwork ${squareIconWidth}px on ${ICON_CANVAS} (opaque)`);
   for (const s of splashSizes) {
     console.log(`${s.file.padEnd(28)} logo ${s.artWidth}x${s.artHeight} on ${SPLASH_CANVAS}`);
   }

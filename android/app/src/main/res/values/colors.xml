@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Mean colour of the opaque dark field inside assets/icon-only.png. Keeps the
-         launch window, the splash screen and the adaptive icon background identical
-         so there is no colour seam or white flash between them. -->
-    <color name="brandSplashBackground">#0F0D0B</color>
+    <!-- Approved DILMART brand background matching native splash and launcher theme. -->
+    <color name="brandSplashBackground">#FFFFFF</color>
 </resources>
