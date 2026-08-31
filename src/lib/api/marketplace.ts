@@ -11,6 +11,7 @@ import {
   FIXTURE_BRANDS,
   FIXTURE_DISCOVERY_PRODUCTS,
   FIXTURE_CATEGORIES,
+  isMarketplaceVisualFixturesEnabled,
 } from "@/lib/marketplace-fixtures";
 
 export const marketplaceApi = {
@@ -27,9 +28,11 @@ export const marketplaceApi = {
     try {
       const res = await request<Tables<"categories">[]>("/marketplace/categories", "GET");
       if (res && res.length > 0) return res;
-      return FIXTURE_CATEGORIES;
-    } catch {
-      return FIXTURE_CATEGORIES;
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_CATEGORIES;
+      return res ?? [];
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_CATEGORIES;
+      throw err;
     }
   },
 
@@ -38,9 +41,11 @@ export const marketplaceApi = {
     try {
       const res = await request<MarketplaceHomeResponse>("/marketplace/home", "GET");
       if (res && res.categories && res.categories.length > 0) return res;
-      return FIXTURE_HOME_RESPONSE;
-    } catch {
-      return FIXTURE_HOME_RESPONSE;
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_HOME_RESPONSE;
+      return res;
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_HOME_RESPONSE;
+      throw err;
     }
   },
 
@@ -49,9 +54,11 @@ export const marketplaceApi = {
     try {
       const res = await request<MarketplaceBrandsResponse>("/marketplace/brands", "GET");
       if (res && res.brands && res.brands.length > 0) return res;
-      return FIXTURE_BRANDS;
-    } catch {
-      return FIXTURE_BRANDS;
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_BRANDS;
+      return res ?? { brands: [] };
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_BRANDS;
+      throw err;
     }
   },
 
@@ -98,8 +105,9 @@ export const marketplaceApi = {
     if (payload.max_weight != null && payload.max_weight !== undefined) params.set("max_weight", String(payload.max_weight));
     try {
       return await request<MarketplaceStorefrontProductsResult>(`/marketplace/products?${params.toString()}`, "GET");
-    } catch {
-      return FIXTURE_DISCOVERY_PRODUCTS;
+    } catch (err) {
+      if (isMarketplaceVisualFixturesEnabled()) return FIXTURE_DISCOVERY_PRODUCTS;
+      throw err;
     }
   },
 

@@ -25,6 +25,7 @@ import {
   FIXTURE_NEW_ARRIVALS,
   FIXTURE_MERCHANTS,
   FIXTURE_BRANDS,
+  isMarketplaceVisualFixturesEnabled,
 } from "@/lib/marketplace-fixtures";
 
 function HomeDiscoverSkeleton() {
@@ -59,31 +60,41 @@ const Index = () => {
   const topCategories = useMemo(() => {
     const rows = (homeData?.categories as StorefrontCategory[] | undefined) ?? [];
     const filtered = filterRootStorefrontCategories(rows);
-    return filtered.length > 0 ? filtered : (FIXTURE_CATEGORIES as unknown as StorefrontCategory[]);
+    if (filtered.length > 0) return filtered;
+    return isMarketplaceVisualFixturesEnabled() ? (FIXTURE_CATEGORIES as unknown as StorefrontCategory[]) : [];
   }, [homeData?.categories]);
 
   const offers = useMemo(() => {
     const list = (homeData?.offerProducts ?? []) as MarketplaceHomeProduct[];
-    return list.length > 0 ? list : FIXTURE_OFFER_PRODUCTS;
+    if (list.length > 0) return list;
+    return isMarketplaceVisualFixturesEnabled() ? FIXTURE_OFFER_PRODUCTS : [];
   }, [homeData?.offerProducts]);
 
   const featured = useMemo(() => {
     const list = (homeData?.featuredProducts ?? []) as MarketplaceHomeProduct[];
-    return list.length > 0 ? list : FIXTURE_BEST_SELLERS;
+    if (list.length > 0) return list;
+    return isMarketplaceVisualFixturesEnabled() ? FIXTURE_BEST_SELLERS : [];
   }, [homeData?.featuredProducts]);
 
   const news = useMemo(() => {
     const list = (homeData?.newProducts ?? []) as MarketplaceHomeProduct[];
-    return list.length > 0 ? list : FIXTURE_NEW_ARRIVALS;
+    if (list.length > 0) return list;
+    return isMarketplaceVisualFixturesEnabled() ? FIXTURE_NEW_ARRIVALS : [];
   }, [homeData?.newProducts]);
 
-  const featuredMerchants = homeData?.featuredMerchants?.length
-    ? homeData.featuredMerchants
-    : FIXTURE_MERCHANTS;
+  const featuredMerchants = useMemo(() => {
+    if (homeData?.featuredMerchants && homeData.featuredMerchants.length > 0) {
+      return homeData.featuredMerchants;
+    }
+    return isMarketplaceVisualFixturesEnabled() ? FIXTURE_MERCHANTS : [];
+  }, [homeData?.featuredMerchants]);
 
-  const brands = brandsData?.brands?.length
-    ? brandsData.brands
-    : FIXTURE_BRANDS.brands;
+  const brands = useMemo(() => {
+    if (brandsData?.brands && brandsData.brands.length > 0) {
+      return brandsData.brands;
+    }
+    return isMarketplaceVisualFixturesEnabled() ? FIXTURE_BRANDS.brands : [];
+  }, [brandsData?.brands]);
 
   const curatedProductIds = useMemo(
     () =>

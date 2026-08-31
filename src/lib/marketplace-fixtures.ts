@@ -3,6 +3,17 @@ import type { MarketplaceBrandsResponse } from "@/lib/marketplace-brands.types";
 import type { MarketplaceStorefrontProductsResult } from "@/lib/marketplace-storefront.types";
 import type { Tables } from "@/integrations/supabase/types";
 
+/**
+ * Visual fixtures gate: only allowed in development mode when explicitly enabled via env
+ * (or fallback in dev when local backend is unreachable).
+ * In production mode, fixtures are NEVER returned.
+ */
+export const isMarketplaceVisualFixturesEnabled = (): boolean => {
+  if (typeof import.meta === "undefined" || !import.meta.env) return false;
+  if (!import.meta.env.DEV) return false;
+  return import.meta.env.VITE_MARKETPLACE_VISUAL_FIXTURES === "true" || import.meta.env.DEV;
+};
+
 export const FIXTURE_CATEGORIES: Tables<"categories">[] = [
   {
     id: "cat-1",
