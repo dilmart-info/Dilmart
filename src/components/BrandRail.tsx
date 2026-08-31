@@ -68,25 +68,9 @@ export default function BrandRail({
             <Link
               key={b.id}
               to={toBrandProductsHref(b.slug)}
-              className="group flex w-[100px] sm:w-[115px] md:w-[125px] shrink-0 flex-col items-center text-center p-3 rounded-2xl bg-white border border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-1"
+              className="group flex w-[100px] sm:w-[115px] md:w-[125px] shrink-0 flex-col items-center text-center p-2 rounded-2xl bg-white border border-border/80 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:-translate-y-1"
             >
-              <div className="h-16 w-16 sm:h-18 sm:w-18 rounded-xl bg-surface-light flex items-center justify-center p-2 mb-2 overflow-hidden group-hover:scale-105 transition-transform">
-                {b.logo_url ? (
-                  <img
-                    src={b.logo_url}
-                    alt={b.name}
-                    className="h-full w-full object-contain"
-                    loading="lazy"
-                  />
-                ) : (
-                  <span className="font-manrope text-xs font-extrabold text-navy/70">
-                    {b.name.slice(0, 3)}
-                  </span>
-                )}
-              </div>
-              <span className="font-tajawal text-[11px] sm:text-xs font-bold text-foreground leading-tight line-clamp-1 group-hover:text-primary transition-colors">
-                {b.name}
-              </span>
+              <BrandTileVisual brand={b} />
             </Link>
           ))}
         </div>

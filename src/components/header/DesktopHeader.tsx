@@ -23,17 +23,17 @@ export default function DesktopHeader({
 
   return (
     <div className="hidden md:block w-full shadow-sm bg-white">
-      {/* ── Top Utility Bar (Deep Navy: #071A3D) ─────────────────────────── */}
+      {/* ── Top Utility Bar (Deep Navy: #071A3D) — Compressed Height ─────── */}
       <div className="bg-navy text-white/90 border-b border-white/10 text-xs">
-        <div className="container flex h-9 items-center justify-between" dir="rtl">
+        <div className="container flex h-8 items-center justify-between" dir="rtl">
           {/* Trust Value Props (Neutral Operational Language) */}
           <div className="flex items-center gap-6 font-medium">
             <span className="inline-flex items-center gap-1.5 text-blue-200">
-              <Truck size={14} className="text-accent" />
+              <Truck size={13} className="text-accent" />
               <span>توصيل سريع وموثوق</span>
             </span>
             <span className="hidden lg:inline-flex items-center gap-1.5 text-blue-200">
-              <ShieldCheck size={14} className="text-accent" />
+              <ShieldCheck size={13} className="text-accent" />
               <span>تسوق بثقة وأمان</span>
             </span>
           </div>
@@ -44,7 +44,7 @@ export default function DesktopHeader({
               to="/track-order"
               className="inline-flex items-center gap-1.5 text-white/80 hover:text-accent transition-colors font-medium"
             >
-              <PackageSearch size={14} />
+              <PackageSearch size={13} />
               <span>تتبع طلبك</span>
             </Link>
 
@@ -69,14 +69,12 @@ export default function DesktopHeader({
         </div>
       </div>
 
-      {/* ── Main Navigation Bar ────────────────────────────────────────────── */}
+      {/* ── Main Navigation Bar — Compact & Dominated by Search ──────────── */}
       <div className="border-b border-border/80 bg-white">
-        <div className="container py-3">
+        <div className="container py-2.5">
           <div className="flex items-center gap-4" dir="rtl">
-            {/* Logo */}
-            <Link to="/" className="flex shrink-0">
-              <BrandMark variant="header" asHomeLink />
-            </Link>
+            {/* Logo — Exactly ONE <a> navigation link */}
+            <BrandMark variant="header" asHomeLink />
 
             {/* Category Mega Drawer Trigger */}
             <CategoryDrawerTrigger categories={categories} className="hidden md:flex shrink-0" />

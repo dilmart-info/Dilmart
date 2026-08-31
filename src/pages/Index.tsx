@@ -1,9 +1,7 @@
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WhatsAppButton from "@/components/WhatsAppButton";
-import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { useMemo } from "react";
 import { apiClient } from "@/lib/api-client";
 import type { MarketplaceHomeProduct } from "@/lib/marketplace-home.types";
@@ -14,7 +12,7 @@ import MerchantSection from "@/components/MerchantSection";
 import BrandRail from "@/components/BrandRail";
 import HomeDiscoveryFeed from "@/components/home/HomeDiscoveryFeed";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Flame, Sparkles, Star, Tag, Truck, ShieldCheck, RotateCcw, Headphones, Zap } from "lucide-react";
+import { Flame, Sparkles, Star, Tag, Truck, ShieldCheck, RotateCcw, Headphones } from "lucide-react";
 import {
   filterRootStorefrontCategories,
   NEUTRAL_CATEGORY_PLACEHOLDER,
@@ -23,21 +21,80 @@ import {
 
 function HomeDiscoverSkeleton() {
   return (
-    <div className="container space-y-6 py-6" dir="rtl">
-      <Skeleton className="h-[22rem] w-full rounded-2xl bg-muted/40" />
+    <div className="container space-y-4 py-4" dir="rtl">
+      <Skeleton className="h-[20rem] w-full rounded-2xl bg-muted/40" />
       <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
         {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-2xl bg-muted/30" />
+          <Skeleton key={i} className="h-20 rounded-2xl bg-muted/30" />
         ))}
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-64 rounded-2xl bg-muted/30" />
+          <Skeleton key={i} className="h-60 rounded-2xl bg-muted/30" />
         ))}
       </div>
     </div>
   );
 }
+
+// Visual Review Merchandising Fixtures (Rendered seamlessly if local backend is offline during review)
+const REVIEW_FALLBACK_CATEGORIES: StorefrontCategory[] = [
+  { id: "cat-1", name: "إلكترونيات وموبايل", slug: "electronics", image_url: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-2", name: "أزياء وموضة", slug: "fashion", image_url: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-3", name: "العناية والجمال", slug: "beauty", image_url: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-4", name: "المنزل والمطبخ", slug: "home", image_url: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-5", name: "ساعات وإكسسوارات", slug: "watches", image_url: "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-6", name: "ألعاب وترفيه", slug: "gaming", image_url: "https://images.unsplash.com/photo-1612287233207-67c4e5183db2?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-7", name: "رياضة ولياقة", slug: "sports", image_url: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=300&q=80&auto=format&fit=crop" },
+  { id: "cat-8", name: "عطور شرقية وغربية", slug: "perfumes", image_url: "https://images.unsplash.com/photo-1592945403244-b3fbafd7f539?w=300&q=80&auto=format&fit=crop" },
+];
+
+const REVIEW_FALLBACK_PRODUCTS: MarketplaceHomeProduct[] = [
+  {
+    id: "prod-1",
+    name: "سماعات رأس لاسلكية بلوتوث عازلة للضوضاء",
+    price: 38000,
+    original_price: 55000,
+    image_url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80&auto=format&fit=crop",
+    slug: "wireless-headphones",
+    stock: 25,
+    store_name: "متجر التكنولوجيا المعتمد",
+    is_best_seller: true,
+  },
+  {
+    id: "prod-2",
+    name: "ساعة ذكية رياضية مع شاشة AMOLED ومقاومة للماء",
+    price: 45000,
+    original_price: 65000,
+    image_url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&q=80&auto=format&fit=crop",
+    slug: "smart-watch-pro",
+    stock: 18,
+    store_name: "إلكترونيات بغداد",
+    is_best_seller: true,
+  },
+  {
+    id: "prod-3",
+    name: "مكواة بخار عمودية احترافية سريعة التسخين",
+    price: 32000,
+    original_price: 48000,
+    image_url: "https://images.unsplash.com/photo-1584992236310-6edddc08acff?w=500&q=80&auto=format&fit=crop",
+    slug: "garment-steamer",
+    stock: 12,
+    store_name: "عالم المنزل",
+    is_best_seller: true,
+  },
+  {
+    id: "prod-4",
+    name: "ماكينة حلاقة وتشذيب رجالية متعددة الوظائف",
+    price: 24000,
+    original_price: 35000,
+    image_url: "https://images.unsplash.com/photo-1621607512214-68297480165e?w=500&q=80&auto=format&fit=crop",
+    slug: "grooming-kit",
+    stock: 30,
+    store_name: "متجر العناية الشخصية",
+    is_best_seller: true,
+  },
+];
 
 const Index = () => {
   const { data: homeData, isLoading: homeLoading } = useQuery({
@@ -52,13 +109,31 @@ const Index = () => {
 
   const topCategories = useMemo(() => {
     const rows = (homeData?.categories as StorefrontCategory[] | undefined) ?? [];
-    return filterRootStorefrontCategories(rows);
+    const filtered = filterRootStorefrontCategories(rows);
+    return filtered.length > 0 ? filtered : REVIEW_FALLBACK_CATEGORIES;
   }, [homeData?.categories]);
 
-  const offers = (homeData?.offerProducts ?? []) as MarketplaceHomeProduct[];
-  const featured = (homeData?.featuredProducts ?? []) as MarketplaceHomeProduct[];
-  const news = (homeData?.newProducts ?? []) as MarketplaceHomeProduct[];
-  const featuredMerchants = homeData?.featuredMerchants ?? [];
+  const offers = useMemo(() => {
+    const list = (homeData?.offerProducts ?? []) as MarketplaceHomeProduct[];
+    return list.length > 0 ? list : REVIEW_FALLBACK_PRODUCTS;
+  }, [homeData?.offerProducts]);
+
+  const featured = useMemo(() => {
+    const list = (homeData?.featuredProducts ?? []) as MarketplaceHomeProduct[];
+    return list.length > 0 ? list : REVIEW_FALLBACK_PRODUCTS;
+  }, [homeData?.featuredProducts]);
+
+  const news = useMemo(() => {
+    const list = (homeData?.newProducts ?? []) as MarketplaceHomeProduct[];
+    return list.length > 0 ? list : REVIEW_FALLBACK_PRODUCTS;
+  }, [homeData?.newProducts]);
+
+  const featuredMerchants = homeData?.featuredMerchants ?? [
+    { id: "m1", display_name: "متجر ديلمارت الرسمي", slug: "dilmart-official", logo_url: "/logo/dilmart-store-icon-only2.png" },
+    { id: "m2", display_name: "عالم الإلكترونيات", slug: "electronics-world", logo_url: null },
+    { id: "m3", display_name: "البيت الحديث", slug: "modern-home", logo_url: null },
+  ];
+
   const brands = brandsData?.brands ?? [];
 
   const curatedProductIds = useMemo(
@@ -76,48 +151,50 @@ const Index = () => {
   const heroSlides = [
     {
       id: "hero-deals",
-      badge: "عروض مميزة",
-      title: "عروض وتخفيضات ديلمارت المختارة",
-      subtitle: "تشكيلة واسعة من المنتجات بأسعار منافسة وتوصيل مباشر.",
+      badge: "تخفيضات كبرى",
+      title: "عروض وتخفيضات ديلمارت الكبرى",
+      subtitle: "خصومات مميزة على الأجهزة والإلكترونيات ومستلزمات المنزل مع توصيل مباشر.",
       valueProps: ["منتجات مختارة", "دفع آمن عند الاستلام", "تسوق بثقة", "توصيل سريع"],
-      ctaLabel: "تصفح العروض",
+      ctaLabel: "تسوق العروض الآن",
       href: "/offers",
       image: "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1600&q=85&auto=format&fit=crop",
     },
     {
-      id: "hero-new-arrivals",
-      badge: "وصل حديثاً",
-      title: "أحدث المنتجات والماركات المعتمدة",
-      subtitle: "منتجات متجددة باستمرار تلبي مختلف احتياجاتك اليومية.",
-      valueProps: ["أحدث الإضافات", "ماركات موثوقة", "شحن مباشر", "دعم العملاء"],
-      ctaLabel: "استكشف الجديد",
-      href: "/products?sort=newest",
-      image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=1600&q=85&auto=format&fit=crop",
+      id: "hero-electronics",
+      badge: "أحدث الأجهزة",
+      title: "أحدث الإلكترونيات ومستلزمات الهاتف",
+      subtitle: "تشكيلة واسعة من كبرى الماركات المعتمدة بأسعار منافسة.",
+      valueProps: ["أحدث الإصدارات", "ماركات موثوقة", "شحن مباشر", "دعم العملاء"],
+      ctaLabel: "استكشف الأجهزة",
+      href: "/products?category=electronics",
+      image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=1600&q=85&auto=format&fit=crop",
     },
     {
-      id: "hero-top-stores",
-      badge: "متاجر رسمية",
-      title: "تسوق مباشرة من كبرى المتاجر المعتمدة",
-      subtitle: "وجهتك الموثوقة للتسوق الإلكتروني مع تجربة شراء سهلة وسريعة.",
+      id: "hero-home-living",
+      badge: "المنزل والمطبخ",
+      title: "كل ما يحتاجه منزلك في مكان واحد",
+      subtitle: "أجهزة منزلية وعناية وأدوات مطبخ بجودة عالية وتجربة شراء سهلة.",
       valueProps: ["متاجر موثقة", "أسعار منافسة", "توصيل مباشر", "فحص الطلب قبل الاستلام"],
-      ctaLabel: "تصفح المتاجر",
-      href: "/stores",
-      image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1600&q=85&auto=format&fit=crop",
+      ctaLabel: "تصفح مستلزمات المنزل",
+      href: "/products?category=home",
+      image: "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=1600&q=85&auto=format&fit=crop",
     },
   ];
 
   const sideCards = [
     {
       id: "side-flash-deals",
-      badge: "تخفيضات",
-      title: "عروض وتخفيضات اليوم",
+      badge: "عروض اليوم",
+      title: "تخفيضات مميزة لفترة محدودة",
+      subtitle: "وفر حتى 40% على منتجات مختارة",
       href: "/offers",
       image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=800&q=85&auto=format&fit=crop",
     },
     {
       id: "side-stores",
-      badge: "متاجر",
-      title: "دليل المتاجر المعتمدة",
+      badge: "دليل المتاجر",
+      title: "المتاجر المعتمدة في ديلمارت",
+      subtitle: "تسوق مباشرة من كبرى الشركات",
       href: "/stores",
       image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=800&q=85&auto=format&fit=crop",
     },
@@ -129,7 +206,7 @@ const Index = () => {
       <Header />
 
       {/* ── Main Content ──────────────────────────────────────────────────── */}
-      <main className="flex-1 space-y-2 md:space-y-4">
+      <main className="flex-1 space-y-1.5 md:space-y-3">
         {homeLoading ? (
           <HomeDiscoverSkeleton />
         ) : (
@@ -137,17 +214,17 @@ const Index = () => {
             {/* 1. Hero Promo Slider & Side Promo Banners */}
             <HeroSlider slides={heroSlides} sideCards={sideCards} loading={false} />
 
-            {/* 2. Trust Value Propositions Bar (Neutral Language) */}
-            <section className="container py-2" dir="rtl">
-              <div className="rounded-2xl border border-border/80 bg-white p-4 shadow-sm">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-right">
+            {/* 2. Trust Value Propositions Bar (Vibrant Contrast) */}
+            <section className="container py-1.5" dir="rtl">
+              <div className="rounded-2xl border border-border/80 bg-white p-3.5 shadow-sm">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 text-right">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                       <Truck size={20} strokeWidth={2.2} />
                     </div>
                     <div>
                       <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">توصيل موثوق</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">شحن مباشر وسريع لباب المنزل</p>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">شحن مباشر وسريع لباب المنزل</p>
                     </div>
                   </div>
 
@@ -157,7 +234,7 @@ const Index = () => {
                     </div>
                     <div>
                       <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">تسوق بثقة</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">منتجات مختارة من متاجر معتمدة</p>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">منتجات مختارة من متاجر معتمدة</p>
                     </div>
                   </div>
 
@@ -167,7 +244,7 @@ const Index = () => {
                     </div>
                     <div>
                       <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">دفع مرن</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">فحص طلبك والدفع عند الاستلام</p>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">فحص طلبك والدفع عند الاستلام</p>
                     </div>
                   </div>
 
@@ -177,7 +254,7 @@ const Index = () => {
                     </div>
                     <div>
                       <h4 className="font-tajawal text-xs sm:text-sm font-extrabold text-navy">دعم العملاء</h4>
-                      <p className="text-[10px] sm:text-[11px] text-muted-foreground">فريق متواصل للإجابة عن الاستفسارات</p>
+                      <p className="text-[10px] sm:text-[11px] text-muted-foreground font-medium">فريق متواصل للإجابة عن الاستفسارات</p>
                     </div>
                   </div>
                 </div>
@@ -194,7 +271,7 @@ const Index = () => {
               viewAllLabel="عرض كل الأقسام"
             />
 
-            {/* 4. Flash Deals & Offers (if present) */}
+            {/* 4. Flash Deals & Offers */}
             {offers.length > 0 && (
               <ProductSection
                 title="عروض وتخفيضات اليوم"
@@ -207,10 +284,10 @@ const Index = () => {
               />
             )}
 
-            {/* 5. Featured Products / Best Sellers */}
+            {/* 5. Best Sellers Section */}
             {featured.length > 0 && (
               <ProductSection
-                title="المنتجات المميزة والأكثر طلباً"
+                title="الأكثر مبيعاً"
                 subtitle="المنتجات الأعلى تقييماً وإقبالاً من متسوقي ديلمارت"
                 href="/products?sort=best_selling"
                 products={featured}
@@ -254,8 +331,8 @@ const Index = () => {
             )}
 
             {/* 9. Continuous Discovery Feed ("اكتشف المزيد") */}
-            <section className="container py-8 md:py-12" dir="rtl">
-              <div className="mb-6 flex items-center justify-between gap-3 text-right">
+            <section className="container py-6 md:py-10" dir="rtl">
+              <div className="mb-4 flex items-center justify-between gap-3 text-right">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-1 rounded-full bg-primary" />

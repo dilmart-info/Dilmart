@@ -952,11 +952,13 @@ export class AuthSessionManager {
       this.activeSource = "supabase";
       return this.getAppSession();
     }
-    const fed = await this.federated.bootstrap();
-    if (fed) {
-      this.activeSource = "DilMart_federated";
-      this.notify();
-      return fed;
+    if (this.federated.getSession() || (typeof (this.federated as any).hasSession === "function" && (this.federated as any).hasSession())) {
+      const fed = await this.federated.bootstrap();
+      if (fed) {
+        this.activeSource = "DilMart_federated";
+        this.notify();
+        return fed;
+      }
     }
     this.activeSource = "supabase";
     return null;
