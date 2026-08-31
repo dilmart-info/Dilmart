@@ -6,14 +6,13 @@
  * 1. Order creation and order_number return
  * 2. Order items creation and line-item integrity
  * 3. Stock decrement and sold_count increment
- * 4. Insufficient stock transaction abort and rollback
- * 5. Single-merchant and inactive-merchant rejection
- * 6. Catalog price authority override of client price
- * 7. Merchandise total mismatch rejection and rollback
- * 8. Financial snapshot persistence
- * 9. Coupon usage increment
- * 10. Loyalty points ledger and balance update
- * 11. Channel attribution persistence ('web_checkout')
+ * 4. Insufficient stock transaction abort and full rollback
+ * 5. Single-merchant and inactive-merchant rejection with full rollback
+ * 6. Catalog price authority override and merchandise subtotal mismatch rollback
+ * 7. Financial snapshot persistence (including delivery_fee_charged)
+ * 8. Coupon usage increment
+ * 9. Loyalty points spend ledger and resulting profile balance
+ * 10. Channel attribution persistence ('web_checkout')
  */
 
 import test from "node:test";
@@ -156,9 +155,11 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
     assert.equal(prodAfter.sold_count, soldBefore + orderQuantity, "sold_count must increment by quantity");
   });
 
-  await t.test("2. Insufficient Stock Transaction Abort & Rollback [REAL POSTGRESQL]", async () => {
+  await t.test("2. Insufficient Stock Transaction Abort & Full Rollback [REAL POSTGRESQL]", async () => {
     const { govId, prodId, userId, phone } = await createFixtures();
 
+    const { count: ordersCountBefore } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountBefore } = await supabase.from("order_items").select("id", { count: "exact", head: true });
     const { data: prodBefore } = await supabase.from("products").select("stock, sold_count").eq("id", prodId).single();
     const stockBefore = prodBefore.stock;
     const soldBefore = prodBefore.sold_count;
@@ -186,13 +187,19 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
     assert.ok(err, "place_order must fail when stock is insufficient");
     assert.ok(err.message.includes("Insufficient stock"), "Error must state insufficient stock");
 
+    // Verify orders and order_items counts are unchanged (no new records committed)
+    const { count: ordersCountAfter } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountAfter } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    assert.equal(ordersCountAfter, ordersCountBefore, "no new order committed after insufficient stock error");
+    assert.equal(orderItemsCountAfter, orderItemsCountBefore, "no new order_items committed after insufficient stock error");
+
     // Verify stock and sold_count are unchanged (transaction rolled back)
     const { data: prodAfter } = await supabase.from("products").select("stock, sold_count").eq("id", prodId).single();
     assert.equal(prodAfter.stock, stockBefore, "stock must remain unchanged after rollback");
     assert.equal(prodAfter.sold_count, soldBefore, "sold_count must remain unchanged after rollback");
   });
 
-  await t.test("3. Mixed-Merchant Cart Rejection [REAL POSTGRESQL]", async () => {
+  await t.test("3. Mixed-Merchant Cart Rejection & Full Rollback [REAL POSTGRESQL]", async () => {
     const { govId, catId, prodId: prod1, userId, phone } = await createFixtures();
 
     // Create a 2nd merchant and 2nd product
@@ -215,8 +222,14 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
       slug: `prod-m2-${crypto.randomBytes(4).toString("hex")}`,
       price: 15000,
       stock: 20,
+      sold_count: 2,
       is_active: true,
     });
+
+    const { count: ordersCountBefore } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountBefore } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    const { data: prod1Before } = await supabase.from("products").select("stock, sold_count").eq("id", prod1).single();
+    const { data: prod2Before } = await supabase.from("products").select("stock, sold_count").eq("id", prod2).single();
 
     const items = [
       { product_id: prod1, quantity: 1 },
@@ -241,10 +254,28 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
 
     assert.ok(err, "place_order must fail when items belong to multiple merchants");
     assert.ok(err.message.includes("Cart must contain products from exactly one merchant"));
+
+    // Verify orders and order_items counts unchanged
+    const { count: ordersCountAfter } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountAfter } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    assert.equal(ordersCountAfter, ordersCountBefore, "no order committed on mixed merchant rejection");
+    assert.equal(orderItemsCountAfter, orderItemsCountBefore, "no order_items committed on mixed merchant rejection");
+
+    // Verify stock and sold_count unchanged for both products
+    const { data: prod1After } = await supabase.from("products").select("stock, sold_count").eq("id", prod1).single();
+    const { data: prod2After } = await supabase.from("products").select("stock, sold_count").eq("id", prod2).single();
+    assert.equal(prod1After.stock, prod1Before.stock, "prod1 stock unchanged");
+    assert.equal(prod1After.sold_count, prod1Before.sold_count, "prod1 sold_count unchanged");
+    assert.equal(prod2After.stock, prod2Before.stock, "prod2 stock unchanged");
+    assert.equal(prod2After.sold_count, prod2Before.sold_count, "prod2 sold_count unchanged");
   });
 
-  await t.test("4. Inactive Merchant Rejection [REAL POSTGRESQL]", async () => {
+  await t.test("4. Inactive Merchant Rejection & Full Rollback [REAL POSTGRESQL]", async () => {
     const { govId, merchantId, prodId, userId, phone } = await createFixtures();
+
+    const { count: ordersCountBefore } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountBefore } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    const { data: prodBefore } = await supabase.from("products").select("stock, sold_count").eq("id", prodId).single();
 
     // Suspend the merchant
     await supabase.from("merchants").update({ status: "suspended" }).eq("id", merchantId);
@@ -269,10 +300,24 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
 
     assert.ok(err, "place_order must fail when merchant is not active");
     assert.ok(err.message.includes("Merchant is not available for orders"));
+
+    // Verify orders, order_items, stock, and sold_count unchanged
+    const { count: ordersCountAfter } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountAfter } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    assert.equal(ordersCountAfter, ordersCountBefore, "no order committed on inactive merchant rejection");
+    assert.equal(orderItemsCountAfter, orderItemsCountBefore, "no order_items committed on inactive merchant rejection");
+
+    const { data: prodAfter } = await supabase.from("products").select("stock, sold_count").eq("id", prodId).single();
+    assert.equal(prodAfter.stock, prodBefore.stock, "prod stock unchanged");
+    assert.equal(prodAfter.sold_count, prodBefore.sold_count, "prod sold_count unchanged");
   });
 
-  await t.test("5. Merchandise Total Mismatch Rejection [REAL POSTGRESQL]", async () => {
+  await t.test("5. Merchandise Total Mismatch Rejection & Full Rollback [REAL POSTGRESQL]", async () => {
     const { govId, prodId, userId, phone } = await createFixtures();
+
+    const { count: ordersCountBefore } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountBefore } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    const { data: prodBefore } = await supabase.from("products").select("stock, sold_count").eq("id", prodId).single();
 
     const items = [{ product_id: prodId, quantity: 1 }]; // Actual price = 20000
 
@@ -296,6 +341,16 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
 
     assert.ok(err, "place_order must fail when merchandise subtotal does not match catalog pricing");
     assert.ok(err.message.includes("Order merchandise total does not match catalog pricing"));
+
+    // Verify orders, order_items, stock, and sold_count unchanged
+    const { count: ordersCountAfter } = await supabase.from("orders").select("id", { count: "exact", head: true });
+    const { count: orderItemsCountAfter } = await supabase.from("order_items").select("id", { count: "exact", head: true });
+    assert.equal(ordersCountAfter, ordersCountBefore, "no order committed on merchandise total mismatch");
+    assert.equal(orderItemsCountAfter, orderItemsCountBefore, "no order_items committed on merchandise total mismatch");
+
+    const { data: prodAfter } = await supabase.from("products").select("stock, sold_count").eq("id", prodId).single();
+    assert.equal(prodAfter.stock, prodBefore.stock, "prod stock unchanged");
+    assert.equal(prodAfter.sold_count, prodBefore.sold_count, "prod sold_count unchanged");
   });
 
   await t.test("6. Financial Snapshot Persistence [REAL POSTGRESQL]", async () => {
@@ -334,6 +389,7 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
 
     const { data: order } = await supabase.from("orders").select("*").eq("order_number", orderNumber).single();
     assert.equal(Number(order.merchandise_subtotal), 20000);
+    assert.equal(Number(order.delivery_fee_charged), 4000, "delivery_fee_charged must be persisted as 4000");
     assert.equal(Number(order.platform_commission_amount), 2000);
     assert.equal(Number(order.merchant_net_amount), 18000);
     assert.equal(order.currency_code, "IQD");
@@ -384,10 +440,12 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
     assert.equal(couponAfter.used_count, 4, "coupon used_count must be incremented by 1");
   });
 
-  await t.test("8. Loyalty Points Spend & Ledger [REAL POSTGRESQL]", async () => {
+  await t.test("8. Loyalty Points Spend & Resulting Balance [REAL POSTGRESQL]", async () => {
     const { govId, prodId, userId, phone } = await createFixtures();
 
-    // User starts with 100 points
+    // Snapshot profile points before order
+    const { data: profileBefore } = await supabase.from("profiles").select("points").eq("id", userId).single();
+    const pointsBefore = profileBefore.points; // 100
     const pointsToSpend = 40;
     const items = [{ product_id: prodId, quantity: 1 }];
 
@@ -411,7 +469,7 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
 
     assert.equal(poErr, null);
 
-    // Verify loyalty transaction row created
+    // 1. Verify loyalty transaction row created
     const { data: order } = await supabase.from("orders").select("id").eq("order_number", orderNumber).single();
     const { data: txRow } = await supabase
       .from("loyalty_transactions")
@@ -422,5 +480,9 @@ test("Stage B Migration A — Real PostgreSQL place_order Behavior Suite [REAL P
 
     assert.ok(txRow, "loyalty_transactions spend row must exist for order");
     assert.equal(txRow.amount, -pointsToSpend);
+
+    // 2. Verify profiles.points decremented from 100 to 60
+    const { data: profileAfter } = await supabase.from("profiles").select("points").eq("id", userId).single();
+    assert.equal(profileAfter.points, pointsBefore - pointsToSpend, "profiles.points must decrement by points_spent (from 100 to 60)");
   });
 });
