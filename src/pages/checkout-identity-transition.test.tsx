@@ -167,6 +167,13 @@ const H = vi.hoisted(() => {
       return { email: "e", password: "p" };
     },
     validateCoupon: async () => ({}),
+    checkoutPreview: async (payload: any) => ({
+      subtotal: 1000,
+      discount: 0,
+      delivery_cost: 5000,
+      total: 6000,
+      merchant_id: payload?.merchant_id,
+    }),
     getCustomerProfile: async () => state.profile,
     getAuthContext: async () => ({ user: { id: "provisional-1" } }),
     getCheckoutAttempt: async () => {

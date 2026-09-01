@@ -13,8 +13,16 @@ export const checkoutApi = {
     items: Array<{ product_id: string; quantity: number }>;
     merchant_id?: string;
     coupon_code?: string;
+    governorate_id?: string;
   }) {
-    return request<{ subtotal: number; discount: number; total: number; coupon_id?: string; merchant_id?: string }>("/checkout/preview", "POST", payload);
+    return request<{
+      subtotal: number;
+      discount: number;
+      total: number;
+      delivery_cost?: number;
+      coupon_id?: string;
+      merchant_id?: string;
+    }>("/checkout/preview", "POST", payload);
   },
 
   checkoutSubmit(payload: Record<string, unknown>) {

@@ -13,7 +13,24 @@ import { useState, useEffect, useRef } from "react";
 import { isStalePrincipalOperationError, usePrincipalContinuity } from "@/lib/auth/use-customer-principal";
 import { useNavigate, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Trash2, Ticket, X, Loader2, MapPin, CheckCircle, Coins, Home, Building2, PlusCircle } from "lucide-react";
+import {
+  Trash2,
+  Ticket,
+  X,
+  Loader2,
+  MapPin,
+  CheckCircle2,
+  Coins,
+  Home,
+  Building2,
+  PlusCircle,
+  ShieldCheck,
+  ChevronLeft,
+  ShoppingBag,
+  MessageCircle,
+  Truck,
+  CreditCard,
+} from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -25,12 +42,12 @@ import type { MarketplacePublicProduct } from "@/lib/marketplace-product-detail.
 
 /** Type guard: is this product a MarketplacePublicProduct (has `merchants` embed)? */
 function isMarketplaceProduct(p: CartLineProduct): p is MarketplacePublicProduct {
-  return "merchants" in p;
+  return "merchants" in p && !!p.merchants;
 }
 
-/** حقول نماذج واضحة على خلفية فاتحة (لا تعتمد على bg-background الداكن للثيم العام) */
+/** Form inputs styling adhering to DILMART visual identity */
 const checkoutFieldClass =
-  "border-zinc-200 bg-white text-zinc-900 placeholder:text-zinc-400 shadow-sm focus-visible:border-DilMart-store-gold/50 focus-visible:ring-DilMart-store-gold/25";
+  "border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 shadow-sm focus-visible:border-[#1261D8] focus-visible:ring-[#1261D8]/20";
 
 /**
  * §9.3 — the checkout attempt id is identity-owned: the backend binds an attempt to its actor and
@@ -89,14 +106,9 @@ const Checkout = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+
   /**
    * Which submit currently owns the busy flag.
-   *
-   * `setLoading(false)` on its own is wrong here: an old customer A request finishing after customer B
-   * has started their own submit would re-enable the button under B and let them order twice. Equally,
-   * simply returning without clearing wedges the page — the guest path has no owner change to trigger a
-   * reset, so the button stays disabled until a reload. Ownership answers both: only the submit that
-   * still holds the flag may clear it.
    */
   const submitTicketRef = useRef(0);
   const [couponInput, setCouponInput] = useState("");
@@ -123,20 +135,7 @@ const Checkout = () => {
   const [form, setForm] = useState(EMPTY_CUSTOMER_FORM);
 
   /**
-   * §9.3 — this route is PUBLIC, so nothing unmounts it when the authenticated customer is replaced
-   * (another tab redeeming a handoff swaps the shared web cookie). Every field below is customer
-   * IDENTITY_SCOPED — name, phone, governorate, area, landmark, notes, map coordinates, the selected
-   * saved address, and the loyalty-points intent.
-   *
-   * Clearing React Query alone does not reach them, and the hydration effects deliberately fall back to
-   * `prev` (`profile.full_name || prev.name`, `defaultAddress.area ?? prev.area`) while the saved-address
-   * effect returns early when the new customer has none — so a customer with empty profile fields and no
-   * saved addresses would silently inherit the previous customer's details and submit them.
-   *
-   * The reset is keyed on the PRINCIPAL, not the identity epoch: a token rotation or a new session family
-   * for the same person is still their checkout. Guest-entered values also survive a guest → provisional
-   * upgrade, which the existing checkout flow depends on. Cart contents are not customer-private and are
-   * deliberately untouched.
+   * §9.3 — this route is PUBLIC, so nothing unmounts it when the authenticated customer is replaced.
    */
   const { owner: principalOwner, beginOperation } = usePrincipalContinuity(() => {
     setForm(EMPTY_CUSTOMER_FORM);
@@ -145,12 +144,8 @@ const Checkout = () => {
     setAddressLabel("home");
     setAutoFilledFromLastOrder(false);
     setUsePoints(false);
-    // Busy flags belong to the PREVIOUS owner's operation. The new owner must be able to act, and
-    // the stale operation is separately prevented from clearing these again when it finishes.
     setLoading(false);
     setGettingLocation(false);
-    // The checkout attempt id is owned by the actor that created it — the backend rejects another
-    // user presenting it (403). Leaving it behind would wedge the new customer on a foreign attempt.
     clearStoredCheckoutAttempt();
   });
 
@@ -163,7 +158,7 @@ const Checkout = () => {
 
   useEffect(() => {
     if (profile) {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
         name: profile.full_name || prev.name,
         phone: profile.phone || prev.phone,
@@ -189,6 +184,32 @@ const Checkout = () => {
     staleTime: 5 * 60_000,
   });
 
+  const {
+    data: previewData,
+    isLoading: isPreviewLoading,
+    isFetching: isPreviewFetching,
+    isError: isPreviewError,
+    refetch: refetchPreview,
+  } = useQuery({
+    queryKey: [
+      "checkout-preview",
+      items.map((i) => `${i.product.id}:${i.quantity}`).join(","),
+      ensureIntegrity(false).merchantId,
+      coupon?.code ?? null,
+      form.governorate_id || null,
+    ],
+    queryFn: () =>
+      apiClient.checkoutPreview({
+        items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+        merchant_id: ensureIntegrity(false).merchantId ?? undefined,
+        coupon_code: coupon?.code,
+        governorate_id: form.governorate_id || undefined,
+      }),
+    enabled: items.length > 0,
+    retry: false,
+    staleTime: 30_000,
+  });
+
   const selectedGov = governorates?.find((g) => g.id === form.governorate_id);
   const deliveryCost =
     selectedGov?.delivery_price != null && Number.isFinite(Number(selectedGov.delivery_price))
@@ -197,15 +218,24 @@ const Checkout = () => {
   const subtotal = getSubtotal();
   const discount = getDiscountAmount();
 
-  const { data: customerProfile } = useQuery({
-    queryKey: ["customer-profile", authSource, user?.id],
-    queryFn: () => apiClient.getCustomerProfile(),
-    enabled: !!user,
-    retry: false,
-    staleTime: 60_000,
-  });
+  const authoritativeSubtotal =
+    previewData?.subtotal != null && Number.isFinite(Number(previewData.subtotal))
+      ? Number(previewData.subtotal)
+      : subtotal;
+  const authoritativeDiscount =
+    previewData?.discount != null && Number.isFinite(Number(previewData.discount))
+      ? Number(previewData.discount)
+      : discount;
+  const authoritativeDeliveryCost =
+    previewData?.delivery_cost != null && Number.isFinite(Number(previewData.delivery_cost))
+      ? Number(previewData.delivery_cost)
+      : deliveryCost;
+  const authoritativeBaseTotal =
+    previewData?.total != null && Number.isFinite(Number(previewData.total))
+      ? Number(previewData.total)
+      : Math.max(0, authoritativeSubtotal - authoritativeDiscount) + (authoritativeDeliveryCost ?? 0);
 
-  const { data: savedAddresses, refetch: refetchAddresses } = useQuery({
+  const { data: savedAddresses } = useQuery({
     queryKey: ["customer-addresses", authSource, user?.id],
     queryFn: () => apiClient.getCustomerAddresses(),
     enabled: !!user,
@@ -242,40 +272,36 @@ const Checkout = () => {
     }));
   }, [user, savedAddresses]);
 
+  const merchandiseAmount = Math.max(0, authoritativeSubtotal - authoritativeDiscount);
+
   const { data: loyaltyPreview } = useQuery({
-    queryKey: ["loyalty-preview", authSource, user?.id, subtotal, discount],
+    queryKey: ["loyalty-preview", authSource, user?.id, merchandiseAmount],
     queryFn: () =>
       apiClient.loyaltyPreview({
-        subtotal: Math.max(0, subtotal - discount),
+        subtotal: merchandiseAmount,
       }),
-    enabled: !!user,
+    enabled: !!user && merchandiseAmount > 0,
     retry: false,
     placeholderData: { available_points: 0, redeemable_amount: 0 },
   });
 
-  // Loyalty Points Calculations
+  // Loyalty Points Calculations for Redemption
   const availablePoints = loyaltyPreview?.available_points ?? profile?.points ?? 0;
-  // Calculate points only for products that have loyalty points enabled
-  const earnedPoints = items.reduce((sum, item) => {
-    if (!isMarketplaceProduct(item.product) || item.product.loyalty_points_enabled !== false) {
-      const price = item.product.discount_price ?? item.product.price;
-      return sum + Math.floor((price * item.quantity) / 100);
-    }
-    return sum;
-  }, 0);
 
-  // 1 point = 10 IQD discount
   const userEmailLower = (user?.email ?? "").toLowerCase();
   const isProvisionalUser =
     userEmailLower.endsWith("@provisional.dilmart.com") ||
     userEmailLower.endsWith("@provisional.dilmart.org");
-  const pointsRedemptionValue = usePoints && !isProvisionalUser
-    ? Math.min(loyaltyPreview?.redeemable_amount ?? availablePoints * 10, Math.max(0, subtotal - discount))
-    : 0;
+
+  // 1 point = 10 IQD discount
+  const pointsRedemptionValue =
+    usePoints && !isProvisionalUser
+      ? Math.min(loyaltyPreview?.redeemable_amount ?? availablePoints * 10, merchandiseAmount)
+      : 0;
   const pointsToSpend = usePoints && !isProvisionalUser ? Math.floor(pointsRedemptionValue / 10) : 0;
 
   // Total = Subtotal - Discount - PointsDiscount + Delivery
-  const total = Math.max(0, subtotal - discount - pointsRedemptionValue) + (deliveryCost ?? 0);
+  const total = Math.max(0, authoritativeBaseTotal - pointsRedemptionValue);
 
   const getAddressLabelText = (value?: string | null) => {
     const normalized = (value || "other").toLowerCase();
@@ -314,28 +340,26 @@ const Checkout = () => {
 
     const options = {
       enableHighAccuracy: true,
-      timeout: 10000, // 10 seconds timeout
-      maximumAge: 60000 // 1 minute cached location acceptable
+      timeout: 10000,
+      maximumAge: 60000,
     };
 
-    // §9.3 — geolocation resolves long after it starts. Captured here so a position requested by the
-    // previous customer cannot write their coordinates into the current customer's form.
     const locationOperation = beginOperation();
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (!locationOperation.isCurrent()) return; // requester is no longer the owner — drop silently
+        if (!locationOperation.isCurrent()) return;
         const { latitude, longitude } = position.coords;
         const mapUrl = `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
           latitude,
           longitude,
-          map_url: mapUrl
+          map_url: mapUrl,
         }));
 
-        toast.success("تم تحديد موقعك بنجاح");
+        toast.success("تم تحديد موقعك الحالي بنجاح");
         setGettingLocation(false);
       },
       (error) => {
@@ -354,7 +378,7 @@ const Checkout = () => {
         toast.error(message);
         setGettingLocation(false);
       },
-      options
+      options,
     );
   };
 
@@ -377,16 +401,20 @@ const Checkout = () => {
           id: couponData.id,
           code: couponData.code,
           type: couponData.discount_type,
-          value: couponData.value
+          value: couponData.value,
         });
-        toast.success(`تم تطبيق الكوبون - خصم ${couponData.discount_type === 'percentage' ? '%' + couponData.value : formatPrice(couponData.value)}`);
+        toast.success(
+          `تم تطبيق الكوبون - خصم ${
+            couponData.discount_type === "percentage" ? "%" + couponData.value : formatPrice(couponData.value)
+          }`,
+        );
         setCouponInput("");
       } else {
-        toast.error(couponData.message || "الكوبون غير صالح");
+        toast.error(couponData.message || "كود الخصم غير صالح أو منتهي");
       }
     } catch (error) {
       console.error(error);
-      toast.error("حدث خطأ أثناء التحقق من الكوبون");
+      toast.error("حدث خطأ أثناء التحقق من كود الخصم");
     } finally {
       setIsValidating(false);
     }
@@ -403,8 +431,14 @@ const Checkout = () => {
       toast.error("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
-    if (deliveryCost == null) {
-      toast.error("لا يتوفر سعر توصيل Jenni للمحافظة المختارة حالياً. جرّب محافظة أخرى أو تواصل مع الإدارة.");
+    if (isPreviewError) {
+      toast.error("تعذر تحديث أسعار الطلب. يرجى المحاولة مرة أخرى.");
+      return;
+    }
+    if (authoritativeDeliveryCost == null) {
+      toast.error(
+        "لا تتوفر خدمة توصيل للمحافظة المختارة حالياً. يرجى اختيار محافظة أخرى أو التواصل مع خدمة العملاء.",
+      );
       return;
     }
 
@@ -414,22 +448,11 @@ const Checkout = () => {
       return;
     }
 
-    // §9.3 — captured BEFORE the FIRST await of the submit, including the provisional-signup block.
-    // Capturing it after that block left createProvisionalUser / establishProvisionalSession / the
-    // context fetch entirely unguarded, and establishProvisionalSession logs out the active federated
-    // identity — so a stale guest submit could destroy an unrelated customer's session.
     const operation = beginOperation();
     const stillCurrentPrincipal = () => operation.isCurrent();
 
-    // The owner comes from the AUTHORITATIVE snapshot, not from the rendered value. The two disagree in
-    // exactly the window this whole guard exists for: the lifecycle installs an identity before React
-    // commits it. Trusting the rendered owner there would persist the checkout attempt under the wrong
-    // principal, and a retry — arriving as the real one — would find no attempt it owned and mint a
-    // second one, which the backend can turn into a second order for one purchase.
     let submittingOwner = operation.expected().owner;
 
-    // If the screen is showing one customer while the lifecycle already holds another, the form on it
-    // belongs to neither. Refuse rather than send what A typed under B's API identity.
     if (principalOwner !== submittingOwner) {
       toast.error("تغيّر الحساب الحالي. يرجى مراجعة بياناتك ثم إعادة المحاولة.");
       return;
@@ -437,24 +460,19 @@ const Checkout = () => {
 
     const submitTicket = submitTicketRef.current + 1;
     submitTicketRef.current = submitTicket;
-    /** Release the busy flag only if a newer submit has not taken ownership of it. */
     const releaseLoading = () => {
       if (submitTicketRef.current === submitTicket) setLoading(false);
     };
     setLoading(true);
 
-    let activeUserId = user?.id;
-    let activeUserEmail = user?.email;
-    let isNewProvisional = false;
+    const activeUserId = user?.id;
 
-    // STORE-PR5 §Phase L — provisional signup is for TRUE guests ONLY. A federated (or Supabase) customer is
-    // already authenticated, so this block never runs for them. Gate on the settled `unauthenticated` status
-    // so a submit fired mid-bootstrap can NEVER race a federated identity into a provisional Supabase account.
     if (!activeUserId && authStatus !== "unauthenticated") {
       toast.error("جارٍ تجهيز حسابك، يرجى المحاولة بعد لحظات.");
       setLoading(false);
       return;
     }
+
     // Guest checkout: create a provisional customer session before submit
     if (!activeUserId && authStatus === "unauthenticated") {
       try {
@@ -463,9 +481,6 @@ const Checkout = () => {
           customer_phone: form.phone.trim(),
         });
 
-        // A principal that appeared while provisioning was in flight is NOT this operation's own
-        // upgrade. This is an early exit only — the binding check happens inside the session lifecycle
-        // owner, which is the sole place that can verify it atomically with the mutation it protects.
         if (!stillCurrentPrincipal()) {
           releaseLoading();
           return;
@@ -477,35 +492,21 @@ const Checkout = () => {
           operation.expected(),
         );
 
-        // This operation CREATED this principal, so it rebinds to the AUTHORITATIVE snapshot the
-        // lifecycle owner returned for that establishment and keeps going as that customer.
         operation.adopt(principalSnapshot);
         submittingOwner = principalSnapshot.owner;
 
-        activeUserId = provisionalSession.user.id;
-        activeUserEmail = provisionalSession.user.email;
-        isNewProvisional = true;
-
-        // Wait for the authenticated context to be ready before submitting the order.
         await queryClient.fetchQuery({
           queryKey: ["auth-context", "supabase", provisionalSession.user.id],
           queryFn: () => apiClient.getAuthContext(provisionalSession.access_token),
           staleTime: 0,
         });
 
-        // The context fetch is an await like any other: the provisional customer can be replaced or
-        // signed out while it runs. Without this the operation would fall through and submit the
-        // guest's delivery details using whoever the API layer now authenticates as.
         if (!stillCurrentPrincipal()) {
           releaseLoading();
           return;
         }
       } catch (err: unknown) {
         console.error("Provisional signup failed.");
-        // A stale-principal rejection is this guard working, not a failure the customer caused. Neither
-        // it nor any other stale failure may surface to whoever is using the tab now. The transaction can
-        // also be refused without the principal changing at all — a handoff that starts and then fails —
-        // so the busy flag has to be released on this path too, or the page is stuck.
         if (isStalePrincipalOperationError(err) || !stillCurrentPrincipal()) {
           releaseLoading();
           return;
@@ -517,12 +518,6 @@ const Checkout = () => {
       }
     }
 
-    // The attempt belongs to whoever will actually send it. For a guest submit that just created a
-    // provisional customer, that is the PROVISIONAL principal — not the `null` this closure captured
-    // before the upgrade. Persisting it as guest-owned broke both the backend ownership model and
-    // idempotent retry, since the retry would arrive as supabase:<id> and see no attempt it owned.
-    // Re-confirm before touching attempt storage: everything above may have awaited, and an attempt
-    // minted for a principal that is no longer current would be sent under somebody else.
     if (!stillCurrentPrincipal()) {
       releaseLoading();
       return;
@@ -561,9 +556,6 @@ const Checkout = () => {
         coupon_code: coupon?.code ?? undefined,
       });
 
-      // The order belongs to the principal that submitted it. If the customer changed while this was
-      // in flight, clearing the cart and navigating would apply ANOTHER customer's completion to the
-      // one now using this tab — including showing them a foreign order number.
       if (!stillCurrentPrincipal()) {
         releaseLoading();
         return;
@@ -577,13 +569,12 @@ const Checkout = () => {
         sourceSurface: "checkout_page",
       });
       navigate(`/thank-you?order=${result.order_number}`);
-
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err ?? "");
       console.error(err);
       if (!stillCurrentPrincipal()) {
         releaseLoading();
-        return; // do not surface A's failure to B
+        return;
       }
 
       // Attempt status check for network disconnects or timeouts
@@ -592,7 +583,7 @@ const Checkout = () => {
           const attemptStatus = await apiClient.getCheckoutAttempt(checkoutAttemptId);
           if (!stillCurrentPrincipal()) {
             releaseLoading();
-            return; // recovery for a foreign attempt must not commit
+            return;
           }
           if (attemptStatus.status === "completed" && attemptStatus.order_number) {
             clearStoredCheckoutAttempt();
@@ -602,8 +593,6 @@ const Checkout = () => {
             return;
           }
         } catch {
-          // The recovery lookup itself failed. It was awaited, so the principal may have changed
-          // while it ran — re-check before falling through to the toast below.
           if (!stillCurrentPrincipal()) {
             releaseLoading();
             return;
@@ -613,13 +602,10 @@ const Checkout = () => {
 
       if (!stillCurrentPrincipal()) {
         releaseLoading();
-        return; // never surface one principal's failure to another
+        return;
       }
       toast.error(msg && msg.length < 220 ? msg : "حدث خطأ أثناء إرسال الطلب");
     } finally {
-      // Ownership rather than principal identity: B may have started their OWN submit, and a stale
-      // finally must not clear the busy flag of a request that is still running. Conversely a stale
-      // operation that nobody superseded still has to hand the page back.
       releaseLoading();
     }
   };
@@ -627,18 +613,18 @@ const Checkout = () => {
   const handleTrackedWhatsAppFromCart = async () => {
     const integrity = ensureIntegrity();
     if (!integrity.merchantId) {
-      toast.error("تعذر تحديد متجر السلة لبدء محادثة متتبعة.");
+      toast.error("تعذر تحديد متجر السلة لبدء محادثة المساعدة.");
       return;
     }
     const firstProduct = items[0]?.product;
     const merchantName =
       (firstProduct && isMarketplaceProduct(firstProduct) ? firstProduct.merchants?.display_name : null) ||
-      "Merchant";
+      "DilMart Merchant";
     try {
       await startTrackedWhatsAppIntent({
         merchantId: integrity.merchantId,
         merchantName,
-        sourceSurface: "cart",
+        sourceSurface: "checkout",
         cart: items.map((item) => ({
           product_id: item.product.id,
           product_name: item.product.name,
@@ -648,19 +634,29 @@ const Checkout = () => {
         completionLink: `${window.location.origin}/checkout`,
       });
     } catch (error: unknown) {
-      toast.error(error instanceof Error ? error.message : "تعذر فتح مسار واتساب المتتبع.");
+      toast.error(error instanceof Error ? error.message : "تعذر فتح مسار المساعدة عبر واتساب.");
     }
   };
 
   if (items.length === 0) {
     return (
-      <div className="flex min-h-screen flex-col bg-luxury-ivory text-luxury-ivory-fg">
+      <div className="min-h-screen flex flex-col bg-[#F5F7FA] font-tajawal text-slate-900" dir="rtl">
         <Header />
-        <main className="container flex-1 py-20 text-center">
-          <h1 className="font-display text-2xl font-semibold text-zinc-900 md:text-3xl">السلة فارغة</h1>
-          <p className="mt-3 text-zinc-600">أضف منتجات للسلة أولاً</p>
-          <Link to="/products" className="mt-6 inline-block">
-            <Button className="rounded-full">تصفح المنتجات</Button>
+        <main className="flex-1 container mx-auto px-4 py-20 flex flex-col items-center justify-center text-center">
+          <div className="w-24 h-24 bg-white border border-slate-200/80 rounded-3xl flex items-center justify-center mb-6 shadow-sm">
+            <ShoppingBag size={44} className="text-slate-400" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-black text-[#071A3D] mb-2">السلة فارغة</h1>
+          <p className="text-slate-500 max-w-sm mb-8 text-sm md:text-base leading-relaxed">
+            يرجى إضافة منتجات إلى سلة التسوق أولاً لمتابعة إتمام الطلب.
+          </p>
+          <Link to="/products">
+            <Button
+              size="lg"
+              className="rounded-full px-8 py-6 text-base font-bold bg-[#1261D8] hover:bg-[#0E4EB0] text-white shadow-md shadow-[#1261D8]/20 transition-all hover:scale-[1.02]"
+            >
+              تصفح المنتجات الآن
+            </Button>
           </Link>
         </main>
         <Footer />
@@ -669,22 +665,50 @@ const Checkout = () => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-luxury-ivory text-zinc-900">
+    <div className="min-h-screen flex flex-col bg-[#F5F7FA] font-tajawal text-slate-900 pb-24 md:pb-12" dir="rtl">
       <Header />
-      <main className="container flex-1 py-8 md:py-12">
-        <h1 className="font-display mb-2 text-3xl font-semibold tracking-tight text-zinc-950 md:text-4xl">إتمام الطلب</h1>
-        <p className="mb-8 text-sm text-zinc-600">أكمل بيانات التوصيل لإرسال طلبك بأمان.</p>
 
-        <div className="grid gap-8 md:grid-cols-3">
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4 md:col-span-2">
-            <div className="space-y-4 rounded-2xl border border-DilMart-store-gold/15 bg-white/95 p-6 shadow-sm">
-              <h2 className="mb-1 font-display text-xl font-semibold text-zinc-900">معلومات التوصيل</h2>
-              <p className="mb-4 text-sm text-zinc-500">الحقول المعلّمة بـ * مطلوبة.</p>
+      <main className="flex-1 container mx-auto px-4 py-6 md:py-8 max-w-6xl">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-xs md:text-sm text-slate-500 mb-6" aria-label="Breadcrumb">
+          <Link to="/" className="hover:text-[#1261D8] transition-colors">
+            الرئيسية
+          </Link>
+          <ChevronLeft size={14} className="text-slate-400" />
+          <Link to="/cart" className="hover:text-[#1261D8] transition-colors">
+            سلة التسوق
+          </Link>
+          <ChevronLeft size={14} className="text-slate-400" />
+          <span className="font-bold text-slate-800">إتمام الطلب</span>
+        </nav>
 
+        {/* Page Title */}
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-black text-[#071A3D] mb-1">إتمام الطلب والدفع</h1>
+          <p className="text-xs md:text-sm text-slate-500">
+            أكمل بيانات التوصيل لإرسال طلبك واستلامه بكل موثوقية وسرعة.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
+          {/* Main Delivery & Customer Information Form */}
+          <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
+            {/* Customer & Address Information Card */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 md:p-6 shadow-sm space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#1261D8]/10 text-[#1261D8] flex items-center justify-center">
+                    <Truck size={18} />
+                  </div>
+                  <h2 className="text-lg md:text-xl font-black text-[#071A3D]">معلومات التوصيل والمستلم</h2>
+                </div>
+                <span className="text-xs text-slate-400">الحقول المعلّمة بـ * مطلوبة</span>
+              </div>
+
+              {/* Saved Addresses Section for Authenticated Customers */}
               {user ? (
-                <div className="rounded-xl border border-zinc-200 p-4">
-                  <p className="mb-3 text-sm font-semibold text-zinc-900">اختر عنوان التوصيل</p>
+                <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 space-y-3">
+                  <p className="text-xs md:text-sm font-bold text-slate-800">اختر عنوان التوصيل</p>
                   {savedAddresses && savedAddresses.length > 0 ? (
                     <div className="space-y-2">
                       {savedAddresses.map((addr) => (
@@ -705,79 +729,114 @@ const Checkout = () => {
                             }));
                           }}
                           className={cn(
-                            "flex w-full items-center justify-between rounded-lg border px-3 py-2 text-right",
-                            selectedAddressId === addr.id ? "border-DilMart-store-gold bg-DilMart-store-gold/10" : "border-zinc-200",
+                            "flex w-full items-center justify-between rounded-xl border px-3.5 py-2.5 text-right transition-all",
+                            selectedAddressId === addr.id
+                              ? "border-[#1261D8] bg-[#1261D8]/5 ring-1 ring-[#1261D8]"
+                              : "border-slate-200 bg-white hover:border-slate-300",
                           )}
                         >
-                          <div className="flex items-center gap-2">
-                            {(addr.label || "").toLowerCase() === "work" ? <Building2 size={16} /> : <Home size={16} />}
-                            <span className="font-medium">{getAddressLabelText(addr.label)}</span>
-                            {addr.is_default ? <Badge variant="secondary">افتراضي</Badge> : null}
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600">
+                              {(addr.label || "").toLowerCase() === "work" ? (
+                                <Building2 size={15} />
+                              ) : (
+                                <Home size={15} />
+                              )}
+                            </div>
+                            <div>
+                              <span className="font-bold text-xs md:text-sm text-slate-800">
+                                {getAddressLabelText(addr.label)}
+                              </span>
+                              <span className="text-xs text-slate-500 mr-2">{addr.area}</span>
+                            </div>
+                            {addr.is_default ? (
+                              <Badge variant="secondary" className="bg-[#1261D8]/10 text-[#1261D8] text-[10px] py-0 px-2">
+                                افتراضي
+                              </Badge>
+                            ) : null}
                           </div>
-                          <span className="text-xs text-zinc-600">{addr.area}</span>
+                          {selectedAddressId === addr.id && (
+                            <CheckCircle2 size={16} className="text-[#1261D8]" />
+                          )}
                         </button>
                       ))}
+
                       <button
                         type="button"
                         onClick={() => setSelectedAddressId("new")}
                         className={cn(
-                          "flex w-full items-center justify-center gap-2 rounded-lg border border-dashed px-3 py-2 text-sm",
-                          selectedAddressId === "new" ? "border-DilMart-store-gold bg-DilMart-store-gold/10" : "border-zinc-300",
+                          "flex w-full items-center justify-center gap-2 rounded-xl border border-dashed px-3.5 py-2.5 text-xs md:text-sm font-bold transition-colors",
+                          selectedAddressId === "new"
+                            ? "border-[#1261D8] bg-[#1261D8]/5 text-[#1261D8]"
+                            : "border-slate-300 text-slate-600 hover:bg-slate-100",
                         )}
                       >
-                        <PlusCircle size={16} />
+                        <PlusCircle size={15} />
                         إضافة عنوان جديد
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      <p className="text-sm text-zinc-600">لا يوجد لديك عناوين محفوظة. أضف عنوانك لتسهيل الطلبات القادمة.</p>
+                    <div className="space-y-1">
+                      <p className="text-xs text-slate-500">
+                        لا يوجد لديك عناوين محفوظة بعد. يمكنك حفظ هذا العنوان لتسهيل طلباتك المستقبلية.
+                      </p>
                       {autoFilledFromLastOrder ? (
-                        <p className="text-xs text-emerald-700">تم ملء الحقول تلقائيًا من آخر طلب سابق لديك.</p>
+                        <p className="text-xs font-bold text-emerald-600">
+                          تم ملء الحقول تلقائيًا من بيانات آخر طلب سابق لديك.
+                        </p>
                       ) : null}
                     </div>
                   )}
                 </div>
               ) : null}
 
-              <div className="rounded-xl border border-DilMart-store-gold/15 bg-DilMart-store-gold/[0.06] p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <Label className="flex items-center gap-2 font-semibold text-zinc-800">
-                    <MapPin className="text-DilMart-store-gold" size={18} />
-                    موقع التوصيل
+              {/* Geolocation Section */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2 font-bold text-xs md:text-sm text-slate-800">
+                    <MapPin className="text-[#1261D8]" size={16} />
+                    <span>موقع التوصيل الدقيق (اختياري)</span>
                   </Label>
                   {form.map_url ? (
-                    <Badge variant="secondary" className="gap-1 border border-emerald-200/80 bg-emerald-50 text-emerald-800 hover:bg-emerald-100">
-                      <CheckCircle size={12} />
+                    <Badge
+                      variant="secondary"
+                      className="gap-1 border border-emerald-200 bg-emerald-50 text-emerald-700 font-bold text-[11px]"
+                    >
+                      <CheckCircle2 size={12} />
                       تم تحديد الموقع
                     </Badge>
                   ) : null}
                 </div>
-                <p className="mb-4 text-xs leading-relaxed text-zinc-600">
-                  قم بتحديد موقعك الحالي لتسهيل عملية التوصيل وسرعة الوصول إليك.
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  تحديد موقعك الجغرافي يساعد مندوب التوصيل في الوصول إلى عنوانك بدقة وسرعة.
                 </p>
-                <div className="flex gap-2">
+                <div className="pt-1">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={handleGetLocation}
                     disabled={gettingLocation}
-                    className="w-full gap-2 border-zinc-300 bg-zinc-900 text-white hover:bg-zinc-800 hover:text-white"
+                    className="w-full sm:w-auto gap-2 border-slate-200 bg-white text-slate-800 hover:bg-slate-50 text-xs font-bold h-10 shadow-sm"
                   >
-                    {gettingLocation ? <Loader2 className="animate-spin" size={16} /> : <MapPin size={16} />}
+                    {gettingLocation ? (
+                      <Loader2 className="animate-spin" size={15} />
+                    ) : (
+                      <MapPin size={15} className="text-[#1261D8]" />
+                    )}
                     {form.map_url ? "تحديث موقعي الحالي" : "تحديد موقعي الحالي"}
                   </Button>
                 </div>
                 {form.map_url && (
-                  <div className="mt-2 truncate text-xs text-zinc-500" dir="ltr">
+                  <div className="mt-1 truncate text-[11px] text-slate-400 font-mono" dir="ltr">
                     {form.map_url}
                   </div>
                 )}
               </div>
 
+              {/* Inputs: Name & Phone */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-zinc-800">
+                <div className="space-y-1.5">
+                  <Label htmlFor="name" className="text-xs md:text-sm font-bold text-slate-700">
                     الاسم الكامل *
                   </Label>
                   <Input
@@ -787,11 +846,12 @@ const Checkout = () => {
                     required
                     maxLength={100}
                     autoComplete="name"
+                    placeholder="مثال: أحمد علي"
                     className={checkoutFieldClass}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-zinc-800">
+                <div className="space-y-1.5">
+                  <Label htmlFor="phone" className="text-xs md:text-sm font-bold text-slate-700">
                     رقم الهاتف *
                   </Label>
                   <Input
@@ -805,43 +865,52 @@ const Checkout = () => {
                     autoComplete="tel"
                     inputMode="tel"
                     pattern="[0-9]*"
-                    placeholder="07XXXXXXXX"
+                    placeholder="07XXXXXXXXX"
                     className={checkoutFieldClass}
                   />
                 </div>
               </div>
 
+              {/* Inputs: Governorate & Area */}
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label className="text-zinc-800">المحافظة *</Label>
-                  <Select value={form.governorate_id} onValueChange={(v) => {
-                    setForm({ ...form, governorate_id: v, area: "" }); // Reset area/region when gov changes
-                  }}>
-                    <SelectTrigger className={cn(checkoutFieldClass, "h-10")}>
+                <div className="space-y-1.5">
+                  <Label className="text-xs md:text-sm font-bold text-slate-700">المحافظة *</Label>
+                  <Select
+                    value={form.governorate_id}
+                    onValueChange={(v) => {
+                      setForm({ ...form, governorate_id: v, area: "" });
+                    }}
+                  >
+                    <SelectTrigger className={cn(checkoutFieldClass, "h-10 text-xs md:text-sm")}>
                       <SelectValue placeholder="اختر المحافظة" />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent dir="rtl">
                       {governorates?.map((gov) => (
-                        <SelectItem key={gov.id} value={gov.id}>
-                          {gov.name} - توصيل {gov.delivery_price != null ? formatPrice(gov.delivery_price) : "غير متاح"}
+                        <SelectItem key={gov.id} value={gov.id} className="text-xs md:text-sm font-medium">
+                          {gov.name} — توصيل{" "}
+                          {gov.delivery_price != null
+                            ? gov.delivery_price > 0
+                              ? formatPrice(gov.delivery_price)
+                              : "مجاني"
+                            : "غير متاح حالياً"}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="area" className="text-zinc-800">
+                <div className="space-y-1.5">
+                  <Label htmlFor="area" className="text-xs md:text-sm font-bold text-slate-700">
                     المنطقة / الحي *
                   </Label>
                   {regions && regions.length > 0 ? (
                     <>
                       <Select value={form.area} onValueChange={(v) => setForm({ ...form, area: v })}>
-                        <SelectTrigger className={cn(checkoutFieldClass, "h-10")}>
+                        <SelectTrigger className={cn(checkoutFieldClass, "h-10 text-xs md:text-sm")}>
                           <SelectValue placeholder="اختر المنطقة" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent dir="rtl">
                           {regions.map((region) => (
-                            <SelectItem key={region.id} value={region.name}>
+                            <SelectItem key={region.id} value={region.name} className="text-xs md:text-sm font-medium">
                               {region.name}
                             </SelectItem>
                           ))}
@@ -853,7 +922,7 @@ const Checkout = () => {
                         onChange={(e) => setForm({ ...form, area: e.target.value })}
                         maxLength={100}
                         placeholder="أو اكتب اسم المنطقة يدوياً"
-                        className={cn(checkoutFieldClass, "text-xs")}
+                        className={cn(checkoutFieldClass, "text-xs mt-1")}
                       />
                     </>
                   ) : (
@@ -863,133 +932,229 @@ const Checkout = () => {
                       onChange={(e) => setForm({ ...form, area: e.target.value })}
                       required
                       maxLength={100}
-                      placeholder="اسم المنطقة أو الحي"
+                      placeholder="اسم الحي، الشارع أو المنطقة"
                       className={checkoutFieldClass}
                     />
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="landmark" className="text-zinc-800">
-                  أقرب نقطة دالة
+              {/* Inputs: Landmark & Notes */}
+              <div className="space-y-1.5">
+                <Label htmlFor="landmark" className="text-xs md:text-sm font-bold text-slate-700">
+                  أقرب نقطة دالة (اختياري)
                 </Label>
                 <Input
                   id="landmark"
                   value={form.landmark}
                   onChange={(e) => setForm({ ...form, landmark: e.target.value })}
                   maxLength={200}
+                  placeholder="مثال: قرب جامع النور أو مجاور مدرسة..."
                   className={checkoutFieldClass}
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-zinc-800">
-                  ملاحظات
+              <div className="space-y-1.5">
+                <Label htmlFor="notes" className="text-xs md:text-sm font-bold text-slate-700">
+                  ملاحظات إضافية للتوصيل (اختياري)
                 </Label>
                 <Textarea
                   id="notes"
                   value={form.notes}
                   onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   maxLength={500}
-                  className={cn(checkoutFieldClass, "min-h-[100px]")}
+                  placeholder="أي تعليمات إضافية للمندوب أو أوقات التوصيل المفضلة..."
+                  className={cn(checkoutFieldClass, "min-h-[80px] text-xs md:text-sm")}
                 />
               </div>
 
+              {/* Save Address Option for Logged-in Users */}
               {user && selectedAddressId === "new" ? (
-                <div className="space-y-3 rounded-xl border border-zinc-200 p-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="address_label">تصنيف العنوان</Label>
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="address_label" className="text-xs md:text-sm font-bold text-slate-700">
+                      تصنيف العنوان
+                    </Label>
                     <Select value={addressLabel} onValueChange={setAddressLabel}>
-                      <SelectTrigger id="address_label" className={cn(checkoutFieldClass, "h-10")}>
+                      <SelectTrigger id="address_label" className={cn(checkoutFieldClass, "h-10 text-xs md:text-sm")}>
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent dir="rtl">
                         <SelectItem value="home">المنزل</SelectItem>
                         <SelectItem value="work">العمل</SelectItem>
                         <SelectItem value="other">أخرى</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
-                  <label className="flex items-center gap-2 text-sm text-zinc-700">
+                  <label className="flex items-center gap-2 text-xs md:text-sm text-slate-700 cursor-pointer pt-1">
                     <input
                       type="checkbox"
                       checked={saveAddress}
                       onChange={(e) => setSaveAddress(e.target.checked)}
+                      className="rounded border-slate-300 text-[#1261D8] focus:ring-[#1261D8]"
                     />
-                    احفظ هذا العنوان للطلبات القادمة
+                    <span>احفظ هذا العنوان في حسابي لتسهيل الطلبات القادمة</span>
                   </label>
                 </div>
               ) : null}
             </div>
 
-            <Button type="submit" size="lg" className="h-14 w-full rounded-full text-lg font-semibold shadow-lg shadow-black/10" disabled={loading}>
-              {loading ? "جاري إرسال الطلب..." : `تأكيد الطلب (${formatPrice(total)})`}
-            </Button>
-            <Button type="button" variant="outline" size="lg" className="h-12 w-full rounded-full" onClick={() => void handleTrackedWhatsAppFromCart()}>
-              تواصل عبر واتساب المتجر (Tracked)
-            </Button>
+            {/* Payment Information Card (Neutral Informational) */}
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 md:p-6 shadow-sm space-y-3">
+              <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+                <div className="w-8 h-8 rounded-lg bg-[#FF8A00]/10 text-[#FF8A00] flex items-center justify-center">
+                  <CreditCard size={18} />
+                </div>
+                <h2 className="text-lg md:text-xl font-black text-[#071A3D]">طريقة الدفع</h2>
+              </div>
+              <p className="text-xs md:text-sm font-semibold text-slate-700 leading-relaxed">
+                طريقة الدفع الحالية: الدفع عند الاستلام
+              </p>
+            </div>
+
+            {/* Guest Provisional Account Notice */}
+            {!user && (
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 text-xs md:text-sm leading-relaxed text-blue-900">
+                سننشئ لك حساب متابعة تلقائياً باستخدام بيانات الطلب لتتمكن من متابعة طلبك لاحقاً.
+              </div>
+            )}
+
+            {/* Primary Submit & WhatsApp Actions */}
+            <div className="space-y-3 pt-2">
+              <Button
+                type="submit"
+                size="lg"
+                className="w-full h-14 rounded-xl text-base md:text-lg font-black bg-[#1261D8] hover:bg-[#0E4EB0] text-white shadow-lg shadow-[#1261D8]/20 transition-all hover:scale-[1.01]"
+                disabled={loading || isPreviewLoading || isPreviewError || authoritativeDeliveryCost == null}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>جاري تأكيد الطلب...</span>
+                  </span>
+                ) : isPreviewLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>جارٍ تحديث الأسعار...</span>
+                  </span>
+                ) : (
+                  <span>تأكيد الطلب ({formatPrice(total)})</span>
+                )}
+              </Button>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full h-12 rounded-xl text-xs md:text-sm font-bold border-slate-200 bg-white text-slate-700 hover:bg-slate-50 gap-2 shadow-sm"
+                onClick={() => void handleTrackedWhatsAppFromCart()}
+              >
+                <MessageCircle size={17} className="text-emerald-600" />
+                <span>مساعدة عبر واتساب</span>
+              </Button>
+            </div>
           </form>
 
-          {/* Order Summary */}
-          <div className="sticky top-24 h-fit space-y-4">
-            <div className="rounded-2xl border border-DilMart-store-gold/15 bg-white/95 p-6 shadow-sm">
-              <h2 className="font-display mb-4 text-xl font-semibold text-zinc-900">ملخص الطلب</h2>
-              <div className="mb-4 space-y-4">
-                {items.map((item) => (
-                  <div
-                    key={item.product.id}
-                    className="flex items-start justify-between border-b border-dashed border-zinc-200 pb-4 text-sm last:border-0 last:pb-0"
-                  >
-                    <div className="min-w-0 flex-1 pl-2">
-                      <p className="font-medium text-zinc-900">{item.product.name}</p>
-                      <p className="mt-1 text-xs text-zinc-500">الكمية: {item.quantity}</p>
-                    </div>
-                    <div className="shrink-0 text-left">
-                      <p className="font-semibold text-zinc-900">{formatPrice((item.product.discount_price ?? item.product.price) * item.quantity)}</p>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.product.id)}
-                        className="mt-1 text-xs text-red-600 underline-offset-2 hover:underline"
-                      >
-                        حذف
-                      </button>
-                    </div>
+          {/* Sticky Order Summary Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white border border-slate-200/80 rounded-2xl p-5 md:p-6 shadow-sm sticky top-24 space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h2 className="text-lg md:text-xl font-black text-[#071A3D]">
+                  ملخص الطلب ({items.length} منتجات)
+                </h2>
+                {isPreviewFetching && !isPreviewLoading && (
+                  <div className="flex items-center gap-1.5 text-xs text-[#1261D8] bg-blue-50 px-2 py-0.5 rounded-md">
+                    <Loader2 size={12} className="animate-spin" />
+                    <span>جارٍ التحديث...</span>
                   </div>
-                ))}
+                )}
+              </div>
+
+              {isPreviewError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center justify-between gap-2">
+                  <span>تعذر تحديث أسعار الطلب</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void refetchPreview()}
+                    className="text-xs h-7 border-red-300 text-red-700 hover:bg-red-100 shrink-0"
+                  >
+                    حاول مرة أخرى
+                  </Button>
+                </div>
+              )}
+
+              {/* Order Items List */}
+              <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
+                {items.map((item) => {
+                  const product = item.product;
+                  const itemPrice = product.discount_price ?? product.price;
+                  return (
+                    <div
+                      key={product.id}
+                      className="flex items-start justify-between border-b border-slate-100 pb-3 text-xs md:text-sm last:border-0 last:pb-0 gap-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-slate-800 line-clamp-1">{product.name}</p>
+                        <p className="text-xs text-slate-400 mt-0.5">الكمية: {item.quantity}</p>
+                      </div>
+                      <div className="shrink-0 text-left">
+                        <p className="font-black text-slate-900">{formatPrice(itemPrice * item.quantity)}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeItem(product.id)}
+                          className="mt-1 text-[11px] text-red-600 hover:underline"
+                        >
+                          حذف
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Coupon Section */}
-              <div className="mb-4 border-t border-zinc-200 pt-4">
+              <div className="border-t border-slate-100 pt-4 space-y-2">
+                <label htmlFor="checkout-coupon-input" className="text-xs font-bold text-slate-700 block">
+                  كود الخصم
+                </label>
                 {coupon ? (
-                  <div className="flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                  <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 p-3">
                     <div className="flex items-center gap-2 text-emerald-800">
                       <Ticket size={16} />
                       <div>
-                        <p className="font-bold text-sm">{coupon.code}</p>
-                        <p className="text-[10px]">خصم {coupon.type === 'percentage' ? `%${coupon.value}` : formatPrice(coupon.value)}</p>
+                        <p className="font-black text-sm">{coupon.code}</p>
+                        <p className="text-[11px] text-emerald-700">
+                          خصم {coupon.type === "percentage" ? `%${coupon.value}` : formatPrice(coupon.value)}
+                        </p>
                       </div>
                     </div>
-                    <button type="button" onClick={removeCoupon} className="rounded-full bg-emerald-100 p-1 text-emerald-800 hover:bg-emerald-200">
-                      <X size={14} />
+                    <button
+                      type="button"
+                      onClick={removeCoupon}
+                      className="rounded-lg p-1.5 text-emerald-700 hover:bg-emerald-100 transition-colors"
+                      aria-label="إزالة الكوبون"
+                    >
+                      <X size={15} />
                     </button>
                   </div>
                 ) : (
                   <div className="flex gap-2">
                     <Input
-                      placeholder="كود الخصم"
+                      id="checkout-coupon-input"
+                      placeholder="أدخل كود الخصم"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
                       maxLength={20}
-                      className={cn(checkoutFieldClass, "h-10 uppercase")}
+                      className={cn(checkoutFieldClass, "h-10 uppercase text-xs font-bold")}
                     />
                     <Button
                       type="button"
-                      variant="outline"
+                      variant="secondary"
                       onClick={handleApplyCoupon}
-                      disabled={isValidating || !couponInput}
-                      size="sm"
-                      className="shrink-0 border-DilMart-store-gold/40 bg-DilMart-store-gold/15 font-semibold text-zinc-900 hover:bg-DilMart-store-gold/25"
+                      disabled={isValidating || !couponInput.trim()}
+                      className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 text-xs h-10 shrink-0"
                     >
                       {isValidating ? <Loader2 size={14} className="animate-spin" /> : "تطبيق"}
                     </Button>
@@ -997,29 +1162,29 @@ const Checkout = () => {
                 )}
               </div>
 
-              {/* Loyalty Points Section */}
+              {/* Loyalty Points Redemption Section */}
               {user && !isProvisionalUser && availablePoints > 0 && (
-                <div className="mb-4 border-t border-zinc-200 pt-4">
+                <div className="border-t border-slate-100 pt-4">
                   <div
                     className={cn(
-                      "rounded-lg border p-3 transition-colors",
-                      usePoints ? "border-amber-200 bg-amber-50/90" : "border-zinc-200 bg-zinc-50/80",
+                      "rounded-xl border p-3.5 transition-colors space-y-2",
+                      usePoints ? "border-[#FF8A00]/40 bg-[#FF8A00]/5" : "border-slate-200 bg-slate-50/50",
                     )}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <div
                           className={cn(
-                            "rounded-full p-1.5",
-                            usePoints ? "bg-amber-100 text-amber-700" : "bg-zinc-200 text-zinc-600",
+                            "w-7 h-7 rounded-lg flex items-center justify-center",
+                            usePoints ? "bg-[#FF8A00]/20 text-[#FF8A00]" : "bg-slate-200 text-slate-600",
                           )}
                         >
-                          <Coins size={16} />
+                          <Coins size={15} />
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-zinc-900">نقاط الولاء</p>
-                          <p className="text-[10px] text-zinc-600">
-                            لديك {availablePoints} نقطة ({formatPrice(availablePoints * 10)})
+                          <p className="text-xs font-bold text-slate-900">نقاط المكافآت</p>
+                          <p className="text-[11px] text-slate-500">
+                            رصيدك: {availablePoints} نقطة ({formatPrice(availablePoints * 10)})
                           </p>
                         </div>
                       </div>
@@ -1029,75 +1194,70 @@ const Checkout = () => {
                         size="sm"
                         onClick={() => setUsePoints(!usePoints)}
                         className={cn(
-                          "h-8",
-                          usePoints ? "border-0 bg-amber-600 hover:bg-amber-700" : "border-zinc-300 text-zinc-800",
+                          "h-8 text-xs font-bold px-2.5",
+                          usePoints ? "bg-[#FF8A00] hover:bg-[#E67C00] text-white" : "border-slate-300 text-slate-700",
                         )}
                       >
-                        {usePoints ? "إلغاء الاستخدام" : "استخدام الآن"}
+                        {usePoints ? "إلغاء الخصم" : "استخدام النقاط"}
                       </Button>
                     </div>
                     {usePoints && (
-                      <div className="mt-2 animate-in fade-in slide-in-from-top-1 text-[10px] font-medium text-amber-900">
-                        سيتم خصم {formatPrice(pointsRedemptionValue)} من الإجمالي مقابل {pointsToSpend} نقطة.
+                      <div className="text-[11px] font-bold text-[#E67C00] pt-1 border-t border-[#FF8A00]/20">
+                        سيتم خصم {formatPrice(pointsRedemptionValue)} مقابل {pointsToSpend} نقطة.
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Guest provisional-account notice — always visible when not logged in */}
-              {!user && (
-                <div className="mb-4">
-                  <p className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-[11px] leading-relaxed text-amber-800">
-                    سيتم إنشاء حساب متابعة تلقائي من بيانات التوصيل حتى تتمكن من متابعة طلبك لاحقاً.
-                  </p>
-                </div>
-              )}
-
-              {/* Points to Earn Info */}
-              {earnedPoints > 0 && (
-                <div className="mb-4 space-y-2 px-0.5">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="rounded-md border border-DilMart-store-gold/25 bg-DilMart-store-gold/10 py-0.5 text-[10px] font-bold text-zinc-800">
-                      <Coins size={10} className="ml-1 text-DilMart-store-gold" />
-                      مكافأة الطلب: {earnedPoints} نقطة
-                    </Badge>
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2 border-t border-zinc-200 pt-4 text-sm">
-                <div className="flex justify-between text-zinc-600">
+              {/* Totals Breakdown */}
+              <div className="space-y-2.5 border-t border-slate-100 pt-4 text-xs md:text-sm">
+                <div className="flex justify-between text-slate-600">
                   <span>المجموع الفرعي</span>
-                  <span className="font-medium text-zinc-900">{formatPrice(subtotal)}</span>
+                  <span className="font-bold text-slate-800">{formatPrice(authoritativeSubtotal)}</span>
                 </div>
-                <div className="flex justify-between text-zinc-600">
+
+                <div className="flex justify-between text-slate-600">
                   <span>التوصيل</span>
-                  <span className="font-medium text-zinc-900">
-                    {deliveryCost != null ? (deliveryCost > 0 ? formatPrice(deliveryCost) : "مجاني") : "غير متاح — Jenni"}
+                  <span className="font-bold text-slate-800">
+                    {authoritativeDeliveryCost != null
+                      ? authoritativeDeliveryCost > 0
+                        ? formatPrice(authoritativeDeliveryCost)
+                        : "مجاني"
+                      : "غير متاح حالياً"}
                   </span>
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between font-semibold text-emerald-700">
-                    <span>قيمة الكوبون</span>
-                    <span>-{formatPrice(discount)}</span>
+
+                {authoritativeDiscount > 0 && (
+                  <div className="flex justify-between font-bold text-emerald-600">
+                    <span>خصم الكوبون</span>
+                    <span>-{formatPrice(authoritativeDiscount)}</span>
                   </div>
                 )}
+
                 {pointsRedemptionValue > 0 && (
-                  <div className="flex justify-between font-semibold text-amber-800">
+                  <div className="flex justify-between font-bold text-[#FF8A00]">
                     <span>خصم النقاط</span>
                     <span>-{formatPrice(pointsRedemptionValue)}</span>
                   </div>
                 )}
-                <div className="mt-2 flex justify-between border-t border-zinc-200 pt-4 text-lg font-bold">
-                  <span className="text-zinc-900">الإجمالي</span>
-                  <span className="text-DilMart-store-gold">{formatPrice(total)}</span>
+
+                <div className="mt-3 flex justify-between border-t border-slate-100 pt-3 text-base md:text-lg font-black">
+                  <span className="text-[#071A3D]">المجموع الكلي</span>
+                  <span className="text-[#1261D8] text-xl md:text-2xl">{formatPrice(total)}</span>
                 </div>
+              </div>
+
+              {/* Trust Badge */}
+              <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-500 border-t border-slate-100">
+                <ShieldCheck size={16} className="text-[#1261D8]" />
+                <span>تسوق بثقة عبر ديل مارت</span>
               </div>
             </div>
           </div>
         </div>
       </main>
+
       <Footer />
       <WhatsAppButton />
     </div>
