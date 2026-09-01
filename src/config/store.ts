@@ -5,7 +5,7 @@ export const storeConfig = {
   },
   name: "DilMart",
   nameAr: "ديلمارت",
-  taglineAr: "وجهتك الأولى للتسوق الإلكتروني في العراق — منتجات أصلية وتوصيل سريع",
+  taglineAr: "كل السوق بمكان واحد",
   phone: "+964 787 185 7930",
   whatsapp: "9647871857930",
   address: "بغداد، العراق",
