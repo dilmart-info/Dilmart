@@ -292,6 +292,7 @@ export class OrdersService {
          governorates(name),
          order_items(id, product_id, product_name, price, quantity),
          order_delivery_integrations(
+           id,
            provider_code,
            dispatch_status,
            dispatch_error,
@@ -303,8 +304,17 @@ export class OrdersService {
       )
       .eq("id", id)
       .eq("merchant_id", merchantId)
-      .single();
-    if (error) throw error;
+      .maybeSingle();
+
+    if (error) {
+      if ((error as { code?: string })?.code === "PGRST116") {
+        throw new NotFoundException("Order not found");
+      }
+      throw error;
+    }
+    if (!data) {
+      throw new NotFoundException("Order not found");
+    }
     return data;
   }
 
@@ -335,8 +345,16 @@ export class OrdersService {
       req = req.eq("merchant_id", resolvedMerchantId);
     }
 
-    const { data, error } = await req.single();
-    if (error) throw error;
+    const { data, error } = await req.maybeSingle();
+    if (error) {
+      if ((error as { code?: string })?.code === "PGRST116") {
+        throw new NotFoundException("Order not found");
+      }
+      throw error;
+    }
+    if (!data) {
+      throw new NotFoundException("Order not found");
+    }
     return data;
   }
 

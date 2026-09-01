@@ -204,3 +204,5 @@ export function MerchantNotifications({ merchantId }: MerchantNotificationsProps
         </DropdownMenu>
     );
 }
+
+export default MerchantNotifications;

@@ -1,9 +1,15 @@
 import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MerchantLayout from "./MerchantLayout";
+
+interface MockMerchantData {
+  merchant_id: string;
+  role: string;
+  merchants: { id: string; display_name: string; status: string; slug?: string };
+}
 
 const {
   mockAuth,
@@ -24,30 +30,30 @@ const {
       merchant_id: "m-1",
       role: "owner",
       merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active", slug: "baghdad-store" },
-    } as any,
+    } as MockMerchantData | null,
     memberships: [
       {
         merchant_id: "m-1",
         role: "owner",
         merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active", slug: "baghdad-store" },
       },
-    ] as any[],
+    ] as MockMerchantData[],
     activeMemberships: [
       {
         merchant_id: "m-1",
         role: "owner",
         merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active", slug: "baghdad-store" },
       },
-    ] as any[],
+    ] as MockMerchantData[],
     hasNoActiveMerchant: false,
     setActiveMerchantId: vi.fn((id: string) => id === "m-1" || id === "m-2"),
     isLoading: false,
   },
   mockPendingOrders: {
-    pendingOrders: [],
+    pendingOrders: [] as Array<{ id: string; order_number?: string }>,
     count: 0,
     currentOrderId: null,
-    refetch: vi.fn().mockResolvedValue(undefined),
+    refetch: vi.fn().mockResolvedValue({ data: { items: [] } }),
     merchantId: "m-1",
   },
   toastSuccess: vi.fn(),
@@ -68,15 +74,25 @@ vi.mock("@/hooks/use-pending-orders", () => ({
 
 vi.mock("@/components/merchant/MerchantNotifications", () => ({
   MerchantNotifications: () => <div data-testid="merchant-notifications" />,
+  default: () => <div data-testid="merchant-notifications" />,
 }));
 vi.mock("@/components/merchant/MerchantNewOrderAlertBanner", () => ({
   MerchantNewOrderAlertBanner: () => <div data-testid="merchant-alert-banner" />,
+  default: () => <div data-testid="merchant-alert-banner" />,
 }));
 vi.mock("@/components/merchant/MerchantPwaBootstrap", () => ({
   MerchantPwaBootstrap: () => <div data-testid="merchant-pwa" />,
+  default: () => <div data-testid="merchant-pwa" />,
 }));
 vi.mock("@/components/merchant/MerchantDecisionModal", () => ({
-  default: () => <div data-testid="decision-modal" />,
+  default: (props: { orderId?: string | null; merchantId?: string | null }) =>
+    props.orderId ? (
+      <div
+        data-testid="decision-modal"
+        data-order-id={props.orderId}
+        data-merchant-id={props.merchantId}
+      />
+    ) : null,
 }));
 vi.mock("@/lib/merchant-push", () => ({
   getOrCreateMerchantDeviceId: () => "device-1",
@@ -107,7 +123,7 @@ function renderLayout(initialPath = "/merchant") {
             path="/merchant/*"
             element={
               <MerchantLayout>
-                <div data-testid="merchant-child">محتوى الصفحة التشغيلية</div>
+                <div data-testid="merchant-child">محتوى لوحة التحكم</div>
               </MerchantLayout>
             }
           />
@@ -121,11 +137,8 @@ describe("MerchantLayout — Foundation & Multi-Store Authority", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockAuth.user = { id: "user-1" };
-    mockAuth.profile = { email: "merchant@example.com" };
     mockAuth.isMerchantUser = true;
     mockAuth.loading = false;
-    mockAuth.logoutCurrentDevice.mockResolvedValue(undefined);
-
     mockCurrentMerchant.data = {
       merchant_id: "m-1",
       role: "owner",
@@ -135,6 +148,9 @@ describe("MerchantLayout — Foundation & Multi-Store Authority", () => {
     mockCurrentMerchant.activeMemberships = [mockCurrentMerchant.data];
     mockCurrentMerchant.hasNoActiveMerchant = false;
     mockCurrentMerchant.isLoading = false;
+    mockPendingOrders.pendingOrders = [];
+    mockPendingOrders.count = 0;
+    mockPendingOrders.refetch.mockResolvedValue({ data: { items: [] } });
   });
 
   it("AUTH GATE: redirects unauthenticated or non-merchant user to /merchant/login", () => {
@@ -194,6 +210,154 @@ describe("MerchantLayout — Foundation & Multi-Store Authority", () => {
     expect(mockCurrentMerchant.setActiveMerchantId).toHaveBeenCalledWith("m-2");
     await waitFor(() => {
       expect(toastSuccess).toHaveBeenCalledWith("تم تغيير المتجر النشط.");
+    });
+  });
+
+  it("MULTI-STORE EVENT ISOLATION: ignores real-time new order event belonging to another merchant (fails closed)", async () => {
+    renderLayout("/merchant");
+
+    await screen.findByTestId("merchant-child");
+
+    // Event from Store 2 while Store 1 is active
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("merchant-new-order", {
+          detail: { orderId: "ord-store-2", merchantId: "m-2" },
+        })
+      );
+    });
+
+    expect(screen.queryByTestId("decision-modal")).toBeNull();
+    expect(mockPendingOrders.refetch).not.toHaveBeenCalled();
+  });
+
+  it("MULTI-STORE EVENT ISOLATION: ignores real-time new order event with missing/undefined merchantId", async () => {
+    renderLayout("/merchant");
+
+    await screen.findByTestId("merchant-child");
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("merchant-new-order", {
+          detail: { orderId: "ord-unknown" },
+        })
+      );
+    });
+
+    expect(screen.queryByTestId("decision-modal")).toBeNull();
+    expect(mockPendingOrders.refetch).not.toHaveBeenCalled();
+  });
+
+  it("MULTI-STORE EVENT ISOLATION: matching active merchant event refetches queue and opens modal for verified pending order", async () => {
+    mockPendingOrders.refetch.mockResolvedValueOnce({
+      data: {
+        items: [{ id: "ord-store-1", order_number: "BG-101" }],
+      },
+    });
+
+    renderLayout("/merchant");
+
+    await screen.findByTestId("merchant-child");
+
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent("merchant-new-order", {
+          detail: { orderId: "ord-store-1", merchantId: "m-1" },
+        })
+      );
+    });
+
+    await waitFor(() => {
+      const modal = screen.queryByTestId("decision-modal");
+      expect(modal).toBeTruthy();
+      expect(modal?.getAttribute("data-order-id")).toBe("ord-store-1");
+      expect(modal?.getAttribute("data-merchant-id")).toBe("m-1");
+    });
+  });
+
+  it("ASYNC MULTI-STORE RACE ISOLATION: delayed Store A refetch resolving after switch to Store B does NOT open Store A modal", async () => {
+    let resolveStoreARefetch!: (val: unknown) => void;
+    const storeARefetchPromise = new Promise((resolve) => {
+      resolveStoreARefetch = resolve;
+    });
+
+    const store2 = {
+      merchant_id: "m-2",
+      role: "owner",
+      merchants: { id: "m-2", display_name: "متجر البصرة الحديث", status: "active", slug: "basra-store" },
+    };
+    mockCurrentMerchant.memberships = [mockCurrentMerchant.data, store2];
+    mockCurrentMerchant.activeMemberships = [mockCurrentMerchant.data, store2];
+
+    // 1. Render with Store A active
+    mockPendingOrders.refetch.mockReturnValueOnce(storeARefetchPromise);
+
+    const { rerender } = renderLayout("/merchant");
+    await screen.findByTestId("merchant-child");
+
+    // 2. Dispatch event for Store A
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent("merchant-new-order", {
+          detail: { orderId: "ord-store-A", merchantId: "m-1" },
+        })
+      );
+    });
+
+    // 3. Switch active store to Store B before Store A refetch resolves
+    mockCurrentMerchant.data = store2;
+    mockPendingOrders.merchantId = "m-2";
+
+    rerender(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <MemoryRouter initialEntries={["/merchant"]}>
+          <Routes>
+            <Route
+              path="/merchant/*"
+              element={
+                <MerchantLayout>
+                  <div data-testid="merchant-child">محتوى لوحة التحكم</div>
+                </MerchantLayout>
+              }
+            />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // 4. Resolve Store A refetch with Store A pending order
+    await act(async () => {
+      resolveStoreARefetch({
+        data: {
+          items: [{ id: "ord-store-A", order_number: "A-101" }],
+        },
+      });
+    });
+
+    // 5. Assert that no Store A modal opened
+    expect(screen.queryByTestId("decision-modal")).toBeNull();
+
+    // 6. Dispatch valid Store B event whose exact order exists in B's queue
+    mockPendingOrders.refetch.mockResolvedValueOnce({
+      data: {
+        items: [{ id: "ord-store-B", order_number: "B-202" }],
+      },
+    });
+
+    await act(async () => {
+      window.dispatchEvent(
+        new CustomEvent("merchant-new-order", {
+          detail: { orderId: "ord-store-B", merchantId: "m-2" },
+        })
+      );
+    });
+
+    // 7. Assert that strictly Store B modal opens
+    await waitFor(() => {
+      const modal = screen.queryByTestId("decision-modal");
+      expect(modal).toBeTruthy();
+      expect(modal?.getAttribute("data-order-id")).toBe("ord-store-B");
+      expect(modal?.getAttribute("data-merchant-id")).toBe("m-2");
     });
   });
 

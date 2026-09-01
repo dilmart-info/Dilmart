@@ -1,51 +1,58 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useAuth } from "@/hooks/use-auth";
-import { useCurrentMerchant } from "@/hooks/use-current-merchant";
-import { Navigate, Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
-  Box,
+  Package,
   ShoppingBag,
-  Settings,
-  LogOut,
-  Store,
   Ticket,
   Users,
-  Wallet,
+  Settings,
+  LogOut,
   Menu,
-  AlertCircle,
   ChevronDown,
+  Store,
+  AlertCircle,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { findActiveBackofficeNavItem, isBackofficeNavPathActive } from "@/lib/backoffice-navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { useCurrentMerchant } from "@/hooks/use-current-merchant";
+import { usePendingOrders } from "@/hooks/use-pending-orders";
+import { merchantApi } from "@/lib/api/merchant";
+import { getOrCreateMerchantDeviceId } from "@/lib/merchant-push";
+import { stopMerchantOrderAlertLoop } from "@/lib/notifications";
+import { canMerchantDecide } from "@/lib/merchant-role-authority";
+import { isBackofficeNavPathActive, findActiveBackofficeNavItem } from "@/lib/backoffice-navigation";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
+import MerchantDecisionModal from "@/components/merchant/MerchantDecisionModal";
 import { MerchantNotifications } from "@/components/merchant/MerchantNotifications";
 import { MerchantNewOrderAlertBanner } from "@/components/merchant/MerchantNewOrderAlertBanner";
 import { MerchantPwaBootstrap } from "@/components/merchant/MerchantPwaBootstrap";
-import { usePendingOrders } from "@/hooks/use-pending-orders";
-import MerchantDecisionModal from "@/components/merchant/MerchantDecisionModal";
-import { getOrCreateMerchantDeviceId } from "@/lib/merchant-push";
-import { merchantApi } from "@/lib/api/merchant";
-import { stopMerchantOrderAlertLoop } from "@/lib/notifications";
+
+interface MerchantLayoutProps {
+  children: React.ReactNode;
+}
 
 const navItems = [
-  { label: "نظرة عامة", icon: LayoutDashboard, href: "/merchant/" },
-  { label: "المنتجات", icon: Box, href: "/merchant/products" },
-  { label: "الطلبات", icon: ShoppingBag, href: "/merchant/orders" },
-  { label: "المالية", icon: Wallet, href: "/merchant/finance" },
-  { label: "الكوبونات", icon: Ticket, href: "/merchant/coupons" },
-  { label: "العملاء", icon: Users, href: "/merchant/customers" },
-  { label: "الإعدادات", icon: Settings, href: "/merchant/settings" },
-];
+  { href: "/merchant", label: "نظرة عامة", icon: LayoutDashboard },
+  { href: "/merchant/products", label: "المنتجات", icon: Package },
+  { href: "/merchant/orders", label: "الطلبات", icon: ShoppingBag },
+  { href: "/merchant/coupons", label: "الكوبونات", icon: Ticket },
+  { href: "/merchant/customers", label: "العملاء", icon: Users },
+  { href: "/merchant/finance", label: "المالية والأرباح", icon: DollarSign },
+  { href: "/merchant/settings", label: "الإعدادات", icon: Settings },
+] as const;
 
-const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
-  const { user, profile, isMerchantUser, loading, logoutCurrentDevice } = useAuth();
+export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
+  const { user, profile, loading, isMerchantUser, logoutCurrentDevice } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const {
     data: membership,
     memberships,
@@ -55,6 +62,8 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
     isLoading: membershipLoading,
   } = useCurrentMerchant();
 
+  const isAuthorizedToDecide = canMerchantDecide(membership?.role);
+
   // Pending orders queue state
   const { count, currentOrderId, refetch } = usePendingOrders();
   const [modalOpenOrderId, setModalOpenOrderId] = useState<string | null>(null);
@@ -62,21 +71,54 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
   // Guard to prevent auto-opening backlog repeatedly on page transitions
   const hasAutoOpenedBacklogRef = useRef(false);
 
+  // Active merchant ref for async race and store-switch isolation
+  const activeMerchantIdRef = useRef(membership?.merchant_id);
+  useEffect(() => {
+    activeMerchantIdRef.current = membership?.merchant_id;
+  }, [membership?.merchant_id]);
+
+  // Store switch isolation: reset modal and queue state immediately when active merchant changes
+  useEffect(() => {
+    setModalOpenOrderId(null);
+    hasAutoOpenedBacklogRef.current = false;
+  }, [membership?.merchant_id]);
+
   // Setup listener for real-time incoming orders from NotificationHub
   useEffect(() => {
     const handleNewOrder = (e: Event) => {
       const customEvent = e as CustomEvent;
       const orderId = customEvent.detail?.orderId;
-      if (orderId) {
-        // Refetch the queue to make sure it includes the new order
-        refetch().then(() => {
-          setModalOpenOrderId(orderId);
+      const eventMerchantId = customEvent.detail?.merchantId;
+
+      const currentActiveMerchantId = activeMerchantIdRef.current;
+
+      // Fail closed on missing, undefined, or mismatched merchant IDs
+      if (!eventMerchantId || !currentActiveMerchantId || eventMerchantId !== currentActiveMerchantId) {
+        return;
+      }
+
+      if (orderId && isAuthorizedToDecide) {
+        const capturedMerchantId = currentActiveMerchantId;
+
+        refetch().then((res) => {
+          // Re-check against latest active merchant after refetch resolves
+          if (capturedMerchantId !== activeMerchantIdRef.current) {
+            return;
+          }
+
+          const pendingList = res.data?.items ?? [];
+          const existsInQueue = pendingList.some((item: { id?: string }) => item.id === orderId);
+          if (existsInQueue) {
+            setModalOpenOrderId(orderId);
+          }
         });
+      } else {
+        void refetch();
       }
     };
     window.addEventListener("merchant-new-order", handleNewOrder);
     return () => window.removeEventListener("merchant-new-order", handleNewOrder);
-  }, [refetch]);
+  }, [refetch, isAuthorizedToDecide]);
 
   // Acknowledge when merchant opens an order (decision modal / deep link)
   useEffect(() => {
@@ -125,10 +167,11 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
       .catch(() => undefined);
   }, [location.search, location.pathname, membership?.merchant_id, queryClient]);
 
-  // Backlog Auto-Open: runs only on initial layout render when on the Overview page
+  // Backlog Auto-Open: runs only for authorized owner/manager on initial render when on Overview
   useEffect(() => {
     if (
       !membershipLoading &&
+      isAuthorizedToDecide &&
       currentOrderId &&
       (location.pathname === "/merchant" || location.pathname === "/merchant/") &&
       !hasAutoOpenedBacklogRef.current
@@ -136,7 +179,7 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
       setModalOpenOrderId(currentOrderId);
       hasAutoOpenedBacklogRef.current = true;
     }
-  }, [currentOrderId, location.pathname, membershipLoading]);
+  }, [currentOrderId, location.pathname, membershipLoading, isAuthorizedToDecide]);
 
   if (loading || membershipLoading) {
     return (
@@ -169,12 +212,11 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const handleMerchantSwitch = (merchantId: string) => {
-    if (!merchantId || merchantId === membership?.merchant_id) return;
-    if (!setActiveMerchantId(merchantId)) {
-      toast.error("لا يمكن اختيار هذا المتجر.");
-      return;
-    }
+  const handleMerchantSwitch = (newMerchantId: string) => {
+    if (newMerchantId === membership.merchant_id) return;
+    const ok = setActiveMerchantId(newMerchantId);
+    if (!ok) return;
+    setModalOpenOrderId(null);
     queryClient.invalidateQueries({ queryKey: ["auth-context"] });
     queryClient.invalidateQueries({ queryKey: ["scoped-products"] });
     queryClient.invalidateQueries({ queryKey: ["scoped-orders"] });
@@ -182,10 +224,11 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
     queryClient.invalidateQueries({ queryKey: ["scoped-customers"] });
     queryClient.invalidateQueries({ queryKey: ["merchant-dashboard-v2"] });
     queryClient.invalidateQueries({ queryKey: ["merchant-notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["pending-merchant-orders"] });
     toast.success("تم تغيير المتجر النشط.");
   };
 
-  const currentStoreDisplayName = membership.merchants?.display_name ?? "متجر التاجر";
+  const currentStoreDisplayName = membership.merchants?.display_name ?? membership.merchant_id;
   const activeCount = (activeMemberships ?? []).length;
 
   const merchantNavigation = (
@@ -253,6 +296,11 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
               >
                 <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
                 <span>{item.label}</span>
+                {item.href === "/merchant/orders" && count > 0 && (
+                  <Badge variant={isActive ? "secondary" : "destructive"} className="mr-auto h-5 px-1.5 text-[10px] font-bold">
+                    {count}
+                  </Badge>
+                )}
               </Button>
             </Link>
           );
@@ -343,15 +391,31 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
             <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 lg:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in no-print">
               <div className="flex items-center gap-2 text-sm font-medium text-destructive">
                 <AlertCircle className="h-4 w-4 shrink-0 animate-pulse" />
-                <span>لديك {count} {count === 1 ? "طلب جديد" : "طلبات جديدة"} بانتظار قرار القبول أو الرفض.</span>
+                <span>
+                  {isAuthorizedToDecide
+                    ? `لديك ${count} ${count === 1 ? "طلب جديد" : "طلبات جديدة"} بانتظار قرار القبول أو الرفض.`
+                    : `لديك ${count} ${count === 1 ? "طلب جديد" : "طلبات جديدة"} في قائمة الانتظار.`}
+                </span>
               </div>
-              <Button
-                size="sm"
-                className="bg-destructive hover:bg-destructive/90 text-white font-semibold text-xs px-4 rounded-lg self-start sm:self-auto"
-                onClick={() => setModalOpenOrderId(currentOrderId)}
-              >
-                مراجعة الطلبات
-              </Button>
+              {isAuthorizedToDecide ? (
+                <Button
+                  size="sm"
+                  className="bg-destructive hover:bg-destructive/90 text-white font-semibold text-xs px-4 rounded-lg self-start sm:self-auto"
+                  onClick={() => setModalOpenOrderId(currentOrderId)}
+                >
+                  مراجعة الطلبات
+                </Button>
+              ) : (
+                <Link to="/merchant/orders">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-destructive/30 text-destructive hover:bg-destructive/10 font-semibold text-xs px-4 rounded-lg self-start sm:self-auto"
+                  >
+                    عرض قائمة الطلبات
+                  </Button>
+                </Link>
+              )}
             </div>
           )}
 
@@ -360,13 +424,14 @@ const MerchantLayout = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       {/* Decision Modal & Queue */}
-      {modalOpenOrderId && (
+      {modalOpenOrderId && isAuthorizedToDecide && (
         <MerchantDecisionModal
           orderId={modalOpenOrderId}
           merchantId={membership.merchant_id}
+          role={membership.role}
           onClose={() => {
             setModalOpenOrderId(null);
-            refetch();
+            void refetch();
           }}
           onDecisionComplete={handleDecisionComplete}
           queueCount={count}

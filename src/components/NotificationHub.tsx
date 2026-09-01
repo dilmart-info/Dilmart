@@ -14,7 +14,7 @@ export function NotificationHub() {
     let merchantId: string | null = null;
     if (user && isMerchantUser && context) {
         const allMemberships = (context.merchant_memberships ?? [])
-            .map((item: any) => item.id)
+            .map((item: { id?: string }) => item.id)
             .filter(Boolean);
 
         if (allMemberships.length === 0 && context.merchant?.id) {
@@ -73,13 +73,23 @@ export function NotificationHub() {
                     },
                 });
                 if (row.type === "new_order") {
-                    if (merchantId) {
-                        queryClient.invalidateQueries({ queryKey: ["pending-merchant-orders", merchantId] });
-                        queryClient.invalidateQueries({ queryKey: ["merchant-notifications", merchantId] });
+                    const rowMerchantId =
+                        typeof row.merchant_id === "string" && row.merchant_id.trim().length > 0
+                            ? row.merchant_id.trim()
+                            : null;
+
+                    // Authoritative event contract: fail closed if row has NO merchant_id
+                    // Do NOT synthesize authority from fallback state
+                    if (!rowMerchantId) {
+                        return;
                     }
+
+                    queryClient.invalidateQueries({ queryKey: ["pending-merchant-orders", rowMerchantId] });
+                    queryClient.invalidateQueries({ queryKey: ["merchant-notifications", rowMerchantId] });
+
                     const orderId = row.order_id || (row.link ? (row.link as string).split("/").pop() : null);
                     window.dispatchEvent(new CustomEvent("merchant-new-order", {
-                        detail: { orderId, notificationId: row.id },
+                        detail: { orderId, notificationId: row.id, merchantId: rowMerchantId },
                     }));
                 } else {
                     playNotificationSound("default");
