@@ -94,7 +94,7 @@ export default function Contact() {
         <section className="p-5 rounded-2xl border border-slate-200/80 bg-white space-y-2">
           <div className="flex items-center gap-2.5 text-[#1261D8]">
             <MapPin className="w-5 h-5 shrink-0" />
-            <h2 className="text-base font-bold text-[#071A3D]">الموقع والمركز الرئيسي</h2>
+            <h2 className="text-base font-bold text-[#071A3D]">الموقع</h2>
           </div>
           <p className="text-sm text-slate-700 font-medium pr-7">
             {storeConfig.address}

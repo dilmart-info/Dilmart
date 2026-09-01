@@ -44,7 +44,7 @@ export default function Returns() {
                 <span>المراحل المبكرة</span>
               </div>
               <p className="text-xs text-slate-600">
-                يتم الإلغاء مباشرة عند تقديم الطلب وهو في حالة انتظار التأكيد الأولية.
+                قد يتم الإلغاء مباشرة إذا كان الطلب لا يزال مؤهلاً للإلغاء الفوري.
               </p>
             </div>
 
@@ -54,7 +54,7 @@ export default function Returns() {
                 <span>أثناء التجهيز والتعبئة</span>
               </div>
               <p className="text-xs text-slate-600">
-                يُرفع طلب الإلغاء لمراجعة التاجر والإدارة للتحقق من إمكانية إيقاف التجهيز.
+                قد ينتقل طلب الإلغاء إلى المراجعة بحسب حالة الطلب.
               </p>
             </div>
 
@@ -97,14 +97,13 @@ export default function Returns() {
         <section className="space-y-3 p-5 rounded-2xl bg-slate-50 border border-slate-200">
           <h3 className="font-bold text-sm sm:text-base text-[#071A3D] flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-[#1261D8]" />
-            <span>ضوابط عامة لسلامة قبول المرتجعات</span>
+            <span>ضوابط وأهلية طلبات الإرجاع</span>
           </h3>
-          <ul className="space-y-2 list-disc list-inside text-xs sm:text-sm text-slate-600 pr-2">
-            <li>أن يكون المنتج في حالته الأصلية مع سلامة الغلاف والملصقات والعلامات التجارية المرفقة.</li>
-            <li>عدم استخدام أو تلف المنتج أو نقص أي من ملحقاته أو هداياه المرفقة.</li>
-            <li>تخضع المنتجات ذات الطبيعة الاستهلاكية أو العناية الشخصية لضوابط السلامة الخاصة بكل تصنيف.</li>
-            <li>يحدد النظام وفريق المراجعة أهلية وقبول الإرجاع بناءً على حالة المنتج وسياسات المتجر المزود.</li>
-          </ul>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            تحدد أهلية طلب الإرجاع وفق حالة الطلب وتاريخ التسليم والقواعد التشغيلية المطبقة في النظام
+            وقت تقديم الطلب. قد يطلب فريق المراجعة معلومات إضافية عند الحاجة، وتظهر نتيجة الطلب داخل
+            تفاصيل الطلب.
+          </p>
         </section>
 
         {/* Return Status Tracking */}

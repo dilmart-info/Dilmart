@@ -33,7 +33,7 @@ export default function Privacy() {
             <h2 className="text-lg sm:text-xl font-bold text-[#071A3D]">البيانات التي نقوم بمعالجتها</h2>
           </div>
           <p className="text-slate-700">
-            تقتصر معالجة البيانات على الفئات الضرورية لتشغيل تجربة الشراء وتقديم الخدمة المطلوبة:
+            قد تشمل البيانات التي نعالجها لتشغيل الخدمة الفئات التالية:
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
@@ -60,7 +60,7 @@ export default function Privacy() {
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1">
               <h3 className="font-bold text-xs sm:text-sm text-[#071A3D]">البيانات التقنية والأمان</h3>
               <p className="text-xs text-slate-600">
-                رموز تأكيد تسجيل الدخول، مؤشرات حالة الجلسة، والبيانات التقنية اللازمة لاستقرار وحماية المنصة.
+                بيانات التحقق والجلسة والمعلومات التقنية اللازمة لتأمين تسجيل الدخول وتشغيل الخدمة.
               </p>
             </div>
           </div>
@@ -109,8 +109,9 @@ export default function Privacy() {
         <section className="space-y-3 p-5 rounded-2xl bg-slate-50 border border-slate-200">
           <h2 className="font-bold text-sm sm:text-base text-[#071A3D]">إدارة البيانات وحقوق المستخدم</h2>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            يمكن للمستخدم في أي وقت تعديل بياناته الشخصية وعناوينه المسجلة عبر صفحة الملف الشخصي ولوحة
-            الحساب. لأي استفسارات أو طلبات متعلقة بخصوصية البيانات، يرجى التواصل عبر قنوات الدعم المعتمدة.
+            يمكن للمستخدم إدارة البيانات التي تتيح المنصة تعديلها، مثل الاسم والعناوين المحفوظة، بينما
+            قد تتطلب بعض بيانات الهوية مثل رقم الهاتف خطوات تحقق إضافية. لأي استفسارات أو طلبات متعلقة
+            بخصوصية البيانات، يرجى التواصل عبر قنوات الدعم المعتمدة.
           </p>
         </section>
 
