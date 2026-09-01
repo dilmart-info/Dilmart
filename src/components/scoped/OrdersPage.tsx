@@ -31,9 +31,26 @@ type Props = {
   detailBasePath: string;
 };
 
-const statusFilterOptions = [
+/**
+ * Filter authority: includes display-only and queryable statuses like "pending"
+ */
+export const ORDER_FILTER_OPTIONS = [
   "new",
   "pending",
+  "contacted",
+  "preparing",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "returned",
+];
+
+/**
+ * Platform Admin Mutation authority: canonical status transitions authorized for Platform/Admin
+ * Writable statuses must NOT be widened simply because a status is filterable or displayable.
+ */
+export const PLATFORM_ORDER_MUTATION_OPTIONS = [
+  "new",
   "contacted",
   "preparing",
   "shipped",
@@ -114,6 +131,8 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
     ? "لا توجد طلبات في متجرك حتى الآن."
     : "لا توجد طلبات مسجلة.";
 
+  const isMerchantScope = context.scope === "merchant";
+
   return (
     <div className="space-y-5" data-testid="orders-page">
       {/* Top Header */}
@@ -147,9 +166,10 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
           className="h-9 rounded-lg border border-input bg-background px-3 text-xs w-full sm:w-44 text-foreground"
           value={status}
           onChange={(e) => handleStatusChange(e.target.value)}
+          aria-label="فلترة الحالة"
         >
           <option value="all">كل الحالات</option>
-          {statusFilterOptions.map((s) => (
+          {ORDER_FILTER_OPTIONS.map((s) => (
             <option key={s} value={s}>
               {MERCHANT_ORDER_STATUS_MAP[s] ?? s}
             </option>
@@ -174,67 +194,55 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
 
       {/* Orders Container */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="text-right text-xs">رقم الطلب</TableHead>
-                {context.scope === "platform" && <TableHead className="text-right text-xs">العميل</TableHead>}
-                {context.scope === "platform" && <TableHead className="text-right text-xs">التاجر</TableHead>}
-                <TableHead className="text-right text-xs">الإجمالي</TableHead>
-                <TableHead className="text-right text-xs">الحالة والقرار</TableHead>
-                <TableHead className="text-right text-xs">التاريخ</TableHead>
-                <TableHead className="text-center text-xs">إجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                /* State 1: Loading */
-                <TableRow>
-                  <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-12 text-center text-muted-foreground">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                      <span className="text-xs">جاري تحميل الطلبات...</span>
-                    </div>
-                  </TableCell>
+        {isLoading ? (
+          /* State 1: Loading */
+          <div className="py-12 text-center text-muted-foreground space-y-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            <span className="text-xs font-medium">جاري تحميل الطلبات...</span>
+          </div>
+        ) : isError || error ? (
+          /* State 2: Distinct API Error with Retry */
+          <div className="py-10 text-center space-y-2 max-w-sm mx-auto px-4" data-testid="orders-error">
+            <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <p className="text-sm font-bold text-foreground">تعذر تحميل الطلبات</p>
+            <p className="text-xs text-muted-foreground">{String((error as { message?: string })?.message ?? "حدث خطأ غير متوقع.")}</p>
+            <Button size="sm" variant="outline" className="gap-1.5 rounded-lg text-xs font-bold" onClick={() => refetch()} disabled={isFetching}>
+              <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+              <span>إعادة المحاولة</span>
+            </Button>
+          </div>
+        ) : orders.length === 0 ? (
+          /* State 3: Distinct Empty State */
+          <div className="py-12 text-center text-muted-foreground space-y-2 max-w-sm mx-auto px-4" data-testid="orders-empty">
+            <ShoppingBag className="h-9 w-9 mx-auto text-muted-foreground/40" />
+            <p className="text-sm font-bold text-foreground">{emptyMessage}</p>
+            <p className="text-xs text-muted-foreground">
+              {hasFiltersApplied
+                ? "جرب البحث برقم طلب آخر أو إزالة فلتر الحالة."
+                : isMerchantScope
+                ? "ستظهر الطلبات الجديدة هنا فور قيام العملاء بالشراء من متجرك."
+                : "لا توجد طلبات مسجلة للنطاق المحدد."}
+            </p>
+          </div>
+        ) : (
+          /* State 4: Populated Responsive Presentation */
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader className={isMerchantScope ? "hidden md:table-header-group" : ""}>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="text-right text-xs">رقم الطلب</TableHead>
+                  {context.scope === "platform" && <TableHead className="text-right text-xs">العميل</TableHead>}
+                  {context.scope === "platform" && <TableHead className="text-right text-xs">التاجر</TableHead>}
+                  <TableHead className="text-right text-xs">الإجمالي</TableHead>
+                  <TableHead className="text-right text-xs">الحالة والقرار</TableHead>
+                  <TableHead className="text-right text-xs">التاريخ</TableHead>
+                  <TableHead className="text-center text-xs">إجراءات</TableHead>
                 </TableRow>
-              ) : isError || error ? (
-                /* State 2: Distinct API Error with Retry */
-                <TableRow>
-                  <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-10 text-center" data-testid="orders-error">
-                    <div className="space-y-2 max-w-sm mx-auto">
-                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
-                        <AlertTriangle className="h-5 w-5" />
-                      </div>
-                      <p className="text-sm font-bold text-foreground">تعذر تحميل الطلبات</p>
-                      <p className="text-xs text-muted-foreground">{String((error as { message?: string })?.message ?? "حدث خطأ غير متوقع.")}</p>
-                      <Button size="sm" variant="outline" className="gap-1.5 rounded-lg text-xs font-bold" onClick={() => refetch()} disabled={isFetching}>
-                        <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
-                        <span>إعادة المحاولة</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : orders.length === 0 ? (
-                /* State 3: Distinct Empty State */
-                <TableRow>
-                  <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-12 text-center text-muted-foreground" data-testid="orders-empty">
-                    <div className="space-y-2 max-w-sm mx-auto">
-                      <ShoppingBag className="h-9 w-9 mx-auto text-muted-foreground/40" />
-                      <p className="text-sm font-bold text-foreground">{emptyMessage}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {hasFiltersApplied
-                          ? "جرب البحث برقم طلب آخر أو إزالة فلتر الحالة."
-                          : context.scope === "merchant"
-                          ? "ستظهر الطلبات الجديدة هنا فور قيام العملاء بالشراء من متجرك."
-                          : "لا توجد طلبات مسجلة للنطاق المحدد."}
-                      </p>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                /* State 4: Populated Data */
-                orders.map((o: {
+              </TableHeader>
+              <TableBody className={isMerchantScope ? "block md:table-row-group p-3 md:p-0 space-y-3 md:space-y-0" : ""}>
+                {orders.map((o: {
                   id: string;
                   order_number: string;
                   customer_name?: string;
@@ -248,13 +256,33 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
                   const statusLabel = getMerchantOrderStatusLabel(o.status);
 
                   return (
-                    <TableRow key={o.id} className="hover:bg-muted/20">
-                      <TableCell className="font-mono font-bold text-xs">#{o.order_number}</TableCell>
+                    <TableRow
+                      key={o.id}
+                      className={
+                        isMerchantScope
+                          ? "block md:table-row rounded-xl border border-border bg-card p-3.5 md:p-0 mb-3 md:mb-0 shadow-2xs md:shadow-none hover:bg-muted/20"
+                          : "hover:bg-muted/20"
+                      }
+                    >
+                      <TableCell className={isMerchantScope ? "p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center" : "font-mono font-bold text-xs"}>
+                        <span className="font-mono font-bold text-xs">#{o.order_number}</span>
+                        <span className="text-[10px] text-muted-foreground md:hidden">
+                          {new Date(o.created_at).toLocaleDateString("ar-IQ", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </TableCell>
                       {context.scope === "platform" && <TableCell className="text-xs">{o.customer_name ?? "—"}</TableCell>}
                       {context.scope === "platform" && <TableCell className="text-xs">{o.merchants?.display_name ?? "—"}</TableCell>}
-                      <TableCell className="font-mono font-semibold text-xs">{formatPrice(o.total)}</TableCell>
-                      <TableCell>
-                        {context.scope === "merchant" ? (
+                      <TableCell className={isMerchantScope ? "p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center" : "font-mono font-semibold text-xs"}>
+                        <span className="text-xs text-muted-foreground md:hidden font-sans">الإجمالي:</span>
+                        <span className="font-mono font-semibold text-xs">{formatPrice(o.total)}</span>
+                      </TableCell>
+                      <TableCell className={isMerchantScope ? "p-0 md:p-4 mb-2 md:mb-0 flex md:table-cell justify-between items-center" : ""}>
+                        <span className="text-xs text-muted-foreground md:hidden font-sans">الحالة:</span>
+                        {isMerchantScope ? (
                           <div className="flex flex-wrap items-center gap-1.5">
                             {o.merchant_decision_status === "pending" ? (
                               <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] py-0 font-bold animate-pulse">
@@ -270,13 +298,14 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
                             </Badge>
                           </div>
                         ) : (
-                          /* Platform Scope Generic Select */
+                          /* Platform Scope Mutation Select using PLATFORM_ORDER_MUTATION_OPTIONS */
                           <select
                             className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground cursor-pointer"
                             value={o.status ?? "new"}
                             onChange={(e) => updateStatusMutation.mutate({ id: o.id, value: e.target.value })}
+                            aria-label="تحديث حالة الطلب"
                           >
-                            {statusFilterOptions.map((s) => (
+                            {PLATFORM_ORDER_MUTATION_OPTIONS.map((s) => (
                               <option key={s} value={s}>
                                 {MERCHANT_ORDER_STATUS_MAP[s] ?? s}
                               </option>
@@ -284,14 +313,14 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
                           </select>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
+                      <TableCell className={isMerchantScope ? "hidden md:table-cell text-xs text-muted-foreground" : "text-xs text-muted-foreground"}>
                         {new Date(o.created_at).toLocaleDateString("ar-IQ", {
                           year: "numeric",
                           month: "short",
                           day: "numeric",
                         })}
                       </TableCell>
-                      <TableCell className="text-center">
+                      <TableCell className={isMerchantScope ? "p-0 md:p-4 pt-2 md:pt-4 border-t border-border/40 md:border-t-0 flex justify-end md:table-cell md:text-center" : "text-center"}>
                         <Link to={`${detailBasePath}/${o.id}`}>
                           <Button size="sm" variant="outline" className="h-7 px-3 text-xs font-medium">
                             التفاصيل
@@ -300,11 +329,11 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
                       </TableCell>
                     </TableRow>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         {/* Pagination Footer */}
         {total > 0 && (

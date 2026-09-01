@@ -13,7 +13,7 @@ const { mockGetMerchantDashboard, mockCurrentMerchant } = vi.hoisted(() => ({
       merchant_id: "m-123",
       role: "owner",
       merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
-    },
+    } as { merchant_id: string; role: string; merchants: { id: string; display_name: string; status: string } } | null,
     isLoading: false,
   },
 }));
@@ -41,7 +41,7 @@ function renderOverview() {
   );
 }
 
-const mockDashboardData = {
+const mockDashboardDataA = {
   products: {
     total: 45,
     active: 38,
@@ -79,10 +79,43 @@ const mockDashboardData = {
   ],
 };
 
-describe("MerchantOverview — States, Metrics & Arabic Status Authority", () => {
+const mockDashboardDataB = {
+  products: {
+    total: 10,
+    active: 8,
+    inactive: 2,
+    low_stock: 0,
+  },
+  orders: {
+    today: 5,
+    completed_7d: 15,
+    average_order_value_7d: 50000,
+    revenue_7d: 750000,
+  },
+  top_products: [
+    { product_id: "p-b1", name: "قهوة عربية فاخرة", units_sold: 40 },
+  ],
+  low_stock_products: [],
+  recent_orders: [
+    {
+      id: "ord-b1",
+      order_number: "DUK-2001",
+      created_at: "2026-09-01T12:00:00Z",
+      total: 50000,
+      status: "shipped",
+    },
+  ],
+};
+
+describe("MerchantOverview — States, Metrics, Neutral Semantics & Data Isolation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetMerchantDashboard.mockResolvedValue(mockDashboardData);
+    mockCurrentMerchant.data = {
+      merchant_id: "m-123",
+      role: "owner",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    };
+    mockGetMerchantDashboard.mockResolvedValue(mockDashboardDataA);
   });
 
   it("API ERROR STATE: renders distinct error screen with retry button and does not display zeros", async () => {
@@ -95,7 +128,7 @@ describe("MerchantOverview — States, Metrics & Arabic Status Authority", () =>
     expect(screen.getByText("Database timeout")).toBeTruthy();
 
     // Clicking retry calls getMerchantDashboard again
-    mockGetMerchantDashboard.mockResolvedValueOnce(mockDashboardData);
+    mockGetMerchantDashboard.mockResolvedValueOnce(mockDashboardDataA);
     const retryBtn = screen.getByRole("button", { name: /إعادة المحاولة/i });
     fireEvent.click(retryBtn);
 
@@ -105,13 +138,17 @@ describe("MerchantOverview — States, Metrics & Arabic Status Authority", () =>
     });
   });
 
-  it("POPULATED STATE: renders authoritative metrics correctly", async () => {
+  it("POPULATED STATE & NEUTRAL SEMANTICS: renders authoritative metrics with neutral subtitles", async () => {
     renderOverview();
 
     await screen.findByTestId("overview-content");
 
     // Document title set
     expect(document.title).toBe("لوحة التاجر | DILMART");
+
+    // Neutral copy checks (no rolling 24-hour claim)
+    expect(screen.getAllByText("طلبات اليوم").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/24 ساعة/)).toBeNull();
 
     // Primary metrics
     expect(screen.getByText("12")).toBeTruthy(); // Today's orders
@@ -143,7 +180,7 @@ describe("MerchantOverview — States, Metrics & Arabic Status Authority", () =>
     expect(screen.queryByText("UNKNOWN_CUSTOM_STATUS")).toBeNull();
   });
 
-  it("ZERO METRICS: renders empty indicators without crashing", async () => {
+  it("ZERO METRICS & NEUTRAL LOW-STOCK COPY: renders neutral zero low-stock message", async () => {
     mockGetMerchantDashboard.mockResolvedValueOnce({
       products: { total: 0, active: 0, inactive: 0, low_stock: 0 },
       orders: { today: 0, completed_7d: 0, average_order_value_7d: 0, revenue_7d: 0 },
@@ -156,8 +193,61 @@ describe("MerchantOverview — States, Metrics & Arabic Status Authority", () =>
 
     await screen.findByTestId("overview-content");
 
-    expect(screen.getByText("جميع المنتجات بمستويات مخزون آمنة.")).toBeTruthy();
+    // Neutral low stock copy
+    expect(screen.getByText("لا توجد منتجات منخفضة المخزون حالياً.")).toBeTruthy();
+    expect(screen.queryByText(/آمنة/)).toBeNull();
     expect(screen.getByText("لا توجد طلبات واردة حتى الآن.")).toBeTruthy();
     expect(screen.getByText("لا توجد مبيعات مسجلة بعد في هذه الفترة.")).toBeTruthy();
+  });
+
+  it("MERCHANT A -> B DATA ISOLATION: switching active merchant requests new merchant dashboard and updates rendered metrics immediately", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    mockGetMerchantDashboard.mockImplementation((id: string) => {
+      if (id === "m-123") return Promise.resolve(mockDashboardDataA);
+      if (id === "m-456") return Promise.resolve(mockDashboardDataB);
+      return Promise.reject(new Error("Unknown merchant"));
+    });
+
+    // 1. Initial render with Merchant A (m-123)
+    mockCurrentMerchant.data = {
+      merchant_id: "m-123",
+      role: "owner",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    };
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant"]}>
+          <MerchantOverview />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("عطر ليالي بغداد")).toBeTruthy();
+    expect(screen.getByText("#DUK-1001")).toBeTruthy();
+    expect(mockGetMerchantDashboard).toHaveBeenCalledWith("m-123");
+
+    // 2. Switch to Merchant B (m-456)
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر دجلة", status: "active" },
+    };
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant"]}>
+          <MerchantOverview />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // Merchant B metrics and orders visible, Merchant A items replaced
+    expect(await screen.findByText("قهوة عربية فاخرة")).toBeTruthy();
+    expect(screen.getByText("#DUK-2001")).toBeTruthy();
+    expect(screen.queryByText("عطر ليالي بغداد")).toBeNull();
+    expect(screen.queryByText("#DUK-1001")).toBeNull();
+    expect(mockGetMerchantDashboard).toHaveBeenCalledWith("m-456");
   });
 });

@@ -157,7 +157,7 @@ const MerchantOverview = () => {
             </div>
           </div>
           <p className="text-2xl sm:text-3xl font-black text-foreground">{orders.today}</p>
-          <p className="text-[11px] text-muted-foreground">طلبات واردة خلال الـ 24 ساعة الماضية</p>
+          <p className="text-[11px] text-muted-foreground">طلبات اليوم</p>
         </div>
 
         {/* Metric 2: 7-Day Revenue */}
@@ -343,7 +343,7 @@ const MerchantOverview = () => {
               {low_stock_products.length === 0 ? (
                 <div className="py-6 text-center text-muted-foreground space-y-1">
                   <CheckCircle2 className="h-6 w-6 mx-auto text-emerald-500/50 mb-1" />
-                  <p className="text-xs font-medium">جميع المنتجات بمستويات مخزون آمنة.</p>
+                  <p className="text-xs font-medium">لا توجد منتجات منخفضة المخزون حالياً.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-border/60">

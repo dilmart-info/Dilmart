@@ -6,6 +6,7 @@ import {
   Plus,
   Upload,
   Copy,
+  Edit,
   AlertTriangle,
   RefreshCw,
   Package,
@@ -320,6 +321,8 @@ export default function ProductsPage({ context, title = "المنتجات", crea
     onError: (err: unknown) => toast.error((err as { message?: string })?.message ?? "تعذر نسخ المنتج"),
   });
 
+  const isMerchantScope = context.scope === "merchant";
+
   return (
     <div className="space-y-5" data-testid="products-page">
       {/* Header & Main Actions */}
@@ -343,7 +346,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
               </Button>
             </Link>
           )}
-          {context.scope === "merchant" ? (
+          {isMerchantScope ? (
             <>
               <Link to="/merchant/products/import">
                 <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-lg text-xs font-bold">
@@ -439,7 +442,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
         </div>
         {context.scope === "platform" && (
           <select
-            className="h-9 rounded-lg border border-input bg-background px-3 text-xs md:w-60"
+            className="h-9 rounded-lg border border-input bg-background px-3 text-xs md:w-60 text-foreground"
             value={merchantFilter}
             onChange={(e) => handleMerchantChange(e.target.value)}
           >
@@ -465,7 +468,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       {/* Table Container */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
         {/* Bulk Action Controls */}
-        {context.scope === "merchant" && selectedIds.length > 0 ? (
+        {isMerchantScope && selectedIds.length > 0 ? (
           <div className="border-b p-3 bg-muted/40 flex flex-wrap gap-2 items-center">
             <span className="text-xs font-semibold text-foreground">تم اختيار {selectedIds.length} منتج</span>
             <select
@@ -497,12 +500,12 @@ export default function ProductsPage({ context, title = "المنتجات", crea
           </div>
         ) : null}
 
-        {/* Unified Table View */}
+        {/* Unified Responsive Presentation */}
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className={isMerchantScope ? "hidden md:table-header-group" : ""}>
               <TableRow className="bg-muted/30">
-                {context.scope === "merchant" ? (
+                {isMerchantScope ? (
                   <TableHead className="w-10">
                     <input
                       type="checkbox"
@@ -522,7 +525,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                 <TableHead className="text-center text-xs">إجراءات</TableHead>
               </TableRow>
             </TableHeader>
-            <TableBody>
+            <TableBody className={isMerchantScope ? "block md:table-row-group p-3 md:p-0 space-y-3 md:space-y-0" : ""}>
               {requiresMerchantSelection && !hasMerchantSelection ? (
                 <TableRow>
                   <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
@@ -590,29 +593,46 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                     <TableRow
                       key={p.id}
                       id={`product-row-${p.id}`}
-                      className={isFocused ? "bg-primary/10 transition-colors duration-700 ring-1 ring-primary/20" : undefined}
+                      className={
+                        isMerchantScope
+                          ? `block md:table-row rounded-xl border border-border bg-card p-3.5 md:p-0 mb-3 md:mb-0 shadow-2xs md:shadow-none hover:bg-muted/20 ${
+                              isFocused ? "bg-primary/10 ring-1 ring-primary/20" : ""
+                            }`
+                          : isFocused
+                          ? "bg-primary/10 transition-colors duration-700 ring-1 ring-primary/20"
+                          : undefined
+                      }
                     >
-                      {context.scope === "merchant" ? (
-                        <TableCell>
+                      {isMerchantScope ? (
+                        <TableCell className="p-0 md:p-4 mb-2 md:mb-0 flex md:table-cell items-center justify-between">
                           <input
                             type="checkbox"
                             aria-label={`تحديد منتج ${p.name}`}
                             checked={selectedIds.includes(p.id)}
                             onChange={(e) => setSelectedIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((id) => id !== p.id)))}
                           />
+                          <span className="text-xs text-muted-foreground md:hidden">{p.categories?.name ?? "—"}</span>
                         </TableCell>
                       ) : null}
-                      <TableCell className="font-medium text-xs">{p.name}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{p.categories?.name ?? "—"}</TableCell>
-                      {context.scope === "platform" && <TableCell className="text-xs">{p.merchants?.display_name ?? "—"}</TableCell>}
-                      <TableCell className="text-xs font-mono font-semibold">{formatPrice(p.discount_price ?? p.price)}</TableCell>
-                      <TableCell className="text-xs font-mono">
-                        <span className={Number(p.stock ?? 0) <= 5 ? "text-amber-600 font-bold" : ""}>
-                          {p.stock ?? 0}
-                        </span>
+                      <TableCell className="font-medium text-xs p-0 md:p-4 mb-1.5 md:mb-0 block md:table-cell">
+                        <span className="font-bold text-foreground">{p.name}</span>
                       </TableCell>
-                      <TableCell>
-                        <div className="space-y-0.5">
+                      <TableCell className={isMerchantScope ? "hidden md:table-cell text-xs text-muted-foreground p-0 md:p-4" : "text-xs text-muted-foreground p-0 md:p-4"}>
+                        {p.categories?.name ?? "—"}
+                      </TableCell>
+                      {context.scope === "platform" && <TableCell className="text-xs p-0 md:p-4">{p.merchants?.display_name ?? "—"}</TableCell>}
+                      <TableCell className="text-xs font-mono font-semibold p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden font-sans">السعر:</span>
+                        <span>{formatPrice(p.discount_price ?? p.price)}</span>
+                      </TableCell>
+                      {/* Neutral stock rendering without invented <= 5 warning threshold */}
+                      <TableCell className="text-xs font-mono p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden font-sans">المخزون:</span>
+                        <span>{p.stock ?? 0}</span>
+                      </TableCell>
+                      <TableCell className="p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden">الجاهزية:</span>
+                        <div className="space-y-0.5 text-left md:text-right">
                           <Badge variant={p?.readiness?.is_ready ? "default" : "secondary"} className="text-[10px] py-0">
                             {p?.readiness?.score ?? 0}%
                           </Badge>
@@ -623,7 +643,8 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                           ) : null}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="p-0 md:p-4 mb-2 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden">الحالة:</span>
                         {(() => {
                           if (p.visibility_status === "archived") {
                             return <Badge variant="secondary" className="text-[10px]">مؤرشف</Badge>;
@@ -637,8 +658,8 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                           return <Badge variant="secondary" className="text-[10px]">معطل</Badge>;
                         })()}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1.5">
+                      <TableCell className="text-center p-0 md:p-4 pt-2 md:pt-4 border-t border-border/40 md:border-t-0 block md:table-cell">
+                        <div className="flex items-center justify-end md:justify-center gap-1.5">
                           <Link to={editHref}>
                             <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs font-medium">
                               تعديل
@@ -653,7 +674,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                           >
                             {buttonLabel}
                           </Button>
-                          {context.scope === "merchant" ? (
+                          {isMerchantScope ? (
                             <Button
                               size="sm"
                               variant="ghost"

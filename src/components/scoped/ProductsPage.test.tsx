@@ -960,3 +960,136 @@ describe("ProductsPage - Quick Add publication-state contract", () => {
     await waitFor(() => expect(toast.success).toHaveBeenCalledWith("تمت إضافة المنتج بسرعة"));
   });
 });
+
+describe("ProductsPage - Data Isolation, Neutral Stock & Responsive UX", () => {
+  it("MERCHANT A -> B DATA ISOLATION: switching merchant context immediately fetches new products and does not leak previous catalog", async () => {
+    const productsA = [
+      {
+        id: "prod-a1",
+        name: "منتج متجر بغداد",
+        price: 15000,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "عطور" },
+      },
+    ];
+    const productsB = [
+      {
+        id: "prod-b1",
+        name: "منتج متجر البصرة",
+        price: 25000,
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "أطعمة" },
+      },
+    ];
+
+    listScopedProducts.mockImplementation((params: { merchant_id?: string }) => {
+      if (params?.merchant_id === "merchant-A") {
+        return Promise.resolve(productsA);
+      }
+      if (params?.merchant_id === "merchant-B") {
+        return Promise.resolve(productsB);
+      }
+      return Promise.resolve([]);
+    });
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "merchant-A" }} editPathBase="/merchant/products" />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("منتج متجر بغداد")).toBeTruthy();
+    expect(screen.queryByText("منتج متجر البصرة")).toBeNull();
+
+    // Rerender with merchant B
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "merchant-B" }} editPathBase="/merchant/products" />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText("منتج متجر البصرة")).toBeTruthy();
+    expect(screen.queryByText("منتج متجر بغداد")).toBeNull();
+  });
+
+  it("NEUTRAL STOCK: renders stock quantity neutrally without hard-coded <= 5 warning classes", async () => {
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-stock-low",
+        name: "منتج بمخزون 2",
+        price: 5000,
+        stock: 2,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "عام" },
+      },
+    ]);
+
+    renderPage();
+
+    await screen.findByText("منتج بمخزون 2");
+    const stockCell = screen.getByText("2");
+    expect(stockCell).toBeTruthy();
+    expect(stockCell.className).not.toContain("text-amber-600");
+  });
+
+  it("RESPONSIVE MERCHANT PRESENTATION: renders product details and actions in merchant scope", async () => {
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-mob-1",
+        name: "منتج الموبايل",
+        price: 20000,
+        stock: 12,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "إلكترونيات" },
+        readiness: { is_ready: true, score: 100, checklist: [] },
+      },
+    ]);
+
+    renderPage({ scope: "merchant", merchantId: "merchant-123" });
+
+    await screen.findByText("منتج الموبايل");
+    expect(screen.getAllByText("إلكترونيات").length).toBeGreaterThan(0);
+    expect(screen.getByText("12")).toBeTruthy();
+  });
+
+  it("PLATFORM AUTHORITY: platform scope preserves merchant filter and desktop table", async () => {
+    getAdminMerchants.mockResolvedValue([
+      { id: "adm-m1", display_name: "تاجر المنصة 1" },
+    ]);
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-plat-1",
+        name: "منتج المنصة",
+        price: 30000,
+        stock: 15,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "أجهزة" },
+        merchants: { display_name: "تاجر المنصة 1" },
+      },
+    ]);
+
+    renderPage({ scope: "platform" }, ["/admin/products?merchant_id=adm-m1"]);
+
+    await screen.findByText("منتج المنصة");
+    expect(screen.getByText("اختر التاجر أولاً")).toBeTruthy();
+  });
+});
+
