@@ -82,13 +82,22 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
     const handleNewOrder = (e: Event) => {
       const customEvent = e as CustomEvent;
       const orderId = customEvent.detail?.orderId;
-      const targetMerchantId = customEvent.detail?.merchantId;
-      if (targetMerchantId && targetMerchantId !== membership?.merchant_id) {
+      const eventMerchantId = customEvent.detail?.merchantId;
+
+      // Fail closed on missing, undefined, or mismatched merchant IDs
+      if (!eventMerchantId || !membership?.merchant_id || eventMerchantId !== membership.merchant_id) {
         return;
       }
+
       if (orderId && isAuthorizedToDecide) {
-        refetch().then(() => {
-          setModalOpenOrderId(orderId);
+        refetch().then((res) => {
+          const pendingList = res.data?.items ?? [];
+          const existsInQueue = pendingList.some((item: { id?: string }) => item.id === orderId);
+          if (existsInQueue) {
+            setModalOpenOrderId(orderId);
+          } else if (pendingList.length > 0) {
+            setModalOpenOrderId(pendingList[0].id);
+          }
         });
       } else {
         void refetch();

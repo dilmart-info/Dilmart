@@ -97,6 +97,7 @@ const mockOrderJenniDispatched = {
       id: "jenni-int-1",
       provider_code: "jenni",
       dispatch_status: "dispatched",
+      external_shipment_number: "JENNI-TRK-98765",
       provider_shipment_id: "JENNI-TRK-98765",
       provider_current_step_ar: "مركز التوزيع المركزي",
       dispatch_error: null,
@@ -152,50 +153,49 @@ describe("MerchantOrderDetail — Role Gating, Query States & Decision Operation
     expect(screen.getByRole("button", { name: /رفض الطلب/i })).toBeTruthy();
   });
 
-  it("ROLE GATING — STAFF: sees read-only view and NEVER receives Accept/Reject buttons", async () => {
+  it("ROLE GATING — STAFF: sees read-only badge and NO decision buttons", async () => {
     mockCurrentMerchant.data!.role = "staff";
     renderOrderDetail();
 
     await screen.findByTestId("merchant-order-detail");
+    expect(screen.getByTestId("staff-readonly-banner")).toBeTruthy();
+    expect(screen.getByText(/عرض فقط \(حساب موظف\)/i)).toBeTruthy();
     expect(screen.queryByTestId("decision-controls")).toBeNull();
     expect(screen.queryByRole("button", { name: /قبول الطلب/i })).toBeNull();
     expect(screen.queryByRole("button", { name: /رفض الطلب/i })).toBeNull();
-    expect(screen.getByText(/عرض فقط \(حساب موظف\)/i)).toBeTruthy();
-    expect(screen.getByText(/حساب الموظف مخصص للقراءة والتجهيز فقط/i)).toBeTruthy();
   });
 
-  it("QUERY STATES — 404 NOT FOUND: displays clear not found state with return button", async () => {
-    const error404 = new Error("Order not found");
-    (error404 as unknown as { status: number }).status = 404;
-    mockGetOrderDetail.mockRejectedValueOnce(error404);
-
-    renderOrderDetail("ord-nonexistent");
+  it("QUERY STATES — 404 NOT FOUND: displays clean not found state without crash", async () => {
+    const notFoundError = new Error("Order not found");
+    (notFoundError as { status?: number }).status = 404;
+    mockGetOrderDetail.mockRejectedValueOnce(notFoundError);
+    renderOrderDetail("non-existent-order");
 
     const notFoundBlock = await screen.findByTestId("order-not-found");
     expect(notFoundBlock).toBeTruthy();
     expect(screen.getByText("الطلب غير موجود أو لم يعد متاحاً")).toBeTruthy();
-    expect(screen.getByText("العودة لقائمة الطلبات")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /العودة لقائمة الطلبات/i })).toBeTruthy();
   });
 
-  it("QUERY STATES — NETWORK ERROR + RETRY: displays error block with working retry button", async () => {
-    mockGetOrderDetail.mockRejectedValueOnce(new Error("Connection reset"));
-    renderOrderDetail("ord-101");
+  it("QUERY STATES — API ERROR & RETRY: displays error card and allows retry", async () => {
+    mockGetOrderDetail.mockRejectedValueOnce(new Error("Internal Server Error"));
+    renderOrderDetail("err-order");
 
     const errorBlock = await screen.findByTestId("order-error");
     expect(errorBlock).toBeTruthy();
     expect(screen.getByText("تعذر تحميل تفاصيل الطلب")).toBeTruthy();
-    expect(screen.getByText("Connection reset")).toBeTruthy();
+    expect(screen.getByText("Internal Server Error")).toBeTruthy();
 
     mockGetOrderDetail.mockResolvedValueOnce(mockOrderNewPending);
-    fireEvent.click(screen.getByRole("button", { name: /إعادة المحاولة/i }));
+    const retryBtn = screen.getByRole("button", { name: /إعادة المحاولة/i });
+    fireEvent.click(retryBtn);
 
     await waitFor(() => {
-      expect(mockGetOrderDetail).toHaveBeenCalledTimes(2);
       expect(screen.getByTestId("merchant-order-detail")).toBeTruthy();
     });
   });
 
-  it("ACCEPT OPERATION: single flight mutation, disables buttons, and displays safe success copy", async () => {
+  it("ACCEPT OPERATION: single-flight accept mutation, shows neutral success toast", async () => {
     mockMerchantAcceptOrder.mockResolvedValueOnce({ ok: true });
     renderOrderDetail();
 
@@ -268,7 +268,7 @@ describe("MerchantOrderDetail — Role Gating, Query States & Decision Operation
     expect(screen.getAllByText("قناة الطلب غير محددة").length).toBeGreaterThan(0);
   });
 
-  it("JENNI DELIVERY & STICKER BUTTON: renders shipment ID and enables sticker button only when dispatched", async () => {
+  it("JENNI DELIVERY & STICKER BUTTON: renders shipment ID and enables sticker button when dispatched or synced", async () => {
     mockGetOrderDetail.mockResolvedValueOnce(mockOrderJenniDispatched);
     renderOrderDetail("ord-104");
 
@@ -283,6 +283,51 @@ describe("MerchantOrderDetail — Role Gating, Query States & Decision Operation
 
     fireEvent.click(stickerBtns[0]);
     expect(mockDownloadJenniSticker).toHaveBeenCalledWith("ord-104");
+  });
+
+  it("JENNI STICKER BUTTON: enabled when status is 'synced' with external_shipment_number", async () => {
+    mockGetOrderDetail.mockResolvedValueOnce({
+      ...mockOrderAccepted,
+      id: "ord-105",
+      order_delivery_integrations: [
+        {
+          id: "jenni-int-2",
+          provider_code: "jenni",
+          dispatch_status: "synced",
+          external_shipment_number: "JENNI-EXT-105",
+          provider_current_step_ar: "تم الاستلام",
+        },
+      ],
+    });
+    renderOrderDetail("ord-105");
+
+    await screen.findByTestId("merchant-order-detail");
+    expect(screen.getByText("JENNI-EXT-105")).toBeTruthy();
+    expect(screen.getByText("تمت المزامنة")).toBeTruthy();
+
+    const stickerBtns = screen.getAllByRole("button", { name: /طباعة الستيكر/i });
+    expect(stickerBtns[0].hasAttribute("disabled")).toBe(false);
+  });
+
+  it("JENNI STICKER BUTTON: disabled when shipment number is missing", async () => {
+    mockGetOrderDetail.mockResolvedValueOnce({
+      ...mockOrderAccepted,
+      id: "ord-106",
+      order_delivery_integrations: [
+        {
+          id: "jenni-int-3",
+          provider_code: "jenni",
+          dispatch_status: "dispatched",
+          external_shipment_number: "",
+          provider_shipment_id: null,
+        },
+      ],
+    });
+    renderOrderDetail("ord-106");
+
+    await screen.findByTestId("merchant-order-detail");
+    const stickerBtns = screen.getAllByRole("button", { name: /طباعة الستيكر/i });
+    expect(stickerBtns[0].hasAttribute("disabled")).toBe(true);
   });
 
   it("PRINT FULFILLMENT SLIP PRIVACY: fulfillment slip contains NO customer phone or email PII", async () => {

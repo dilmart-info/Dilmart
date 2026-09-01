@@ -145,9 +145,15 @@ export default function MerchantOrderDetail() {
 
   const deliveryCompanyIsJenni = order?.delivery_companies?.provider_code === "jenni";
   const hasJenniIntegrationRow = !!jenniIntegration;
-  const isJenniDispatched = jenniIntegration?.dispatch_status === "dispatched";
-  const hasJenniShipmentId = !!jenniIntegration?.provider_shipment_id;
-  const canPrintSticker = hasJenniIntegrationRow && isJenniDispatched && hasJenniShipmentId;
+  const isJenniDispatchedOrSynced =
+    jenniIntegration?.dispatch_status === "dispatched" || jenniIntegration?.dispatch_status === "synced";
+  const shipmentNumber = (
+    jenniIntegration?.external_shipment_number ||
+    jenniIntegration?.provider_shipment_id ||
+    ""
+  ).trim();
+  const hasJenniShipmentNumber = !!shipmentNumber;
+  const canPrintSticker = hasJenniIntegrationRow && isJenniDispatchedOrSynced && hasJenniShipmentNumber;
 
   const hasLegacyDelivery =
     !hasJenniIntegrationRow &&
@@ -162,8 +168,12 @@ export default function MerchantOrderDetail() {
   const isPendingDecision = merchantDecisionStatus === "pending" && order?.status === "new";
 
   // Check for 404 status in error
-  const is404 = (error as { status?: number; response?: { status?: number } })?.status === 404 ||
-    (error as { response?: { status?: number } })?.response?.status === 404;
+  const apiError = error as { status?: number; statusCode?: number; response?: { status?: number }; message?: string } | null;
+  const is404 =
+    apiError?.status === 404 ||
+    apiError?.response?.status === 404 ||
+    apiError?.statusCode === 404 ||
+    (typeof apiError?.message === "string" && (apiError.message.includes("404") || apiError.message.includes("NotFound")));
 
   if (!merchantId) {
     return (
@@ -303,10 +313,10 @@ export default function MerchantOrderDetail() {
               onClick={handlePrintSticker}
               disabled={!canPrintSticker}
               title={
-                !isJenniDispatched
-                  ? "لا يمكن طباعة الستيكر قبل اكتمال الإرسال إلى Jenni"
-                  : !hasJenniShipmentId
-                  ? "معرف الشحنة غير متوفر"
+                !isJenniDispatchedOrSynced
+                  ? "لا يمكن طباعة الستيكر قبل إرسال الشحنة أو مزامنتها مع شركة التوصيل"
+                  : !hasJenniShipmentNumber
+                  ? "رقم الشحنة غير متوفر"
                   : "طباعة الملصق"
               }
             >
@@ -419,7 +429,10 @@ export default function MerchantOrderDetail() {
             </div>
           ) : isPendingDecision && isStaffOnly ? (
             /* Case 2: Pending decision, but user is staff -> Read-only info */
-            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border">
+            <div
+              className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border"
+              data-testid="staff-readonly-banner"
+            >
               <Clock className="h-4 w-4 text-amber-500" />
               <span>الطلب بانتظار قرار مالك أو مدير المتجر (حساب الموظف مخصص للقراءة والتجهيز فقط).</span>
             </div>
@@ -491,10 +504,12 @@ export default function MerchantOrderDetail() {
                   </Badge>
                 </div>
               )}
-              {hasJenniIntegrationRow && jenniIntegration?.provider_shipment_id && (
+              {hasJenniIntegrationRow && (jenniIntegration?.external_shipment_number || jenniIntegration?.provider_shipment_id) && (
                 <div>
-                  <span className="text-muted-foreground block mb-1">معرف الشحنة</span>
-                  <span className="font-mono font-bold text-foreground">{jenniIntegration.provider_shipment_id}</span>
+                  <span className="text-muted-foreground block mb-1">رقم الشحنة</span>
+                  <span className="font-mono font-bold text-foreground">
+                    {jenniIntegration.external_shipment_number || jenniIntegration.provider_shipment_id}
+                  </span>
                 </div>
               )}
               {hasJenniIntegrationRow && jenniIntegration?.provider_current_step_ar && (

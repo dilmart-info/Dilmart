@@ -14,7 +14,7 @@ export function NotificationHub() {
     let merchantId: string | null = null;
     if (user && isMerchantUser && context) {
         const allMemberships = (context.merchant_memberships ?? [])
-            .map((item: any) => item.id)
+            .map((item: { id?: string }) => item.id)
             .filter(Boolean);
 
         if (allMemberships.length === 0 && context.merchant?.id) {
@@ -78,8 +78,9 @@ export function NotificationHub() {
                         queryClient.invalidateQueries({ queryKey: ["merchant-notifications", merchantId] });
                     }
                     const orderId = row.order_id || (row.link ? (row.link as string).split("/").pop() : null);
+                    const eventMerchantId = (row.merchant_id as string) || merchantId || null;
                     window.dispatchEvent(new CustomEvent("merchant-new-order", {
-                        detail: { orderId, notificationId: row.id },
+                        detail: { orderId, notificationId: row.id, merchantId: eventMerchantId },
                     }));
                 } else {
                     playNotificationSound("default");

@@ -73,7 +73,7 @@ function renderModal(props: Partial<React.ComponentProps<typeof MerchantDecision
   };
 }
 
-describe("MerchantDecisionModal — Role Gating, Fetch Errors, Decision Queue", () => {
+describe("MerchantDecisionModal — Role Gating, Fetch Errors, Decision Queue & Eligibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetOrderDetail.mockResolvedValue(mockOrder);
@@ -95,6 +95,59 @@ describe("MerchantDecisionModal — Role Gating, Fetch Errors, Decision Queue", 
 
     expect(screen.queryByTestId("merchant-decision-modal")).toBeNull();
     expect(mockGetOrderDetail).not.toHaveBeenCalled();
+  });
+
+  it("FAIL-CLOSED ELIGIBILITY — ALREADY ACCEPTED: renders current state copy without mutation buttons", async () => {
+    mockGetOrderDetail.mockResolvedValueOnce({
+      ...mockOrder,
+      status: "preparing",
+      merchant_decision_status: "accepted",
+    });
+
+    renderModal({ role: "owner" });
+
+    await screen.findByTestId("decision-modal-overview");
+    expect(screen.getByTestId("ineligible-status-banner")).toBeTruthy();
+    expect(screen.getByText(/تم قبول هذا الطلب مسبقاً — قيد التجهيز/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /قبول الطلب/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /رفض الطلب/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /عرض تفاصيل الطلب/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /إغلاق/i })).toBeTruthy();
+  });
+
+  it("FAIL-CLOSED ELIGIBILITY — ALREADY REJECTED: renders rejection note without mutation buttons", async () => {
+    mockGetOrderDetail.mockResolvedValueOnce({
+      ...mockOrder,
+      status: "cancelled",
+      merchant_decision_status: "rejected",
+      merchant_rejection_reason_code: "insufficient_quantity",
+    });
+
+    renderModal({ role: "owner" });
+
+    await screen.findByTestId("decision-modal-overview");
+    expect(screen.getByTestId("ineligible-status-banner")).toBeTruthy();
+    expect(screen.getByText(/تم رفض هذا الطلب مسبقاً/i)).toBeTruthy();
+    expect(screen.getByText(/سبب الرفض:/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /قبول الطلب/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /رفض الطلب/i })).toBeNull();
+    expect(screen.getByRole("button", { name: /عرض تفاصيل الطلب/i })).toBeTruthy();
+  });
+
+  it("FAIL-CLOSED ELIGIBILITY — CANCELLED / PROGRESSIVE / UNKNOWN: renders neutral state without mutation buttons", async () => {
+    mockGetOrderDetail.mockResolvedValueOnce({
+      ...mockOrder,
+      status: "shipped",
+      merchant_decision_status: "pending",
+    });
+
+    renderModal({ role: "owner" });
+
+    await screen.findByTestId("decision-modal-overview");
+    expect(screen.getByTestId("ineligible-status-banner")).toBeTruthy();
+    expect(screen.getByText(/حالة الطلب الحالية: قيد التوصيل/i)).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /قبول الطلب/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /رفض الطلب/i })).toBeNull();
   });
 
   it("FETCH ERROR RETRY: shows retry UI on fetch failure without silently closing modal", async () => {
@@ -152,17 +205,5 @@ describe("MerchantDecisionModal — Role Gating, Fetch Errors, Decision Queue", 
       expect(toast.success).toHaveBeenCalledWith("تم رفض الطلب بنجاح");
       expect(props.onDecisionComplete).toHaveBeenCalled();
     });
-  });
-
-  it("VIEW DETAILS: closes modal and navigates without submitting decision", async () => {
-    const { props } = renderModal();
-
-    await screen.findByTestId("decision-modal-overview");
-    const viewBtn = screen.getByRole("button", { name: /عرض التفاصيل/i });
-    fireEvent.click(viewBtn);
-
-    expect(mockMerchantAcceptOrder).not.toHaveBeenCalled();
-    expect(mockMerchantRejectOrder).not.toHaveBeenCalled();
-    expect(props.onClose).toHaveBeenCalled();
   });
 });

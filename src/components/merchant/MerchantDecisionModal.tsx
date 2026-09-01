@@ -14,14 +14,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/format";
 import { apiClient } from "@/lib/api-client";
-import { merchantRejectionReasons } from "@/lib/merchant-rejection-reasons";
+import { merchantRejectionReasons, getRejectionLabel } from "@/lib/merchant-rejection-reasons";
 import {
   getMerchantPaymentMethodLabel,
   getMerchantChannelLabel,
+  getMerchantOrderStatusLabel,
 } from "@/lib/merchant-order-status";
 import { canMerchantDecide } from "@/lib/merchant-role-authority";
 import type { MerchantOrderDetail, MerchantOrderItem } from "@/types/merchant-order";
-import { ShoppingBag, Package, Receipt, AlertTriangle, RefreshCw, Layers } from "lucide-react";
+import { ShoppingBag, Package, Receipt, AlertTriangle, RefreshCw, CheckCircle2, Clock, XCircle } from "lucide-react";
 
 interface MerchantDecisionModalProps {
   orderId: string | null;
@@ -158,6 +159,12 @@ export default function MerchantDecisionModal({
 
   const isMutationPending = acceptOrder.isPending || rejectOrder.isPending;
 
+  // Strict decision eligibility: must be new order, pending decision, and authorized owner/manager
+  const isEligibleToDecide =
+    order?.status === "new" &&
+    order?.merchant_decision_status === "pending" &&
+    isAuthorized;
+
   return (
     <Dialog
       open={!!orderId}
@@ -176,7 +183,9 @@ export default function MerchantDecisionModal({
         <div className="bg-destructive/10 border-b border-border p-4 flex items-center justify-between" dir="rtl">
           <div className="flex items-center gap-2">
             <ShoppingBag className="text-destructive h-5 w-5 animate-pulse" />
-            <span className="text-sm font-bold text-destructive">طلب جديد بانتظار قرارك</span>
+            <span className="text-sm font-bold text-destructive">
+              {isEligibleToDecide ? "طلب جديد بانتظار قرارك" : "تفاصيل قرار الطلب"}
+            </span>
           </div>
           {queueCount > 1 && (
             <Badge variant="outline" className="border-destructive/30 text-destructive bg-destructive/5 text-xs font-bold">
@@ -245,6 +254,40 @@ export default function MerchantDecisionModal({
                 </DialogDescription>
               </DialogHeader>
 
+              {/* Ineligible current status callout (already accepted, rejected, or non-new) */}
+              {!isEligibleToDecide && (
+                <div className="p-3.5 rounded-xl border border-border bg-muted/40 space-y-1 text-xs" data-testid="ineligible-status-banner">
+                  {order.merchant_decision_status === "accepted" ? (
+                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-semibold">
+                      <CheckCircle2 size={16} />
+                      <span>تم قبول هذا الطلب مسبقاً — قيد التجهيز</span>
+                    </div>
+                  ) : order.merchant_decision_status === "rejected" ? (
+                    <div className="space-y-1 text-destructive">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <XCircle size={16} />
+                        <span>تم رفض هذا الطلب مسبقاً</span>
+                      </div>
+                      {order.merchant_rejection_reason_code && (
+                        <p className="text-[11px]">
+                          سبب الرفض: {getRejectionLabel(order.merchant_rejection_reason_code)}
+                        </p>
+                      )}
+                    </div>
+                  ) : order.status === "cancelled" ? (
+                    <div className="flex items-center gap-2 text-destructive font-semibold">
+                      <XCircle size={16} />
+                      <span>الطلب ملغي</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-foreground font-semibold">
+                      <Clock size={16} className="text-primary" />
+                      <span>حالة الطلب الحالية: {getMerchantOrderStatusLabel(order.status)}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Order Metadata summary */}
               <div className="grid grid-cols-2 gap-3 bg-muted/20 p-3.5 rounded-xl border border-border text-right" dir="rtl">
                 <div className="space-y-0.5 text-right">
@@ -309,31 +352,52 @@ export default function MerchantDecisionModal({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2.5 pt-2" dir="rtl">
-                <Button
-                  className="bg-green-600 hover:bg-green-700 text-white flex-1 py-5 text-xs font-bold"
-                  onClick={() => acceptOrder.mutate()}
-                  disabled={isMutationPending}
-                >
-                  {acceptOrder.isPending ? "جاري القبول..." : "✅ قبول الطلب"}
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="flex-1 py-5 text-xs font-bold"
-                  onClick={() => setView("reject")}
-                  disabled={isMutationPending}
-                >
-                  ❌ رفض الطلب
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 py-5 text-xs font-medium"
-                  onClick={handleViewDetails}
-                  disabled={isMutationPending}
-                >
-                  عرض التفاصيل
-                </Button>
-              </div>
+              {isEligibleToDecide ? (
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2" dir="rtl" data-testid="decision-modal-actions">
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white flex-1 py-5 text-xs font-bold"
+                    onClick={() => acceptOrder.mutate()}
+                    disabled={isMutationPending}
+                  >
+                    {acceptOrder.isPending ? "جاري القبول..." : "✅ قبول الطلب"}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1 py-5 text-xs font-bold"
+                    onClick={() => setView("reject")}
+                    disabled={isMutationPending}
+                  >
+                    ❌ رفض الطلب
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 py-5 text-xs font-medium"
+                    onClick={handleViewDetails}
+                    disabled={isMutationPending}
+                  >
+                    عرض التفاصيل
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2" dir="rtl" data-testid="ineligible-modal-actions">
+                  <Button
+                    className="flex-1 py-5 text-xs font-bold"
+                    onClick={handleViewDetails}
+                  >
+                    عرض تفاصيل الطلب
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 py-5 text-xs font-medium"
+                    onClick={() => {
+                      onClose();
+                      if (onDecisionComplete) onDecisionComplete();
+                    }}
+                  >
+                    إغلاق
+                  </Button>
+                </div>
+              )}
             </div>
           ) : (
             /* Rejection View */

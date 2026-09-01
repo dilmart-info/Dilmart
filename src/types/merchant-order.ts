@@ -16,10 +16,11 @@ export interface MerchantOrderItem {
 }
 
 export interface MerchantDeliveryIntegration {
-  id: string;
+  id?: string;
   provider_code?: string | null;
   dispatch_status?: string | null;
   provider_shipment_id?: string | null;
+  external_shipment_number?: string | null;
   provider_current_step_ar?: string | null;
   dispatch_error?: string | null;
   last_synced_at?: string | null;

@@ -20,18 +20,19 @@ export class JenniStickerService {
   ) {}
 
   /**
-   * Resolve the merchant_id for a user from merchant_users table.
-   * Returns null if the user is not associated with any merchant.
+   * Verify if a user is a member of the specific merchant owning the order.
+   * Supports users who belong to multiple merchants.
    */
-  private async resolveMerchantIdForUser(userId: string): Promise<string | null> {
+  private async isUserMemberOfMerchant(userId: string, merchantId: string): Promise<boolean> {
     const { data, error } = await this.supabaseAdmin.client
       .from("merchant_users")
       .select("merchant_id")
       .eq("user_id", userId)
+      .eq("merchant_id", merchantId)
       .limit(1)
       .maybeSingle();
     if (error) throw error;
-    return (data?.merchant_id as string) ?? null;
+    return !!data?.merchant_id;
   }
 
   /**
@@ -59,17 +60,15 @@ export class JenniStickerService {
     if (orderErr) throw orderErr;
     if (!order) throw new BadRequestException("Order not found.");
 
-    // 3. Merchant ownership check — resolve user_id → merchant_id via merchant_users
+    // 3. Merchant ownership check — verify exact merchant membership for this order
     const isMerchant = ["merchant_owner", "merchant_manager", "merchant_staff"].includes(actorRole ?? "");
     if (isMerchant) {
       if (!actorUserId) {
         throw new ForbiddenException("Missing actor identity for merchant scope.");
       }
-      const merchantId = await this.resolveMerchantIdForUser(actorUserId);
-      if (!merchantId) {
-        throw new ForbiddenException("User is not associated with any merchant.");
-      }
-      if (String((order as any).merchant_id) !== merchantId) {
+      const orderRecord = order as { merchant_id?: string | null };
+      const isMember = await this.isUserMemberOfMerchant(actorUserId, String(orderRecord.merchant_id ?? ""));
+      if (!isMember) {
         throw new ForbiddenException("You do not have access to this order.");
       }
     }
@@ -87,14 +86,15 @@ export class JenniStickerService {
       throw new BadRequestException("This order has not been dispatched to Jenni yet.");
     }
 
-    const dispatchStatus = String((integration as any).dispatch_status ?? "");
+    const integrationRecord = integration as { dispatch_status?: string | null; external_shipment_number?: string | null };
+    const dispatchStatus = String(integrationRecord.dispatch_status ?? "");
     if (dispatchStatus !== "dispatched" && dispatchStatus !== "synced") {
       throw new BadRequestException(
         `Cannot generate sticker: dispatch status is "${dispatchStatus}". Order must be dispatched first.`,
       );
     }
 
-    const shipmentNumber = String((integration as any).external_shipment_number ?? "").trim();
+    const shipmentNumber = String(integrationRecord.external_shipment_number ?? "").trim();
     if (!shipmentNumber) {
       throw new BadRequestException("Shipment number is missing. Cannot generate sticker.");
     }
