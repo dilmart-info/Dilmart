@@ -93,7 +93,8 @@ describe("Phase 2C — Cart Page & Store Invariants", () => {
     const plusBtn = screen.getByLabelText("زيادة الكمية");
     const minusBtn = screen.getByLabelText("تقليل الكمية");
 
-    // Initially quantity is 1, plus is enabled
+    // Initially quantity is 1, minus is disabled at quantity 1
+    expect(minusBtn.hasAttribute("disabled")).toBe(true);
     expect(plusBtn.hasAttribute("disabled")).toBe(false);
 
     // Increase to 2 (max stock)
@@ -103,11 +104,39 @@ describe("Phase 2C — Cart Page & Store Invariants", () => {
     // Now plus button should be disabled because stock is 2
     expect(screen.getByLabelText("زيادة الكمية").hasAttribute("disabled")).toBe(true);
     expect(screen.getByText("الحد الأقصى المتاح")).toBeTruthy();
+    expect(minusBtn.hasAttribute("disabled")).toBe(false);
 
     // Decrement back to 1
     fireEvent.click(minusBtn);
     expect(useCartStore.getState().items[0].quantity).toBe(1);
     expect(screen.getByLabelText("زيادة الكمية").hasAttribute("disabled")).toBe(false);
+    expect(minusBtn.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("disables minus button at quantity 1 and does NOT remove product on click", () => {
+    useCartStore.getState().addItem({
+      id: "prod-qty-1",
+      name: "حقيبة سفر",
+      slug: "travel-bag",
+      price: 45000,
+      discount_price: null,
+      stock: 5,
+      merchant_id: "merchant-1",
+    });
+
+    render(
+      <MemoryRouter>
+        <Cart />
+      </MemoryRouter>,
+    );
+
+    const minusBtn = screen.getByLabelText("تقليل الكمية");
+    expect(minusBtn.hasAttribute("disabled")).toBe(true);
+
+    fireEvent.click(minusBtn);
+    // Quantity remains 1 and product is not removed
+    expect(useCartStore.getState().items).toHaveLength(1);
+    expect(useCartStore.getState().items[0].quantity).toBe(1);
   });
 
   it("removes product when remove button is clicked", () => {
@@ -150,6 +179,32 @@ describe("Phase 2C — Cart Page & Store Invariants", () => {
       expect(result.reason).toBe("OUT_OF_STOCK");
     }
     expect(useCartStore.getState().items).toHaveLength(0);
+  });
+
+  it("returns MAX_STOCK_REACHED and performs no mutation when adding to an item already at stock ceiling", () => {
+    const product = {
+      id: "prod-ceiling",
+      name: "منتج محدود",
+      slug: "limited-prod",
+      price: 10000,
+      discount_price: null,
+      stock: 3,
+      merchant_id: "merchant-1",
+    };
+
+    // First add 3 units (up to max stock)
+    const res1 = useCartStore.getState().addItem(product, 3);
+    expect(res1.success).toBe(true);
+    expect(useCartStore.getState().items[0].quantity).toBe(3);
+
+    // Now try to add 1 more unit
+    const res2 = useCartStore.getState().addItem(product, 1);
+    expect(res2.success).toBe(false);
+    if (!res2.success) {
+      expect(res2.reason).toBe("MAX_STOCK_REACHED");
+    }
+    // Quantity remains strictly 3 with no extra mutation
+    expect(useCartStore.getState().items[0].quantity).toBe(3);
   });
 
   it("sanitizes persisted cart state with zero or negative quantities safely", () => {
@@ -285,6 +340,7 @@ describe("Phase 2C — Cart Page & Store Invariants", () => {
 
     expect(screen.getByText("يُحسب عند إتمام الطلب")).toBeTruthy();
     expect(screen.queryByText(/الدفع عند الاستلام متاح لجميع طلباتك/)).toBeNull();
-    expect(screen.getByText("توصيل موثوق لكافة المحافظات العراقية")).toBeTruthy();
+    expect(screen.getByText("تفاصيل التوصيل والتكلفة تظهر أثناء إتمام الطلب")).toBeTruthy();
+    expect(screen.queryByText(/توصيل موثوق لكافة المحافظات العراقية/)).toBeNull();
   });
 });

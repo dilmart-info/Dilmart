@@ -34,7 +34,10 @@ function getMerchantId(product: CartLineProduct): string | null {
 
 export type AddItemResult =
   | { success: true }
-  | { success: false; reason: "DIFFERENT_MERCHANT" | "INVALID_PRODUCT" | "OUT_OF_STOCK" };
+  | {
+      success: false;
+      reason: "DIFFERENT_MERCHANT" | "INVALID_PRODUCT" | "OUT_OF_STOCK" | "MAX_STOCK_REACHED";
+    };
 
 function sanitizeCartState(state: CartIntegrityState) {
   if (state.items.length === 0) {
@@ -131,10 +134,14 @@ export const useCartStore = create<CartStore>()(
           return { success: false, reason: "DIFFERENT_MERCHANT" } as const;
         }
 
+        const existing = get().items.find((i) => i.product.id === product.id);
+        if (existing && knownStock !== null && existing.quantity >= knownStock) {
+          return { success: false, reason: "MAX_STOCK_REACHED" } as const;
+        }
+
         const addQty = Math.max(1, Math.floor(quantity || 1));
 
         set((state) => {
-          const existing = state.items.find((i) => i.product.id === product.id);
           if (existing) {
             const desiredQty = existing.quantity + addQty;
             const finalQty =

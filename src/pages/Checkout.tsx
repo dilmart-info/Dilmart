@@ -184,6 +184,32 @@ const Checkout = () => {
     staleTime: 5 * 60_000,
   });
 
+  const {
+    data: previewData,
+    isLoading: isPreviewLoading,
+    isFetching: isPreviewFetching,
+    isError: isPreviewError,
+    refetch: refetchPreview,
+  } = useQuery({
+    queryKey: [
+      "checkout-preview",
+      items.map((i) => `${i.product.id}:${i.quantity}`).join(","),
+      ensureIntegrity(false).merchantId,
+      coupon?.code ?? null,
+      form.governorate_id || null,
+    ],
+    queryFn: () =>
+      apiClient.checkoutPreview({
+        items: items.map((i) => ({ product_id: i.product.id, quantity: i.quantity })),
+        merchant_id: ensureIntegrity(false).merchantId ?? undefined,
+        coupon_code: coupon?.code,
+        governorate_id: form.governorate_id || undefined,
+      }),
+    enabled: items.length > 0,
+    retry: false,
+    staleTime: 30_000,
+  });
+
   const selectedGov = governorates?.find((g) => g.id === form.governorate_id);
   const deliveryCost =
     selectedGov?.delivery_price != null && Number.isFinite(Number(selectedGov.delivery_price))
@@ -191,6 +217,23 @@ const Checkout = () => {
       : null;
   const subtotal = getSubtotal();
   const discount = getDiscountAmount();
+
+  const authoritativeSubtotal =
+    previewData?.subtotal != null && Number.isFinite(Number(previewData.subtotal))
+      ? Number(previewData.subtotal)
+      : subtotal;
+  const authoritativeDiscount =
+    previewData?.discount != null && Number.isFinite(Number(previewData.discount))
+      ? Number(previewData.discount)
+      : discount;
+  const authoritativeDeliveryCost =
+    previewData?.delivery_cost != null && Number.isFinite(Number(previewData.delivery_cost))
+      ? Number(previewData.delivery_cost)
+      : deliveryCost;
+  const authoritativeBaseTotal =
+    previewData?.total != null && Number.isFinite(Number(previewData.total))
+      ? Number(previewData.total)
+      : Math.max(0, authoritativeSubtotal - authoritativeDiscount) + (authoritativeDeliveryCost ?? 0);
 
   const { data: savedAddresses } = useQuery({
     queryKey: ["customer-addresses", authSource, user?.id],
@@ -229,13 +272,15 @@ const Checkout = () => {
     }));
   }, [user, savedAddresses]);
 
+  const merchandiseAmount = Math.max(0, authoritativeSubtotal - authoritativeDiscount);
+
   const { data: loyaltyPreview } = useQuery({
-    queryKey: ["loyalty-preview", authSource, user?.id, subtotal, discount],
+    queryKey: ["loyalty-preview", authSource, user?.id, merchandiseAmount],
     queryFn: () =>
       apiClient.loyaltyPreview({
-        subtotal: Math.max(0, subtotal - discount),
+        subtotal: merchandiseAmount,
       }),
-    enabled: !!user,
+    enabled: !!user && merchandiseAmount > 0,
     retry: false,
     placeholderData: { available_points: 0, redeemable_amount: 0 },
   });
@@ -251,12 +296,12 @@ const Checkout = () => {
   // 1 point = 10 IQD discount
   const pointsRedemptionValue =
     usePoints && !isProvisionalUser
-      ? Math.min(loyaltyPreview?.redeemable_amount ?? availablePoints * 10, Math.max(0, subtotal - discount))
+      ? Math.min(loyaltyPreview?.redeemable_amount ?? availablePoints * 10, merchandiseAmount)
       : 0;
   const pointsToSpend = usePoints && !isProvisionalUser ? Math.floor(pointsRedemptionValue / 10) : 0;
 
   // Total = Subtotal - Discount - PointsDiscount + Delivery
-  const total = Math.max(0, subtotal - discount - pointsRedemptionValue) + (deliveryCost ?? 0);
+  const total = Math.max(0, authoritativeBaseTotal - pointsRedemptionValue);
 
   const getAddressLabelText = (value?: string | null) => {
     const normalized = (value || "other").toLowerCase();
@@ -386,7 +431,11 @@ const Checkout = () => {
       toast.error("يرجى ملء جميع الحقول المطلوبة");
       return;
     }
-    if (deliveryCost == null) {
+    if (isPreviewError) {
+      toast.error("تعذر تحديث أسعار الطلب. يرجى المحاولة مرة أخرى.");
+      return;
+    }
+    if (authoritativeDeliveryCost == null) {
       toast.error(
         "لا تتوفر خدمة توصيل للمحافظة المختارة حالياً. يرجى اختيار محافظة أخرى أو التواصل مع خدمة العملاء.",
       );
@@ -958,8 +1007,8 @@ const Checkout = () => {
                 </div>
                 <h2 className="text-lg md:text-xl font-black text-[#071A3D]">طريقة الدفع</h2>
               </div>
-              <p className="text-xs md:text-sm text-slate-600 leading-relaxed">
-                خيارات الدفع المتاحة يتم تحديدها أثناء إتمام الطلب (الدفع عند الاستلام نقداً عند معاينة واستلام المنتجات).
+              <p className="text-xs md:text-sm font-semibold text-slate-700 leading-relaxed">
+                طريقة الدفع الحالية: الدفع عند الاستلام
               </p>
             </div>
 
@@ -976,12 +1025,17 @@ const Checkout = () => {
                 type="submit"
                 size="lg"
                 className="w-full h-14 rounded-xl text-base md:text-lg font-black bg-[#1261D8] hover:bg-[#0E4EB0] text-white shadow-lg shadow-[#1261D8]/20 transition-all hover:scale-[1.01]"
-                disabled={loading}
+                disabled={loading || isPreviewLoading || isPreviewError || authoritativeDeliveryCost == null}
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <Loader2 size={20} className="animate-spin" />
                     <span>جاري تأكيد الطلب...</span>
+                  </span>
+                ) : isPreviewLoading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 size={20} className="animate-spin" />
+                    <span>جارٍ تحديث الأسعار...</span>
                   </span>
                 ) : (
                   <span>تأكيد الطلب ({formatPrice(total)})</span>
@@ -1004,9 +1058,32 @@ const Checkout = () => {
           {/* Sticky Order Summary Sidebar */}
           <div className="lg:col-span-1">
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 md:p-6 shadow-sm sticky top-24 space-y-6">
-              <h2 className="text-lg md:text-xl font-black text-[#071A3D] pb-3 border-b border-slate-100">
-                ملخص الطلب ({items.length} منتجات)
-              </h2>
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <h2 className="text-lg md:text-xl font-black text-[#071A3D]">
+                  ملخص الطلب ({items.length} منتجات)
+                </h2>
+                {isPreviewFetching && !isPreviewLoading && (
+                  <div className="flex items-center gap-1.5 text-xs text-[#1261D8] bg-blue-50 px-2 py-0.5 rounded-md">
+                    <Loader2 size={12} className="animate-spin" />
+                    <span>جارٍ التحديث...</span>
+                  </div>
+                )}
+              </div>
+
+              {isPreviewError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-center justify-between gap-2">
+                  <span>تعذر تحديث أسعار الطلب</span>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void refetchPreview()}
+                    className="text-xs h-7 border-red-300 text-red-700 hover:bg-red-100 shrink-0"
+                  >
+                    حاول مرة أخرى
+                  </Button>
+                </div>
+              )}
 
               {/* Order Items List */}
               <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
@@ -1137,24 +1214,24 @@ const Checkout = () => {
               <div className="space-y-2.5 border-t border-slate-100 pt-4 text-xs md:text-sm">
                 <div className="flex justify-between text-slate-600">
                   <span>المجموع الفرعي</span>
-                  <span className="font-bold text-slate-800">{formatPrice(subtotal)}</span>
+                  <span className="font-bold text-slate-800">{formatPrice(authoritativeSubtotal)}</span>
                 </div>
 
                 <div className="flex justify-between text-slate-600">
                   <span>التوصيل</span>
                   <span className="font-bold text-slate-800">
-                    {deliveryCost != null
-                      ? deliveryCost > 0
-                        ? formatPrice(deliveryCost)
+                    {authoritativeDeliveryCost != null
+                      ? authoritativeDeliveryCost > 0
+                        ? formatPrice(authoritativeDeliveryCost)
                         : "مجاني"
                       : "غير متاح حالياً"}
                   </span>
                 </div>
 
-                {discount > 0 && (
+                {authoritativeDiscount > 0 && (
                   <div className="flex justify-between font-bold text-emerald-600">
                     <span>خصم الكوبون</span>
-                    <span>-{formatPrice(discount)}</span>
+                    <span>-{formatPrice(authoritativeDiscount)}</span>
                   </div>
                 )}
 
@@ -1174,7 +1251,7 @@ const Checkout = () => {
               {/* Trust Badge */}
               <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-500 border-t border-slate-100">
                 <ShieldCheck size={16} className="text-[#1261D8]" />
-                <span>تسوق آمن ومحمي 100% عبر ديل مارت</span>
+                <span>تسوق بثقة عبر ديل مارت</span>
               </div>
             </div>
           </div>

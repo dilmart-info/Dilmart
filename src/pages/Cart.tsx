@@ -223,7 +223,8 @@ const Cart = () => {
                           <button
                             type="button"
                             onClick={() => updateQuantity(product.id, item.quantity - 1)}
-                            className="w-7 h-7 rounded-full flex items-center justify-center bg-white text-slate-700 shadow-sm hover:bg-slate-200 transition-colors disabled:opacity-40"
+                            disabled={item.quantity <= 1}
+                            className="w-7 h-7 rounded-full flex items-center justify-center bg-white text-slate-700 shadow-sm hover:bg-slate-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             aria-label="تقليل الكمية"
                           >
                             <Minus size={13} />
@@ -362,7 +363,7 @@ const Cart = () => {
               {/* Trust Badge */}
               <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-500">
                 <ShieldCheck size={16} className="text-[#1261D8]" />
-                <span>توصيل موثوق لكافة المحافظات العراقية</span>
+                <span>تفاصيل التوصيل والتكلفة تظهر أثناء إتمام الطلب</span>
               </div>
             </div>
           </div>
