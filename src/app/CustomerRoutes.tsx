@@ -9,6 +9,10 @@ import Checkout from "@/pages/Checkout";
 import ThankYou from "@/pages/ThankYou";
 import Privacy from "@/pages/Privacy";
 import Support from "@/pages/Support";
+import About from "@/pages/About";
+import Contact from "@/pages/Contact";
+import Terms from "@/pages/Terms";
+import Returns from "@/pages/Returns";
 import NotFound from "@/pages/NotFound";
 import Auth from "@/pages/Auth";
 import Profile from "@/pages/Profile";
@@ -49,6 +53,10 @@ export function getCustomerRouteElements(): ReactElement[] {
         </CustomerCapabilityGuard>
       }
     />,
+    <Route key="about" path="/about" element={<About />} />,
+    <Route key="contact" path="/contact" element={<Contact />} />,
+    <Route key="terms" path="/terms" element={<Terms />} />,
+    <Route key="returns" path="/returns" element={<Returns />} />,
     <Route key="privacy" path="/privacy" element={<Privacy />} />,
     <Route key="support" path="/support" element={<Support />} />,
     <Route key="auth" path="/auth" element={<Auth />} />,
@@ -143,6 +151,10 @@ export const CUSTOMER_ROUTE_PATHS = [
   "/checkout",
   "/thank-you",
   "/claim-account",
+  "/about",
+  "/contact",
+  "/terms",
+  "/returns",
   "/privacy",
   "/support",
   "/auth",
@@ -155,4 +167,5 @@ export const CUSTOMER_ROUTE_PATHS = [
   "/track-order",
   "/wishlist",
 ] as const;
+
 

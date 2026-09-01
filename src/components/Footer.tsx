@@ -28,8 +28,8 @@ const Footer = () => {
                 <Truck size={22} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">توصيل موثوق</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">شحن مباشر وسريع لباب المنزل</p>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">توصيل منظم</h4>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">تفاصيل التوصيل تظهر حسب الطلب والموقع</p>
               </div>
             </div>
 
@@ -38,8 +38,8 @@ const Footer = () => {
                 <ShieldCheck size={22} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">منتجات مختارة</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">من كبرى العلامات والمتاجر المعتمدة</p>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">منتجات متنوعة</h4>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">تشكيلة من المنتجات والمتاجر</p>
               </div>
             </div>
 
@@ -48,8 +48,8 @@ const Footer = () => {
                 <RotateCcw size={22} strokeWidth={2.2} />
               </div>
               <div>
-                <h4 className="font-tajawal text-sm font-extrabold text-white">دفع مرن</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">فحص طلبك والدفع عند الاستلام</p>
+                <h4 className="font-tajawal text-sm font-extrabold text-white">دفع عند الاستلام</h4>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">دفع عند الاستلام للطلبات المؤهلة</p>
               </div>
             </div>
 
@@ -59,7 +59,7 @@ const Footer = () => {
               </div>
               <div>
                 <h4 className="font-tajawal text-sm font-extrabold text-white">دعم العملاء</h4>
-                <p className="text-[11px] text-blue-200/80 mt-0.5">فريق متواصل لخدمتكم</p>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">فريق متواصل لمساعدتك</p>
               </div>
             </div>
           </div>
@@ -73,7 +73,7 @@ const Footer = () => {
           <div className="space-y-3.5 md:col-span-1">
             <BrandMark variant="footer" theme="navy" />
             <p className="text-xs sm:text-sm text-blue-100/80 leading-relaxed max-w-sm">
-              ديلمارت هي المنصة للتسوق الإلكتروني الشامل، تجمع أفضل المتاجر والمنتجات لتجربة تسوق موثوقة وسريعة.
+              ديلمارت هي منصة للتسوق الإلكتروني الشامل، تجمع المنتجات والمتاجر لتجربة تسوق موثوقة ومباشرة.
             </p>
             <div className="flex items-center gap-2.5 pt-1">
               <a
@@ -119,13 +119,13 @@ const Footer = () => {
                 عروض وتخفيضات اليوم 🔥
               </Link>
               <Link to="/stores" className="block hover:text-accent transition-colors">
-                دليل المتاجر المعتمدة
+                دليل المتاجر
               </Link>
               <Link to="/brands" className="block hover:text-accent transition-colors">
                 العلامات التجارية
               </Link>
-              <Link to="/products?sort=newest" className="block hover:text-accent transition-colors">
-                وصل حديثاً
+              <Link to="/about" className="block hover:text-accent transition-colors">
+                عن ديلمارت
               </Link>
             </div>
           </div>
@@ -133,17 +133,26 @@ const Footer = () => {
           {/* Customer Service & Policies */}
           <div>
             <h3 className="font-tajawal text-sm sm:text-base font-extrabold text-white mb-3 border-r-2 border-accent pr-2">
-              خدمة العملاء
+              خدمة العملاء والمعلومات
             </h3>
             <div className="space-y-2 text-xs sm:text-sm text-blue-100/80">
+              <Link to="/support" className="block hover:text-accent transition-colors">
+                مركز المساعدة
+              </Link>
               <Link to="/track-order" className="block hover:text-accent transition-colors">
                 تتبع حالة الطلب
               </Link>
-              <Link to="/support" className="block hover:text-accent transition-colors">
-                مركز المساعدة والدعم
+              <Link to="/returns" className="block hover:text-accent transition-colors">
+                الإلغاء والإرجاع
+              </Link>
+              <Link to="/terms" className="block hover:text-accent transition-colors">
+                الشروط والأحكام
               </Link>
               <Link to="/privacy" className="block hover:text-accent transition-colors">
-                الشروط وسياسة الخصوصية
+                سياسة الخصوصية
+              </Link>
+              <Link to="/contact" className="block hover:text-accent transition-colors">
+                تواصل معنا
               </Link>
               {!native && (
                 <>
@@ -164,19 +173,29 @@ const Footer = () => {
               تواصل معنا
             </h3>
             <div className="space-y-2.5 text-xs sm:text-sm text-blue-100/80">
-              <div className="flex items-center gap-2.5">
+              <a
+                href={`tel:${storeConfig.phone.replace(/\s/g, "")}`}
+                className="flex items-center gap-2.5 hover:text-accent transition-colors"
+                aria-label={`اتصال هاتفي على الرقم ${storeConfig.phone}`}
+              >
                 <Phone size={15} className="text-accent shrink-0" />
                 <span dir="ltr" className="font-manrope font-bold text-white">
                   {storeConfig.phone}
                 </span>
-              </div>
-              <div className="flex items-center gap-2.5">
+              </a>
+              <a
+                href={`https://wa.me/${storeConfig.whatsapp}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2.5 hover:text-accent transition-colors"
+                aria-label={`مراسلة واتساب على الرقم ${storeConfig.whatsapp}`}
+              >
                 <MessageCircle size={15} className="text-accent shrink-0" />
-                <span className="text-white">واتساب الدعم المباشر</span>
-              </div>
+                <span className="text-white">واتساب خدمة العملاء</span>
+              </a>
               <div className="flex items-center gap-2.5">
                 <MapPin size={15} className="text-accent shrink-0" />
-                <span>بغداد، العراق</span>
+                <span>{storeConfig.address}</span>
               </div>
             </div>
           </div>
