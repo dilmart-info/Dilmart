@@ -1,7 +1,14 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { Search, ChevronRight, ChevronLeft } from "lucide-react";
+import {
+  Search,
+  ChevronRight,
+  ChevronLeft,
+  AlertTriangle,
+  RefreshCw,
+  ShoppingBag,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +19,11 @@ import { apiClient } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
 import { toast } from "sonner";
 import ManualOrderModal from "@/components/admin/ManualOrderModal";
+import {
+  getMerchantOrderStatusLabel,
+  getMerchantDecisionStatus,
+  MERCHANT_ORDER_STATUS_MAP,
+} from "@/lib/merchant-order-status";
 
 type Props = {
   context: ScopedContext;
@@ -19,16 +31,16 @@ type Props = {
   detailBasePath: string;
 };
 
-const statusOptions = ["new", "contacted", "preparing", "shipped", "delivered", "cancelled", "returned"];
-const statusLabels: Record<string, string> = {
-  new: "جديد",
-  contacted: "تم التواصل",
-  preparing: "قيد التجهيز",
-  shipped: "تم الشحن",
-  delivered: "تم التوصيل",
-  cancelled: "ملغي",
-  returned: "مُرتجع",
-};
+const statusFilterOptions = [
+  "new",
+  "pending",
+  "contacted",
+  "preparing",
+  "shipped",
+  "delivered",
+  "cancelled",
+  "returned",
+];
 
 const PAGE_SIZE = 50;
 
@@ -46,7 +58,14 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
     queryFn: () => apiClient.getActiveMerchants(),
   });
 
-  const { data: ordersResponse, isLoading } = useQuery({
+  const {
+    data: ordersResponse,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ["scoped-orders", context.scope, context.merchantId, search, status, merchantFilter, page],
     queryFn: () =>
       getScopedOrders(context, {
@@ -63,12 +82,20 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
   const hasMore = ordersResponse?.hasMore ?? false;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  // Reset page when filters change
-  const handleSearchChange = (value: string) => { setSearch(value); setPage(1); };
-  const handleStatusChange = (value: string) => { setStatus(value); setPage(1); };
-  const handleMerchantChange = (value: string) => { setMerchantFilter(value); setPage(1); };
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+  };
+  const handleStatusChange = (value: string) => {
+    setStatus(value);
+    setPage(1);
+  };
+  const handleMerchantChange = (value: string) => {
+    setMerchantFilter(value);
+    setPage(1);
+  };
 
-  const updateStatus2 = useMutation({
+  const updateStatusMutation = useMutation({
     mutationFn: ({ id, value }: { id: string; value: string }) => updateScopedOrderStatus(context, id, value),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["scoped-orders"] });
@@ -77,36 +104,66 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
     onError: () => toast.error("تعذر تحديث حالة الطلب"),
   });
 
+  const hasFiltersApplied = Boolean(
+    search.trim() || status !== "all" || (context.scope === "platform" && merchantFilter !== "all")
+  );
+
+  const emptyMessage = hasFiltersApplied
+    ? "لا توجد طلبات مطابقة للفلاتر الحالية."
+    : context.scope === "merchant"
+    ? "لا توجد طلبات في متجرك حتى الآن."
+    : "لا توجد طلبات مسجلة.";
+
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">{title}</h2>
+    <div className="space-y-5" data-testid="orders-page">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">{title}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            متابعة دورة الطلبات، حالات التوصيل والقرارات التشغيلية.
+          </p>
+        </div>
         {context.scope === "platform" && (
-          <Button onClick={() => setManualModalOpen(true)}>إنشاء طلب من محادثة</Button>
+          <Button onClick={() => setManualModalOpen(true)} size="sm" className="h-9 gap-1.5 rounded-lg text-xs font-bold">
+            إنشاء طلب من محادثة
+          </Button>
         )}
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row">
-        <div className="relative md:w-80">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pr-9" placeholder={context.scope === "platform" ? "بحث بالاسم/الهاتف/رقم الطلب" : "بحث برقم الطلب"} value={search} onChange={(e) => handleSearchChange(e.target.value)} />
+      {/* Filter Bar */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pr-8 h-9 text-xs rounded-lg"
+            placeholder={context.scope === "platform" ? "بحث بالاسم أو الهاتف أو رقم الطلب..." : "بحث برقم الطلب..."}
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
         </div>
-        <select className="h-10 rounded-md border border-input bg-background px-3 text-sm md:w-52" value={status} onChange={(e) => handleStatusChange(e.target.value)}>
+
+        <select
+          className="h-9 rounded-lg border border-input bg-background px-3 text-xs w-full sm:w-44 text-foreground"
+          value={status}
+          onChange={(e) => handleStatusChange(e.target.value)}
+        >
           <option value="all">كل الحالات</option>
-          {statusOptions.map((s) => (
+          {statusFilterOptions.map((s) => (
             <option key={s} value={s}>
-              {statusLabels[s] ?? s}
+              {MERCHANT_ORDER_STATUS_MAP[s] ?? s}
             </option>
           ))}
         </select>
+
         {context.scope === "platform" && (
           <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm md:w-64"
+            className="h-9 rounded-lg border border-input bg-background px-3 text-xs md:w-60 text-foreground"
             value={merchantFilter}
             onChange={(e) => handleMerchantChange(e.target.value)}
           >
             <option value="all">كل التجار</option>
-            {(merchants ?? []).map((m: any) => (
+            {(merchants ?? []).map((m: { id: string; display_name: string }) => (
               <option key={m.id} value={m.id}>
                 {m.display_name}
               </option>
@@ -115,105 +172,174 @@ export default function OrdersPage({ context, title = "الطلبات", detailBa
         )}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="text-right">رقم الطلب</TableHead>
-              {context.scope === "platform" && <TableHead className="text-right">العميل</TableHead>}
-              {context.scope === "platform" && <TableHead className="text-right">التاجر</TableHead>}
-              <TableHead className="text-right">الإجمالي</TableHead>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">التاريخ</TableHead>
-              <TableHead className="text-center">إجراءات</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-10 text-center text-muted-foreground">
-                  جاري التحميل...
-                </TableCell>
+      {/* Orders Container */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30">
+                <TableHead className="text-right text-xs">رقم الطلب</TableHead>
+                {context.scope === "platform" && <TableHead className="text-right text-xs">العميل</TableHead>}
+                {context.scope === "platform" && <TableHead className="text-right text-xs">التاجر</TableHead>}
+                <TableHead className="text-right text-xs">الإجمالي</TableHead>
+                <TableHead className="text-right text-xs">الحالة والقرار</TableHead>
+                <TableHead className="text-right text-xs">التاريخ</TableHead>
+                <TableHead className="text-center text-xs">إجراءات</TableHead>
               </TableRow>
-            ) : orders.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-10 text-center text-muted-foreground">
-                  لا توجد طلبات مطابقة.
-                </TableCell>
-              </TableRow>
-            ) : (
-              orders.map((o: any) => (
-                <TableRow key={o.id}>
-                  <TableCell className="font-medium">{o.order_number}</TableCell>
-                  {context.scope === "platform" && <TableCell>{o.customer_name}</TableCell>}
-                  {context.scope === "platform" && <TableCell>{(o.merchants as any)?.display_name ?? "—"}</TableCell>}
-                  <TableCell>{formatPrice(o.total)}</TableCell>
-                  <TableCell>
-                    {context.scope === "merchant" ? (
-                      <Badge className={`text-white text-xs ${
-                        o.merchant_decision_status === "pending" ? "bg-amber-500" :
-                        o.merchant_decision_status === "rejected" ? "bg-red-600" :
-                        o.status === "preparing" ? "bg-yellow-500" :
-                        o.status === "shipped" ? "bg-purple-500" :
-                        o.status === "delivered" ? "bg-green-500" :
-                        o.status === "cancelled" ? "bg-gray-500" :
-                        o.status === "returned" ? "bg-red-400" :
-                        "bg-green-600"
-                      }`}>
-                        {o.merchant_decision_status === "pending" ? "بانتظار قرارك" :
-                         o.merchant_decision_status === "rejected" ? "مرفوض" :
-                         statusLabels[o.status] ?? o.status}
-                      </Badge>
-                    ) : (
-                      <select
-                        className="h-8 rounded border border-input bg-background px-2 text-xs"
-                        value={o.status ?? "new"}
-                        onChange={(e) => updateStatus2.mutate({ id: o.id, value: e.target.value })}
-                      >
-                        {statusOptions.map((s) => (
-                          <option key={s} value={s}>
-                            {statusLabels[s] ?? s}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </TableCell>
-                  <TableCell>{new Date(o.created_at).toLocaleDateString("ar-IQ")}</TableCell>
-                  <TableCell className="text-center">
-                    <Link to={`${detailBasePath}/${o.id}`}>
-                      <Button size="sm" variant="outline">
-                        التفاصيل
-                      </Button>
-                    </Link>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                /* State 1: Loading */
+                <TableRow>
+                  <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-12 text-center text-muted-foreground">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <span className="text-xs">جاري تحميل الطلبات...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ) : isError || error ? (
+                /* State 2: Distinct API Error with Retry */
+                <TableRow>
+                  <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-10 text-center" data-testid="orders-error">
+                    <div className="space-y-2 max-w-sm mx-auto">
+                      <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
+                        <AlertTriangle className="h-5 w-5" />
+                      </div>
+                      <p className="text-sm font-bold text-foreground">تعذر تحميل الطلبات</p>
+                      <p className="text-xs text-muted-foreground">{String((error as { message?: string })?.message ?? "حدث خطأ غير متوقع.")}</p>
+                      <Button size="sm" variant="outline" className="gap-1.5 rounded-lg text-xs font-bold" onClick={() => refetch()} disabled={isFetching}>
+                        <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+                        <span>إعادة المحاولة</span>
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : orders.length === 0 ? (
+                /* State 3: Distinct Empty State */
+                <TableRow>
+                  <TableCell colSpan={context.scope === "platform" ? 7 : 5} className="py-12 text-center text-muted-foreground" data-testid="orders-empty">
+                    <div className="space-y-2 max-w-sm mx-auto">
+                      <ShoppingBag className="h-9 w-9 mx-auto text-muted-foreground/40" />
+                      <p className="text-sm font-bold text-foreground">{emptyMessage}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {hasFiltersApplied
+                          ? "جرب البحث برقم طلب آخر أو إزالة فلتر الحالة."
+                          : context.scope === "merchant"
+                          ? "ستظهر الطلبات الجديدة هنا فور قيام العملاء بالشراء من متجرك."
+                          : "لا توجد طلبات مسجلة للنطاق المحدد."}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                /* State 4: Populated Data */
+                orders.map((o: {
+                  id: string;
+                  order_number: string;
+                  customer_name?: string;
+                  merchants?: { display_name?: string } | null;
+                  total: number;
+                  status: string;
+                  merchant_decision_status?: string | null;
+                  created_at: string;
+                }) => {
+                  const decision = getMerchantDecisionStatus(o.merchant_decision_status, o.status);
+                  const statusLabel = getMerchantOrderStatusLabel(o.status);
 
-      {/* Pagination controls */}
-      {total > 0 && (
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>
-            عرض {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} من {total} طلب
-          </span>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
-              <ChevronRight className="h-4 w-4" />
-              السابق
-            </Button>
-            <span className="flex items-center px-2">
-              {page} / {totalPages}
-            </span>
-            <Button size="sm" variant="outline" disabled={!hasMore} onClick={() => setPage((p) => p + 1)}>
-              التالي
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-          </div>
+                  return (
+                    <TableRow key={o.id} className="hover:bg-muted/20">
+                      <TableCell className="font-mono font-bold text-xs">#{o.order_number}</TableCell>
+                      {context.scope === "platform" && <TableCell className="text-xs">{o.customer_name ?? "—"}</TableCell>}
+                      {context.scope === "platform" && <TableCell className="text-xs">{o.merchants?.display_name ?? "—"}</TableCell>}
+                      <TableCell className="font-mono font-semibold text-xs">{formatPrice(o.total)}</TableCell>
+                      <TableCell>
+                        {context.scope === "merchant" ? (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {o.merchant_decision_status === "pending" ? (
+                              <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] py-0 font-bold animate-pulse">
+                                {decision.label}
+                              </Badge>
+                            ) : o.merchant_decision_status === "rejected" ? (
+                              <Badge variant="secondary" className="bg-red-500/15 text-red-700 dark:text-red-400 border border-red-500/30 text-[10px] py-0 font-bold">
+                                {decision.label}
+                              </Badge>
+                            ) : null}
+                            <Badge variant="outline" className="text-[10px] py-0 font-medium">
+                              {statusLabel}
+                            </Badge>
+                          </div>
+                        ) : (
+                          /* Platform Scope Generic Select */
+                          <select
+                            className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground cursor-pointer"
+                            value={o.status ?? "new"}
+                            onChange={(e) => updateStatusMutation.mutate({ id: o.id, value: e.target.value })}
+                          >
+                            {statusFilterOptions.map((s) => (
+                              <option key={s} value={s}>
+                                {MERCHANT_ORDER_STATUS_MAP[s] ?? s}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">
+                        {new Date(o.created_at).toLocaleDateString("ar-IQ", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Link to={`${detailBasePath}/${o.id}`}>
+                          <Button size="sm" variant="outline" className="h-7 px-3 text-xs font-medium">
+                            التفاصيل
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
         </div>
-      )}
+
+        {/* Pagination Footer */}
+        {total > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-4 py-3 bg-muted/20 text-xs">
+            <span className="text-muted-foreground">
+              عرض {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, total)} من {total} طلب
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-medium"
+                disabled={page <= 1 || isLoading}
+                onClick={() => setPage((p) => p - 1)}
+              >
+                <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                <span>السابق</span>
+              </Button>
+              <span className="text-muted-foreground px-2">
+                صفحة {page} من {totalPages}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs font-medium"
+                disabled={!hasMore || isLoading}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                <span>التالي</span>
+                <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <ManualOrderModal open={manualModalOpen} onOpenChange={setManualModalOpen} context={context} />
     </div>
