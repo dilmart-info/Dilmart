@@ -1,7 +1,19 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
-import { Search } from "lucide-react";
+import {
+  Search,
+  Plus,
+  Upload,
+  Copy,
+  Edit,
+  AlertTriangle,
+  RefreshCw,
+  Package,
+  Layers,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -171,7 +183,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
     setSelectedIds([]);
   };
 
-  const { data: productsData, isLoading, error, refetch } = useQuery({
+  const { data: productsData, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ["scoped-products", context.scope, context.merchantId, searchFromUrl, merchantFilter, readinessFilter, pageFromUrl, pageSize],
     enabled: hasMerchantSelection,
     queryFn: () =>
@@ -239,8 +251,8 @@ export default function ProductsPage({ context, title = "المنتجات", crea
         toast.success("تم تعطيل المنتج");
       }
     },
-    onError: (error: unknown) => {
-      const message = String((error as { message?: string })?.message ?? "");
+    onError: (err: unknown) => {
+      const message = String((err as { message?: string })?.message ?? "");
       if (message.includes("PRODUCT_NOT_READY")) {
         toast.error("لا يمكن تفعيل المنتج قبل استكمال متطلبات الجاهزية");
         return;
@@ -288,9 +300,6 @@ export default function ProductsPage({ context, title = "المنتجات", crea
         image_url: quickAdd.image_url || undefined,
       }),
     onSuccess: (created) => {
-      // The backend creates the product as a draft when the quick payload does not meet the
-      // activation readiness rules (e.g. no image or description) — say so instead of implying
-      // it went live.
       toast.success(
         created?.is_active
           ? "تمت إضافة المنتج بسرعة"
@@ -312,40 +321,69 @@ export default function ProductsPage({ context, title = "المنتجات", crea
     onError: (err: unknown) => toast.error((err as { message?: string })?.message ?? "تعذر نسخ المنتج"),
   });
 
+  const isMerchantScope = context.scope === "merchant";
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-        <h2 className="text-2xl font-bold">{title}</h2>
-        <div className="flex items-center gap-2">
+    <div className="space-y-5" data-testid="products-page">
+      {/* Header & Main Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/70 pb-4">
+        <div>
+          <h2 className="text-xl sm:text-2xl font-black text-foreground tracking-tight">{title}</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            إدارة الكتالوج، الأسعار، المخزون وجاهزية المنتجات للنشر.
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           {context.scope === "platform" && selectedMerchant ? (
-            <Badge variant="secondary">التاجر: {selectedMerchant.display_name ?? "—"}</Badge>
+            <Badge variant="secondary" className="text-xs">التاجر: {selectedMerchant.display_name ?? "—"}</Badge>
           ) : null}
-          {productsCountLabel ? <Badge variant="outline">{productsCountLabel}</Badge> : null}
+          {productsCountLabel ? <Badge variant="outline" className="text-xs">{productsCountLabel}</Badge> : null}
           {createPath && (
             <Link to={createHref}>
-              <Button disabled={context.scope === "platform" && !merchantFilter}>إضافة منتج</Button>
+              <Button size="sm" className="h-9 gap-1.5 rounded-lg text-xs font-bold" disabled={context.scope === "platform" && !merchantFilter}>
+                <Plus className="h-3.5 w-3.5" />
+                <span>إضافة منتج</span>
+              </Button>
             </Link>
           )}
-          {context.scope === "merchant" ? (
+          {isMerchantScope ? (
             <>
               <Link to="/merchant/products/import">
-                <Button variant="outline">استيراد ملف المنتجات</Button>
+                <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-lg text-xs font-bold">
+                  <Upload className="h-3.5 w-3.5" />
+                  <span>استيراد ملف</span>
+                </Button>
               </Link>
-              <Button variant="outline" onClick={() => setQuickAddOpen((v) => !v)}>
-                إضافة سريعة
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 gap-1.5 rounded-lg text-xs font-bold"
+                onClick={() => setQuickAddOpen((v) => !v)}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>إضافة سريعة</span>
               </Button>
             </>
           ) : null}
         </div>
       </div>
 
+      {/* Quick Add Section */}
       {quickAddOpen ? (
-        <div className="rounded-lg border border-border bg-card p-3 space-y-2">
-          <p className="text-sm font-semibold">إضافة سريعة</p>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-            <Input placeholder="الاسم" value={quickAdd.name} onChange={(e) => setQuickAdd((p) => ({ ...p, name: e.target.value }))} />
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-xs animate-fade-in">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-bold text-foreground">إضافة سريعة</p>
+            <span className="text-xs text-muted-foreground">يمكنك إكمال بقية التفاصيل لاحقاً</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
+            <Input
+              placeholder="الاسم"
+              value={quickAdd.name}
+              onChange={(e) => setQuickAdd((p) => ({ ...p, name: e.target.value }))}
+              className="h-9 text-xs rounded-lg"
+            />
             <select
-              className="h-10 rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 rounded-lg border border-input bg-background px-2.5 text-xs text-foreground"
               value={quickAdd.category_id}
               onChange={(e) => setQuickAdd((p) => ({ ...p, category_id: e.target.value }))}
             >
@@ -354,39 +392,57 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                 <option key={opt.id} value={opt.id}>{opt.label}</option>
               ))}
             </select>
-            <Input placeholder="السعر" type="number" value={quickAdd.price} onChange={(e) => setQuickAdd((p) => ({ ...p, price: e.target.value }))} />
-            <Input placeholder="المخزون" type="number" value={quickAdd.stock} onChange={(e) => setQuickAdd((p) => ({ ...p, stock: e.target.value }))} />
-            <Input placeholder="رابط الصورة (اختياري)" value={quickAdd.image_url} onChange={(e) => setQuickAdd((p) => ({ ...p, image_url: e.target.value }))} />
+            <Input
+              placeholder="السعر"
+              type="number"
+              value={quickAdd.price}
+              onChange={(e) => setQuickAdd((p) => ({ ...p, price: e.target.value }))}
+              className="h-9 text-xs rounded-lg"
+            />
+            <Input
+              placeholder="المخزون"
+              type="number"
+              value={quickAdd.stock}
+              onChange={(e) => setQuickAdd((p) => ({ ...p, stock: e.target.value }))}
+              className="h-9 text-xs rounded-lg"
+            />
+            <Input
+              placeholder="رابط الصورة (اختياري)"
+              value={quickAdd.image_url}
+              onChange={(e) => setQuickAdd((p) => ({ ...p, image_url: e.target.value }))}
+              className="h-9 text-xs rounded-lg"
+            />
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 justify-end pt-1">
+            <Button variant="ghost" size="sm" onClick={() => setQuickAddOpen(false)} className="h-8 text-xs">
+              إلغاء
+            </Button>
             <Button
+              size="sm"
+              className="h-8 text-xs font-bold"
               onClick={() => quickAddMutation.mutate()}
               disabled={quickAddMutation.isPending || !quickAdd.name.trim() || !quickAdd.category_id || Number(quickAdd.price) <= 0}
             >
-              حفظ المنتج
-            </Button>
-            <Button variant="outline" onClick={() => setQuickAddOpen(false)}>
-              إلغاء
+              {quickAddMutation.isPending ? "جاري الحفظ..." : "حفظ المنتج"}
             </Button>
           </div>
         </div>
       ) : null}
 
-      <div className="flex flex-col gap-3 md:flex-row">
-        <div className="relative md:w-80">
-          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+      {/* Filter Bar */}
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            className="pr-9"
+            className="pr-8 h-9 text-xs rounded-lg"
             placeholder="بحث عن منتج..."
             value={searchInput}
-            onChange={(e) => {
-              setSearchInput(e.target.value);
-            }}
+            onChange={(e) => setSearchInput(e.target.value)}
           />
         </div>
         {context.scope === "platform" && (
           <select
-            className="h-10 rounded-md border border-input bg-background px-3 text-sm md:w-64"
+            className="h-9 rounded-lg border border-input bg-background px-3 text-xs md:w-60 text-foreground"
             value={merchantFilter}
             onChange={(e) => handleMerchantChange(e.target.value)}
           >
@@ -399,7 +455,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
           </select>
         )}
         <select
-          className="h-10 rounded-md border border-input bg-background px-3 text-sm md:w-52"
+          className="h-9 rounded-lg border border-input bg-background px-3 text-xs w-full sm:w-44 text-foreground"
           value={readinessFilter}
           onChange={(e) => handleReadinessChange(e.target.value as "all" | "ready" | "not_ready")}
         >
@@ -409,12 +465,14 @@ export default function ProductsPage({ context, title = "المنتجات", crea
         </select>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
-        {context.scope === "merchant" && selectedIds.length > 0 ? (
-          <div className="border-b p-3 flex flex-col md:flex-row gap-2 md:items-center">
-            <span className="text-sm text-muted-foreground">تم اختيار {selectedIds.length} منتج</span>
+      {/* Table Container */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        {/* Bulk Action Controls */}
+        {isMerchantScope && selectedIds.length > 0 ? (
+          <div className="border-b p-3 bg-muted/40 flex flex-wrap gap-2 items-center">
+            <span className="text-xs font-semibold text-foreground">تم اختيار {selectedIds.length} منتج</span>
             <select
-              className="h-9 rounded-md border border-input bg-background px-2 text-sm md:w-48"
+              className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground"
               value={bulkAction}
               onChange={(e) => setBulkAction(e.target.value as "" | "activate" | "deactivate" | "update_stock" | "change_category" | "adjust_price_percent" | "archive")}
             >
@@ -427,197 +485,220 @@ export default function ProductsPage({ context, title = "المنتجات", crea
               <option value="archive">أرشفة</option>
             </select>
             {bulkAction === "change_category" ? (
-              <select className="h-9 rounded-md border border-input bg-background px-2 text-sm md:w-52" value={bulkValue} onChange={(e) => setBulkValue(e.target.value)}>
+              <select className="h-8 rounded-lg border border-input bg-background px-2 text-xs text-foreground" value={bulkValue} onChange={(e) => setBulkValue(e.target.value)}>
                 <option value="">اختر الفئة</option>
                 {assignableCategoryOptions.map((opt) => (
                   <option key={opt.id} value={opt.id}>{opt.label}</option>
                 ))}
               </select>
             ) : bulkAction === "update_stock" || bulkAction === "adjust_price_percent" ? (
-              <Input className="md:w-40" placeholder={bulkAction === "update_stock" ? "المخزون" : "النسبة المئوية"} value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} />
+              <Input className="h-8 text-xs w-32 rounded-lg" placeholder={bulkAction === "update_stock" ? "المخزون" : "النسبة المئوية"} value={bulkValue} onChange={(e) => setBulkValue(e.target.value)} />
             ) : null}
-            <Button size="sm" onClick={() => bulkActionMutation.mutate()} disabled={bulkActionMutation.isPending || !bulkAction}>
-              تنفيذ
+            <Button size="sm" className="h-8 text-xs font-bold" onClick={() => bulkActionMutation.mutate()} disabled={bulkActionMutation.isPending || !bulkAction}>
+              {bulkActionMutation.isPending ? "جاري التنفيذ..." : "تنفيذ"}
             </Button>
           </div>
         ) : null}
-        <Table>
-          <TableHeader>
-            <TableRow>
-              {context.scope === "merchant" ? (
-                <TableHead className="w-10">
-                  <input
-                    type="checkbox"
-                    checked={products.length > 0 && products.every((p: ProductItem) => selectedIds.includes(p.id))}
-                    onChange={(e) => setSelectedIds(e.target.checked ? products.map((p: ProductItem) => p.id) : [])}
-                  />
-                </TableHead>
-              ) : null}
-              <TableHead className="text-right">المنتج</TableHead>
-              <TableHead className="text-right">القسم</TableHead>
-              {context.scope === "platform" && <TableHead className="text-right">التاجر</TableHead>}
-              <TableHead className="text-right">السعر</TableHead>
-              <TableHead className="text-right">المخزون</TableHead>
-              <TableHead className="text-right">جاهزية الكتالوج</TableHead>
-              <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-center">إجراءات</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {requiresMerchantSelection && !hasMerchantSelection ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                  اختر التاجر من القائمة أعلاه لعرض منتجاته.
-                </TableCell>
+
+        {/* Unified Responsive Presentation */}
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className={isMerchantScope ? "hidden md:table-header-group" : ""}>
+              <TableRow className="bg-muted/30">
+                {isMerchantScope ? (
+                  <TableHead className="w-10">
+                    <input
+                      type="checkbox"
+                      aria-label="تحديد كل المنتجات"
+                      checked={products.length > 0 && products.every((p: ProductItem) => selectedIds.includes(p.id))}
+                      onChange={(e) => setSelectedIds(e.target.checked ? products.map((p: ProductItem) => p.id) : [])}
+                    />
+                  </TableHead>
+                ) : null}
+                <TableHead className="text-right text-xs">المنتج</TableHead>
+                <TableHead className="text-right text-xs">القسم</TableHead>
+                {context.scope === "platform" && <TableHead className="text-right text-xs">التاجر</TableHead>}
+                <TableHead className="text-right text-xs">السعر</TableHead>
+                <TableHead className="text-right text-xs">المخزون</TableHead>
+                <TableHead className="text-right text-xs">جاهزية الكتالوج</TableHead>
+                <TableHead className="text-right text-xs">الحالة</TableHead>
+                <TableHead className="text-center text-xs">إجراءات</TableHead>
               </TableRow>
-            ) : isLoading ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                  جاري التحميل...
-                </TableCell>
-              </TableRow>
-            ) : error ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-8 text-center">
-                  <div className="space-y-2">
-                    <p className="text-sm text-destructive">تعذر تحميل المنتجات. يرجى إعادة المحاولة.</p>
-                    <p className="text-xs text-muted-foreground">{String((error as { message?: string })?.message ?? "")}</p>
-                    <Button size="sm" variant="outline" onClick={() => refetch()}>
-                      إعادة المحاولة
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ) : products.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
-                  {emptyText}
-                </TableCell>
-              </TableRow>
-            ) : (
-              products.map((p: ProductItem) => {
-                const isFocused = focusId === p.id;
-                return (
-                  <TableRow
-                    key={p.id}
-                    id={`product-row-${p.id}`}
-                    className={isFocused ? "bg-primary/10 transition-colors duration-700 ring-1 ring-primary/20" : undefined}
-                  >
-                    {context.scope === "merchant" ? (
-                      <TableCell>
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.includes(p.id)}
-                          onChange={(e) => setSelectedIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((id) => id !== p.id)))}
-                        />
+            </TableHeader>
+            <TableBody className={isMerchantScope ? "block md:table-row-group p-3 md:p-0 space-y-3 md:space-y-0" : ""}>
+              {requiresMerchantSelection && !hasMerchantSelection ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                    اختر التاجر من القائمة أعلاه لعرض منتجاته.
+                  </TableCell>
+                </TableRow>
+              ) : isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground">
+                    جاري التحميل...
+                  </TableCell>
+                </TableRow>
+              ) : isError || error ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-8 text-center" data-testid="products-error">
+                    <div className="space-y-2">
+                      <p className="text-sm text-destructive font-bold">تعذر تحميل المنتجات. يرجى إعادة المحاولة.</p>
+                      <p className="text-xs text-muted-foreground">{String((error as { message?: string })?.message ?? "")}</p>
+                      <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+                        إعادة المحاولة
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : products.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-10 text-center text-muted-foreground" data-testid="products-empty">
+                    {emptyText}
+                  </TableCell>
+                </TableRow>
+              ) : (
+                products.map((p: ProductItem) => {
+                  const isFocused = focusId === p.id;
+                  const isPubliclyVisible =
+                    p.is_active === true && p.is_published === true && p.visibility_status === "public";
+
+                  let buttonLabel = "";
+                  let targetIsActive = false;
+                  if (p.visibility_status === "archived") {
+                    buttonLabel = "استعادة ونشر";
+                    targetIsActive = true;
+                  } else if (isPubliclyVisible) {
+                    buttonLabel = "تعطيل";
+                    targetIsActive = false;
+                  } else if (p.is_active) {
+                    buttonLabel = "نشر في المتجر";
+                    targetIsActive = true;
+                  } else {
+                    buttonLabel = "تفعيل ونشر";
+                    targetIsActive = true;
+                  }
+
+                  const returnParams = new URLSearchParams(searchParams);
+                  returnParams.set("focus", p.id);
+                  if (context.scope === "platform" && merchantFilter) {
+                    returnParams.set("merchant_id", merchantFilter);
+                  }
+                  const returnTo = `${location.pathname}?${returnParams.toString()}`;
+                  const editHref =
+                    context.scope === "platform" && merchantFilter
+                      ? `${editPathBase}/${p.id}/edit?merchant_id=${encodeURIComponent(merchantFilter)}&return_to=${encodeURIComponent(returnTo)}`
+                      : `${editPathBase}/${p.id}/edit?return_to=${encodeURIComponent(returnTo)}`;
+
+                  return (
+                    <TableRow
+                      key={p.id}
+                      id={`product-row-${p.id}`}
+                      className={
+                        isMerchantScope
+                          ? `block md:table-row rounded-xl border border-border bg-card p-3.5 md:p-0 mb-3 md:mb-0 shadow-2xs md:shadow-none hover:bg-muted/20 ${
+                              isFocused ? "bg-primary/10 ring-1 ring-primary/20" : ""
+                            }`
+                          : isFocused
+                          ? "bg-primary/10 transition-colors duration-700 ring-1 ring-primary/20"
+                          : undefined
+                      }
+                    >
+                      {isMerchantScope ? (
+                        <TableCell className="p-0 md:p-4 mb-2 md:mb-0 flex md:table-cell items-center justify-between">
+                          <input
+                            type="checkbox"
+                            aria-label={`تحديد منتج ${p.name}`}
+                            checked={selectedIds.includes(p.id)}
+                            onChange={(e) => setSelectedIds((prev) => (e.target.checked ? [...prev, p.id] : prev.filter((id) => id !== p.id)))}
+                          />
+                          <span className="text-xs text-muted-foreground md:hidden">{p.categories?.name ?? "—"}</span>
+                        </TableCell>
+                      ) : null}
+                      <TableCell className="font-medium text-xs p-0 md:p-4 mb-1.5 md:mb-0 block md:table-cell">
+                        <span className="font-bold text-foreground">{p.name}</span>
                       </TableCell>
-                    ) : null}
-                    <TableCell className="font-medium">{p.name}</TableCell>
-                    <TableCell>{p.categories?.name ?? "—"}</TableCell>
-                    {context.scope === "platform" && <TableCell>{p.merchants?.display_name ?? "—"}</TableCell>}
-                    <TableCell>{formatPrice(p.discount_price ?? p.price)}</TableCell>
-                    <TableCell>{p.stock ?? 0}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <Badge variant={p?.readiness?.is_ready ? "default" : "secondary"}>{p?.readiness?.score ?? 0}%</Badge>
-                        {!p?.readiness?.is_ready ? (
-                          <p className="text-[11px] text-muted-foreground">
-                            نواقص: {(p?.readiness?.checklist ?? []).filter((c: ProductChecklistItem) => !c.passed && c.key !== "is_active").slice(0, 2).map((c) => c.label).join("، ")}
-                          </p>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {(() => {
-                        if (p.visibility_status === "archived") {
-                          return <Badge variant="secondary">مؤرشف</Badge>;
-                        }
-                        const isPubliclyVisible =
-                          p.is_active === true &&
-                          p.is_published === true &&
-                          p.visibility_status === "public";
-                        if (isPubliclyVisible) {
-                          return <Badge variant="default">ظاهر في المتجر</Badge>;
-                        }
-                        if (p.is_active) {
-                          return <Badge variant="secondary">نشط داخلياً — غير منشور</Badge>;
-                        }
-                        return <Badge variant="secondary">معطل</Badge>;
-                      })()}
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-2">
+                      <TableCell className={isMerchantScope ? "hidden md:table-cell text-xs text-muted-foreground p-0 md:p-4" : "text-xs text-muted-foreground p-0 md:p-4"}>
+                        {p.categories?.name ?? "—"}
+                      </TableCell>
+                      {context.scope === "platform" && <TableCell className="text-xs p-0 md:p-4">{p.merchants?.display_name ?? "—"}</TableCell>}
+                      <TableCell className="text-xs font-mono font-semibold p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden font-sans">السعر:</span>
+                        <span>{formatPrice(p.discount_price ?? p.price)}</span>
+                      </TableCell>
+                      {/* Neutral stock rendering without invented <= 5 warning threshold */}
+                      <TableCell className="text-xs font-mono p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden font-sans">المخزون:</span>
+                        <span>{p.stock ?? 0}</span>
+                      </TableCell>
+                      <TableCell className="p-0 md:p-4 mb-1 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden">الجاهزية:</span>
+                        <div className="space-y-0.5 text-left md:text-right">
+                          <Badge variant={p?.readiness?.is_ready ? "default" : "secondary"} className="text-[10px] py-0">
+                            {p?.readiness?.score ?? 0}%
+                          </Badge>
+                          {!p?.readiness?.is_ready ? (
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[140px]" title={(p?.readiness?.checklist ?? []).filter((c: ProductChecklistItem) => !c.passed && c.key !== "is_active").map((c) => c.label).join("، ")}>
+                              نواقص: {(p?.readiness?.checklist ?? []).filter((c: ProductChecklistItem) => !c.passed && c.key !== "is_active").slice(0, 2).map((c) => c.label).join("، ")}
+                            </p>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                      <TableCell className="p-0 md:p-4 mb-2 md:mb-0 flex md:table-cell justify-between items-center">
+                        <span className="text-xs text-muted-foreground md:hidden">الحالة:</span>
                         {(() => {
-                          const returnParams = new URLSearchParams(searchParams);
-                          returnParams.set("focus", p.id);
-                          if (context.scope === "platform" && merchantFilter) {
-                            returnParams.set("merchant_id", merchantFilter);
-                          }
-                          const returnTo = `${location.pathname}?${returnParams.toString()}`;
-
-                          const editHref =
-                            context.scope === "platform" && merchantFilter
-                              ? `${editPathBase}/${p.id}/edit?merchant_id=${encodeURIComponent(merchantFilter)}&return_to=${encodeURIComponent(returnTo)}`
-                              : `${editPathBase}/${p.id}/edit?return_to=${encodeURIComponent(returnTo)}`;
-
-                          return (
-                            <Link to={editHref}>
-                              <Button size="sm" variant="outline">
-                                تعديل
-                              </Button>
-                            </Link>
-                          );
-                        })()}
-                        {(() => {
-                          const isPubliclyVisible =
-                            p.is_active === true &&
-                            p.is_published === true &&
-                            p.visibility_status === "public";
-
-                          let buttonLabel = "";
-                          let targetIsActive = false;
-
                           if (p.visibility_status === "archived") {
-                            buttonLabel = "استعادة ونشر";
-                            targetIsActive = true;
-                          } else if (isPubliclyVisible) {
-                            buttonLabel = "تعطيل";
-                            targetIsActive = false;
-                          } else if (p.is_active) {
-                            buttonLabel = "نشر في المتجر";
-                            targetIsActive = true;
-                          } else {
-                            buttonLabel = "تفعيل ونشر";
-                            targetIsActive = true;
+                            return <Badge variant="secondary" className="text-[10px]">مؤرشف</Badge>;
                           }
-
-                          return (
+                          if (isPubliclyVisible) {
+                            return <Badge variant="default" className="text-[10px]">ظاهر في المتجر</Badge>;
+                          }
+                          if (p.is_active) {
+                            return <Badge variant="secondary" className="text-[10px]">نشط داخلياً — غير منشور</Badge>;
+                          }
+                          return <Badge variant="secondary" className="text-[10px]">معطل</Badge>;
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-center p-0 md:p-4 pt-2 md:pt-4 border-t border-border/40 md:border-t-0 block md:table-cell">
+                        <div className="flex items-center justify-end md:justify-center gap-1.5">
+                          <Link to={editHref}>
+                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs font-medium">
+                              تعديل
+                            </Button>
+                          </Link>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => updateStatus.mutate({ id: p.id, isActive: targetIsActive })}
+                            disabled={updateStatus.isPending}
+                          >
+                            {buttonLabel}
+                          </Button>
+                          {isMerchantScope ? (
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => updateStatus.mutate({ id: p.id, isActive: targetIsActive })}
-                              disabled={updateStatus.isPending}
+                              className="h-7 px-2 text-xs"
+                              onClick={() => duplicateMutation.mutate(p.id)}
+                              disabled={duplicateMutation.isPending}
+                              title="نسخ المنتج"
                             >
-                              {buttonLabel}
+                              <Copy className="h-3 w-3" />
                             </Button>
-                          );
-                        })()}
-                        {context.scope === "merchant" ? (
-                          <Button size="sm" variant="ghost" onClick={() => duplicateMutation.mutate(p.id)} disabled={duplicateMutation.isPending}>
-                            نسخ المنتج
-                          </Button>
-                        ) : null}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </div>
 
+        {/* Pagination Footer */}
         {hasMerchantSelection && total > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-4 py-3 bg-muted/20 text-sm">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-border px-4 py-3 bg-muted/20 text-xs">
             <span className="text-muted-foreground">
               عرض {startRow}–{endRow} من {total}
             </span>
@@ -625,17 +706,19 @@ export default function ProductsPage({ context, title = "المنتجات", crea
               <Button
                 variant="outline"
                 size="sm"
+                className="h-8 text-xs font-medium"
                 onClick={() => handlePageChange(Math.max(1, effectivePage - 1))}
                 disabled={effectivePage <= 1 || isLoading}
               >
                 السابق
               </Button>
-              <span className="text-xs text-muted-foreground px-2">
+              <span className="text-muted-foreground px-2">
                 صفحة {effectivePage} من {totalPages}
               </span>
               <Button
                 variant="outline"
                 size="sm"
+                className="h-8 text-xs font-medium"
                 onClick={() => handlePageChange(Math.min(totalPages, effectivePage + 1))}
                 disabled={effectivePage >= totalPages || isLoading}
               >
