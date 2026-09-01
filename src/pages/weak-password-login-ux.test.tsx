@@ -128,10 +128,13 @@ describe("customer auth page", () => {
     const form = await screen.findByTestId("password-form");
     // Radix drives the tab; confirm the register branch is actually active before submitting.
     await waitFor(() => expect(screen.getByRole("button", { name: "إنشاء الحساب" })).toBeTruthy());
-    fillAndSubmit(form, [
+    const fields: Array<[HTMLElement, string]> = [
       [screen.getByTestId("password-identifier"), "new@example.com"],
       [screen.getByTestId("password"), "password123"],
-    ]);
+    ];
+    const confirmInput = screen.queryByTestId("confirm-password");
+    if (confirmInput) fields.push([confirmInput, "password123"]);
+    fillAndSubmit(form, fields);
 
     await waitFor(() => expect(signUpWithPassword).toHaveBeenCalled());
     await waitFor(() => expect(toastError).toHaveBeenCalledWith(WEAK_PASSWORD_PWNED_MESSAGE_AR));
