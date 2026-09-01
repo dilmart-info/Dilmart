@@ -73,14 +73,23 @@ export function NotificationHub() {
                     },
                 });
                 if (row.type === "new_order") {
-                    if (merchantId) {
-                        queryClient.invalidateQueries({ queryKey: ["pending-merchant-orders", merchantId] });
-                        queryClient.invalidateQueries({ queryKey: ["merchant-notifications", merchantId] });
+                    const rowMerchantId =
+                        typeof row.merchant_id === "string" && row.merchant_id.trim().length > 0
+                            ? row.merchant_id.trim()
+                            : null;
+
+                    // Authoritative event contract: fail closed if row has NO merchant_id
+                    // Do NOT synthesize authority from fallback state
+                    if (!rowMerchantId) {
+                        return;
                     }
+
+                    queryClient.invalidateQueries({ queryKey: ["pending-merchant-orders", rowMerchantId] });
+                    queryClient.invalidateQueries({ queryKey: ["merchant-notifications", rowMerchantId] });
+
                     const orderId = row.order_id || (row.link ? (row.link as string).split("/").pop() : null);
-                    const eventMerchantId = (row.merchant_id as string) || merchantId || null;
                     window.dispatchEvent(new CustomEvent("merchant-new-order", {
-                        detail: { orderId, notificationId: row.id, merchantId: eventMerchantId },
+                        detail: { orderId, notificationId: row.id, merchantId: rowMerchantId },
                     }));
                 } else {
                     playNotificationSound("default");

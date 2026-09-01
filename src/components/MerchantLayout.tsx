@@ -71,6 +71,12 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
   // Guard to prevent auto-opening backlog repeatedly on page transitions
   const hasAutoOpenedBacklogRef = useRef(false);
 
+  // Active merchant ref for async race and store-switch isolation
+  const activeMerchantIdRef = useRef(membership?.merchant_id);
+  useEffect(() => {
+    activeMerchantIdRef.current = membership?.merchant_id;
+  }, [membership?.merchant_id]);
+
   // Store switch isolation: reset modal and queue state immediately when active merchant changes
   useEffect(() => {
     setModalOpenOrderId(null);
@@ -84,19 +90,26 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
       const orderId = customEvent.detail?.orderId;
       const eventMerchantId = customEvent.detail?.merchantId;
 
+      const currentActiveMerchantId = activeMerchantIdRef.current;
+
       // Fail closed on missing, undefined, or mismatched merchant IDs
-      if (!eventMerchantId || !membership?.merchant_id || eventMerchantId !== membership.merchant_id) {
+      if (!eventMerchantId || !currentActiveMerchantId || eventMerchantId !== currentActiveMerchantId) {
         return;
       }
 
       if (orderId && isAuthorizedToDecide) {
+        const capturedMerchantId = currentActiveMerchantId;
+
         refetch().then((res) => {
+          // Re-check against latest active merchant after refetch resolves
+          if (capturedMerchantId !== activeMerchantIdRef.current) {
+            return;
+          }
+
           const pendingList = res.data?.items ?? [];
           const existsInQueue = pendingList.some((item: { id?: string }) => item.id === orderId);
           if (existsInQueue) {
             setModalOpenOrderId(orderId);
-          } else if (pendingList.length > 0) {
-            setModalOpenOrderId(pendingList[0].id);
           }
         });
       } else {
@@ -105,7 +118,7 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
     };
     window.addEventListener("merchant-new-order", handleNewOrder);
     return () => window.removeEventListener("merchant-new-order", handleNewOrder);
-  }, [refetch, isAuthorizedToDecide, membership?.merchant_id]);
+  }, [refetch, isAuthorizedToDecide]);
 
   // Acknowledge when merchant opens an order (decision modal / deep link)
   useEffect(() => {

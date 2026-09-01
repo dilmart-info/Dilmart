@@ -147,12 +147,8 @@ export default function MerchantOrderDetail() {
   const hasJenniIntegrationRow = !!jenniIntegration;
   const isJenniDispatchedOrSynced =
     jenniIntegration?.dispatch_status === "dispatched" || jenniIntegration?.dispatch_status === "synced";
-  const shipmentNumber = (
-    jenniIntegration?.external_shipment_number ||
-    jenniIntegration?.provider_shipment_id ||
-    ""
-  ).trim();
-  const hasJenniShipmentNumber = !!shipmentNumber;
+  const externalShipmentNumber = (jenniIntegration?.external_shipment_number ?? "").trim();
+  const hasJenniShipmentNumber = externalShipmentNumber.length > 0;
   const canPrintSticker = hasJenniIntegrationRow && isJenniDispatchedOrSynced && hasJenniShipmentNumber;
 
   const hasLegacyDelivery =
@@ -504,11 +500,19 @@ export default function MerchantOrderDetail() {
                   </Badge>
                 </div>
               )}
-              {hasJenniIntegrationRow && (jenniIntegration?.external_shipment_number || jenniIntegration?.provider_shipment_id) && (
+              {hasJenniIntegrationRow && externalShipmentNumber && (
                 <div>
                   <span className="text-muted-foreground block mb-1">رقم الشحنة</span>
                   <span className="font-mono font-bold text-foreground">
-                    {jenniIntegration.external_shipment_number || jenniIntegration.provider_shipment_id}
+                    {externalShipmentNumber}
+                  </span>
+                </div>
+              )}
+              {hasJenniIntegrationRow && jenniIntegration?.provider_shipment_id && (
+                <div>
+                  <span className="text-muted-foreground block mb-1">معرف المزود الداخلي</span>
+                  <span className="font-mono text-muted-foreground text-xs">
+                    {jenniIntegration.provider_shipment_id}
                   </span>
                 </div>
               )}

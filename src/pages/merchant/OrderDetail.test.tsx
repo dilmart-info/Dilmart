@@ -98,7 +98,7 @@ const mockOrderJenniDispatched = {
       provider_code: "jenni",
       dispatch_status: "dispatched",
       external_shipment_number: "JENNI-TRK-98765",
-      provider_shipment_id: "JENNI-TRK-98765",
+      provider_shipment_id: "JENNI-PROVIDER-INT-104",
       provider_current_step_ar: "مركز التوزيع المركزي",
       dispatch_error: null,
       last_synced_at: "2026-09-01T11:00:00Z",
@@ -274,6 +274,8 @@ describe("MerchantOrderDetail — Role Gating, Query States & Decision Operation
 
     await screen.findByTestId("merchant-order-detail");
     expect(screen.getByText("JENNI-TRK-98765")).toBeTruthy();
+    expect(screen.getByText("JENNI-PROVIDER-INT-104")).toBeTruthy();
+    expect(screen.getByText("معرف المزود الداخلي")).toBeTruthy();
     expect(screen.getByText("مركز التوزيع المركزي")).toBeTruthy();
     expect(screen.getByText("تم الإرسال لشركة التوصيل")).toBeTruthy();
 
@@ -309,7 +311,7 @@ describe("MerchantOrderDetail — Role Gating, Query States & Decision Operation
     expect(stickerBtns[0].hasAttribute("disabled")).toBe(false);
   });
 
-  it("JENNI STICKER BUTTON: disabled when shipment number is missing", async () => {
+  it("JENNI STICKER BUTTON: disabled when external_shipment_number is empty even if provider_shipment_id is present", async () => {
     mockGetOrderDetail.mockResolvedValueOnce({
       ...mockOrderAccepted,
       id: "ord-106",
@@ -319,15 +321,20 @@ describe("MerchantOrderDetail — Role Gating, Query States & Decision Operation
           provider_code: "jenni",
           dispatch_status: "dispatched",
           external_shipment_number: "",
-          provider_shipment_id: null,
+          provider_shipment_id: "PROVIDER-INTERNAL-123",
         },
       ],
     });
     renderOrderDetail("ord-106");
 
     await screen.findByTestId("merchant-order-detail");
+    expect(screen.getByText("PROVIDER-INTERNAL-123")).toBeTruthy();
+    expect(screen.getByText("معرف المزود الداخلي")).toBeTruthy();
+
     const stickerBtns = screen.getAllByRole("button", { name: /طباعة الستيكر/i });
     expect(stickerBtns[0].hasAttribute("disabled")).toBe(true);
+    fireEvent.click(stickerBtns[0]);
+    expect(mockDownloadJenniSticker).not.toHaveBeenCalled();
   });
 
   it("PRINT FULFILLMENT SLIP PRIVACY: fulfillment slip contains NO customer phone or email PII", async () => {
