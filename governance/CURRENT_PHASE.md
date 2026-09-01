@@ -10,7 +10,7 @@
 
 ## PR
 
-[Draft PR Pending Creation]
+PR `#14` — https://github.com/dilmart-info/Dilmart/pull/14 (Draft)
 
 ## Status
 
