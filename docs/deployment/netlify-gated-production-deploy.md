@@ -92,7 +92,7 @@ check that confirms the bundle and the backend it will call actually agree.
 ## Trust boundary
 
 `workflow_run` executes in the context of the default branch **with access to repository secrets**. The
-gate therefore refuses anything that is not a `push`, on `main`, in `cylendralabs-blip/DilMart-Store`, and
+gate therefore refuses anything that is not a `push`, on `main`, in `dilmart-info/Dilmart`, and
 the deploy job checks out the resolved SHA rather than a branch name. A `workflow_run` raised by a
 `pull_request` carries a contributor-controlled head and must never reach a job that can publish — the
 workflow has no `pull_request` trigger at all, and the trust step rejects a non-push triggering run.
@@ -107,7 +107,7 @@ artifact carries its own identity at `dist/deploy-meta.json`:
 
 ```json
 {
-  "repository": "cylendralabs-blip/DilMart-Store",
+  "repository": "dilmart-info/Dilmart",
   "git_sha": "<exact commit>",
   "github_run_id": "<run id>",
   "github_run_attempt": "<attempt>"

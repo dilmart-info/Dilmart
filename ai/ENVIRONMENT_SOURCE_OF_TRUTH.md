@@ -2,10 +2,10 @@
 
 > **AUTHORITATIVE — owner-confirmed operational topology**
 >
-> Effective: **2026-08-10**
+> Effective: **2026-09-01**
 >
 > This file is the canonical environment map for both `cylendralabs-blip/DilMart` and
-> `cylendralabs-blip/DilMart-Store`.
+> `dilmart-info/Dilmart`.
 >
 > **If any older README, runbook, closure report, test fixture, safety gate, or historical document
 > conflicts with this file, this file wins until the product owner explicitly updates it.**
@@ -43,7 +43,7 @@ PRODUCTION
                         DilMart-STORE
 
 CURRENT / LIVE
-  GitHub repository : cylendralabs-blip/DilMart-Store
+  GitHub repository : dilmart-info/Dilmart
   Git branch        : main
   Render service    : DilMart-store-backend
   Backend URL       : https://DilMart-store-backend.onrender.com
@@ -71,10 +71,13 @@ CURRENT / LIVE
 
 ### DilMart-Store
 
-- `DilMart-Store/main` is the **current Store code line used by the live Store backend**.
+- The product/system name may remain **DilMart-Store**.
+- The **canonical GitHub repository** for this Store codebase is `dilmart-info/Dilmart`.
+- `main` is the **current Store code line used by the live Store backend**.
 - `DilMart-store-backend` is the current/live Store Render backend.
 - `ztplxqlthuqkuktbznbo` is the current/live Store Supabase project.
 - **There is currently no separate Store staging environment.**
+- **Repository identity, branch, deployed service, and database are separate authority dimensions.**
 
 ---
 
