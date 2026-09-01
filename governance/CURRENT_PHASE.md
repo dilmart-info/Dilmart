@@ -6,27 +6,30 @@
 
 ## Branch
 
-`governance/canonical-repository-authority-sync`
+`governance/canonical-repository-authority-sync` (Merged & Deleted)
 
 ## PR
 
-PR `#14` — https://github.com/dilmart-info/Dilmart/pull/14 (Draft)
+PR `#14` — https://github.com/dilmart-info/Dilmart/pull/14 (Merged & Closed)
 
 ## Status
 
 ```text
 PHASE_3B_MERGED
 PR_13_CLOSED
-MAIN_SHA_57C8F6B
-CANONICAL_REPOSITORY_GOVERNANCE_SYNC_IMPLEMENTATION_COMPLETE
-LOCAL_GOVERNANCE_GUARDS_PASS
-PR_14_DRAFT
-AWAITING_SUPERVISOR_MERGE_REVIEW
+CANONICAL_REPOSITORY_GOVERNANCE_SYNC_MERGED
+PR_14_CLOSED
+PR_14_SOURCE_HEAD_EBDCADD
+PR_14_MERGE_SHA_9A37E19
+MAIN_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
 NO_RUNTIME_CHANGE
-NOT_DEPLOYED_BY_THIS_TASK
+NO_DB_MIGRATION
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
-## Active Scope
+## Completed Scope
 
 - Synchronize active repository and deployment governance documents to canonical `dilmart-info/Dilmart`.
 - Add fail-closed static governance guard in CI test suite for active authority files.
@@ -41,6 +44,13 @@ NOT_DEPLOYED_BY_THIS_TASK
 - **Merge SHA:** `57c8f6b21f95a11403d3928918bbc6c0c78b2e2c`
 - **Merge Status:** Merged & Closed
 - **Summary:** Backend canonical 404 contract, decision eligibility gating, multi-store event isolation with generation/cancellation-safe refetch race guards, and Jenni delivery integration / sticker authority alignment.
+
+## Next State
+
+- The next development phase has not yet been selected in this document.
+- OTP work has not resumed.
+- Product Readiness migrations remain unapplied unless separately proven.
+- No deployment was performed by this governance closure.
 
 ---
 
