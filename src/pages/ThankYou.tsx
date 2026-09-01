@@ -20,7 +20,8 @@ export default function ThankYou() {
     profile?.claim_required === true ||
     profile?.account_type === "provisional_customer";
   const canClaim = capabilities?.accountClaim === true;
-  const showClaim = authStatus === "authenticated" && requiresAccountClaim && canClaim;
+  const authReady = authStatus === "authenticated_ready";
+  const showClaim = authReady && requiresAccountClaim && canClaim;
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -34,7 +35,7 @@ export default function ThankYou() {
               </div>
               <h1 className="text-3xl font-black text-foreground mb-2">تم تسجيل طلبك بنجاح</h1>
               <p className="text-sm text-muted-foreground mb-6">
-                شكراً لتسوقك معنا، تم استلام الطلب وجاري إعداده.
+                تم تسجيل الطلب بنجاح، ويمكنك متابعة تحديثات حالته أدناه.
               </p>
 
               <div className="bg-muted/40 border border-border rounded-2xl p-5 mb-6 text-center">

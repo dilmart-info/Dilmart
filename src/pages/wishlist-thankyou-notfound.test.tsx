@@ -8,6 +8,8 @@ import NotFound from "@/pages/NotFound";
 import { apiClient } from "@/lib/api-client";
 import { useWishlistStore } from "@/lib/wishlist-store";
 import { useAuth } from "@/hooks/use-auth";
+import { trackGrowthHookEvent } from "@/lib/growth-hooks";
+import type { AuthStatus } from "@/lib/auth/auth-types";
 
 vi.mock("@/lib/api-client", () => ({
   apiClient: {
@@ -36,17 +38,44 @@ function createTestQueryClient() {
   });
 }
 
+function mockAuthState({
+  authStatus = "unauthenticated" as AuthStatus,
+  accountType = "standard_customer",
+  claimRequired = false,
+  accountClaimCapability = false,
+  email = "user@example.com",
+} = {}) {
+  vi.mocked(useAuth).mockReturnValue({
+    user: authStatus.startsWith("authenticated") ? ({ id: "cust-1", email } as any) : null,
+    session: null,
+    authSource: authStatus.startsWith("authenticated") ? "supabase" : "anon",
+    profile: {
+      account_type: accountType,
+      claim_required: claimRequired,
+    } as any,
+    capabilities: {
+      accountClaim: accountClaimCapability,
+    } as any,
+    authStatus,
+    bootstrapDelayed: false,
+    contextLoading: authStatus === "authenticated_loading_context",
+    context: null,
+    storageError: null,
+    isOffline: authStatus === "authenticated_offline",
+    isAdmin: false,
+    isMerchantUser: false,
+    isMerchantApplicant: false,
+    isAgent: false,
+    retryStorageBootstrap: vi.fn(),
+    logoutCurrentDevice: vi.fn(),
+  });
+}
+
 describe("Phase 2F — Wishlist, ThankYou & NotFound Pages", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useWishlistStore.setState({ items: [] });
-    vi.mocked(useAuth).mockReturnValue({
-      user: null,
-      authSource: "anon",
-      profile: null,
-      capabilities: null,
-      authStatus: "unauthenticated",
-    } as any);
+    mockAuthState({ authStatus: "unauthenticated" });
   });
 
   describe("Wishlist (/wishlist)", () => {
@@ -119,6 +148,49 @@ describe("Phase 2F — Wishlist, ThankYou & NotFound Pages", () => {
       expect(useWishlistStore.getState().items).toEqual(["p-1", "p-3"]);
     });
 
+    it("emits individual analytics event per removed product on batch removal (never concatenated IDs)", () => {
+      useWishlistStore.setState({ items: ["p-1", "p-2", "p-3"] });
+      useWishlistStore.getState().removeItems(["p-1", "p-2"], { sourceSurface: "wishlist_cleanup" });
+
+      expect(useWishlistStore.getState().items).toEqual(["p-3"]);
+      expect(trackGrowthHookEvent).toHaveBeenCalledWith("wishlist.removed", {
+        productId: "p-1",
+        sourceSurface: "wishlist_cleanup",
+      });
+      expect(trackGrowthHookEvent).toHaveBeenCalledWith("wishlist.removed", {
+        productId: "p-2",
+        sourceSurface: "wishlist_cleanup",
+      });
+      expect(trackGrowthHookEvent).not.toHaveBeenCalledWith(
+        "wishlist.removed",
+        expect.objectContaining({
+          productId: "p-1,p-2",
+        })
+      );
+    });
+
+    it("renders all-unavailable copy neutrally when all saved products are missing", async () => {
+      useWishlistStore.setState({ items: ["p-old-1", "p-old-2"] });
+      vi.mocked(apiClient.getMarketplaceProductsByIds).mockResolvedValue([]);
+
+      const queryClient = createTestQueryClient();
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/wishlist"]}>
+            <Wishlist />
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByText("جميع المنتجات المحفوظة لم تعد متاحة حالياً.")).toBeInTheDocument();
+      });
+
+      // Does not infer out-of-stock
+      expect(screen.queryByText(/في المخزون/)).not.toBeInTheDocument();
+    });
+
     it("does not promise future personalization in recommendation subtitle", () => {
       const queryClient = createTestQueryClient();
 
@@ -135,7 +207,7 @@ describe("Phase 2F — Wishlist, ThankYou & NotFound Pages", () => {
   });
 
   describe("Thank You (/thank-you)", () => {
-    it("renders order confirmation with order number and tracking link", () => {
+    it("renders neutral order confirmation with order number and tracking link", () => {
       const queryClient = createTestQueryClient();
 
       render(
@@ -147,6 +219,7 @@ describe("Phase 2F — Wishlist, ThankYou & NotFound Pages", () => {
       );
 
       expect(screen.getByText("تم تسجيل طلبك بنجاح")).toBeInTheDocument();
+      expect(screen.getByText("تم تسجيل الطلب بنجاح، ويمكنك متابعة تحديثات حالته أدناه.")).toBeInTheDocument();
       expect(screen.getByText("#ORD-555")).toBeInTheDocument();
       expect(screen.getAllByRole("link", { name: /تتبع حالة الطلب/ })[0]).toHaveAttribute(
         "href",
@@ -157,40 +230,19 @@ describe("Phase 2F — Wishlist, ThankYou & NotFound Pages", () => {
         "/my-account/orders"
       );
 
-      // Assert no unsupported contact promise
+      // Assert no unsupported contact or preparation promises
       expect(screen.queryByText(/سيتم التواصل معك قريباً لتأكيد الطلب/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/وجاري إعداده/)).not.toBeInTheDocument();
     });
 
-    it("hides account claim banner for normal authenticated customer", () => {
-      vi.mocked(useAuth).mockReturnValue({
-        user: { id: "cust-1", email: "user@example.com" },
-        authSource: "supabase",
-        profile: { claim_required: false, account_type: "standard_customer" },
-        capabilities: { accountClaim: false },
-        authStatus: "authenticated",
-      } as any);
-
-      const queryClient = createTestQueryClient();
-
-      render(
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={["/thank-you?order=ORD-555"]}>
-            <ThankYou />
-          </MemoryRouter>
-        </QueryClientProvider>
-      );
-
-      expect(screen.queryByText("استلام الحساب وتأكيد الهاتف")).not.toBeInTheDocument();
-    });
-
-    it("shows account claim banner for provisional / claimable customer without exposing internal email", () => {
-      vi.mocked(useAuth).mockReturnValue({
-        user: { id: "cust-prov", email: "temp-9647801234567@provisional.dilmart.com" },
-        authSource: "supabase",
-        profile: { claim_required: true, account_type: "provisional_customer" },
-        capabilities: { accountClaim: true },
-        authStatus: "authenticated",
-      } as any);
+    it("shows account claim banner for provisional / claimable customer when authStatus is authenticated_ready", () => {
+      mockAuthState({
+        authStatus: "authenticated_ready",
+        accountType: "provisional_customer",
+        claimRequired: true,
+        accountClaimCapability: true,
+        email: "temp-9647801234567@provisional.dilmart.com",
+      });
 
       const queryClient = createTestQueryClient();
 
@@ -211,6 +263,57 @@ describe("Phase 2F — Wishlist, ThankYou & NotFound Pages", () => {
       expect(screen.queryByText(/@provisional\./)).not.toBeInTheDocument();
       // No loyalty points claims
       expect(screen.queryByText(/اكتساب النقاط/)).not.toBeInTheDocument();
+    });
+
+    it("hides account claim banner for standard authenticated customer on authenticated_ready", () => {
+      mockAuthState({
+        authStatus: "authenticated_ready",
+        accountType: "standard_customer",
+        claimRequired: false,
+        accountClaimCapability: false,
+        email: "user@example.com",
+      });
+
+      const queryClient = createTestQueryClient();
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/thank-you?order=ORD-555"]}>
+            <ThankYou />
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      expect(screen.queryByText("استلام الحساب وتأكيد الهاتف")).not.toBeInTheDocument();
+      expect(screen.queryByText("تأكيد بيانات الحساب")).not.toBeInTheDocument();
+    });
+
+    it.each([
+      "bootstrapping" as AuthStatus,
+      "authenticated_loading_context" as AuthStatus,
+      "authenticated_offline" as AuthStatus,
+      "storage_error" as AuthStatus,
+      "unauthenticated" as AuthStatus,
+    ])("hides account claim banner when authStatus is %s even for provisional customer", (status) => {
+      mockAuthState({
+        authStatus: status,
+        accountType: "provisional_customer",
+        claimRequired: true,
+        accountClaimCapability: true,
+      });
+
+      const queryClient = createTestQueryClient();
+
+      render(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/thank-you?order=ORD-555"]}>
+            <ThankYou />
+          </MemoryRouter>
+        </QueryClientProvider>
+      );
+
+      expect(screen.queryByText("استلام الحساب وتأكيد الهاتف")).not.toBeInTheDocument();
+      expect(screen.queryByText("تأكيد بيانات الحساب")).not.toBeInTheDocument();
     });
 
     it("renders safe missing order number state when opened without order param", () => {

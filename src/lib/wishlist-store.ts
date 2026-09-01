@@ -35,12 +35,17 @@ export const useWishlistStore = create<WishlistStore>()(
             },
             removeItems: (ids, meta) => {
                 if (!ids || ids.length === 0) return;
-                const idSet = new Set(ids);
-                set({ items: get().items.filter((i) => !idSet.has(i)) });
-                trackGrowthHookEvent("wishlist.removed", {
-                    productId: ids.join(","),
-                    sourceSurface: meta?.sourceSurface ?? "unknown",
-                });
+                const currentItems = get().items;
+                const actuallyRemovedIds = ids.filter((id) => currentItems.includes(id));
+                if (actuallyRemovedIds.length === 0) return;
+                const idSet = new Set(actuallyRemovedIds);
+                set({ items: currentItems.filter((i) => !idSet.has(i)) });
+                for (const id of actuallyRemovedIds) {
+                    trackGrowthHookEvent("wishlist.removed", {
+                        productId: id,
+                        sourceSurface: meta?.sourceSurface ?? "unknown",
+                    });
+                }
                 toast.success("تمت إزالة العناصر غير المتاحة من المفضلة");
             },
             hasItem: (id) => get().items.includes(id),

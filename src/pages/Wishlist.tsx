@@ -146,7 +146,7 @@ export default function Wishlist() {
             ) : (
               <div className="text-center py-12 rounded-2xl border border-dashed border-border bg-card/30">
                 <p className="text-sm text-muted-foreground mb-4">
-                  جميع المنتجات المحفوظة لم تعد متوفرة في المخزون حالياً.
+                  جميع المنتجات المحفوظة لم تعد متاحة حالياً.
                 </p>
                 <Button asChild className="rounded-full px-8">
                   <Link to="/products">تصفّح المنتجات المتاحة</Link>
