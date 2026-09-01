@@ -220,18 +220,18 @@ describe("Account Orders List, Detail, Cancellation & Return Flows", () => {
     });
   });
 
-  it("handles return request for delivered orders using canonical createReturnRequest", async () => {
-    (apiClient.getCustomerOrders as any).mockResolvedValue([
-      {
-        id: "ord-delivered-1",
-        order_number: "ORD-8888",
-        status: "delivered",
-        delivery_status: "delivered",
-        total: 65000,
-        created_at: "2026-08-25T10:00:00Z",
-        items_count: 1,
-      },
-    ]);
+  it("handles return request for delivered orders inside Order Detail using canonical createReturnRequest", async () => {
+    (apiClient.getCustomerOrderDetail as any).mockResolvedValue({
+      id: "ord-delivered-1",
+      order_number: "ORD-8888",
+      status: "delivered",
+      delivery_status: "delivered",
+      total: 65000,
+      created_at: "2026-08-25T10:00:00Z",
+      items: [{ product_id: "p1", product_name: "قميص", quantity: 1, price: 65000 }],
+    });
+
+    (apiClient.getReturnRequest as any).mockResolvedValue(null);
 
     (apiClient.createReturnRequest as any).mockResolvedValue({
       ok: true,
@@ -240,14 +240,15 @@ describe("Account Orders List, Detail, Cancellation & Return Flows", () => {
       message: "تم تقديم طلب الإرجاع بنجاح وهو قيد المراجعة.",
     });
 
-    renderWithProviders();
+    renderWithProviders("/my-account/orders?orderId=ord-delivered-1");
 
     await waitFor(() => {
       expect(screen.getByText("#ORD-8888")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "طلب إرجاع" })).toBeInTheDocument();
     });
 
     // Click Return CTA
-    const returnBtn = screen.getByRole("button", { name: "إرجاع" });
+    const returnBtn = screen.getByRole("button", { name: "طلب إرجاع" });
     fireEvent.click(returnBtn);
 
     // Verify dialog opened without window.prompt
@@ -265,6 +266,86 @@ describe("Account Orders List, Detail, Cancellation & Return Flows", () => {
         reason_details: "المنتج غير مطابق للمواصفات",
       });
     });
+  });
+
+  it("hides 'طلب إرجاع' button and displays Arabic return status banner when return request exists", async () => {
+    (apiClient.getCustomerOrderDetail as any).mockResolvedValue({
+      id: "ord-delivered-ret",
+      order_number: "ORD-9999",
+      status: "delivered",
+      delivery_status: "delivered",
+      total: 80000,
+      created_at: "2026-08-25T10:00:00Z",
+      items: [{ product_id: "p1", product_name: "حذاء رياضي", quantity: 1, price: 80000 }],
+    });
+
+    (apiClient.getReturnRequest as any).mockResolvedValue({
+      id: "ret-existing-1",
+      order_id: "ord-delivered-ret",
+      status: "approved",
+      reason_details: "المقاس غير مناسب",
+      created_at: "2026-08-26T10:00:00Z",
+    });
+
+    renderWithProviders("/my-account/orders?orderId=ord-delivered-ret");
+
+    await waitFor(() => {
+      expect(screen.getByText("#ORD-9999")).toBeInTheDocument();
+      expect(screen.getByText("حالة طلب الإرجاع:")).toBeInTheDocument();
+      expect(screen.getByText("تمت الموافقة")).toBeInTheDocument();
+    });
+
+    // Invariant: duplicate return CTA must NOT be visible when a return request already exists
+    expect(screen.queryByRole("button", { name: "طلب إرجاع" })).not.toBeInTheDocument();
+  });
+
+  it("shows error banner with retry and avoids duplicate return submission when return query fails", async () => {
+    (apiClient.getCustomerOrderDetail as any).mockResolvedValue({
+      id: "ord-delivered-err",
+      order_number: "ORD-5555",
+      status: "delivered",
+      delivery_status: "delivered",
+      total: 40000,
+      created_at: "2026-08-25T10:00:00Z",
+      items: [{ product_id: "p1", product_name: "ساعة يد", quantity: 1, price: 40000 }],
+    });
+
+    (apiClient.getReturnRequest as any).mockRejectedValue(new Error("Network failure"));
+
+    renderWithProviders("/my-account/orders?orderId=ord-delivered-err");
+
+    await waitFor(() => {
+      expect(screen.getByText("تعذر التحقق من حالة طلب الإرجاع")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "إعادة المحاولة" })).toBeInTheDocument();
+    });
+
+    // Invariant: button is not offered while status is in error
+    expect(screen.queryByRole("button", { name: "طلب إرجاع" })).not.toBeInTheDocument();
+  });
+
+  it("does not render return CTA on compact orders list cards", async () => {
+    (apiClient.getCustomerOrders as any).mockResolvedValue([
+      {
+        id: "ord-list-1",
+        order_number: "ORD-1111",
+        status: "delivered",
+        delivery_status: "delivered",
+        total: 30000,
+        created_at: "2026-08-20T10:00:00Z",
+        items_count: 1,
+      },
+    ]);
+
+    renderWithProviders("/my-account/orders");
+
+    await waitFor(() => {
+      expect(screen.getByText("#ORD-1111")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "عرض التفاصيل" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "إعادة الطلب" })).toBeInTheDocument();
+    });
+
+    // Invariant: list card never renders an 'إرجاع' button without knowing return status
+    expect(screen.queryByRole("button", { name: "إرجاع" })).not.toBeInTheDocument();
   });
 
   it("handles reorder preview, displays price differences and warnings, and confirms cart replacement", async () => {
@@ -338,5 +419,42 @@ describe("Account Orders List, Detail, Cancellation & Return Flows", () => {
       expect(useCartStore.getState().items[0].product.name).toBe("عطر صيفي");
       expect(useCartStore.getState().activeMerchantId).toBe("m-target");
     });
+  });
+
+  it("disables reorder confirmation action when merchant_id is missing", async () => {
+    (apiClient.getCustomerOrders as any).mockResolvedValue([
+      {
+        id: "ord-no-merchant",
+        order_number: "ORD-9900",
+        status: "delivered",
+        total: 15000,
+        created_at: "2026-08-20T10:00:00Z",
+        items_count: 1,
+      },
+    ]);
+
+    (apiClient.previewCustomerReorder as any).mockResolvedValue({
+      can_reorder: false,
+      merchant_id: null,
+      valid_items: [],
+      unavailable_items: [],
+      warnings: ["المتجر غير متاح"],
+    });
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText("#ORD-9900")).toBeInTheDocument();
+    });
+
+    const reorderBtn = screen.getByRole("button", { name: "إعادة الطلب" });
+    fireEvent.click(reorderBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("إعادة الطلب السابق")).toBeInTheDocument();
+    });
+
+    const confirmBtn = screen.getByRole("button", { name: "تأكيد وإضافة للسلة" });
+    expect(confirmBtn).toBeDisabled();
   });
 });

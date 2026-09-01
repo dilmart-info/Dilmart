@@ -187,4 +187,125 @@ describe("Profile - Account Dashboard", () => {
 
     expect(screen.getByRole("button", { name: "إدارة وتوثيق رقم الهاتف" })).toBeInTheDocument();
   });
+
+  it("never exposes internal provisional emails in customer-facing UI", () => {
+    useAuthMock.mockReturnValue({
+      user: { id: "user-prov", email: "guest_88@provisional.dilmart.com" },
+      profile: {
+        full_name: "عميل ضيف",
+        phone: "07709988776",
+        phone_verified: false,
+        claim_required: true,
+        account_type: "provisional_customer",
+      },
+      appSession: {
+        authSource: "supabase",
+        user: { id: "user-prov", email: "guest_88@provisional.dilmart.com" },
+      },
+      authSource: "supabase",
+      authStatus: "authenticated_ready",
+      capabilities: { accountClaim: true },
+      logoutCurrentDevice: vi.fn(),
+    });
+
+    renderWithProviders(<Profile />);
+
+    // Invariant: implementation email domain must NEVER be in customer UI
+    expect(screen.queryByText(/@provisional\.dilmart\.com/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/provisional/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText("07709988776").length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("does NOT show provisional claim banner for normal account with unverified phone when claim is not required", () => {
+    useAuthMock.mockReturnValue({
+      user: { id: "user-normal", email: "normal@example.com" },
+      profile: {
+        full_name: "حيدر حسن",
+        phone: "07712345678",
+        phone_verified: false,
+        claim_required: false,
+        account_type: "customer",
+      },
+      appSession: { authSource: "supabase", user: { id: "user-normal" } },
+      authSource: "supabase",
+      authStatus: "authenticated_ready",
+      capabilities: { accountClaim: true },
+      logoutCurrentDevice: vi.fn(),
+    });
+
+    renderWithProviders(<Profile />);
+
+    expect(screen.queryByText("حسابك غير موثق بالكامل")).not.toBeInTheDocument();
+    expect(screen.queryByText("تأكيد واستلام الحساب")).not.toBeInTheDocument();
+  });
+
+  it("refetches auth context when customer profile is updated", async () => {
+    const mockRefetch = vi.fn().mockResolvedValue({});
+    useAuthMock.mockReturnValue({
+      user: { id: "user-123", email: "ali@example.com" },
+      profile: {
+        full_name: "الاسم القديم",
+        phone: "07701234567",
+      },
+      appSession: { authSource: "supabase", user: { id: "user-123" } },
+      authSource: "supabase",
+      authStatus: "authenticated_ready",
+      capabilities: { phoneIdentity: true },
+      refetch: mockRefetch,
+      logoutCurrentDevice: vi.fn(),
+    });
+
+    renderWithProviders(<Profile />);
+
+    const nameInput = screen.getByLabelText("الاسم الكامل");
+    fireEvent.change(nameInput, { target: { value: "الاسم الجديد" } });
+
+    const saveButton = screen.getByRole("button", { name: "حفظ التغييرات" });
+    fireEvent.click(saveButton);
+
+    await waitFor(() => {
+      expect(apiClient.updateCustomerProfile).toHaveBeenCalledWith({
+        full_name: "الاسم الجديد",
+      });
+      expect(mockRefetch).toHaveBeenCalled();
+    });
+  });
+
+  it("shows 'لم يتم تعيين عنوان افتراضي' when addresses exist but none is default", async () => {
+    (apiClient.getCustomerAddresses as any).mockResolvedValue([
+      {
+        id: "addr-non-def-1",
+        recipient_name: "علي كريم",
+        recipient_phone: "07701234567",
+        area: "المنصور",
+        is_default: false,
+      },
+      {
+        id: "addr-non-def-2",
+        recipient_name: "علي كريم",
+        recipient_phone: "07701234567",
+        area: "الكرادة",
+        is_default: false,
+      },
+    ]);
+
+    useAuthMock.mockReturnValue({
+      user: { id: "user-123", email: "ali@example.com" },
+      profile: { full_name: "علي كريم" },
+      appSession: { authSource: "supabase", user: { id: "user-123" } },
+      authSource: "supabase",
+      authStatus: "authenticated_ready",
+      capabilities: {},
+      logoutCurrentDevice: vi.fn(),
+    });
+
+    renderWithProviders(<Profile />);
+
+    await waitFor(() => {
+      expect(screen.getByText("لم يتم تعيين عنوان افتراضي")).toBeInTheDocument();
+    });
+
+    // Invariant: no arbitrary address was nominated as default in the quick card
+    expect(screen.queryByText("المنصور")).not.toBeInTheDocument();
+  });
 });

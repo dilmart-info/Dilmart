@@ -7,6 +7,7 @@ import {
   maskIdentifierForLogs,
   toIraqiE164,
   toIraqiLocalDisplay,
+  getCustomerFacingEmail,
 } from "./identifier";
 
 /**
@@ -94,5 +95,22 @@ describe("display and logging", () => {
     expect(masked).not.toContain("750123");
     expect(masked.endsWith("4567")).toBe(true);
     expect(maskIdentifierForLogs("123")).toBe("***");
+  });
+});
+
+describe("getCustomerFacingEmail", () => {
+  it("returns normal customer email", () => {
+    expect(getCustomerFacingEmail("user@example.com")).toBe("user@example.com");
+    expect(getCustomerFacingEmail("ali.karim@gmail.com")).toBe("ali.karim@gmail.com");
+  });
+
+  it("returns null for internal provisional domains without leaking implementation details", () => {
+    expect(getCustomerFacingEmail("guest_123@provisional.dilmart.com")).toBeNull();
+    expect(getCustomerFacingEmail("user@provisional.dilmart.org")).toBeNull();
+    expect(getCustomerFacingEmail("temp@provisional.local")).toBeNull();
+    expect(getCustomerFacingEmail("guest@sub.provisional.local")).toBeNull();
+    expect(getCustomerFacingEmail("")).toBeNull();
+    expect(getCustomerFacingEmail(null)).toBeNull();
+    expect(getCustomerFacingEmail(undefined)).toBeNull();
   });
 });

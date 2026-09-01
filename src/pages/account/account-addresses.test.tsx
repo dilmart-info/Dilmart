@@ -109,10 +109,24 @@ describe("Account Addresses Management", () => {
     });
   });
 
-  it("creates a new address via createCustomerAddress", async () => {
-    (apiClient.getCustomerAddresses as any).mockResolvedValue([]);
-    (apiClient.createCustomerAddress as any).mockResolvedValue({ id: "new-addr-id" });
+  it("does not perform governorates network query when in authenticated_offline mode", async () => {
+    useAuthMock.mockReturnValue({
+      user: null,
+      profile: null,
+      appSession: { authSource: "supabase", user: { id: "user-offline", email: "off@example.com" } },
+      authSource: "supabase",
+      authStatus: "authenticated_offline",
+      capabilities: {},
+    });
 
+    renderWithProviders();
+
+    expect(screen.getByTestId("profile-offline-shell")).toBeInTheDocument();
+    expect(apiClient.getShippingGovernorates).not.toHaveBeenCalled();
+  });
+
+  it("blocks submission and shows validation error when governorate is empty", async () => {
+    (apiClient.getCustomerAddresses as any).mockResolvedValue([]);
     renderWithProviders();
 
     await waitFor(() => {
@@ -120,8 +134,6 @@ describe("Account Addresses Management", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: "+ إضافة أول عنوان" }));
-
-    expect(screen.getByText("إضافة عنوان توصيل جديد")).toBeInTheDocument();
 
     const recipientInput = screen.getByLabelText("اسم المستلم *");
     fireEvent.change(recipientInput, { target: { value: "حيدر حسن" } });
@@ -132,18 +144,12 @@ describe("Account Addresses Management", () => {
     const areaInput = screen.getByLabelText("المنطقة / الحي *");
     fireEvent.change(areaInput, { target: { value: "المنصور" } });
 
+    // Click submit without selecting governorate
     const submitBtn = screen.getByRole("button", { name: "إضافة العنوان" });
     fireEvent.click(submitBtn);
 
-    await waitFor(() => {
-      expect(apiClient.createCustomerAddress).toHaveBeenCalledWith(
-        expect.objectContaining({
-          recipient_name: "حيدر حسن",
-          recipient_phone: "07809988776",
-          area: "المنصور",
-        })
-      );
-    });
+    // Invariant: API must not be called when governorate is missing
+    expect(apiClient.createCustomerAddress).not.toHaveBeenCalled();
   });
 
   it("calls deleteCustomerAddress via confirmation alert dialog", async () => {

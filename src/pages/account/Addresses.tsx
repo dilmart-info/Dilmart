@@ -95,6 +95,7 @@ export default function AccountAddresses() {
   const { data: governorates, isLoading: isGovsLoading } = useQuery({
     queryKey: ["governorates"],
     queryFn: () => apiClient.getShippingGovernorates(),
+    enabled: authStatus === "authenticated_ready",
   });
 
   // Save (Create / Update) Mutation
@@ -188,6 +189,10 @@ export default function AccountAddresses() {
     }
     if (!formData.recipient_phone.trim()) {
       toast.error("يرجى إدخال رقم هاتف المستلم");
+      return;
+    }
+    if (!formData.governorate_id || !formData.governorate_id.trim()) {
+      toast.error("يرجى اختيار المحافظة");
       return;
     }
     if (!formData.area.trim()) {
@@ -469,18 +474,17 @@ export default function AccountAddresses() {
             {/* Governorate & Area */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-bold text-slate-700">المحافظة</Label>
+                <Label className="text-xs font-bold text-slate-700">المحافظة *</Label>
                 <Select
-                  value={formData.governorate_id || "none"}
+                  value={formData.governorate_id}
                   onValueChange={(val) =>
-                    setFormData({ ...formData, governorate_id: val === "none" ? "" : val })
+                    setFormData({ ...formData, governorate_id: val })
                   }
                 >
                   <SelectTrigger className="text-xs">
                     <SelectValue placeholder="اختر المحافظة" />
                   </SelectTrigger>
                   <SelectContent dir="rtl">
-                    <SelectItem value="none">بدون تحديد</SelectItem>
                     {(governorates ?? []).map((gov: any) => (
                       <SelectItem key={gov.id} value={gov.id}>
                         {gov.name}

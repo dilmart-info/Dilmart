@@ -94,3 +94,23 @@ export function toIraqiLocalDisplay(phone: string): string {
   const e164 = toIraqiE164(phone);
   return `0${e164.slice(4)}`;
 }
+
+/**
+ * Returns a customer-facing email string, or null if the email is an internal provisional identity
+ * (e.g. @provisional.dilmart.com, @provisional.dilmart.org, @provisional.local).
+ */
+export function getCustomerFacingEmail(email?: string | null): string | null {
+  if (!email || typeof email !== "string") return null;
+  const trimmed = email.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (
+    lower.includes("@provisional.") ||
+    lower.endsWith(".provisional.local") ||
+    lower.endsWith("@provisional.local") ||
+    lower.includes("provisional.dilmart.")
+  ) {
+    return null;
+  }
+  return trimmed;
+}

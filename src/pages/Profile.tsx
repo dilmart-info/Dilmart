@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { formatPrice } from "@/lib/format";
 import { apiClient } from "@/lib/api-client";
 import { isAuthStorageError } from "@/lib/auth/auth-errors";
+import { getCustomerFacingEmail } from "@/lib/auth/identifier";
 import AccountRecommendations from "@/components/AccountRecommendations";
 import {
   Package,
@@ -33,6 +34,7 @@ function ProfileDashboardContent() {
     session,
     authSource,
     capabilities,
+    refetch,
     logoutCurrentDevice,
     logoutAllDevices,
   } = useAuth();
@@ -40,7 +42,7 @@ function ProfileDashboardContent() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const accountEmail = user?.email ?? appSession?.user?.email ?? session?.user?.email ?? "";
+  const customerEmail = getCustomerFacingEmail(user?.email ?? appSession?.user?.email ?? session?.user?.email);
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phoneInput, setPhoneInput] = useState(profile?.phone || "");
   const [loggingOutAll, setLoggingOutAll] = useState(false);
@@ -73,16 +75,19 @@ function ProfileDashboardContent() {
     enabled: !!user,
   });
 
-  const defaultAddress = (addresses ?? []).find((a) => a.is_default) || (addresses ?? [])[0];
+  const defaultAddress = (addresses ?? []).find((a) => a.is_default);
 
   // Update profile mutation using canonical customer API
   const updateProfileMutation = useMutation({
     mutationFn: async (payload: { full_name: string; phone?: string }) => {
       return apiClient.updateCustomerProfile(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("تم تحديث البيانات الشخصية بنجاح");
       queryClient.invalidateQueries({ queryKey: ["customer-profile"] });
+      if (typeof refetch === "function") {
+        await refetch();
+      }
     },
     onError: (error: any) => {
       toast.error(error?.message || "تعذر تحديث البيانات");
@@ -202,14 +207,14 @@ function ProfileDashboardContent() {
               </div>
             ) : (
               <div className="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                <p className="text-xs text-slate-500 mb-2">لا يوجد عنوان محفوظ بعد</p>
+                <p className="text-xs text-slate-500 mb-2">لم يتم تعيين عنوان افتراضي</p>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => navigate("/my-account/addresses")}
                   className="text-xs text-[#1261D8] border-[#1261D8]/30"
                 >
-                  + إضافة عنوان جديد
+                  إدارة العناوين
                 </Button>
               </div>
             )}
@@ -332,10 +337,10 @@ function ProfileDashboardContent() {
                   </Label>
                   <Input
                     id="email"
-                    value={accountEmail}
+                    value={customerEmail || (profile?.phone ? profile.phone : "لم يتم تسجيل بريد إلكتروني")}
                     disabled
                     className="text-sm bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed"
-                    dir="ltr"
+                    dir={customerEmail ? "ltr" : "rtl"}
                   />
                 </div>
 

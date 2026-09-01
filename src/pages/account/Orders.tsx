@@ -51,6 +51,26 @@ import {
   Info,
 } from "lucide-react";
 
+export function getReturnStatusLabel(status?: string | null): string {
+  if (!status) return "حالة الطلب قيد التحديث";
+  const raw = status.toLowerCase();
+  switch (raw) {
+    case "pending":
+    case "pending_review":
+      return "قيد المراجعة";
+    case "approved":
+      return "تمت الموافقة";
+    case "rejected":
+      return "مرفوض";
+    case "awaiting_item":
+      return "بانتظار استلام المنتج";
+    case "completed":
+      return "مكتمل";
+    default:
+      return "حالة الطلب قيد التحديث";
+  }
+}
+
 export default function AccountOrders() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -116,7 +136,12 @@ export default function AccountOrders() {
 
   // 3. Fetch Return Request status if order is delivered
   const isDelivered = orderDetail?.status === "delivered" || orderDetail?.delivery_status === "delivered";
-  const { data: returnRequestData } = useQuery({
+  const {
+    data: returnRequestData,
+    isLoading: isReturnLoading,
+    isError: isReturnError,
+    refetch: refetchReturn,
+  } = useQuery({
     queryKey: ["customer-return-request", authSource, user?.id, selectedOrderId],
     queryFn: () => apiClient.getReturnRequest(selectedOrderId!),
     enabled: authStatus === "authenticated_ready" && !!user && !!selectedOrderId && isDelivered,
@@ -147,7 +172,7 @@ export default function AccountOrders() {
       } else if (res.cancellation_requested) {
         toast.info(res.message || "الطلب قيد التجهيز. تم تقديم طلب الإلغاء وهو قيد مراجعة الإدارة والتاجر.");
       } else if (res.can_request_return) {
-        toast.warning(res.message || "الطلب تم شحنه أو تسليمه ولا يمكن إلغاؤه مباشرة؛ يمكنك تقديم طلب إرجاع.");
+        toast.info("لا يمكن إلغاء الطلب مباشرة في مرحلته الحالية. ستظهر إمكانية الإرجاع عندما يصبح الطلب مؤهلاً لذلك.");
       } else {
         toast.info(res.message || "تمت معالجة طلبك.");
       }
@@ -225,16 +250,10 @@ export default function AccountOrders() {
     }
   };
 
-  // Determine if an order is eligible for cancel CTA
-  const isCancellable = (status: string, deliveryStatus?: string | null) => {
-    const raw = (deliveryStatus || status || "").toLowerCase();
-    return (
-      raw === "new" ||
-      raw === "pending" ||
-      raw === "processing" ||
-      raw === "preparing" ||
-      raw === "confirmed"
-    );
+  // Determine if an order is eligible for cancel CTA (coarse check, backend remains authority)
+  const isCancellable = (status?: string | null) => {
+    const raw = (status || "").toLowerCase();
+    return !["delivered", "completed", "cancelled", "returned", "failed"].includes(raw);
   };
 
   return (
@@ -313,7 +332,7 @@ export default function AccountOrders() {
                       إعادة الطلب
                     </Button>
 
-                    {isCancellable(orderDetail.status, orderDetail.delivery_status) && (
+                    {isCancellable(orderDetail.status) && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -329,21 +348,48 @@ export default function AccountOrders() {
                     )}
 
                     {isDelivered && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setReturnOrderId(orderDetail.id);
-                          setReturnReason("");
-                        }}
-                        className="text-xs font-semibold text-amber-800 border-amber-300 hover:bg-amber-50 flex items-center gap-1.5"
-                      >
-                        <Undo2 className="w-3.5 h-3.5" />
-                        طلب إرجاع
-                      </Button>
+                      <>
+                        {isReturnLoading ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled
+                            className="text-xs font-semibold text-slate-400 border-slate-200 cursor-not-allowed flex items-center gap-1.5"
+                          >
+                            <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                            التحقق من الإرجاع...
+                          </Button>
+                        ) : !isReturnError && !returnRequestData ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setReturnOrderId(orderDetail.id);
+                              setReturnReason("");
+                            }}
+                            className="text-xs font-semibold text-amber-800 border-amber-300 hover:bg-amber-50 flex items-center gap-1.5"
+                          >
+                            <Undo2 className="w-3.5 h-3.5" />
+                            طلب إرجاع
+                          </Button>
+                        ) : null}
+                      </>
                     )}
                   </div>
                 </div>
+
+                {/* Return Request Error State */}
+                {isReturnError && (
+                  <div className="p-3 bg-rose-50 border-b border-rose-200 flex items-center justify-between gap-3 text-xs text-rose-800">
+                    <div className="flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>تعذر التحقق من حالة طلب الإرجاع</span>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => refetchReturn()} className="text-xs h-7 border-rose-300">
+                      إعادة المحاولة
+                    </Button>
+                  </div>
+                )}
 
                 {/* Return Request Banner if active */}
                 {returnRequestData && (
@@ -352,8 +398,8 @@ export default function AccountOrders() {
                     <div className="space-y-0.5 text-xs text-amber-900">
                       <p className="font-bold">
                         حالة طلب الإرجاع:{" "}
-                        <span className="text-amber-800">
-                          {returnRequestData.status === "pending_review" ? "قيد مراجعة الإدارة" : returnRequestData.status}
+                        <span className="text-amber-800 font-extrabold">
+                          {getReturnStatusLabel(returnRequestData.status)}
                         </span>
                       </p>
                       {returnRequestData.reason_details && (
@@ -450,53 +496,61 @@ export default function AccountOrders() {
               </Card>
 
               {/* Delivery Address & Contact Info */}
-              <Card className="border-slate-200 shadow-sm bg-white">
-                <CardHeader className="pb-3 border-b border-slate-100">
-                  <CardTitle className="text-sm font-bold text-[#071A3D] flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#1261D8]" />
-                    بيانات عنوان التوصيل
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 space-y-3 text-xs">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-slate-500">اسم المستلم:</p>
-                      <p className="font-bold text-slate-800">{orderDetail.delivery_snapshot.customer_name}</p>
+              {orderDetail.delivery_snapshot && (
+                <Card className="border-slate-200 shadow-sm bg-white">
+                  <CardHeader className="pb-3 border-b border-slate-100">
+                    <CardTitle className="text-sm font-bold text-[#071A3D] flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-[#1261D8]" />
+                      بيانات عنوان التوصيل
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 space-y-3 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {orderDetail.delivery_snapshot.customer_name && (
+                        <div className="space-y-1">
+                          <p className="text-slate-500">اسم المستلم:</p>
+                          <p className="font-bold text-slate-800">{orderDetail.delivery_snapshot.customer_name}</p>
+                        </div>
+                      )}
+                      {orderDetail.delivery_snapshot.customer_phone && (
+                        <div className="space-y-1">
+                          <p className="text-slate-500">رقم الهاتف:</p>
+                          <p className="font-bold text-slate-800" dir="ltr">{orderDetail.delivery_snapshot.customer_phone}</p>
+                        </div>
+                      )}
+                      {orderDetail.delivery_snapshot.area && (
+                        <div className="space-y-1">
+                          <p className="text-slate-500">المنطقة والموقع:</p>
+                          <p className="font-bold text-slate-800">
+                            {orderDetail.delivery_snapshot.area}
+                            {orderDetail.delivery_snapshot.nearest_landmark ? ` — قرب ${orderDetail.delivery_snapshot.nearest_landmark}` : ""}
+                          </p>
+                        </div>
+                      )}
+                      {orderDetail.delivery_snapshot.notes && (
+                        <div className="space-y-1">
+                          <p className="text-slate-500">ملاحظات التوصيل:</p>
+                          <p className="font-medium text-slate-700">{orderDetail.delivery_snapshot.notes}</p>
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-slate-500">رقم الهاتف:</p>
-                      <p className="font-bold text-slate-800" dir="ltr">{orderDetail.delivery_snapshot.customer_phone}</p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-slate-500">المنطقة والموقع:</p>
-                      <p className="font-bold text-slate-800">
-                        {orderDetail.delivery_snapshot.area}
-                        {orderDetail.delivery_snapshot.nearest_landmark ? ` — قرب ${orderDetail.delivery_snapshot.nearest_landmark}` : ""}
-                      </p>
-                    </div>
-                    {orderDetail.delivery_snapshot.notes && (
-                      <div className="space-y-1">
-                        <p className="text-slate-500">ملاحظات التوصيل:</p>
-                        <p className="font-medium text-slate-700">{orderDetail.delivery_snapshot.notes}</p>
+
+                    {orderDetail.delivery_snapshot.map_url && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <a
+                          href={orderDetail.delivery_snapshot.map_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[#1261D8] font-bold text-xs hover:underline flex items-center gap-1"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                          عرض موقع التوصيل على الخريطة
+                        </a>
                       </div>
                     )}
-                  </div>
-
-                  {orderDetail.delivery_snapshot.map_url && (
-                    <div className="pt-2 border-t border-slate-100">
-                      <a
-                        href={orderDetail.delivery_snapshot.map_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[#1261D8] font-bold text-xs hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        عرض موقع التوصيل على الخريطة
-                      </a>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
         </div>
@@ -599,7 +653,7 @@ export default function AccountOrders() {
                         إعادة الطلب
                       </Button>
 
-                      {isCancellable(order.status, order.delivery_status) && (
+                      {isCancellable(order.status) && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -610,20 +664,6 @@ export default function AccountOrders() {
                           className="text-xs font-semibold text-rose-700 border-rose-200 hover:bg-rose-50"
                         >
                           إلغاء
-                        </Button>
-                      )}
-
-                      {order.status === "delivered" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setReturnOrderId(order.id);
-                            setReturnReason("");
-                          }}
-                          className="text-xs font-semibold text-amber-800 border-amber-300 hover:bg-amber-50"
-                        >
-                          إرجاع
                         </Button>
                       )}
                     </div>
@@ -810,7 +850,7 @@ export default function AccountOrders() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmReorder}
-              disabled={!pendingPreview?.can_reorder || pendingPreview?.valid_items.length === 0}
+              disabled={!pendingPreview?.can_reorder || !pendingPreview?.merchant_id || (pendingPreview?.valid_items?.length ?? 0) === 0}
               className="bg-[#1261D8] hover:bg-[#0D4EB0] text-white text-xs font-bold"
             >
               تأكيد وإضافة للسلة

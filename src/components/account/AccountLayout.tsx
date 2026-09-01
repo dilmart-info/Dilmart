@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Package, MapPin, Heart, ShieldCheck, User, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCustomerFacingEmail } from "@/lib/auth/identifier";
 
 interface AccountLayoutProps {
   children: ReactNode;
@@ -21,15 +22,14 @@ export default function AccountLayout({ children, title, subtitle, action }: Acc
   const navigate = useNavigate();
   const { user, profile, appSession, session, authStatus, capabilities } = useAuth();
 
-  const accountEmail = user?.email ?? appSession?.user?.email ?? session?.user?.email ?? "";
+  const customerEmail = getCustomerFacingEmail(user?.email ?? appSession?.user?.email ?? session?.user?.email);
   const displayName = profile?.full_name?.trim() || "عميل ديل مارت";
   const points = profile?.points ?? 0;
 
-  const isProvisional = Boolean(
-    profile?.claim_required ||
-    profile?.account_type === "provisional_customer" ||
-    (capabilities?.accountClaim && !profile?.phone_verified)
+  const requiresAccountClaim = Boolean(
+    profile?.claim_required === true || profile?.account_type === "provisional_customer"
   );
+  const canClaim = Boolean(capabilities?.accountClaim === true);
 
   const navItems = [
     {
@@ -98,7 +98,7 @@ export default function AccountLayout({ children, title, subtitle, action }: Acc
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm text-slate-600">
-                <p>البريد: <span className="font-semibold text-slate-800">{accountEmail || "—"}</span></p>
+                <p>البريد: <span className="font-semibold text-slate-800">{customerEmail || (profile?.phone ? profile.phone : "لم تتم إضافة بريد إلكتروني")}</span></p>
                 <p className="text-amber-800 font-medium">لا يوجد اتصال بالإنترنت</p>
               </CardContent>
             </Card>
@@ -116,7 +116,7 @@ export default function AccountLayout({ children, title, subtitle, action }: Acc
 
       <main className="flex-1 container mx-auto px-4 py-6 md:py-8 max-w-7xl">
         {/* Provisional / Account Claim Alert */}
-        {isProvisional && (
+        {requiresAccountClaim && canClaim && (
           <Card className="mb-6 border-amber-300 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent shadow-sm">
             <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="space-y-1 text-center sm:text-right">
@@ -150,7 +150,9 @@ export default function AccountLayout({ children, title, subtitle, action }: Acc
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-base font-bold text-[#071A3D] truncate">{displayName}</h2>
-                  <p className="text-xs text-slate-500 truncate" dir="ltr">{accountEmail || profile?.phone || "عميل ديل مارت"}</p>
+                  <p className="text-xs text-slate-500 truncate" dir={customerEmail ? "ltr" : "rtl"}>
+                    {customerEmail || (profile?.phone ? profile.phone : "لم تتم إضافة بريد إلكتروني")}
+                  </p>
                 </div>
               </div>
 
