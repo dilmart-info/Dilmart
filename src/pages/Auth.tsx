@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link, Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuthPageShell from "@/components/auth/AuthPageShell";
+import AuthStorageErrorScreen from "@/components/auth/AuthStorageErrorScreen";
 import OtpCodeInput from "@/components/auth/OtpCodeInput";
 import { useOtpFlow, type OtpChannel } from "@/components/auth/useOtpFlow";
 import { isValidEmail, looksLikeEmail, toIraqiE164 } from "@/lib/auth/identifier";
@@ -31,8 +32,9 @@ export default function Auth() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const {
-    user,
+    appSession,
     authStatus,
+    retryStorageBootstrap,
     signInWithPassword,
     signUpWithPassword,
     requestEmailOtp,
@@ -58,6 +60,9 @@ export default function Auth() {
 
   const otpAvailable = availableChannels.length > 0;
   const [method, setMethod] = useState<Method>(otpAvailable ? "otp" : "password");
+
+  // Synchronously compute the effective method to prevent blank screen edge cases when switching tabs
+  const effectiveMethod: Method = (otpAvailable && method === "otp") ? "otp" : "password";
 
   // Document Title
   useEffect(() => {
@@ -112,24 +117,19 @@ export default function Auth() {
     allowedChannels: availableChannels,
   });
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (authStatus === "authenticated_ready" && user) {
-      navigate(from, { replace: true });
-    }
-  }, [authStatus, from, navigate, user]);
-
   // Handle OTP Identifier Submit
   const handleOtpIdentifierSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setNoAccountHint(false);
     try {
-      await otp.submitIdentifier();
-      toast.success(
-        otp.channel === "phone"
-          ? "أرسلنا رمز التحقق إلى واتساب"
-          : "أرسلنا رمز التحقق إلى بريدك الإلكتروني"
-      );
+      const sent = await otp.submitIdentifier();
+      if (sent) {
+        toast.success(
+          otp.channel === "phone"
+            ? "أرسلنا رمز التحقق إلى واتساب"
+            : "أرسلنا رمز التحقق إلى بريدك الإلكتروني"
+        );
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "تعذر إرسال رمز التحقق";
       if (!registering) setNoAccountHint(true);
@@ -148,14 +148,37 @@ export default function Auth() {
     }
   };
 
+  // Handle OTP Resend with explicit try/catch and boolean check
+  const handleResendOtp = async () => {
+    try {
+      const sent = await otp.resend();
+      if (sent) {
+        toast.success(
+          otp.channel === "phone"
+            ? "أعدنا إرسال رمز التحقق إلى واتساب"
+            : "أعدنا إرسال رمز التحقق إلى بريدك الإلكتروني"
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذر إعادة إرسال الرمز";
+      toast.error(message);
+    }
+  };
+
   // Handle Password Submit (Login / Register)
   const handlePasswordSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (passwordBusy) return;
 
-    if (registering && confirmPassword && password !== confirmPassword) {
-      toast.error("كلمتا المرور غير متطابقتين");
-      return;
+    if (registering) {
+      if (!confirmPassword) {
+        toast.error("يرجى تأكيد كلمة المرور");
+        return;
+      }
+      if (password !== confirmPassword) {
+        toast.error("كلمتا المرور غير متطابقتين");
+        return;
+      }
     }
 
     setPasswordBusy(true);
@@ -200,7 +223,12 @@ export default function Auth() {
     otp.changeIdentifier();
   };
 
-  // Render Loading State during initial bootstrap to prevent form flashing
+  // 1. Storage Error State -> canonical error recovery screen, never render login form
+  if (authStatus === "storage_error") {
+    return <AuthStorageErrorScreen onRetry={retryStorageBootstrap || (() => {})} />;
+  }
+
+  // 2. Bootstrapping / Context Loading State -> render skeleton, never render login form
   if (authStatus === "bootstrapping" || authStatus === "authenticated_loading_context") {
     return (
       <AuthPageShell>
@@ -212,7 +240,12 @@ export default function Auth() {
     );
   }
 
-  // Render Persistent Unconfirmed Email State
+  // 3. Authenticated Ready or Authenticated Offline with existing session -> Synchronously redirect
+  if ((authStatus === "authenticated_ready" || authStatus === "authenticated_offline") && appSession) {
+    return <Navigate to={from} replace />;
+  }
+
+  // 4. Persistent Unconfirmed Email State
   if (unconfirmedEmail) {
     return (
       <AuthPageShell>
@@ -294,7 +327,7 @@ export default function Auth() {
                 setNoAccountHint(false);
               }}
               className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                method === "otp"
+                effectiveMethod === "otp"
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
@@ -309,7 +342,7 @@ export default function Auth() {
                 setNoAccountHint(false);
               }}
               className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
-                method === "password"
+                effectiveMethod === "password"
                   ? "bg-card text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
@@ -320,7 +353,7 @@ export default function Auth() {
         ) : null}
 
         {/* ── Method: OTP Flow ────────────────────────────────────────────── */}
-        {method === "otp" && otpAvailable && (
+        {effectiveMethod === "otp" && otpAvailable && (
           <div className="space-y-4">
             {otp.step === "identifier" ? (
               <form
@@ -328,7 +361,7 @@ export default function Auth() {
                 onSubmit={handleOtpIdentifierSubmit}
                 className="space-y-4"
               >
-                {/* Full name when registering */}
+                {/* Full name when registering via OTP */}
                 {registering ? (
                   <div className="space-y-2">
                     <Label htmlFor="fullName">الاسم الكامل</Label>
@@ -481,7 +514,7 @@ export default function Auth() {
                   <button
                     type="button"
                     data-testid="resend"
-                    onClick={() => void otp.resend()}
+                    onClick={handleResendOtp}
                     disabled={otp.resendIn > 0 || otp.pending}
                     className="text-primary font-bold hover:underline disabled:text-muted-foreground disabled:no-underline"
                   >
@@ -494,30 +527,12 @@ export default function Auth() {
         )}
 
         {/* ── Method: Password Flow ───────────────────────────────────────── */}
-        {method === "password" && (
+        {effectiveMethod === "password" && (
           <form
             data-testid="password-form"
             onSubmit={handlePasswordSubmit}
             className="space-y-4"
           >
-            {registering ? (
-              <div className="space-y-2">
-                <Label htmlFor="regFullName">الاسم الكامل</Label>
-                <div className="relative">
-                  <Input
-                    id="regFullName"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="الاسم الثلاثي"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pr-10 rounded-xl"
-                  />
-                  <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
-              </div>
-            ) : null}
-
             <div className="space-y-2">
               <Label htmlFor="password-identifier">
                 {registering ? "البريد الإلكتروني" : "البريد الإلكتروني أو رقم الهاتف"}
@@ -592,6 +607,7 @@ export default function Auth() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     className="pr-10 rounded-xl text-left"
+                    required
                   />
                   <Lock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
@@ -615,7 +631,7 @@ export default function Auth() {
         )}
 
         {/* ── Method switch link button ──────────────────────────────────── */}
-        {availableChannels.length > 0 && (
+        {otpAvailable && (
           <div className="text-center text-xs">
             <button
               type="button"
@@ -626,7 +642,7 @@ export default function Auth() {
                 setNoAccountHint(false);
               }}
             >
-              {method === "otp" ? "الدخول بكلمة المرور" : "الدخول برمز التحقق"}
+              {effectiveMethod === "otp" ? "الدخول بكلمة المرور" : "الدخول برمز التحقق"}
             </button>
           </div>
         )}

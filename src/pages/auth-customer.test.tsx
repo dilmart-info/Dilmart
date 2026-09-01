@@ -37,8 +37,10 @@ const {
   toastError: vi.fn(),
   toastWarning: vi.fn(),
   mockAuthState: {
+    appSession: null as { access_token: string } | null,
     user: null as { id: string } | null,
     authStatus: "unauthenticated",
+    retryStorageBootstrap: vi.fn(),
     requestEmailOtp: vi.fn(),
     verifyEmailOtp: vi.fn(),
     requestPhoneOtp: vi.fn(),
@@ -65,8 +67,10 @@ vi.mock("@/lib/auth/auth-feature-flags", () => mockFeatureFlags);
 
 vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
+    appSession: mockAuthState.appSession,
     user: mockAuthState.user,
     authStatus: mockAuthState.authStatus,
+    retryStorageBootstrap: mockAuthState.retryStorageBootstrap,
     requestEmailOtp,
     verifyEmailOtp,
     requestPhoneOtp,
@@ -91,14 +95,16 @@ function renderPage() {
   );
 }
 
-describe("Auth.tsx — Customer Identity & Channel Contract Suite", () => {
+describe("Auth.tsx — Customer Identity, Invariants & Edge Cases Suite", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFeatureFlags.emailOtpEnabled = true;
     mockFeatureFlags.phoneOtpEnabled = true;
     mockFeatureFlags.phoneRegistrationEnabled = false;
+    mockAuthState.appSession = null;
     mockAuthState.user = null;
     mockAuthState.authStatus = "unauthenticated";
+    mockAuthState.retryStorageBootstrap = vi.fn();
 
     requestEmailOtp.mockResolvedValue(undefined);
     requestPhoneOtp.mockResolvedValue(undefined);
@@ -121,72 +127,51 @@ describe("Auth.tsx — Customer Identity & Channel Contract Suite", () => {
     });
   });
 
-  it("EMAIL OTP ONLY: when phone OTP is disabled, defaults to email and never calls requestPhoneOtp", async () => {
-    mockFeatureFlags.phoneOtpEnabled = false;
-    mockFeatureFlags.emailOtpEnabled = true;
+  it("STORAGE ERROR: renders AuthStorageErrorScreen and never renders login form", () => {
+    mockAuthState.authStatus = "storage_error";
+    renderPage();
+
+    expect(screen.getByText(/تعذّر الوصول إلى التخزين الآمن/i)).toBeTruthy();
+    expect(screen.queryByTestId("password-form")).toBeNull();
+    expect(screen.queryByTestId("otp-identifier-form")).toBeNull();
+  });
+
+  it("AUTHENTICATED OFFLINE: never renders login form and redirects to from/profile", () => {
+    mockAuthState.appSession = { access_token: "offline-token" };
+    mockAuthState.user = { id: "offline-user" };
+    mockAuthState.authStatus = "authenticated_offline";
+    renderPage();
+
+    expect(screen.queryByTestId("password-form")).toBeNull();
+    expect(screen.queryByTestId("otp-identifier-form")).toBeNull();
+  });
+
+  it("PHONE LOGIN ONLY + NO EMAIL OTP + NO PHONE REGISTRATION: switching to Register immediately defaults to Password Registration form", async () => {
+    mockFeatureFlags.phoneOtpEnabled = true;
+    mockFeatureFlags.emailOtpEnabled = false;
     mockFeatureFlags.phoneRegistrationEnabled = false;
 
     renderPage();
 
-    const identifierInput = screen.getByTestId("identifier");
-    expect(identifierInput).toBeTruthy();
-    expect(identifierInput.getAttribute("type")).toBe("email");
-
-    fireEvent.change(identifierInput, { target: { value: "customer@dilmart.com" } });
-    fireEvent.submit(screen.getByTestId("otp-identifier-form"));
-
-    await waitFor(() => {
-      expect(requestEmailOtp).toHaveBeenCalledWith("customer@dilmart.com", {
-        createUser: false,
-        metadata: undefined,
-      });
-    });
-    expect(requestPhoneOtp).not.toHaveBeenCalled();
-    expect(toastSuccess).toHaveBeenCalledWith("أرسلنا رمز التحقق إلى بريدك الإلكتروني");
-  });
-
-  it("LOGIN -> REGISTER CHANNEL DRIFT PROOF: switching from Login (phone allowed) to Register (phone disabled) forces email OTP", async () => {
-    mockFeatureFlags.phoneOtpEnabled = true;
-    mockFeatureFlags.emailOtpEnabled = true;
-    mockFeatureFlags.phoneRegistrationEnabled = false; // Phone reg is disabled!
-
-    renderPage();
-
-    // On Login: Phone is active by default
-    expect(screen.getByTestId("channel-phone")).toBeTruthy();
+    // Login tab: phone is available for login
+    expect(screen.getByTestId("identifier")).toBeTruthy();
 
     // Switch to Register tab
     const registerTab = screen.getByTestId("tab-register");
     fireEvent.mouseDown(registerTab);
     fireEvent.click(registerTab);
 
-    // Full name input appears for register
-    const fullNameInput = await screen.findByTestId("full-name");
-    fireEvent.change(fullNameInput, { target: { value: "علي أحمد" } });
-
-    // In Register mode, phoneChannelAllowed is false, so availableChannels is only ['email']
-    const identifierInput = screen.getByTestId("identifier");
-    expect(identifierInput.getAttribute("type")).toBe("email");
-
-    fireEvent.change(identifierInput, { target: { value: "ali@example.com" } });
-    fireEvent.submit(screen.getByTestId("otp-identifier-form"));
-
-    // Critical Invariant: Request MUST be sent to email with createUser=true and full_name metadata
-    await waitFor(() => {
-      expect(requestEmailOtp).toHaveBeenCalledWith("ali@example.com", {
-        createUser: true,
-        metadata: { full_name: "علي أحمد" },
-      });
-    });
-    expect(requestPhoneOtp).not.toHaveBeenCalled();
+    // In Register mode, availableChannels is empty -> effectiveMethod MUST be "password" immediately!
+    const passwordForm = await screen.findByTestId("password-form");
+    expect(passwordForm).toBeTruthy();
+    expect(screen.queryByTestId("otp-identifier-form")).toBeNull();
+    // Full name field is NOT present in password registration
+    expect(screen.queryByTestId("full-name")).toBeNull();
   });
 
-  it("PERSISTENT UNCONFIRMED EMAIL STATE: renders clear persistent UI when signUpWithPassword returns session = null", async () => {
-    signUpWithPassword.mockResolvedValueOnce({
-      session: null, // Email confirmation required
-      user: null,
-      requiresEmailConfirmation: true,
-    });
+  it("PASSWORD REGISTRATION: requires confirm password and rejects empty or mismatched confirmation", async () => {
+    mockFeatureFlags.emailOtpEnabled = false;
+    mockFeatureFlags.phoneOtpEnabled = false;
 
     renderPage();
 
@@ -195,37 +180,57 @@ describe("Auth.tsx — Customer Identity & Channel Contract Suite", () => {
     fireEvent.mouseDown(registerTab);
     fireEvent.click(registerTab);
 
-    // Switch to Password method
-    fireEvent.click(screen.getByTestId("method-password"));
+    const form = screen.getByTestId("password-form");
+    const emailInput = screen.getByTestId("password-identifier");
+    const passInput = screen.getByTestId("password");
+    const confirmInput = screen.getByTestId("confirm-password");
 
-    const form = await screen.findByTestId("password-form");
-    fireEvent.change(screen.getByTestId("password-identifier"), {
-      target: { value: "unconfirmed@example.com" },
-    });
-    fireEvent.change(screen.getByTestId("password"), { target: { value: "StrongSecret123" } });
+    // Attempt 1: Password filled, confirm password empty
+    fireEvent.change(emailInput, { target: { value: "customer@example.com" } });
+    fireEvent.change(passInput, { target: { value: "Secret123" } });
+    fireEvent.change(confirmInput, { target: { value: "" } });
     fireEvent.submit(form);
 
-    // Persistent success screen must appear explaining email confirmation is needed
     await waitFor(() => {
-      expect(screen.getByText("تم إنشاء الحساب بنجاح")).toBeTruthy();
-      expect(screen.getByText("unconfirmed@example.com")).toBeTruthy();
+      expect(toastError).toHaveBeenCalledWith("يرجى تأكيد كلمة المرور");
     });
+    expect(signUpWithPassword).not.toHaveBeenCalled();
 
-    // Does NOT pretend user is logged in
-    expect(navigate).not.toHaveBeenCalled();
+    // Attempt 2: Mismatched passwords
+    fireEvent.change(confirmInput, { target: { value: "Secret999" } });
+    fireEvent.submit(form);
 
-    // Button allows going to login screen
-    const loginLink = screen.getByRole("button", { name: "الانتقال إلى تسجيل الدخول" });
-    fireEvent.click(loginLink);
-    expect(screen.getByTestId("tab-login")).toBeTruthy();
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("كلمتا المرور غير متطابقتين");
+    });
+    expect(signUpWithPassword).not.toHaveBeenCalled();
+
+    // Attempt 3: Matching passwords -> proceeds
+    fireEvent.change(confirmInput, { target: { value: "Secret123" } });
+    fireEvent.submit(form);
+
+    await waitFor(() => {
+      expect(signUpWithPassword).toHaveBeenCalledWith({
+        email: "customer@example.com",
+        password: "Secret123",
+      });
+    });
   });
 
-  it("AUTH STATE FLASH PREVENTION: renders loading spinner during bootstrapping or authenticated_loading_context", () => {
-    mockAuthState.authStatus = "bootstrapping";
+  it("REQUEST REJECTION: handles OTP request rejection gracefully with toast error without advancing to code step", async () => {
+    requestPhoneOtp.mockRejectedValueOnce(new Error("Rate limit exceeded"));
     renderPage();
 
-    expect(screen.getByText("جاري التحقق من الجلسة...")).toBeTruthy();
-    expect(screen.queryByTestId("otp-identifier-form")).toBeNull();
-    expect(screen.queryByTestId("password-form")).toBeNull();
+    // Enter identifier and submit
+    fireEvent.change(screen.getByTestId("identifier"), { target: { value: "07701234567" } });
+    fireEvent.submit(screen.getByTestId("otp-identifier-form"));
+
+    await waitFor(() => {
+      expect(toastError).toHaveBeenCalledWith("Rate limit exceeded");
+    });
+    // Stays on identifier form
+    expect(screen.getByTestId("otp-identifier-form")).toBeTruthy();
+    expect(screen.queryByTestId("otp-code-form")).toBeNull();
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

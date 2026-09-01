@@ -33,6 +33,7 @@ const {
   mockAuthState: {
     user: { id: "user-123" } as { id: string } | null,
     authStatus: "authenticated_ready",
+    retryStorageBootstrap: vi.fn(),
     startPhoneChange: vi.fn(),
     verifyPhoneChange: vi.fn(),
     getVerifiedAuthPhone: vi.fn(),
@@ -64,6 +65,7 @@ vi.mock("@/hooks/use-auth", () => ({
   useAuth: () => ({
     user: mockAuthState.user,
     authStatus: mockAuthState.authStatus,
+    retryStorageBootstrap: mockAuthState.retryStorageBootstrap,
     startPhoneChange,
     verifyPhoneChange,
     getVerifiedAuthPhone,
@@ -85,18 +87,37 @@ function renderPage() {
   );
 }
 
-describe("PhoneSecurity — Strict Authority Chain & Invariants", () => {
+describe("PhoneSecurity — Strict Authority Chain & Offline/Storage Invariants", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockFeatureFlags.phoneLinkingEnabled = true;
     mockAuthState.user = { id: "user-123" };
     mockAuthState.authStatus = "authenticated_ready";
+    mockAuthState.retryStorageBootstrap = vi.fn();
 
     checkPhoneAvailability.mockResolvedValue({ available: true, alreadyMine: false });
     startPhoneChange.mockResolvedValue(undefined);
     verifyPhoneChange.mockResolvedValue(undefined);
     getVerifiedAuthPhone.mockResolvedValue("+9647701234567");
     syncVerifiedPhoneIdentity.mockResolvedValue({ linked: true, phoneMasked: "0770***4567" });
+  });
+
+  it("STORAGE ERROR: renders AuthStorageErrorScreen", () => {
+    mockAuthState.authStatus = "storage_error";
+    renderPage();
+
+    expect(screen.getByText(/تعذّر الوصول إلى التخزين الآمن/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/رقم الهاتف/i)).toBeNull();
+  });
+
+  it("AUTHENTICATED OFFLINE: blocks network actions and displays offline guidance", () => {
+    mockAuthState.authStatus = "authenticated_offline";
+    renderPage();
+
+    expect(screen.getByText("يلزم اتصال بالإنترنت لتوثيق رقم الهاتف.")).toBeTruthy();
+    expect(screen.queryByLabelText(/رقم الهاتف/i)).toBeNull();
+    expect(checkPhoneAvailability).not.toHaveBeenCalled();
+    expect(startPhoneChange).not.toHaveBeenCalled();
   });
 
   it("FEATURE DISABLED: shows unavailable message when phoneLinkingEnabled is false", () => {
@@ -108,6 +129,7 @@ describe("PhoneSecurity — Strict Authority Chain & Invariants", () => {
 
   it("UNAUTHENTICATED: prompts user to log in when user is null", () => {
     mockAuthState.user = null;
+    mockAuthState.authStatus = "unauthenticated";
     renderPage();
 
     expect(screen.getByText("يجب تسجيل الدخول أولاً لتوثيق رقم هاتفك.")).toBeTruthy();
@@ -165,7 +187,6 @@ describe("PhoneSecurity — Strict Authority Chain & Invariants", () => {
   });
 
   it("READ-BACK MISMATCH GUARD: fails safely if Supabase auth does not prove the confirmed phone", async () => {
-    // getVerifiedAuthPhone returns null (or mismatch)
     getVerifiedAuthPhone.mockResolvedValueOnce(null);
 
     renderPage();
@@ -186,7 +207,6 @@ describe("PhoneSecurity — Strict Authority Chain & Invariants", () => {
       expect(toastError).toHaveBeenCalledWith("لم يتم تأكيد رقم الهاتف. حاول مرة أخرى");
     });
 
-    // Backend sync MUST NOT be called if Supabase auth read-back failed
     expect(syncVerifiedPhoneIdentity).not.toHaveBeenCalled();
   });
 
@@ -203,7 +223,6 @@ describe("PhoneSecurity — Strict Authority Chain & Invariants", () => {
       expect(toastSuccess).toHaveBeenCalledWith("تم إرسال رمز التحقق عبر واتساب");
     });
 
-    // OTP Code step
     await waitFor(() => expect(screen.getByTestId("otp-digit-0")).toBeTruthy());
     fireEvent.paste(screen.getByTestId("otp-digit-0"), {
       clipboardData: { getData: () => "654321" },
@@ -217,7 +236,6 @@ describe("PhoneSecurity — Strict Authority Chain & Invariants", () => {
       expect(toastSuccess).toHaveBeenCalledWith("تم ربط رقم الهاتف بحسابك بنجاح");
     });
 
-    // Done state
     expect(screen.getByText(/تم توثيق رقم هاتفك \(0770\*\*\*4567\) وربطه بحسابك بنجاح\./i)).toBeTruthy();
   });
 });

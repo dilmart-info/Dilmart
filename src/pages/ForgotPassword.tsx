@@ -73,12 +73,14 @@ export default function ForgotPassword() {
   const handleIdentifierSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      await otp.submitIdentifier();
-      toast.success(
-        otp.channel === "phone"
-          ? "أرسلنا رمز التحقق إلى واتساب"
-          : "أرسلنا رمز التحقق إلى بريدك الإلكتروني"
-      );
+      const sent = await otp.submitIdentifier();
+      if (sent) {
+        toast.success(
+          otp.channel === "phone"
+            ? "أرسلنا رمز التحقق إلى واتساب"
+            : "أرسلنا رمز التحقق إلى بريدك الإلكتروني"
+        );
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر إرسال رمز التحقق");
     }
@@ -93,12 +95,32 @@ export default function ForgotPassword() {
     }
   };
 
+  const handleResendOtp = async () => {
+    try {
+      const sent = await otp.resend();
+      if (sent) {
+        toast.success(
+          otp.channel === "phone"
+            ? "أعدنا إرسال رمز التحقق إلى واتساب"
+            : "أعدنا إرسال رمز التحقق إلى بريدك الإلكتروني"
+        );
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "تعذر إعادة إرسال الرمز";
+      toast.error(message);
+    }
+  };
+
   const handlePasswordSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (saving) return;
 
-    if (newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 6) {
       toast.error("كلمة المرور يجب أن لا تقل عن 6 خانات");
+      return;
+    }
+    if (!confirmPassword) {
+      toast.error("يرجى تأكيد كلمة المرور");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -139,16 +161,15 @@ export default function ForgotPassword() {
               className="w-full h-11 rounded-xl font-bold gap-2"
               onClick={() => navigate("/profile")}
             >
+              <ShoppingBag className="h-4 w-4" />
               <span>الانتقال إلى حسابي</span>
-              <ArrowRight className="h-4 w-4" />
             </Button>
             <Button
               variant="outline"
-              className="w-full h-11 rounded-xl font-medium gap-2"
+              className="w-full h-11 rounded-xl font-bold"
               onClick={() => navigate("/")}
             >
-              <ShoppingBag className="h-4 w-4" />
-              <span>متابعة التسوق</span>
+              متابعة التسوق
             </Button>
           </div>
         </div>
@@ -156,7 +177,7 @@ export default function ForgotPassword() {
     );
   }
 
-  // State 2: Set New Password after verification
+  // State 2: OTP Verified -> Enter New Password
   if (verified) {
     return (
       <AuthPageShell>
@@ -166,10 +187,10 @@ export default function ForgotPassword() {
               <KeyRound className="h-6 w-6" />
             </div>
             <h1 className="font-display text-2xl font-bold text-foreground">
-              تعيين كلمة مرور جديدة
+              تعيين كلمة المرور الجديدة
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              تم تأكيد هويتك. أدخل كلمة المرور الجديدة لحسابك.
+              أدخل كلمة المرور الجديدة لحسابك لتسجيل الدخول بها لاحقاً.
             </p>
           </div>
 
@@ -203,6 +224,9 @@ export default function ForgotPassword() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                يجب أن تتكون من 6 خانات على الأقل.
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -227,9 +251,9 @@ export default function ForgotPassword() {
             <Button
               type="submit"
               className="w-full h-11 rounded-xl font-bold"
-              disabled={saving}
+              disabled={saving || !newPassword || !confirmPassword}
             >
-              {saving ? "جارٍ حفظ كلمة المرور..." : "حفظ كلمة المرور والدخول"}
+              {saving ? "جارٍ الحفظ..." : "حفظ كلمة المرور"}
             </Button>
           </form>
         </div>
@@ -237,7 +261,7 @@ export default function ForgotPassword() {
     );
   }
 
-  // State 3: Enter Identifier or OTP Code
+  // State 3: Step 1 & 2 -> Channel/Identifier Input or Code Input
   return (
     <AuthPageShell>
       <div className="space-y-6">
@@ -249,28 +273,23 @@ export default function ForgotPassword() {
             استعادة كلمة المرور
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            أدخل بريدك الإلكتروني أو رقم هاتفك المسجل لاستلام رمز التحقق.
+            {otp.step === "identifier"
+              ? "أدخل وسيلة التواصل المرتبطة بحسابك لاستلام رمز الاستعادة"
+              : "أدخل رمز التحقق المكون من 6 أرقام لتأكيد هويتك"}
           </p>
         </div>
 
-        {availableChannels.length === 0 ? (
-          <div className="text-center py-6 space-y-3">
-            <p className="text-sm text-muted-foreground">
-              خدمة استعادة كلمة المرور غير متاحة حالياً.
-            </p>
-            <Button asChild variant="outline" className="rounded-xl">
-              <Link to="/auth">العودة لتسجيل الدخول</Link>
-            </Button>
-          </div>
-        ) : otp.step === "identifier" ? (
+        {/* Identifier Entry Step */}
+        {otp.step === "identifier" ? (
           <form
             data-testid="reset-identifier-form"
             onSubmit={handleIdentifierSubmit}
             className="space-y-4"
           >
-            {availableChannels.length > 1 ? (
+            {/* Channel Switcher if both channels enabled */}
+            {availableChannels.length > 1 && (
               <div className="space-y-2">
-                <Label>طريقة الاستعادة</Label>
+                <Label>طريقة استلام رمز الاستعادة</Label>
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     type="button"
@@ -281,7 +300,7 @@ export default function ForgotPassword() {
                     className="rounded-xl gap-1.5 text-xs font-bold"
                   >
                     <Phone className="h-3.5 w-3.5" />
-                    <span>عبر واتساب</span>
+                    <span>واتساب</span>
                   </Button>
                   <Button
                     type="button"
@@ -292,19 +311,19 @@ export default function ForgotPassword() {
                     className="rounded-xl gap-1.5 text-xs font-bold"
                   >
                     <Mail className="h-3.5 w-3.5" />
-                    <span>عبر البريد</span>
+                    <span>البريد الإلكتروني</span>
                   </Button>
                 </div>
               </div>
-            ) : null}
+            )}
 
             <div className="space-y-2">
-              <Label htmlFor="forgotIdentifier">
+              <Label htmlFor="recoveryIdentifier">
                 {otp.channel === "phone" ? "رقم الهاتف (واتساب)" : "البريد الإلكتروني"}
               </Label>
               <div className="relative">
                 <Input
-                  id="forgotIdentifier"
+                  id="recoveryIdentifier"
                   data-testid="reset-identifier"
                   type={otp.channel === "phone" ? "tel" : "email"}
                   inputMode={otp.channel === "phone" ? "tel" : "email"}
@@ -329,19 +348,11 @@ export default function ForgotPassword() {
               className="w-full h-11 rounded-xl font-bold"
               disabled={otp.pending || !otp.identifier.trim()}
             >
-              {otp.pending ? "جارٍ إرسال الرمز..." : "إرسال رمز التحقق"}
+              {otp.pending ? "جارٍ إرسال الرمز..." : "إرسال رمز الاستعادة"}
             </Button>
-
-            <div className="text-center pt-2">
-              <Link
-                to="/auth"
-                className="text-xs text-muted-foreground hover:text-foreground font-medium"
-              >
-                تذكرت كلمة المرور؟ تسجيل الدخول
-              </Link>
-            </div>
           </form>
         ) : (
+          /* Code Entry Step */
           <form
             data-testid="reset-code-form"
             onSubmit={handleCodeSubmit}
@@ -355,7 +366,7 @@ export default function ForgotPassword() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="forgotOtpCode" className="sr-only">
+              <Label htmlFor="recoveryCode" className="sr-only">
                 رمز التحقق
               </Label>
               <OtpCodeInput
@@ -376,15 +387,17 @@ export default function ForgotPassword() {
             <div className="flex items-center justify-between pt-2 text-xs">
               <button
                 type="button"
+                data-testid="change-identifier"
                 onClick={otp.changeIdentifier}
                 disabled={otp.pending}
                 className="text-muted-foreground hover:text-foreground font-medium"
               >
-                تغيير الرقم / البريد
+                تغيير وسيلة الاستعادة
               </button>
               <button
                 type="button"
-                onClick={() => void otp.resend()}
+                data-testid="resend"
+                onClick={handleResendOtp}
                 disabled={otp.resendIn > 0 || otp.pending}
                 className="text-primary font-bold hover:underline disabled:text-muted-foreground disabled:no-underline"
               >
@@ -393,6 +406,17 @@ export default function ForgotPassword() {
             </div>
           </form>
         )}
+
+        {/* Footer Support Link */}
+        <div className="pt-4 border-t border-border text-center">
+          <Link
+            to="/auth"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium"
+          >
+            <ArrowRight size={13} />
+            <span>العودة إلى تسجيل الدخول</span>
+          </Link>
+        </div>
       </div>
     </AuthPageShell>
   );

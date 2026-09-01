@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { ShieldCheck, Phone, Lock, CheckCircle2, ArrowRight, RefreshCw, Package, Eye, EyeOff, LogIn } from "lucide-react";
+import { ShieldCheck, Phone, Lock, CheckCircle2, ArrowRight, RefreshCw, Package, Eye, EyeOff, LogIn, AlertCircle, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { customerApi } from "@/lib/api/customer";
 import { useAuth } from "@/hooks/use-auth";
 import { isValidIraqiMobile, toIraqiLocalDisplay } from "@/lib/auth/identifier";
 import AuthPageShell from "@/components/auth/AuthPageShell";
+import AuthStorageErrorScreen from "@/components/auth/AuthStorageErrorScreen";
 import OtpCodeInput from "@/components/auth/OtpCodeInput";
 
 type Step = "phone" | "otp" | "password" | "done";
@@ -21,7 +22,7 @@ export default function ClaimAccount() {
   const [searchParams] = useSearchParams();
   const initialOrderNumber = searchParams.get("orderNumber") || "";
   const initialPhone = searchParams.get("phone") || "";
-  const { authStatus, profile, refetch, logoutCurrentDevice } = useAuth();
+  const { appSession, authStatus, retryStorageBootstrap, profile, refetch, logoutCurrentDevice } = useAuth();
 
   useEffect(() => {
     document.title = "استلام الحساب | DILMART";
@@ -43,6 +44,11 @@ export default function ClaimAccount() {
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [outcome, setOutcome] = useState<Outcome>("upgraded");
+
+  // Post-claim finalization failure states
+  const [postMergeLogoutError, setPostMergeLogoutError] = useState(false);
+  const [postUpgradeRefetchError, setPostUpgradeRefetchError] = useState(false);
+  const [finalizingAction, setFinalizingAction] = useState(false);
 
   const timerRef = useRef<number | null>(null);
 
@@ -123,6 +129,32 @@ export default function ClaimAccount() {
     }
   };
 
+  const handleResendOtp = async () => {
+    if (resendTimer > 0 || loading) return;
+    const trimmedPhone = phone.trim();
+    const normalizedPhone = toIraqiLocalDisplay(trimmedPhone);
+
+    setLoading(true);
+    try {
+      if (orderNumber.trim() || !isProvisional) {
+        const res = await customerApi.recoverClaimByOrder(orderNumber.trim(), normalizedPhone);
+        setChallengeId(res.request_id);
+        startResendTimer(60);
+        toast.info("إذا كانت البيانات صحيحة، فقد تم إرسال رمز التحقق.");
+      } else {
+        const res = await customerApi.requestAccountClaim(normalizedPhone);
+        setChallengeId(res.challenge_id);
+        startResendTimer(res.resend_after || 60);
+        toast.success("أرسلنا رمز التوثيق إلى واتساب");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "تعذر إعادة إرسال الرمز";
+      toast.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (loading) return;
@@ -154,8 +186,12 @@ export default function ClaimAccount() {
     e.preventDefault();
     if (loading) return;
 
-    if (newPassword.length < 6) {
+    if (!newPassword || newPassword.length < 6) {
       toast.error("كلمة المرور يجب أن لا تقل عن 6 خانات");
+      return;
+    }
+    if (!confirmPassword) {
+      toast.error("يرجى تأكيد كلمة المرور");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -172,26 +208,34 @@ export default function ClaimAccount() {
 
       if (res.success) {
         if (res.merged === true) {
-          // Account was merged into an existing permanent customer account.
-          // Safely terminate the provisional session.
+          // Account was merged on backend into an existing permanent customer account.
+          // Safely terminate provisional session without swallowing secure storage errors.
+          setOutcome("merged");
           try {
             await logoutCurrentDevice();
+            setPostMergeLogoutError(false);
+            setStep("done");
+            toast.success("تم دمج حسابك بنجاح. يرجى تسجيل الدخول");
           } catch {
-            // ignore logout error
+            setPostMergeLogoutError(true);
+            setStep("done");
+            toast.error("تم دمج الحساب، لكن تعذر إنهاء الجلسة الحالية بأمان.");
           }
-          setOutcome("merged");
-          toast.success("تم دمج حسابك بنجاح. يرجى تسجيل الدخول");
         } else {
-          // Account was upgraded in-place. Refresh authoritative auth context.
+          // Account was upgraded in-place on backend.
+          // Refresh authoritative auth context without swallowing failure.
+          setOutcome("upgraded");
           try {
             await refetch();
+            setPostUpgradeRefetchError(false);
+            setStep("done");
+            toast.success(res.message || "تم استلام حسابك وتعيين كلمة المرور بنجاح");
           } catch {
-            // ignore refetch error
+            setPostUpgradeRefetchError(true);
+            setStep("done");
+            toast.error("تم استلام الحساب، لكن تعذر تحديث بيانات الجلسة.");
           }
-          setOutcome("upgraded");
-          toast.success(res.message || "تم استلام حسابك وتعيين كلمة المرور بنجاح");
         }
-        setStep("done");
       }
     } catch (err: unknown) {
       // Structured weak-password handling preserves action token and keeps user on password step
@@ -205,13 +249,76 @@ export default function ClaimAccount() {
     }
   };
 
-  // Render Loading State while auth bootstraps
+  // Retry ONLY logout after merged === true without repeating claim API
+  const handleRetryLogout = async () => {
+    if (finalizingAction) return;
+    setFinalizingAction(true);
+    try {
+      await logoutCurrentDevice();
+      setPostMergeLogoutError(false);
+      toast.success("تم إنهاء الجلسة بنجاح، يمكنك الآن تسجيل الدخول.");
+    } catch {
+      toast.error("تعذر إنهاء الجلسة المحلية، يرجى المحاولة مجدداً.");
+    } finally {
+      setFinalizingAction(false);
+    }
+  };
+
+  // Retry ONLY auth context refetch after merged === false without repeating claim API
+  const handleRetryRefetch = async () => {
+    if (finalizingAction) return;
+    setFinalizingAction(true);
+    try {
+      await refetch();
+      setPostUpgradeRefetchError(false);
+      toast.success("تم تحديث بيانات الحساب بنجاح.");
+    } catch {
+      toast.error("تعذر تحديث بيانات الحساب، يرجى المحاولة مجدداً.");
+    } finally {
+      setFinalizingAction(false);
+    }
+  };
+
+  // 1. Storage Error State
+  if (authStatus === "storage_error") {
+    return <AuthStorageErrorScreen onRetry={retryStorageBootstrap || (() => {})} />;
+  }
+
+  // 2. Loading State while auth bootstraps
   if (authStatus === "bootstrapping" || authStatus === "authenticated_loading_context") {
     return (
       <AuthPageShell>
         <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="text-sm font-medium">جاري التحقق من بيانات الحساب...</p>
+        </div>
+      </AuthPageShell>
+    );
+  }
+
+  // 3. Authenticated Offline State -> Never treat as Guest, show non-destructive offline state
+  if (authStatus === "authenticated_offline" && appSession) {
+    return (
+      <AuthPageShell>
+        <div className="text-center space-y-4 py-6">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+            <WifiOff className="h-7 w-7" />
+          </div>
+          <h2 className="font-display text-xl font-bold text-foreground">
+            يلزم اتصال بالإنترنت لاستلام الحساب.
+          </h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            أنت مسجل الدخول في وضع عدم الاتصال. يرجى الاتصال بالإنترنت للمتابعة.
+          </p>
+          <div className="pt-2">
+            <Button
+              variant="outline"
+              className="w-full rounded-xl"
+              onClick={() => navigate("/profile")}
+            >
+              العودة إلى حسابي
+            </Button>
+          </div>
         </div>
       </AuthPageShell>
     );
@@ -227,7 +334,11 @@ export default function ClaimAccount() {
           <h1 className="font-display text-2xl font-bold text-foreground">
             {step === "done"
               ? outcome === "merged"
-                ? "تم دمج حسابك بنجاح"
+                ? postMergeLogoutError
+                  ? "تم دمج الحساب"
+                  : "تم دمج حسابك بنجاح"
+                : postUpgradeRefetchError
+                ? "تم استلام الحساب"
                 : "تم استلام حسابك بنجاح"
               : "استلام وتأكيد الحساب"}
           </h1>
@@ -240,7 +351,11 @@ export default function ClaimAccount() {
             {step === "password" && "أنشئ كلمة مرور جديدة لحماية حسابك والوصول إلى طلباتك"}
             {step === "done" &&
               (outcome === "merged"
-                ? "تم ربط طلباتك بحسابك المسجل. يرجى تسجيل الدخول للمتابعة."
+                ? postMergeLogoutError
+                  ? "تم دمج الحساب، لكن تعذر إنهاء الجلسة الحالية بأمان."
+                  : "تم ربط طلباتك بحسابك المسجل. يرجى تسجيل الدخول للمتابعة."
+                : postUpgradeRefetchError
+                ? "تم استلام الحساب، لكن تعذر تحديث بيانات الجلسة."
                 : "أصبح حسابك مؤكداً وجاهزاً للاستخدام.")}
           </p>
         </div>
@@ -248,46 +363,52 @@ export default function ClaimAccount() {
         {/* Step 1: Identifier Entry (Order Number + Phone) */}
         {step === "phone" && (
           <form onSubmit={handleRequestOtp} className="space-y-4">
-            {/* Always show Order Number for guest / unauthenticated users */}
-            {!isProvisional || orderNumber ? (
+            {/* Order Number is required for Guest / Unauthenticated flow */}
+            {!isProvisional && (
               <div className="space-y-2">
-                <Label htmlFor="orderNumber">
-                  رقم الطلب {!isProvisional ? <span className="text-destructive">*</span> : null}
-                </Label>
+                <Label htmlFor="orderNumber">رقم الطلب</Label>
                 <div className="relative">
                   <Input
                     id="orderNumber"
+                    data-testid="order-number"
+                    type="text"
+                    dir="ltr"
+                    placeholder="DUK-123456"
                     value={orderNumber}
                     onChange={(e) => setOrderNumber(e.target.value)}
-                    placeholder="DUK-XXXXXX"
-                    dir="ltr"
-                    className="pr-10 text-left rounded-xl"
-                    required={!isProvisional}
+                    className="pr-10 rounded-xl text-left"
+                    required
                   />
                   <Package className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 </div>
+                <p className="text-[11px] text-muted-foreground">
+                  رقم الطلب الذي تم إرساله إليك عند تأكيد الطلب.
+                </p>
               </div>
-            ) : null}
+            )}
 
+            {/* Phone Number Field */}
             <div className="space-y-2">
-              <Label htmlFor="claimPhone">
-                رقم الهاتف (واتساب) <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="phone">رقم الهاتف (واتساب)</Label>
               <div className="relative">
                 <Input
-                  id="claimPhone"
+                  id="phone"
+                  data-testid="claim-phone"
                   type="tel"
                   inputMode="tel"
                   autoComplete="tel"
+                  dir="ltr"
+                  placeholder="07XXXXXXXXX"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="07XXXXXXXXX"
-                  dir="ltr"
-                  className="pr-10 text-left rounded-xl"
+                  className="pr-10 rounded-xl text-left"
                   required
                 />
                 <Phone className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                رقم الهاتف العراقي الذي تم استخدامه عند إنشاء الطلب.
+              </p>
             </div>
 
             <Button
@@ -295,17 +416,8 @@ export default function ClaimAccount() {
               className="w-full h-11 rounded-xl font-bold"
               disabled={loading || !phone.trim() || (!isProvisional && !orderNumber.trim())}
             >
-              {loading ? "جارٍ إرسال الرمز..." : "إرسال رمز التوثيق"}
+              {loading ? "جارٍ التحقق..." : "إرسال رمز التوثيق"}
             </Button>
-
-            <div className="text-center pt-2">
-              <Link
-                to="/auth"
-                className="text-xs text-muted-foreground hover:text-foreground font-medium"
-              >
-                العودة إلى تسجيل الدخول
-              </Link>
-            </div>
           </form>
         )}
 
@@ -313,17 +425,21 @@ export default function ClaimAccount() {
         {step === "otp" && (
           <form onSubmit={handleVerifyOtp} className="space-y-4">
             <div className="text-center space-y-1">
-              <p className="text-xs text-muted-foreground">أدخل رمز التوثيق المرسل إلى الرقم:</p>
+              <p className="text-xs text-muted-foreground">أدخل رمز التوثيق المرسل إلى:</p>
               <p className="font-mono font-bold text-sm text-foreground" dir="ltr">
-                {phone}
+                {toIraqiLocalDisplay(phone)}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="claimOtp" className="sr-only">
+              <Label htmlFor="otpInput" className="sr-only">
                 رمز التوثيق
               </Label>
-              <OtpCodeInput value={otp} onChange={setOtp} disabled={loading} />
+              <OtpCodeInput
+                value={otp}
+                onChange={setOtp}
+                disabled={loading}
+              />
             </div>
 
             <Button
@@ -331,7 +447,7 @@ export default function ClaimAccount() {
               className="w-full h-11 rounded-xl font-bold"
               disabled={loading || otp.trim().length < 6}
             >
-              {loading ? "جارٍ التحقق..." : "تأكيد الرمز والمتابعة"}
+              {loading ? "جارٍ التحقق من الرمز..." : "تأكيد الرمز والمتابعة"}
             </Button>
 
             <div className="flex items-center justify-between pt-2 text-xs">
@@ -344,17 +460,16 @@ export default function ClaimAccount() {
                 disabled={loading}
                 className="text-muted-foreground hover:text-foreground font-medium"
               >
-                تغيير الرقم
+                تعديل الرقم
               </button>
               <button
                 type="button"
-                onClick={() => void handleRequestOtp()}
+                data-testid="resend-claim-otp"
+                onClick={handleResendOtp}
                 disabled={resendTimer > 0 || loading}
                 className="text-primary font-bold hover:underline disabled:text-muted-foreground disabled:no-underline"
               >
-                {resendTimer > 0
-                  ? `إعادة الإرسال بعد ${resendTimer} ثانية`
-                  : "إعادة إرسال الرمز"}
+                {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer} ثانية` : "إعادة إرسال الرمز"}
               </button>
             </div>
           </form>
@@ -364,10 +479,11 @@ export default function ClaimAccount() {
         {step === "password" && (
           <form onSubmit={handleCompleteClaim} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="newClaimPassword">كلمة المرور الجديدة</Label>
+              <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
               <div className="relative">
                 <Input
-                  id="newClaimPassword"
+                  id="newPassword"
+                  data-testid="new-password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   dir="ltr"
@@ -387,13 +503,17 @@ export default function ClaimAccount() {
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                يجب أن تتكون من 6 خانات على الأقل.
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmClaimPassword">تأكيد كلمة المرور</Label>
+              <Label htmlFor="confirmPassword">تأكيد كلمة المرور</Label>
               <div className="relative">
                 <Input
-                  id="confirmClaimPassword"
+                  id="confirmPassword"
+                  data-testid="confirm-password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   dir="ltr"
@@ -410,51 +530,109 @@ export default function ClaimAccount() {
             <Button
               type="submit"
               className="w-full h-11 rounded-xl font-bold"
-              disabled={loading}
+              disabled={loading || !newPassword || !confirmPassword}
             >
-              {loading ? "جارٍ حفظ الحساب..." : "حفظ الحساب وتأكيده"}
+              {loading ? "جارٍ الحفظ وتأكيد الحساب..." : "حفظ الحساب وتأكيده"}
             </Button>
           </form>
         )}
 
-        {/* Step 4: Done Step (Upgraded vs Merged) */}
+        {/* Step 4: Done / Result State */}
         {step === "done" && (
-          <div className="text-center space-y-4 py-4">
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
-              <CheckCircle2 className="h-9 w-9" />
-            </div>
-
+          <div className="space-y-4 text-center py-2">
             {outcome === "merged" ? (
-              <>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  تم ربط طلباتك السابقة بحسابك المسجل لدينا بنجاح. يرجى تسجيل الدخول باستخدام رقم هاتفك أو بريدك وكلمة المرور الجديدة للوصول إلى حسابك.
-                </p>
-                <div className="pt-4">
+              postMergeLogoutError ? (
+                <div className="space-y-4">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+                    <AlertCircle className="h-8 w-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-foreground font-bold">
+                      تم دمج الحساب، لكن تعذر إنهاء الجلسة الحالية بأمان.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      يرجى الضغط أدناه لإعادة محاولة إنهاء الجلسة قبل تسجيل الدخول.
+                    </p>
+                  </div>
                   <Button
-                    onClick={() => navigate("/auth", { replace: true })}
+                    onClick={handleRetryLogout}
+                    disabled={finalizingAction}
                     className="w-full h-11 rounded-xl font-bold gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${finalizingAction ? "animate-spin" : ""}`} />
+                    <span>{finalizingAction ? "جاري إنهاء الجلسة..." : "إعادة محاولة إنهاء الجلسة"}</span>
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
+                    <CheckCircle2 className="h-8 w-8" />
+                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    تم ربط طلباتك السابقة بحسابك المسجل بنجاح. يمكنك الآن تسجيل الدخول بحسابك الدائم.
+                  </p>
+                  <Button
+                    className="w-full h-11 rounded-xl font-bold gap-2"
+                    onClick={() => navigate("/auth", { replace: true })}
                   >
                     <LogIn className="h-4 w-4" />
                     <span>تسجيل الدخول إلى حسابك</span>
                   </Button>
                 </div>
-              </>
+              )
+            ) : postUpgradeRefetchError ? (
+              <div className="space-y-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+                  <AlertCircle className="h-8 w-8" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm text-foreground font-bold">
+                    تم استلام الحساب، لكن تعذر تحديث بيانات الجلسة.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    تم حفظ حسابك على الخادم، يرجى الضغط أدناه لتحديث الجلسة قبل الانتقال.
+                  </p>
+                </div>
+                <Button
+                  onClick={handleRetryRefetch}
+                  disabled={finalizingAction}
+                  className="w-full h-11 rounded-xl font-bold gap-2"
+                >
+                  <RefreshCw className={`h-4 w-4 ${finalizingAction ? "animate-spin" : ""}`} />
+                  <span>{finalizingAction ? "جاري تحديث الجلسة..." : "إعادة تحديث الحساب"}</span>
+                </Button>
+              </div>
             ) : (
-              <>
+              <div className="space-y-4">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  تم استلام حسابك وتأكيد هويتك بنجاح. أصبح حسابك الآن حساباً دائماً يمكنك من خلاله متابعة جميع طلباتك والاستفادة من خدمات المتجر.
+                  تم استلام حسابك وتعيين كلمة المرور بنجاح. حسابك جاهز الآن للاستخدام وإدارة طلباتك.
                 </p>
-                <div className="pt-4">
+                <div className="pt-2 space-y-2">
                   <Button
+                    className="w-full h-11 rounded-xl font-bold"
                     onClick={() => navigate("/profile", { replace: true })}
-                    className="w-full h-11 rounded-xl font-bold gap-2"
                   >
-                    <span>الانتقال إلى حسابي</span>
-                    <ArrowRight className="h-4 w-4" />
+                    الانتقال إلى حسابي
                   </Button>
                 </div>
-              </>
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Footer Support Link */}
+        {step !== "done" && (
+          <div className="pt-4 border-t border-border text-center">
+            <Link
+              to="/auth"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-medium"
+            >
+              <ArrowRight size={13} />
+              <span>العودة إلى تسجيل الدخول</span>
+            </Link>
           </div>
         )}
       </div>

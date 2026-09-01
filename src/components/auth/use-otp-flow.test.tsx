@@ -220,4 +220,31 @@ describe("useOtpFlow — OTP Channel Contract & Invariants", () => {
 
     expect(requestCode).toHaveBeenLastCalledWith("resend@example.com", "email");
   });
+
+  it("propagates error when requestCode rejects and does not advance step", async () => {
+    requestCode.mockRejectedValueOnce(new Error("Network failure"));
+
+    const { result } = renderHook(
+      () =>
+        useOtpFlow({
+          requestCode,
+          verifyCode,
+          onVerified,
+          allowedChannels: ["email"],
+        }),
+      { wrapper: createWrapper() }
+    );
+
+    act(() => {
+      result.current.setIdentifier("error@example.com");
+    });
+
+    await expect(
+      act(async () => {
+        await result.current.submitIdentifier();
+      })
+    ).rejects.toThrow("Network failure");
+
+    expect(result.current.step).toBe("identifier");
+  });
 });
