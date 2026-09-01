@@ -244,12 +244,18 @@ export const customerApi = {
 
   customerCancelOrder(
     id: string,
-    payload: { reason_code: string; reason_details?: string },
+    payload?: { reason_code?: string; reason_details?: string },
   ) {
-    return request<{ cancelled: boolean; can_request_return: boolean; message: string }>(
+    return request<{
+      cancelled: boolean;
+      cancellation_requested?: boolean;
+      can_request_return: boolean;
+      message: string;
+      request_id?: string;
+    }>(
       `/orders/${encodeURIComponent(id)}/customer-cancel`,
       "POST",
-      payload,
+      payload ?? { reason_code: "customer_requested_cancellation" },
     );
   },
 
@@ -265,7 +271,13 @@ export const customerApi = {
   },
 
   getReturnRequest(id: string) {
-    return request<{ id: string; status: string; reason_code: string; reason_details: string | null; created_at: string }>(
+    return request<{
+      id: string;
+      status: string;
+      reason_code: string;
+      reason_details: string | null;
+      created_at: string;
+    } | null>(
       `/orders/${encodeURIComponent(id)}/return-request`,
       "GET",
     );

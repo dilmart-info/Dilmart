@@ -163,30 +163,49 @@ const Cart = () => {
                   className="bg-white border border-slate-200/80 rounded-2xl p-4 md:p-5 flex flex-col sm:flex-row gap-4 shadow-sm hover:shadow-md transition-shadow relative"
                 >
                   {/* Thumbnail */}
-                  <Link
-                    to={`/product/${product.slug}`}
-                    className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden border border-slate-200/60 block self-start"
-                  >
-                    <img
-                      src={product.images?.[0] || "/placeholder.svg"}
-                      alt={product.name}
-                      className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/placeholder.svg";
-                      }}
-                    />
-                  </Link>
+                  {product.slug ? (
+                    <Link
+                      to={`/product/${product.slug}`}
+                      className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden border border-slate-200/60 block self-start"
+                    >
+                      <img
+                        src={product.images?.[0] || "/placeholder.svg"}
+                        alt={product.name}
+                        className="w-full h-full object-cover object-center hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                    </Link>
+                  ) : (
+                    <div className="w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-slate-100 rounded-xl overflow-hidden border border-slate-200/60 flex items-center justify-center self-start">
+                      <img
+                        src={product.images?.[0] || "/placeholder.svg"}
+                        alt={product.name}
+                        className="w-full h-full object-cover object-center"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/placeholder.svg";
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* Product Details */}
                   <div className="flex-1 flex flex-col justify-between min-w-0">
                     <div>
                       <div className="flex justify-between items-start gap-2">
-                        <Link
-                          to={`/product/${product.slug}`}
-                          className="font-bold text-slate-900 text-sm md:text-base hover:text-[#1261D8] transition-colors line-clamp-2"
-                        >
-                          {product.name}
-                        </Link>
+                        {product.slug ? (
+                          <Link
+                            to={`/product/${product.slug}`}
+                            className="font-bold text-slate-900 text-sm md:text-base hover:text-[#1261D8] transition-colors line-clamp-2"
+                          >
+                            {product.name}
+                          </Link>
+                        ) : (
+                          <span className="font-bold text-slate-900 text-sm md:text-base line-clamp-2">
+                            {product.name}
+                          </span>
+                        )}
                         <button
                           onClick={() => removeItem(product.id)}
                           className="text-slate-400 hover:text-red-600 transition-colors p-1.5 rounded-lg hover:bg-red-50 -ml-1 -mt-1"

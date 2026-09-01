@@ -1,365 +1,464 @@
 import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import AccountLayout from "@/components/account/AccountLayout";
+import { OrderStatusBadge } from "@/components/account/OrderStatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/format";
-import { Package, User, MapPin, Phone } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
-import AccountRecommendations from "@/components/AccountRecommendations";
 import { isAuthStorageError } from "@/lib/auth/auth-errors";
+import AccountRecommendations from "@/components/AccountRecommendations";
+import {
+  Package,
+  MapPin,
+  ShieldCheck,
+  Sparkles,
+  User,
+  LogOut,
+  ChevronLeft,
+  Phone,
+  CheckCircle2,
+} from "lucide-react";
+
+function ProfileDashboardContent() {
+  const {
+    user,
+    profile,
+    appSession,
+    session,
+    authSource,
+    capabilities,
+    logoutCurrentDevice,
+    logoutAllDevices,
+  } = useAuth();
+
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const accountEmail = user?.email ?? appSession?.user?.email ?? session?.user?.email ?? "";
+  const [fullName, setFullName] = useState(profile?.full_name || "");
+  const [phoneInput, setPhoneInput] = useState(profile?.phone || "");
+  const [loggingOutAll, setLoggingOutAll] = useState(false);
+
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+    }
+    if (profile?.phone) {
+      setPhoneInput(profile.phone);
+    }
+  }, [profile]);
+
+  // Fetch recent orders (max 3)
+  const {
+    data: recentOrders,
+    isLoading: isOrdersLoading,
+    isError: isOrdersError,
+    refetch: refetchOrders,
+  } = useQuery({
+    queryKey: ["customer-orders", authSource, user?.id, 3],
+    queryFn: () => apiClient.getCustomerOrders({ limit: 3 }),
+    enabled: !!user,
+  });
+
+  // Fetch saved addresses (to show default address shortcut)
+  const { data: addresses, isLoading: isAddressesLoading } = useQuery({
+    queryKey: ["customer-addresses", authSource, user?.id],
+    queryFn: () => apiClient.getCustomerAddresses(),
+    enabled: !!user,
+  });
+
+  const defaultAddress = (addresses ?? []).find((a) => a.is_default) || (addresses ?? [])[0];
+
+  // Update profile mutation using canonical customer API
+  const updateProfileMutation = useMutation({
+    mutationFn: async (payload: { full_name: string; phone?: string }) => {
+      return apiClient.updateCustomerProfile(payload);
+    },
+    onSuccess: () => {
+      toast.success("تم تحديث البيانات الشخصية بنجاح");
+      queryClient.invalidateQueries({ queryKey: ["customer-profile"] });
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "تعذر تحديث البيانات");
+    },
+  });
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    const payload: { full_name: string; phone?: string } = {
+      full_name: fullName.trim(),
+    };
+
+    if (!capabilities?.phoneIdentity && phoneInput.trim()) {
+      payload.phone = phoneInput.trim();
+    }
+
+    updateProfileMutation.mutate(payload);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutCurrentDevice();
+      navigate("/");
+      toast.success("تم تسجيل الخروج");
+    } catch (error) {
+      if (!isAuthStorageError(error)) {
+        toast.error("تعذر تسجيل الخروج. حاول مرة أخرى.");
+      }
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    setLoggingOutAll(true);
+    try {
+      await logoutAllDevices();
+      navigate("/");
+      toast.success("تم تسجيل الخروج من جميع الأجهزة");
+    } catch (error) {
+      if (!isAuthStorageError(error) && (error as { code?: string })?.code !== "storage_error") {
+        toast.error("تعذر تسجيل الخروج من جميع الأجهزة. حاول مرة أخرى.");
+      }
+    } finally {
+      setLoggingOutAll(false);
+    }
+  };
+
+  const points = profile?.points ?? 0;
+  const discountValue = points * 10;
+
+  return (
+    <div className="space-y-6">
+      {/* Top Grid: Loyalty Card + Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Loyalty Points Card */}
+        <Card className="border-none bg-gradient-to-br from-[#1261D8] to-[#071A3D] text-white shadow-md overflow-hidden relative">
+          <div className="absolute -left-6 -bottom-6 opacity-10 pointer-events-none">
+            <Sparkles size={160} />
+          </div>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-blue-100 uppercase tracking-wider">
+                برنامج مكافآت ديل مارت
+              </span>
+              <span className="bg-white/20 text-white text-[11px] px-2.5 py-0.5 rounded-full font-medium backdrop-blur-sm">
+                مفعل
+              </span>
+            </div>
+            <CardTitle className="text-xl font-bold text-white mt-1">رصيد نقاطك</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-4xl font-extrabold tracking-tight">{points.toLocaleString("ar-IQ")}</span>
+              <span className="text-sm font-medium text-blue-200">نقطة</span>
+            </div>
+            <p className="text-xs text-blue-100">
+              تعادل خصمًا بقيمة <strong className="text-white font-bold">{formatPrice(discountValue)}</strong>
+            </p>
+            <div className="pt-2 border-t border-white/15 text-[11px] text-blue-100/90 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#FF8A00] shrink-0" />
+              <span>يمكن استخدام النقاط المؤهلة كخصم أثناء إتمام الطلب.</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Saved Address Quick Card */}
+        <Card className="border-slate-200 shadow-sm bg-white flex flex-col justify-between">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base font-bold text-[#071A3D] flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-[#1261D8]" />
+                العنوان الافتراضي
+              </CardTitle>
+              <Link
+                to="/my-account/addresses"
+                className="text-xs font-semibold text-[#1261D8] hover:underline flex items-center gap-0.5"
+              >
+                إدارة العناوين
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+            <CardDescription className="text-xs">عنوان التوصيل المعتمد لطلباتك القادمة</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {isAddressesLoading ? (
+              <div className="h-16 flex items-center justify-center text-xs text-slate-400">
+                جارٍ تحميل العناوين...
+              </div>
+            ) : defaultAddress ? (
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-slate-800">{defaultAddress.recipient_name}</span>
+                  <span className="text-slate-500" dir="ltr">{defaultAddress.recipient_phone}</span>
+                </div>
+                <p className="text-xs text-slate-600 truncate">
+                  {defaultAddress.area} {defaultAddress.nearest_landmark ? `— قرب ${defaultAddress.nearest_landmark}` : ""}
+                </p>
+              </div>
+            ) : (
+              <div className="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                <p className="text-xs text-slate-500 mb-2">لا يوجد عنوان محفوظ بعد</p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate("/my-account/addresses")}
+                  className="text-xs text-[#1261D8] border-[#1261D8]/30"
+                >
+                  + إضافة عنوان جديد
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Orders Section (Maximum 3) */}
+      <Card className="border-slate-200 shadow-sm bg-white">
+        <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-base font-bold text-[#071A3D] flex items-center gap-2">
+              <Package className="w-4 h-4 text-[#1261D8]" />
+              الطلبات الأخيرة
+            </CardTitle>
+            <CardDescription className="text-xs">آخر طلبات الشراء المسجلة على حسابك</CardDescription>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/my-account/orders")}
+            className="text-xs text-[#1261D8] hover:text-[#071A3D] font-bold flex items-center gap-1"
+          >
+            عرض جميع الطلبات
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+        </CardHeader>
+        <CardContent className="p-4">
+          {isOrdersLoading ? (
+            <div className="py-8 text-center text-xs text-slate-400">جارٍ تحميل الطلبات...</div>
+          ) : isOrdersError ? (
+            <div className="py-6 text-center space-y-2">
+              <p className="text-xs text-rose-600">تعذر تحميل الطلبات الأخيرة</p>
+              <Button size="sm" variant="outline" onClick={() => refetchOrders()} className="text-xs">
+                إعادة المحاولة
+              </Button>
+            </div>
+          ) : !recentOrders || recentOrders.length === 0 ? (
+            <div className="text-center py-8 space-y-3">
+              <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                <Package className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-medium text-slate-600">لا توجد طلبات سابقة حتى الآن</p>
+              <Button
+                size="sm"
+                onClick={() => navigate("/products")}
+                className="bg-[#1261D8] hover:bg-[#0D4EB0] text-white text-xs font-semibold"
+              >
+                تصفح المنتجات وابدأ التسوق
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="p-3.5 rounded-xl border border-slate-200/90 hover:border-[#1261D8]/40 hover:bg-slate-50/50 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-[#071A3D]">#{order.order_number}</span>
+                      <OrderStatusBadge order={order} />
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-slate-500">
+                      <span>{new Date(order.created_at).toLocaleDateString("ar-IQ")}</span>
+                      <span>•</span>
+                      <span>{order.items_count} {order.items_count === 1 ? "منتج" : "منتجات"}</span>
+                      <span>•</span>
+                      <span className="font-bold text-[#1261D8]">{formatPrice(order.total)}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-center">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate(`/my-account/orders?orderId=${order.id}`)}
+                      className="text-xs font-semibold text-slate-700 border-slate-300 hover:bg-white"
+                    >
+                      تفاصيل الطلب
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Profile Settings & Security Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Personal Info Form */}
+        <Card className="lg:col-span-8 border-slate-200 shadow-sm bg-white">
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-base font-bold text-[#071A3D] flex items-center gap-2">
+              <User className="w-4 h-4 text-[#1261D8]" />
+              المعلومات الشخصية
+            </CardTitle>
+            <CardDescription className="text-xs">تحديث اسمك وبيانات التواصل الأساسية</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4">
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="fullName" className="text-xs font-bold text-slate-700">
+                    الاسم الكامل
+                  </Label>
+                  <Input
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="أدخل اسمك الكامل"
+                    className="text-sm bg-slate-50/50 border-slate-200"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="email" className="text-xs font-bold text-slate-700">
+                    البريد الإلكتروني
+                  </Label>
+                  <Input
+                    id="email"
+                    value={accountEmail}
+                    disabled
+                    className="text-sm bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed"
+                    dir="ltr"
+                  />
+                </div>
+
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="phone" className="text-xs font-bold text-slate-700">
+                    رقم الهاتف
+                  </Label>
+                  {capabilities?.phoneIdentity ? (
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200">
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-[#1261D8]" />
+                        <span className="text-sm font-semibold text-slate-800" dir="ltr">
+                          {profile?.phone || "لم يتم توثيق رقم هاتف"}
+                        </span>
+                        {profile?.phone_verified && (
+                          <span className="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                            موثق
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/profile/security/phone")}
+                        className="text-xs font-semibold text-[#1261D8] border-[#1261D8]/30 hover:bg-[#1261D8]/5"
+                      >
+                        إدارة وتوثيق رقم الهاتف
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      <Phone className="absolute right-3 top-3 text-slate-400" size={16} />
+                      <Input
+                        id="phone"
+                        value={phoneInput}
+                        onChange={(e) => setPhoneInput(e.target.value)}
+                        placeholder="07XXXXXXXX"
+                        className="pr-10 text-sm bg-slate-50/50 border-slate-200"
+                        dir="ltr"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={updateProfileMutation.isPending}
+                  className="bg-[#1261D8] hover:bg-[#0D4EB0] text-white text-xs font-bold px-6 shadow-sm"
+                >
+                  {updateProfileMutation.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Account Security & Logout */}
+        <Card className="lg:col-span-4 border-slate-200 shadow-sm bg-white flex flex-col justify-between">
+          <CardHeader className="pb-3 border-b border-slate-100">
+            <CardTitle className="text-base font-bold text-[#071A3D] flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-slate-600" />
+              أمان الحساب والجلسات
+            </CardTitle>
+            <CardDescription className="text-xs">إدارة جلسات تسجيل الدخول الحالية</CardDescription>
+          </CardHeader>
+          <CardContent className="p-4 space-y-3">
+            <Button
+              variant="outline"
+              onClick={() => void handleLogout()}
+              className="w-full text-xs font-semibold text-rose-700 border-rose-200 hover:bg-rose-50 flex items-center justify-center gap-2"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              تسجيل الخروج من هذا الجهاز
+            </Button>
+
+            {capabilities?.federatedLogoutAll ? (
+              <Button
+                variant="outline"
+                data-testid="logout-all-devices"
+                disabled={loggingOutAll}
+                onClick={() => void handleLogoutAll()}
+                className="w-full text-xs font-semibold text-slate-700 border-slate-200 hover:bg-slate-50 flex items-center justify-center gap-2"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-slate-500" />
+                {loggingOutAll ? "جارٍ تسجيل الخروج..." : "تسجيل الخروج من جميع الأجهزة"}
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Personalized Recommendations Section */}
+      <AccountRecommendations
+        title="منتجات مقترحة لك"
+        subtitle="استكشف تشكيلة مختارة من أكثر المنتجات طلباً في ديل مارت"
+      />
+    </div>
+  );
+}
 
 export default function Profile() {
-    // STORE-PR5 §Phase J — auth ownership is source-neutral (appSession), never the raw Supabase session
-    // (which is null for a federated customer). capabilities/logoutAllDevices drive the account controls.
-    const { user, profile, session, appSession, authStatus, capabilities, logoutCurrentDevice, logoutAllDevices } = useAuth();
-    const [orders, setOrders] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [updating, setUpdating] = useState(false);
-    const [loggingOutAll, setLoggingOutAll] = useState(false);
-    const navigate = useNavigate();
+  const { authStatus, appSession } = useAuth();
+  const navigate = useNavigate();
 
-    const accountEmail = user?.email ?? appSession?.user?.email ?? session?.user?.email ?? "";
-
-    // Form state
-    const [fullName, setFullName] = useState("");
-    const [phone, setPhone] = useState("");
-    const [address, setAddress] = useState("");
-
-    useEffect(() => {
-        if (authStatus === "bootstrapping" || authStatus === "storage_error") {
-            return;
-        }
-
-        // Redirect only on definitive unauthenticated state — never on missing backend context alone
-        // (offline sessions keep appSession without `user`). Source-neutral: a federated customer has
-        // appSession != null even though the Supabase session is null.
-        if (authStatus === "unauthenticated" || !appSession) {
-            navigate("/auth");
-            return;
-        }
-
-        setFullName(profile?.full_name || "");
-        setPhone(profile?.phone || "");
-        setAddress(profile?.address || "");
-
-        if (authStatus === "authenticated_offline") {
-            // Keep the shell; do not hit private APIs until connectivity returns.
-            setOrders([]);
-            setLoading(false);
-            return;
-        }
-
-        if (authStatus === "authenticated_loading_context") {
-            return;
-        }
-
-        void fetchOrders();
-    }, [user, profile, appSession, authStatus, navigate]);
-
-    const fetchOrders = async () => {
-        try {
-            const data = await apiClient.getMyOrders();
-            setOrders(data || []);
-        } catch (error) {
-            console.error("Error fetching orders:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleUpdateProfile = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (authStatus === "authenticated_offline") {
-            toast.error("لا يوجد اتصال بالإنترنت. حاول مرة أخرى عند عودة الشبكة.");
-            return;
-        }
-        setUpdating(true);
-
-        try {
-            await apiClient.updateMyProfile({
-                full_name: fullName,
-                phone,
-                address,
-            });
-            toast.success("تم تحديث الملف الشخصي بنجاح");
-        } catch (error: any) {
-            toast.error(error.message || "حدث خطأ أثناء التحديث");
-        } finally {
-            setUpdating(false);
-        }
-    };
-
-    const handleLogout = async () => {
-        try {
-            await logoutCurrentDevice();
-            navigate("/");
-            toast.success("تم تسجيل الخروج");
-        } catch (error) {
-            // Secure-clear failure surfaces as storage_error — never claim success.
-            if (!isAuthStorageError(error)) {
-                toast.error("تعذر تسجيل الخروج. حاول مرة أخرى.");
-            }
-        }
-    };
-
-    // STORE-PR5 §Phase M — "logout everywhere" is offered only when the backend capability permits it
-    // (federated customers). A secure-clear failure must NOT show success.
-    const handleLogoutAll = async () => {
-        setLoggingOutAll(true);
-        try {
-            await logoutAllDevices();
-            navigate("/");
-            toast.success("تم تسجيل الخروج من جميع الأجهزة");
-        } catch (error) {
-            if (!isAuthStorageError(error) && (error as { code?: string })?.code !== "storage_error") {
-                toast.error("تعذر تسجيل الخروج من جميع الأجهزة. حاول مرة أخرى.");
-            }
-        } finally {
-            setLoggingOutAll(false);
-        }
-    };
-
-    if (authStatus === "bootstrapping" || authStatus === "authenticated_loading_context") {
-        return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
+  // Redirect only on definitive unauthenticated state
+  useEffect(() => {
+    if (authStatus === "bootstrapping" || authStatus === "storage_error") {
+      return;
     }
-
-    if (authStatus === "authenticated_offline" && appSession) {
-        return (
-            <div className="min-h-screen flex flex-col bg-muted/30" data-testid="profile-offline-shell">
-                <Header />
-                <main className="flex-1 container py-8">
-                    <div className="max-w-4xl mx-auto space-y-4">
-                        <h1 className="text-3xl font-bold mb-2">حسابي</h1>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>أنت متصل بالحساب دون شبكة</CardTitle>
-                                <CardDescription>
-                                    الجلسة محفوظة على الجهاز. سيتم تحديث بيانات الحساب تلقائيًا عند عودة الإنترنت.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2 text-sm text-muted-foreground">
-                                <p>البريد: {accountEmail || "—"}</p>
-                                <p className="text-amber-700 dark:text-amber-400">لا يوجد اتصال بالإنترنت</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </main>
-                <Footer />
-            </div>
-        );
+    if (authStatus === "unauthenticated" || !appSession) {
+      navigate("/auth");
     }
+  }, [authStatus, appSession, navigate]);
 
-    if (loading) {
-        return <div className="min-h-screen flex items-center justify-center">جاري التحميل...</div>;
-    }
-
-    return (
-        <div className="min-h-screen flex flex-col bg-muted/30">
-            <Header />
-            <main className="flex-1 container py-8">
-                <div className="max-w-4xl mx-auto">
-                    <h1 className="text-3xl font-bold mb-6">حسابي</h1>
-
-                    {/* Account Claim Banner for Provisional Users */}
-                    {((profile as any)?.claim_required || (profile as any)?.account_type === "provisional_customer") && (
-                        <Card className="mb-6 border-amber-500/30 bg-amber-500/10 dark:bg-amber-950/30">
-                            <CardContent className="p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="space-y-1 text-center sm:text-right">
-                                    <h3 className="font-bold text-amber-800 dark:text-amber-300 text-sm">
-                                        🛡️ حسابك مؤقت وغير موثق
-                                    </h3>
-                                    <p className="text-xs text-amber-700 dark:text-amber-400">
-                                        استلم حسابك الآن وتأكد من حفظ طلباتك ونقاطك دائماً عبر توثيق رقم الهاتف وتعيين كلمة مرور.
-                                    </p>
-                                </div>
-                                <Button
-                                    size="sm"
-                                    onClick={() => navigate("/claim-account")}
-                                    className="bg-amber-600 hover:bg-amber-700 text-white shrink-0"
-                                >
-                                    استلام وتأكيد الحساب
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Loyalty Points Card */}
-                    <Card className="mb-8 border-none bg-gradient-to-l from-indigo-600 to-indigo-700 text-white shadow-lg overflow-hidden relative">
-                        <div className="absolute -right-6 -top-6 opacity-10">
-                            <Package size={120} />
-                        </div>
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-indigo-100 text-sm font-medium">نقاط الولاء المتوفرة</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="flex items-end justify-between">
-                                <div>
-                                    <div className="text-4xl font-black mb-1">{(profile as any)?.points || 0}</div>
-                                    <p className="text-indigo-200 text-xs">تعادل خصم بقيمة {formatPrice(((profile as any)?.points || 0) * 10)}</p>
-                                </div>
-                                <div className="bg-white/20 p-3 rounded-2xl backdrop-blur-sm border border-white/10">
-                                    <Package className="text-white" size={24} />
-                                </div>
-                            </div>
-                        </CardContent>
-                        <div className="bg-black/10 px-6 py-2 text-[10px] text-indigo-100 flex justify-between items-center">
-                            <span>* تنتهي صلاحية النقاط بعد سنة من تاريخ اكتسابها</span>
-                        </div>
-                    </Card>
-
-                    <Tabs defaultValue="orders" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 mb-8">
-                            <TabsTrigger value="orders" className="flex items-center gap-2">
-                                <Package size={18} />
-                                <span>طلباتي</span>
-                            </TabsTrigger>
-                            <TabsTrigger value="settings" className="flex items-center gap-2">
-                                <User size={18} />
-                                <span>إعدادات الحساب</span>
-                            </TabsTrigger>
-                        </TabsList>
-
-                        <TabsContent value="orders">
-                            <div className="space-y-4">
-                                {orders.length === 0 ? (
-                                    <Card>
-                                        <CardContent className="py-12 text-center text-muted-foreground">
-                                            <Package className="mx-auto mb-4 opacity-20" size={64} />
-                                            <p>ليس لديك أي طلبات بعد</p>
-                                            <Button variant="link" onClick={() => navigate("/products")}>
-                                                تصفح المنتجات الآن
-                                            </Button>
-                                        </CardContent>
-                                    </Card>
-                                ) : (
-                                    orders.map((order) => (
-                                        <Card key={order.id} className="overflow-hidden">
-                                            <div className="bg-primary/5 p-4 border-b flex justify-between items-center">
-                                                <div>
-                                                    <p className="text-xs text-muted-foreground">رقم الطلب</p>
-                                                    <p className="font-bold">#{order.order_number}</p>
-                                                </div>
-                                                <div className="text-left">
-                                                    <p className="text-xs text-muted-foreground">التاريخ</p>
-                                                    <p className="text-sm">{new Date(order.created_at).toLocaleDateString('ar-EG')}</p>
-                                                </div>
-                                            </div>
-                                            <CardContent className="p-4 flex flex-col md:flex-row justify-between gap-4">
-                                                <div className="space-y-1">
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <span className="font-medium">الحالة:</span>
-                                                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                                                            {order.status === 'pending' ? 'قيد الانتظار' : order.status}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm font-bold mt-2">
-                                                        <span>الإجمالي:</span>
-                                                        <span className="text-primary">{formatPrice(order.total)}</span>
-                                                    </div>
-                                                </div>
-                                                <Button variant="outline" size="sm" onClick={() => navigate(`/my-account/orders?orderId=${order.id}`)}>
-                                                    عرض التفاصيل وإعادة الطلب
-                                                </Button>
-                                            </CardContent>
-                                        </Card>
-                                    ))
-                                )}
-                            </div>
-                        </TabsContent>
-
-                        <TabsContent value="settings">
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle>المعلومات الشخصية</CardTitle>
-                                    <CardDescription>قم بتحديث بياناتك لتسهيل عملية التوصيل في المرات القادمة</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <form onSubmit={handleUpdateProfile} className="space-y-4">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="fullName">الاسم الكامل</Label>
-                                                <Input
-                                                    id="fullName"
-                                                    value={fullName}
-                                                    onChange={(e) => setFullName(e.target.value)}
-                                                    placeholder="أدخل اسمك الكامل"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="email">البريد الإلكتروني</Label>
-                                                <Input id="email" value={accountEmail} disabled className="bg-muted" />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="phone">رقم الهاتف</Label>
-                                                <div className="relative">
-                                                    <Phone className="absolute right-3 top-3 text-muted-foreground" size={16} />
-                                                    <Input
-                                                        id="phone"
-                                                        value={phone}
-                                                        onChange={(e) => setPhone(e.target.value)}
-                                                        placeholder="07XXXXXXXX"
-                                                        className="pr-10"
-                                                        dir="ltr"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div className="space-y-2 md:col-span-2">
-                                                <Label htmlFor="address">العنوان الافتراضي</Label>
-                                                <div className="relative">
-                                                    <MapPin className="absolute right-3 top-3 text-muted-foreground" size={16} />
-                                                    <Input
-                                                        id="address"
-                                                        value={address}
-                                                        onChange={(e) => setAddress(e.target.value)}
-                                                        placeholder="المحافظة، المنطقة، أقرب نقطة دالة"
-                                                        className="pr-10"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <Button type="submit" disabled={updating} className="w-full md:w-auto px-8">
-                                            {updating ? "جاري الحفظ..." : "حفظ التغييرات"}
-                                        </Button>
-                                    </form>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="mt-8 border-destructive/20 bg-destructive/5">
-                                <CardHeader>
-                                    <CardTitle className="text-destructive">الخروج</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex flex-col gap-2">
-                                    <Button variant="destructive" onClick={() => void handleLogout()}>
-                                        تسجيل الخروج من الحساب
-                                    </Button>
-                                    {capabilities?.federatedLogoutAll ? (
-                                        <Button
-                                            variant="outline"
-                                            data-testid="logout-all-devices"
-                                            disabled={loggingOutAll}
-                                            onClick={() => void handleLogoutAll()}
-                                        >
-                                            تسجيل الخروج من جميع الأجهزة
-                                        </Button>
-                                    ) : null}
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-                <AccountRecommendations
-                    title="مقترحات لك"
-                    subtitle="اعتمادًا على المنتجات الرائجة حاليًا. قريبًا سنخصصها حسب طلباتك السابقة."
-                />
-            </main>
-            <Footer />
-        </div>
-    );
+  return (
+    <AccountLayout
+      title="لوحة الحساب"
+      subtitle="نظرة عامة على نشاط حسابك وطلباتك الأخيرة وعناوينك المحفوظة"
+    >
+      {authStatus === "authenticated_ready" ? <ProfileDashboardContent /> : null}
+    </AccountLayout>
+  );
 }
