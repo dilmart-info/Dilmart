@@ -14,7 +14,7 @@ type AccountRecommendationsProps = {
 function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-2">
-      <Link to={href} className="inline-flex items-center gap-1 text-sm font-semibold text-DilMart-store-gold hover:text-DilMart-store-gold-bright">
+      <Link to={href} className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:text-primary/80">
         عرض الكل
         <ChevronLeft size={16} />
       </Link>
@@ -25,7 +25,7 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
 
 export default function AccountRecommendations({
   title = "منتجات مقترحة لك",
-  subtitle = "حاليًا توصيات عامة، وقريبًا ستصبح ذكية حسب طلباتك السابقة.",
+  subtitle = "تشكيلة مختارة من المنتجات المتاحة في المنصة.",
 }: AccountRecommendationsProps) {
   const { data, isLoading } = useQuery({
     queryKey: ["account-recommendations-home"],
@@ -39,7 +39,7 @@ export default function AccountRecommendations({
 
   if (isLoading) {
     return (
-      <section className="mt-12 border-t border-DilMart-store-gold/10 pt-8" dir="rtl">
+      <section className="mt-12 border-t border-border pt-8" dir="rtl">
         <Skeleton className="mb-3 h-7 w-48" />
         <Skeleton className="mb-8 h-4 w-72" />
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -54,7 +54,7 @@ export default function AccountRecommendations({
   if (!hasAny) return null;
 
   return (
-    <section className="mt-12 border-t border-DilMart-store-gold/10 pt-8" dir="rtl">
+    <section className="mt-12 border-t border-border pt-8" dir="rtl">
       <div className="mb-8">
         <h2 className="text-2xl font-bold">{title}</h2>
         <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>

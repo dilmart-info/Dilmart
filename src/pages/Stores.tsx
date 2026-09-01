@@ -6,11 +6,10 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useMemo } from "react";
-import { storeConfig } from "@/config/store";
+import { useMemo, useEffect } from "react";
 import { apiClient } from "@/lib/api-client";
 import { parseStoresSort, type MarketplaceMerchantCard, type StoresSort } from "@/lib/marketplace-stores.types";
-import { Store } from "lucide-react";
+import { Store, TriangleAlert } from "lucide-react";
 
 const PAGE_SIZE = 24;
 
@@ -20,11 +19,10 @@ function sortLabelAr(sort: StoresSort): string {
   return "مميز أولاً";
 }
 
-/** M2.5 — single grid-level placeholder while merchants list loads. */
 function StoresGridSkeleton() {
   return (
-    <div className="rounded-2xl border border-DilMart-store-gold/10 bg-card/20 p-4 md:p-6" aria-busy="true" aria-label="جاري التحميل">
-      <Skeleton className="min-h-[22rem] w-full rounded-xl bg-muted/35 md:min-h-[28rem]" />
+    <div className="rounded-2xl border border-border bg-card/40 p-4 md:p-6" aria-busy="true" aria-label="جاري التحميل">
+      <Skeleton className="min-h-[22rem] w-full rounded-xl bg-muted/40 md:min-h-[28rem]" />
     </div>
   );
 }
@@ -33,9 +31,9 @@ function MerchantDiscoveryCard({ m }: { m: MarketplaceMerchantCard }) {
   return (
     <Link
       to={`/store/${m.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-DilMart-store-gold/12 bg-card text-card-foreground shadow-sm transition-all hover:border-DilMart-store-gold/35 hover:shadow-lg"
+      className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
     >
-      <div className="relative aspect-[4/3] bg-muted/40">
+      <div className="relative aspect-[4/3] bg-muted/30">
         {m.logo_url ? (
           <img src={m.logo_url} alt="" className="h-full w-full object-cover" referrerPolicy="no-referrer" />
         ) : (
@@ -44,16 +42,39 @@ function MerchantDiscoveryCard({ m }: { m: MarketplaceMerchantCard }) {
           </div>
         )}
         {m.is_featured ? (
-          <span className="absolute left-3 top-3 rounded-full border border-DilMart-store-gold/30 bg-background/90 px-2.5 py-0.5 text-[10px] font-medium text-DilMart-store-gold-bright backdrop-blur-sm">
+          <span className="absolute left-3 top-3 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[10px] font-bold text-primary backdrop-blur-sm">
             مميز
           </span>
         ) : null}
       </div>
       <div className="flex flex-1 flex-col p-4 text-right">
-        <h2 className="font-display text-lg font-semibold leading-snug text-foreground group-hover:text-DilMart-store-gold-bright">{m.display_name}</h2>
-        <p className="mt-2 text-xs text-muted-foreground">زيارة المتجر</p>
+        <h2 className="font-display text-lg font-bold leading-snug text-foreground group-hover:text-primary transition-colors">
+          {m.display_name}
+        </h2>
+        <p className="mt-2 text-xs font-medium text-muted-foreground">زيارة المتجر</p>
       </div>
     </Link>
+  );
+}
+
+function StoresErrorState({ onRetry, isRetrying }: { onRetry: () => void; isRetrying: boolean }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-2xl border border-dashed border-destructive/30 bg-card/40 px-6 py-20 text-center"
+    >
+      <TriangleAlert className="mx-auto h-8 w-8 text-destructive/80" strokeWidth={1.5} aria-hidden />
+      <p className="mt-4 text-base font-bold text-foreground">تعذر تحميل المتاجر</p>
+      <p className="mt-2 text-sm text-muted-foreground">حدث خطأ أثناء تحميل قائمة المتاجر. حاول مرة أخرى.</p>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <Button type="button" onClick={onRetry} disabled={isRetrying} className="rounded-full px-8">
+          {isRetrying ? "...جارِ إعادة المحاولة" : "إعادة المحاولة"}
+        </Button>
+        <Button asChild type="button" variant="outline" className="rounded-full px-8">
+          <Link to="/products">تصفّح المنتجات</Link>
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -63,9 +84,13 @@ export default function Stores() {
   const sort: StoresSort = parseStoresSort(searchParams.get("sort"));
   const offset = (page - 1) * PAGE_SIZE;
 
+  useEffect(() => {
+    document.title = "المتاجر | DILMART";
+  }, []);
+
   const queryKey = useMemo(() => ["marketplace-merchants-list", offset, sort], [offset, sort]);
 
-  const { data: result, isLoading } = useQuery({
+  const { data: result, isLoading, isError, isFetching, refetch } = useQuery({
     queryKey,
     queryFn: () =>
       apiClient.getMarketplaceMerchantsList({
@@ -95,21 +120,22 @@ export default function Stores() {
     setSearchParams(p);
   };
 
-  const showResultsMeta = !isLoading && items.length > 0;
+  const showResultsMeta = !isLoading && !isError && items.length > 0;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <main className="flex-1">
-        <div className="border-b border-DilMart-store-gold/10 bg-gradient-to-l from-card/80 to-background">
+        <div className="border-b border-border bg-gradient-to-l from-muted/50 to-background">
           <div className="container py-10 md:py-14">
-            <p className="mb-2 text-xs font-medium uppercase tracking-[0.28em] text-DilMart-store-gold">{storeConfig.brand.en}</p>
             <div className="flex flex-wrap items-end gap-4">
-              <Store className="h-10 w-10 text-DilMart-store-gold/80" strokeWidth={1.25} />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <Store className="h-6 w-6" strokeWidth={1.75} />
+              </div>
               <div>
-                <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl">المتاجر</h1>
-                <p className="mt-3 max-w-2xl text-sm text-muted-foreground leading-relaxed">
-                  تصفّح المتاجر النشطة على المنصة — اختر الترتيب المناسب، ثم ادخل إلى متجرك لعرض منتجاته وشرائها.
+                <h1 className="font-display text-3xl font-black tracking-tight text-foreground md:text-4xl">المتاجر</h1>
+                <p className="mt-2 max-w-2xl text-sm text-muted-foreground leading-relaxed">
+                  تصفّح المتاجر النشطة على المنصة، واستعرض منتجات كل متجر لشراء ما يناسبك مباشرة.
                 </p>
               </div>
             </div>
@@ -119,7 +145,7 @@ export default function Stores() {
         <div className="container py-8 md:py-10">
           <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
             <Select value={sort} onValueChange={setSort}>
-              <SelectTrigger className="w-full rounded-full border-DilMart-store-gold/20 bg-card/80 sm:w-[220px]">
+              <SelectTrigger className="w-full rounded-full border-border bg-card sm:w-[220px]">
                 <SelectValue placeholder="الترتيب" />
               </SelectTrigger>
               <SelectContent>
@@ -142,6 +168,8 @@ export default function Stores() {
 
           {isLoading ? (
             <StoresGridSkeleton />
+          ) : isError ? (
+            <StoresErrorState onRetry={() => refetch()} isRetrying={isFetching} />
           ) : items.length > 0 ? (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 lg:gap-6">
@@ -151,32 +179,34 @@ export default function Stores() {
               </div>
               {totalPages > 1 && (
                 <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     disabled={page <= 1}
                     onClick={() => setPage(page - 1)}
-                    className="rounded-full border border-DilMart-store-gold/20 px-4 py-2 text-sm disabled:opacity-40"
+                    className="rounded-full px-5 py-2 text-sm"
                   >
                     السابق
-                  </button>
-                  <span className="text-sm text-muted-foreground">
+                  </Button>
+                  <span className="text-sm font-medium text-muted-foreground">
                     صفحة {page} من {totalPages}
                   </span>
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     disabled={page >= totalPages}
                     onClick={() => setPage(page + 1)}
-                    className="rounded-full border border-DilMart-store-gold/20 px-4 py-2 text-sm disabled:opacity-40"
+                    className="rounded-full px-5 py-2 text-sm"
                   >
                     التالي
-                  </button>
+                  </Button>
                 </div>
               )}
             </>
           ) : (
-            <div className="rounded-2xl border border-dashed border-DilMart-store-gold/20 bg-card/30 px-6 py-20 text-center">
-              <p className="text-muted-foreground">لا توجد متاجر نشطة معروضة حالياً.</p>
-              <p className="mt-2 text-sm text-muted-foreground">يمكنك تصفّح المنتجات من جميع المتاجر عبر صفحة المجموعة.</p>
+            <div className="rounded-2xl border border-dashed border-border bg-card/40 px-6 py-20 text-center">
+              <p className="text-base font-bold text-foreground">لا توجد متاجر معروضة حالياً.</p>
+              <p className="mt-2 text-sm text-muted-foreground">يمكنك تصفّح المنتجات من جميع المتاجر عبر صفحة المنتجات.</p>
               <Button asChild className="mt-8 rounded-full px-8">
                 <Link to="/products">تصفّح المنتجات</Link>
               </Button>

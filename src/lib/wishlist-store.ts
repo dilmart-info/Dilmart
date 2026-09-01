@@ -7,6 +7,7 @@ interface WishlistStore {
     items: string[]; // Store product IDs
     addItem: (id: string, meta?: { sourceSurface?: string }) => void;
     removeItem: (id: string, meta?: { sourceSurface?: string }) => void;
+    removeItems: (ids: string[], meta?: { sourceSurface?: string }) => void;
     hasItem: (id: string) => boolean;
 }
 
@@ -31,6 +32,21 @@ export const useWishlistStore = create<WishlistStore>()(
                     sourceSurface: meta?.sourceSurface ?? "unknown",
                 });
                 toast.success("تم الحذف من المفضلة");
+            },
+            removeItems: (ids, meta) => {
+                if (!ids || ids.length === 0) return;
+                const currentItems = get().items;
+                const actuallyRemovedIds = ids.filter((id) => currentItems.includes(id));
+                if (actuallyRemovedIds.length === 0) return;
+                const idSet = new Set(actuallyRemovedIds);
+                set({ items: currentItems.filter((i) => !idSet.has(i)) });
+                for (const id of actuallyRemovedIds) {
+                    trackGrowthHookEvent("wishlist.removed", {
+                        productId: id,
+                        sourceSurface: meta?.sourceSurface ?? "unknown",
+                    });
+                }
+                toast.success("تمت إزالة العناصر غير المتاحة من المفضلة");
             },
             hasItem: (id) => get().items.includes(id),
         }),

@@ -119,7 +119,7 @@ export function getEffectiveOrderStatus(order: {
     default:
       return {
         code: rawStatus,
-        label: rawStatus,
+        label: "حالة الطلب قيد التحديث",
         variant: "outline",
         className: "bg-slate-50 text-slate-700 border-slate-200",
       };

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { getCustomerMobileRouteElements } from "@/app/CustomerRoutes";
 
 vi.mock("@/hooks/use-auth", () => ({
@@ -35,8 +36,10 @@ vi.mock("@/components/FlyingCartAnimation", () => ({
   default: () => null,
 }));
 
-vi.mock("@/components/BottomNav", () => ({
-  default: () => null,
+vi.mock("@/lib/capacitor", () => ({
+  isNative: () => true,
+  openExternal: vi.fn(),
+  shouldOpenExternally: () => false,
 }));
 
 vi.mock("@/components/CapacitorAppWrapper", () => ({
@@ -44,10 +47,15 @@ vi.mock("@/components/CapacitorAppWrapper", () => ({
 }));
 
 function renderCustomerMobileSurface(initialPath: string) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[initialPath]}>
-      <Routes>{getCustomerMobileRouteElements()}</Routes>
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>{getCustomerMobileRouteElements()}</Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 }
 
