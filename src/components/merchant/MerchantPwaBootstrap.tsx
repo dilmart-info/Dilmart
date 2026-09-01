@@ -21,3 +21,5 @@ export function MerchantPwaBootstrap() {
 
   return null;
 }
+
+export default MerchantPwaBootstrap;
