@@ -23,6 +23,7 @@
     "arch:guard": "node scripts/architecture/check-no-new-direct-supabase.mjs",
     "auth:guard": "node scripts/auth/check-auth-lifecycle-boundary.mjs",
     "brand:assets": "node scripts/mobile/build-brand-source-assets.mjs",
+    "brand:favicons": "node scripts/build-web-favicons.mjs",
     "native:assets:check": "node scripts/mobile/check-native-brand-assets.mjs",
     "cap:assets:android": "capacitor-assets generate --android --assetPath assets --iconBackgroundColor \"#ffffff\" --iconBackgroundColorDark \"#ffffff\" --splashBackgroundColor \"#ffffff\" --splashBackgroundColorDark \"#ffffff\"",
     "cap:assets:ios": "capacitor-assets generate --ios --assetPath assets --iconBackgroundColor \"#ffffff\" --iconBackgroundColorDark \"#ffffff\" --splashBackgroundColor \"#ffffff\" --splashBackgroundColorDark \"#ffffff\"",
