@@ -1,25 +1,59 @@
 # CURRENT PHASE
 
-## Phase — Product Readiness Invariant (DilMart-STORE-PRODUCT-READINESS-INVARIANT-001)
-
 ## Task
 
-`DilMart-STORE-PRODUCT-READINESS-INVARIANT-001`
+`DILMART-CANONICAL-REPOSITORY-GOVERNANCE-SYNC-001`
 
 ## Branch
 
-`fix/product-readiness-invariant`
+`governance/canonical-repository-authority-sync`
 
 ## PR
 
-PR `#116` — https://github.com/cylendralabs-blip/DilMart-Store/pull/116
-
-## Phase entry
-
-`governance/phases/DilMart_STORE_PRODUCT_READINESS_INVARIANT_001.md`
+PR `#14` — https://github.com/dilmart-info/Dilmart/pull/14 (Draft)
 
 ## Status
 
+```text
+PHASE_3B_MERGED
+PR_13_CLOSED
+MAIN_SHA_57C8F6B
+CANONICAL_REPOSITORY_GOVERNANCE_SYNC_IMPLEMENTATION_COMPLETE
+LOCAL_GOVERNANCE_GUARDS_PASS
+PR_14_DRAFT
+AWAITING_SUPERVISOR_MERGE_REVIEW
+NO_RUNTIME_CHANGE
+NOT_DEPLOYED_BY_THIS_TASK
+```
+
+## Active Scope
+
+- Synchronize active repository and deployment governance documents to canonical `dilmart-info/Dilmart`.
+- Add fail-closed static governance guard in CI test suite for active authority files.
+- Align `docs/CANONICAL_WORKSPACE.md` with real operator-agnostic and `scripts/build-production.ps1` rules.
+- Maintain strict preservation of historical evidence, audit records, and PR artifacts.
+- No runtime changes, no DB migrations, no deployment.
+
+## Immediately Completed Development Phase
+
+### Phase 3B: Merchant Order Detail, Decision Queue, and New Order Operations
+- **PR:** [#13](https://github.com/dilmart-info/Dilmart/pull/13)
+- **Merge SHA:** `57c8f6b21f95a11403d3928918bbc6c0c78b2e2c`
+- **Merge Status:** Merged & Closed
+- **Summary:** Backend canonical 404 contract, decision eligibility gating, multi-store event isolation with generation/cancellation-safe refetch race guards, and Jenni delivery integration / sticker authority alignment.
+
+---
+
+## Historical Phase Records
+
+The following items are retained for archival reference only; they do not represent active work.
+
+### Product Readiness Invariant (Historical Safety Snapshot)
+- **Task:** `DilMart-STORE-PRODUCT-READINESS-INVARIANT-001`
+- **Branch:** `fix/product-readiness-invariant`
+- **Legacy PR:** PR `#116` in the predecessor repository
+- **Phase entry:** `governance/phases/DilMart_STORE_PRODUCT_READINESS_INVARIANT_001.md`
+- **Historical status:**
 ```text
 IMPLEMENTATION_COMPLETE
 TARGETED_TESTS_PASS
@@ -30,53 +64,41 @@ DB_GATES_VERIFIED_LOCAL_EPHEMERAL_ONLY
 READY_FOR_PULL_REQUEST
 NOT_DEPLOYED
 ```
+- **Historical scope:**
+  - One authoritative, reusable server-side product readiness definition;
+  - Every activation path (create, update, status, quick add, bulk activate, duplicate, CSV import, admin content bulk) enforces it;
+  - Quick Add creates a draft instead of publishing an incomplete product;
+  - Keep `is_active` / `is_published` / `visibility_status` internally consistent;
+  - Do not make existing archived products public;
+  - Regression tests proving the old Quick Add bypass is closed.
+- **Historical out-of-scope facts:**
+  - Migrations were created but not applied;
+  - Existing active-but-unready rows were not retro-corrected;
+  - No deployment occurred.
 
-## Scope of this phase
-
-- one authoritative, reusable server-side product readiness definition;
-- every activation path (create, update, status, quick add, bulk activate,
-  duplicate, CSV import, admin content bulk) enforces it;
-- Quick Add creates a draft instead of publishing an incomplete product;
-- keep is_active / is_published / visibility_status internally consistent;
-- do not make existing archived products public;
-- regression tests proving the old Quick Add bypass is closed.
-
-## Out of scope
-
-Products UI redesign, B2B segmentation semantics, applying the new migration,
-retro-correcting existing active-but-unready rows, deployment.
-
-## Previous phases
-
+### Other Historical Phases
 - Admin Merchant Registration Data — `governance/phases/DilMart_ADMIN_MERCHANT_REGISTRATION_DATA_001.md`
-- Unified Email & WhatsApp OTP Authentication (Batch 2B) — halted at staging gate;
-  see historical notes below and batch closures under `governance/phases/`
 - Ard Al Khaleej Private Catalog QA — merged as PR #73
-- Short-description DB fixture repair — merged as PR #72 → required before this merge
+- Short-description DB fixture repair — merged as PR #72
 - Emergency Web Production Bundle Runtime Fix — `governance/phases/DilMart_STORE_WEB_PRODUCTION_VENDOR_CHUNK_CLOSURE.md`
 - Mobile Safe Area & RTL Hero Carousel — `governance/phases/DilMart_STORE_MOBILE_SAFE_AREA_HERO_CAROUSEL_CLOSURE.md`
 - Native App Icon & Splash Branding — `governance/phases/DilMart_STORE_NATIVE_APP_ICON_SPLASH_CLOSURE.md`
 - Native Auth Storage & Session Lifecycle (Phase 3) — merged as PR #64
 
----
+### Unified Email & WhatsApp OTP Authentication (Batch 2B Historical Snapshot)
+The OTP initiative remains **not production-enabled** (staging gate / in-memory idempotency P0).
 
-## Historical — Unified OTP (Batch 2B) snapshot retained
-
-The OTP initiative remains **not production-enabled** (staging gate / in-memory
-idempotency P0). The following is retained for continuity only; active work is STORE-PR1.
-
-### OTP status at handoff
-
+#### Historical Status
 ```text
 BATCH 2B HALTED AT STAGING GATE
 IN-MEMORY IDEMPOTENCY — NOT MULTI-INSTANCE SAFE
 REAL_OTP_SMOKE=BLOCKED
+NOT_PRODUCTION_ENABLED
 ```
 
-### OTP open supervisor items (unchanged)
-
-1. `OTP_PROVIDER` in Render production still unknown.
-2. Meta template name/language/type/approval unverified.
-3. Batch 2 needs approved `OTP_TEST_PHONE_E164` and explicit send permission.
-4. Durable idempotency required before production OTP enablement.
-5. Deploy order if OTP resumes: backend first, then frontend.
+#### Unresolved Supervisor Items
+1. `OTP_PROVIDER` in Render production remains unverified.
+2. Meta template name, language, type and approval remain unverified.
+3. Real-send testing requires an approved `OTP_TEST_PHONE_E164` and explicit send authorization.
+4. Durable multi-instance idempotency is required before production OTP enablement.
+5. If OTP work resumes, deployment order must be backend first and frontend second.

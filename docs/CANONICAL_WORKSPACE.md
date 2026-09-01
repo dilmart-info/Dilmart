@@ -6,8 +6,8 @@ from ever being built from an obsolete or unverified local checkout.
 
 ## Canonical GitHub repository
 
-    cylendralabs-blip/DilMart-Store
-    https://github.com/cylendralabs-blip/DilMart-Store.git
+    dilmart-info/Dilmart
+    https://github.com/dilmart-info/Dilmart.git
 
 GitHub `origin/main` is the authoritative Production source. Nothing local
 overrides it.
@@ -16,26 +16,24 @@ overrides it.
 
     main
 
-## Local rule
+## Local workspace rule
 
-Only **one** active local DilMart-Store checkout is used for normal development
-and for Production builds:
-
-    C:\Dev\DilMart\DilMart-Store
-
-Do not develop from, or build Production `dist` from, any other local copy.
+- Each operator or machine may have a different filesystem path for their workspace.
+- One verified active local checkout per operator should be used for normal work.
+- A local checkout is canonical **only** when `origin` resolves to `dilmart-info/Dilmart`.
+- Copied, duplicated, or archived workspaces must never be used for development or for Production builds.
 
 ## Production manual deploy rule
 
 Only deploy a `dist` that was produced through the guarded Production build
-procedure from the canonical workspace:
+procedure from a verified canonical workspace:
 
     powershell -ExecutionPolicy Bypass -File scripts\build-production.ps1
 
 That script fails closed unless all of the following hold:
 
-1. It is running inside the canonical `DilMart-Store` git repository.
-2. `origin` points to `cylendralabs-blip/DilMart-Store`.
+1. It is running inside the canonical `DilMart` git repository.
+2. `origin` points to `dilmart-info/Dilmart`.
 3. The current branch is `main`.
 4. The working tree is clean.
 5. `origin` has been fetched.
@@ -49,18 +47,15 @@ verifies `dist/index.html`, writes a non-sensitive `dist/build-meta.json`
 The script never deploys. Deployment to Netlify remains a separate, deliberate
 manual step performed only against a `dist` produced this way.
 
-## Old folders
+## Old folders and archives
 
-Earlier scattered checkouts (for example `DilMart-Store-admin-merchant`,
-`DilMart-Store-Resilience`, and the many `DilMart-Store-*` deploy/worktree
-directories) are **reference / recovery only**. They must never be used for
-development or for Production builds. Archived copies live under
-`C:\Dev\_ARCHIVE_DO_NOT_USE\` with an `ARCHIVED-...-<date>` prefix.
+Earlier scattered checkouts or archive directories are **reference / recovery only**.
+They must never be used for active development or for Production builds.
 
 ## Multi-agent rule
 
 Claude Code, Antigravity, Cursor, and any other coding agent must all be opened
-against this same canonical workspace (`C:\Dev\DilMart\DilMart-Store`). Do not
+against the same verified canonical checkout on the operator's machine. Do not
 point different agents at different local copies.
 
 ## Feature isolation
