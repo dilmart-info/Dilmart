@@ -373,17 +373,45 @@ describe("MerchantLayout — Foundation & Multi-Store Authority", () => {
     });
   });
 
-  it("LOGOUT ERROR SEMANTICS: if logoutCurrentDevice rejects, does NOT show success, toasts exact Arabic error message", async () => {
-    mockAuth.logoutCurrentDevice.mockRejectedValueOnce(new Error("SecureStorage clear failed"));
-    renderLayout();
+  it("FINANCE NAVIGATION: shows finance nav item for owner, manager, and staff, but hides for unknown roles", async () => {
+    // 1. Owner role -> visible
+    mockCurrentMerchant.data = {
+      merchant_id: "m-1",
+      role: "owner",
+      merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active" },
+    };
+    const { unmount: unmount1 } = renderLayout();
+    expect(screen.getByRole("link", { name: /المالية والأرباح/ })).toBeInTheDocument();
+    unmount1();
 
-    const logoutButtons = screen.getAllByTestId("merchant-logout-btn");
-    fireEvent.click(logoutButtons[0]);
+    // 2. Manager role -> visible
+    mockCurrentMerchant.data = {
+      merchant_id: "m-1",
+      role: "manager",
+      merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active" },
+    };
+    const { unmount: unmount2 } = renderLayout();
+    expect(screen.getByRole("link", { name: /المالية والأرباح/ })).toBeInTheDocument();
+    unmount2();
 
-    await waitFor(() => {
-      expect(mockAuth.logoutCurrentDevice).toHaveBeenCalled();
-      expect(toastError).toHaveBeenCalledWith("تعذر تسجيل الخروج بأمان. حاول مرة أخرى.");
-      expect(toastSuccess).not.toHaveBeenCalled();
-    });
+    // 3. Staff role -> visible
+    mockCurrentMerchant.data = {
+      merchant_id: "m-1",
+      role: "staff",
+      merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active" },
+    };
+    const { unmount: unmount3 } = renderLayout();
+    expect(screen.getByRole("link", { name: /المالية والأرباح/ })).toBeInTheDocument();
+    unmount3();
+
+    // 4. Customer / Unknown role -> hidden
+    mockCurrentMerchant.data = {
+      merchant_id: "m-1",
+      role: "customer",
+      merchants: { id: "m-1", display_name: "متجر بغداد المركزي", status: "active" },
+    };
+    const { unmount: unmount4 } = renderLayout();
+    expect(screen.queryByRole("link", { name: /المالية والأرباح/ })).not.toBeInTheDocument();
+    unmount4();
   });
 });

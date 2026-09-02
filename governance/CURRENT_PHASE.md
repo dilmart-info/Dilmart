@@ -2,83 +2,75 @@
 
 ## Task
 
-`DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
+`DILMART-PHASE-3D-MERCHANT-FINANCE-MULTI-STORE-AUTHORITY-001`
 
 ## Branch
 
-`frontend/dilmart-merchant-catalog-operations` (Merged & Deleted)
+`frontend/dilmart-merchant-finance-authority`
 
 ## Target Base
 
-`main` (`c4851b8477dfffe8884ec85e9b04d5c16447e066`)
-
-## Merge Details
-
-- **Pull Request:** [#16](https://github.com/dilmart-info/Dilmart/pull/16) (Merged & Closed)
-- **Source HEAD:** `dbde3cfcd8d3358ce8103dc8e56bffb91b81b6eb`
-- **Main Merge SHA:** `2d147230d73632ca5f12d4106640f61a4bb941d3`
+`main` (`6d1f1ea89de97c6025cc106996cffcda03fefe55`)
 
 ## Status
 
 ```text
-PHASE_3C_MERGED
-PR_16_CLOSED
-PR_16_SOURCE_HEAD_DBDE3CF
-PR_16_MERGE_SHA_2D14723
-MAIN_CI_PASS
-NATIVE_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-RENDER_DEPLOYMENT_STATE_UNVERIFIED
+PHASE_3D_IMPLEMENTATION_COMPLETE
+ALL_VERIFICATIONS_PASS
+FRONTEND_TESTS_PASS (12/12 Finance.test.tsx, 11/11 MerchantLayout.foundation.test.tsx)
+BACKEND_TESTS_PASS (8/8 merchant-finance-multi-store-authority.test.mjs, 292/292 full backend suite)
+CI_GUARDS_PASS (99/99)
+ARCHITECTURE_GUARD_PASS
+AUTH_LIFECYCLE_GUARD_PASS
+NATIVE_BRAND_ASSETS_PASS
+MOBILE_BOUNDARY_PASS
 NO_DB_MIGRATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+DRAFT_PR_PREPARED
+NOT_MERGED
+NOT_DEPLOYED
 ```
 
-## Post-Merge Verification & CI Evidence
+## Implementation & Verification Summary
 
-- **Main Critical CI:** SUCCESS — [Run #33625998323](https://github.com/dilmart-info/Dilmart/actions/runs/33625998323)
-- **Native Foundation CI:** SUCCESS — [Run #33625998386](https://github.com/dilmart-info/Dilmart/actions/runs/33625998386)
-- **Netlify Deploy Gate:** Gate-only evaluation ([Run #33626458916](https://github.com/dilmart-info/Dilmart/actions/runs/33626458916)): `FRESH=true`, `CI_OK=true`, `ALREADY=false`, `ENABLED=false`, `DECISION=false`. Build and publish job was skipped; no Netlify production publish occurred.
-- **Render Deployment:** UNVERIFIED — A merge to `main` must not be reported as a verified Render deployment without provider deployment metadata or an authoritative deployed-commit marker.
-- **Database Migrations:** None required or applied (0 migrations).
+1. **Synchronous Store Reset (Keyed Workspace Pattern):**
+   - In `MerchantFinance`, resolved `useCurrentMerchant()` and rendered `<MerchantFinanceWorkspace key={merchantId} merchantId={merchantId} />`.
+   - The React `key={merchantId}` synchronously unmounts and remounts local filters, pagination, and query state upon switching the active store without performing `setState` during render.
+2. **Response Contract Validation:**
+   - Implemented `assertFinanceContractMerchantId` inside each `queryFn` (summary, statement, payout history) before responses enter React Query cache.
+3. **Centralized Backend Finance Scope Helper:**
+   - Private helper `resolveMerchantFinanceReadScope(merchantId, actor)` in `MerchantsService`:
+     - Missing actor identity/role => HTTP 403 `ForbiddenException`.
+     - Merchant roles (`owner`, `manager`, `staff`) => exact membership in `merchant_users` and exact status `active` in `merchants`.
+     - Admin/super_admin => explicit merchant ID required and existence checked in `merchants` (non-active merchants inspectable for platform oversight).
+     - Unknown roles => HTTP 403 `ForbiddenException`.
+     - No membership fallback; no first-store fallback.
+4. **Authoritative Ledger & Payout Status Enums:**
+   - `merchant_ledger_entries.status`: `["pending", "accrued", "payable", "in_payout", "settled", "reversed", "disputed"]`.
+   - `merchant_payout_batches.status`: `["draft", "approved", "processing", "settled", "cancelled"]`.
+   - Added `"disputed"` to frontend `STATUS_OPTIONS` and labels.
+5. **Date Range Validation:**
+   - Class-validator constraint `@Validate(IsDateRangeValidConstraint)` ensuring `from <= to` across `ValidationPipe` returning HTTP 400 `BadRequestException`.
+6. **Finance Navigation Authority:**
+   - `MerchantLayout.tsx` derives `/merchant/finance` visibility from `canMerchantViewFinance(membership?.role)`.
+7. **Truthful Independent States:**
+   - Independent loading skeleton cards and error cards with retry for summary (never 0 IQD).
+   - Independent error state with retry for statement and payout history (never empty healthy lists).
+   - Successful sections remain visible if an independent section fails.
+8. **Truthful CSV Export:**
+   - Button labeled "تصدير الصفحة CSV".
+   - Disabled during loading, error, contract mismatch, or empty statement.
+   - Filename contains exact current `merchantId`.
+   - Revokes object URL upon download.
 
-## Scope & Implementation Summary
+---
 
-1. **Frontend Synchronous Ref Assignment & Race Condition Isolation (`ProductsPage.tsx` & `ProductImport.tsx`):**
-   - In `ProductsPage.tsx`, updated `currentMerchantIdRef.current = context.merchantId` synchronously during render body, completely eliminating the render-to-effect race window.
-   - In `ProductsPage.tsx`, guarded all mutation callbacks (`onSuccess` and `onError`) for Quick Add, Bulk Actions, Status Updates, and Product Duplication with `currentMerchantIdRef.current === data.targetMerchantId`.
-   - In `ProductImport.tsx`, captured `targetMerchantId` in `previewMutation` and `confirmMutation` error handlers, suppressing `onError` error toasts when `activeMerchantIdRef.current !== err.targetMerchantId`.
-   - Proved with deferred async race tests (resolution and rejection) in `ProductsPage.test.tsx` and `ProductImport.test.tsx` that responses from Store A resolving/rejecting after switching to Store B cannot mutate, close, toast for, or clear Store B UI state or selections.
-
-2. **DTO ValidationPipe & Controller Boundary Rejections (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`):**
-   - Added real `ValidationPipe` DTO validation tests asserting HTTP 400 (`BadRequestException`) on missing `merchant_id` across `MerchantQuickAddProductDto`, `MerchantBulkActionDto`, `MerchantProductDuplicateDto`, `MerchantProductImportPreviewDto`, and `MerchantProductImportConfirmDto`.
-   - Asserted HTTP 400 on malformed UUID strings (`merchant_id: "not-a-valid-uuid"`), nested product IDs (`product_ids: ["not-a-uuid"]`), category IDs (`category_id: "not-a-uuid"`), and import IDs (`import_id: "not-a-uuid"`).
-   - Tested controller boundaries on `MerchantProductsController` and `ProductsController` rejecting missing `merchant_id` / missing payload with HTTP 400, and rejecting unauthorized/inactive merchants with HTTP 403 (`ForbiddenException`).
-   - Maintained clear architectural distinction between DTO `ValidationPipe` checks, Controller boundary checks, and Service layer authority execution.
-
-3. **`UpdateProductStatusDto` Admin Compatibility & Runtime Requirement:**
-   - Kept `UpdateProductStatusDto.merchant_id` as `@IsOptional() @IsUUID("4")` on the DTO class for platform admin compatibility.
-   - Documented and strictly enforced that merchant roles require `merchant_id` at runtime in `ProductsService.resolveMerchantForActor` where omission throws HTTP 400 (`BadRequestException`).
-
-4. **Accurate Test Count & Verification:**
-   - Frontend Vitest: 97 test files (898 tests) PASS (100% green).
-   - Frontend Catalog Scoped Tests: 39 tests PASS (`ProductsPage.test.tsx` [33] + `ProductImport.test.tsx` [6]).
-   - Backend Authority Suite: 12 test suites (32 sub-assertions) PASS (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`).
-   - Backend Product Import & Readiness Suite: 292 tests PASS (`npm run test` in backend).
-   - CI Guards: 99 tests PASS across 3 test files (`npm run test:ci-guards`).
-   - Architecture Guard: 0 direct supabase violations (`npm run arch:guard`).
-   - Auth Lifecycle Guard: PASS (`npm run auth:guard`).
-   - Native Brand Assets: PASS (`npm run native:assets:check`).
-   - Mobile Build & Boundary: PASS with 0 forbidden modules (`npm run build:mobile; npm run mobile:boundary`).
-   - Frontend & Backend Builds: Clean exit code 0.
-
-## Immediately Completed Governance / Preceding Phases
+## Completed Governance / Preceding Phases
 
 ### Phase 3C: Merchant Catalog Multi-Store Authority & Operations
 - **Task:** `DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
 - **PR:** [#16](https://github.com/dilmart-info/Dilmart/pull/16)
 - **Source HEAD:** `dbde3cfcd8d3358ce8103dc8e56bffb91b81b6eb`
-- **Merge SHA:** `2d147230d73632ca5f12d4106640f61a4bb941d3`
+- **Main Merge SHA:** `2d147230d73632ca5f12d4106640f61a4bb941d3`
 - **Merge Status:** Merged & Closed
 
 ### Canonical Repository Governance Sync

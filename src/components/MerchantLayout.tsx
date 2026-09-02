@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
+
 import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
@@ -24,8 +25,9 @@ import { usePendingOrders } from "@/hooks/use-pending-orders";
 import { merchantApi } from "@/lib/api/merchant";
 import { getOrCreateMerchantDeviceId } from "@/lib/merchant-push";
 import { stopMerchantOrderAlertLoop } from "@/lib/notifications";
-import { canMerchantDecide } from "@/lib/merchant-role-authority";
+import { canMerchantDecide, canMerchantViewFinance } from "@/lib/merchant-role-authority";
 import { isBackofficeNavPathActive, findActiveBackofficeNavItem } from "@/lib/backoffice-navigation";
+
 import { toast } from "sonner";
 import MerchantDecisionModal from "@/components/merchant/MerchantDecisionModal";
 import { MerchantNotifications } from "@/components/merchant/MerchantNotifications";
@@ -64,7 +66,17 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
 
   const isAuthorizedToDecide = canMerchantDecide(membership?.role);
 
+  const visibleNavItems = useMemo(() => {
+    return navItems.filter((item) => {
+      if (item.href === "/merchant/finance") {
+        return canMerchantViewFinance(membership?.role);
+      }
+      return true;
+    });
+  }, [membership?.role]);
+
   // Pending orders queue state
+
   const { count, currentOrderId, refetch } = usePendingOrders();
   const [modalOpenOrderId, setModalOpenOrderId] = useState<string | null>(null);
 
@@ -232,6 +244,7 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
   const activeCount = (activeMemberships ?? []).length;
 
   const merchantNavigation = (
+
     <div className="flex h-full flex-col">
       {/* Brand & Store Header */}
       <div className="p-4 lg:p-5 border-b border-border bg-card/60">
@@ -276,7 +289,7 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
 
       {/* Navigation Links */}
       <nav className="p-3 space-y-1 flex-1 overflow-y-auto" aria-label="أقسام بوابة التاجر">
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const isActive = isBackofficeNavPathActive(location.pathname, item.href);
           return (
             <Link
@@ -332,7 +345,8 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
     }
   };
 
-  const activePageTitle = findActiveBackofficeNavItem(navItems, location.pathname)?.label || "بوابة التاجر";
+  const activePageTitle = findActiveBackofficeNavItem(visibleNavItems, location.pathname)?.label || "بوابة التاجر";
+
 
   return (
     <div className="min-h-screen bg-slate-50/70 dark:bg-background flex font-tajawal" dir="rtl">

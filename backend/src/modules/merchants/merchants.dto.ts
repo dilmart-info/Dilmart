@@ -1,10 +1,102 @@
-import { IsBoolean, IsInt, IsOptional, IsString, IsUUID, Max, Min, ValidateNested } from "class-validator";
+import {
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsISO8601,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+  Validate,
+  ValidateNested,
+  ValidationArguments,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+} from "class-validator";
 import { Type } from "class-transformer";
+
+@ValidatorConstraint({ name: "isDateRangeValid", async: false })
+export class IsDateRangeValidConstraint implements ValidatorConstraintInterface {
+  validate(_: any, args: ValidationArguments) {
+    const obj = args.object as { from?: string; to?: string };
+    if (obj.from && obj.to) {
+      const fromTime = new Date(obj.from).getTime();
+      const toTime = new Date(obj.to).getTime();
+      if (isNaN(fromTime) || isNaN(toTime)) return true;
+      return fromTime <= toTime;
+    }
+    return true;
+  }
+
+  defaultMessage() {
+    return "'from' date must be earlier than or equal to 'to' date.";
+  }
+}
+
+export class MerchantFinanceStatementQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["pending", "accrued", "payable", "in_payout", "settled", "reversed", "disputed"])
+  status?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  from?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  @Validate(IsDateRangeValidConstraint)
+  to?: string;
+}
+
+export class MerchantPayoutHistoryQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["draft", "approved", "processing", "settled", "cancelled"])
+  status?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  from?: string;
+
+  @IsOptional()
+  @IsISO8601()
+  @Validate(IsDateRangeValidConstraint)
+  to?: string;
+}
 
 export class GetMerchantSettingsQueryDto {
   @IsUUID()
   merchant_id!: string;
 }
+
 
 export class UpsertMerchantSettingsDto {
   @IsUUID()
