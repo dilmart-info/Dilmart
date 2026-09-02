@@ -3,47 +3,43 @@
 ## Status
 
 ```text
-PHASE_3D_MERGED
-PR_18_CLOSED
-PR_18_SOURCE_HEAD_51C798A
-PR_18_MERGE_SHA_5E2293B
-MAIN_CI_PASS
-NATIVE_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-RENDER_DEPLOYMENT_STATE_UNVERIFIED
+PHASE_3E_IN_PROGRESS
 NO_DB_MIGRATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+BRANCH_COMMERCIAL_RULES_PRESERVED
+SHARED_QUERY_CLIENT_PROTECTED
+MULTI_STORE_KEYED_WORKSPACE_ENFORCED
+TRUTHFUL_MERCHANT_STATES_ENFORCED
+ROLE_GATING_ENFORCED
+EDIT_IDOR_CLOSED
+COMMERCIAL_POLICY_AUTHORITY_ENFORCED
 ```
 
-## Summary of Merged Phase 3D
+## Active Phase 3E Details
 
+- **Task:** `DILMART-PHASE-3E-MERCHANT-COUPONS-MULTI-STORE-AUTHORITY-001`
+- **Branch:** `feature/phase3e-merchant-coupons-multi-store-authority`
+- **Scope:**
+  - Hardening Merchant Coupons across backend controller/service, frontend workspace, and shared commercial policy authority.
+  - Multi-store isolation with Keyed Workspace (`key={merchantId}`) resetting draft form state and queries cleanly on store switch.
+  - Fail-closed response assertion (`assertCouponsContractMerchantId`) preventing cross-store query data leakage.
+  - Edit IDOR closure preventing cross-store coupon mutations via `id` spoofing.
+  - Authoritative deletion proving row removal and returning 404 for foreign or non-existent coupons.
+  - Role authority gating: `merchant_staff` can view (GET) coupons in read-only mode, but is strictly blocked from upsert and delete operations.
+  - Truthful states: dedicated loading skeleton, truthful error banner with retry action, distinct empty state.
+  - Server-side and client-side commercial policy enforcement (balanced / strict profiles), failing closed on table read failures.
+  - Race condition immunity: `isMountedRef` and `liveMerchantIdRef` protecting against late resolve/reject cross-store mutation toasts.
+- **Database Status:** 0 migrations applied, 0 live mutations.
+
+---
+
+## Preceding Governance / Merged Phases
+
+### Phase 3D: Merchant Finance Multi-Store Authority & Truthful States
 - **Task:** `DILMART-PHASE-3D-MERCHANT-FINANCE-MULTI-STORE-AUTHORITY-001`
 - **PR:** [#18](https://github.com/dilmart-info/Dilmart/pull/18) (Merged & Closed)
 - **Source HEAD:** `51c798af428d2f68c9cab82ac5671f6509b36c43`
 - **Merge SHA:** `5e2293b7b0b5c1f0bd4b362dd030d0923cd7bfa8`
-- **Main Critical CI:** SUCCESS — Run [33651638275](https://github.com/dilmart-info/Dilmart/actions/runs/33651638275)
-- **Native Foundation CI:** SUCCESS — Run [33651638262](https://github.com/dilmart-info/Dilmart/actions/runs/33651638262)
-- **Netlify Deploy Gate:** SUCCESS (Gate-only / Publish skipped) — Run [33652307560](https://github.com/dilmart-info/Dilmart/actions/runs/33652307560)
-  - `FRESH`: `true`
-  - `CI_OK`: `true`
-  - `ALREADY`: `false`
-  - `ENABLED`: `false`
-  - `DECISION`: `false`
-  - Build and publish job: `SKIPPED`
-- **Render Deployment State:** `UNVERIFIED` (No automated provider deployment metadata or deployed-commit marker)
-- **Database Status:** 0 migrations applied, 0 live mutations
-
----
-
-## Completed Governance / Preceding Phases
-
-### Phase 3D: Merchant Finance Multi-Store Authority & Truthful States
-- **Task:** `DILMART-PHASE-3D-MERCHANT-FINANCE-MULTI-STORE-AUTHORITY-001`
-- **PR:** [#18](https://github.com/dilmart-info/Dilmart/pull/18)
-- **Source HEAD:** `51c798af428d2f68c9cab82ac5671f6509b36c43`
-- **Main Merge SHA:** `5e2293b7b0b5c1f0bd4b362dd030d0923cd7bfa8`
-- **Merge Status:** Merged & Closed
+- **Closure PR:** [#19](https://github.com/dilmart-info/Dilmart/pull/19) (`50062823f07a77e4480bddedf22db79f35598cd6`)
 
 ### Phase 3C: Merchant Catalog Multi-Store Authority & Operations
 - **Task:** `DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
