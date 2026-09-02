@@ -73,8 +73,15 @@ export default function ProductImport() {
       if (!file) throw new Error("اختر ملف CSV أولاً");
       if (!activeMerchantId) throw new Error("لا يوجد متجر نشط مرتبط بحسابك");
       const targetMerchantId = activeMerchantId;
-      const data = await apiClient.previewMerchantProductImport(file, targetMerchantId);
-      return { data, targetMerchantId };
+      try {
+        const data = await apiClient.previewMerchantProductImport(file, targetMerchantId);
+        return { data, targetMerchantId };
+      } catch (err: any) {
+        if (err && typeof err === "object") {
+          err.targetMerchantId = targetMerchantId;
+        }
+        throw err;
+      }
     },
     onSuccess: ({ data, targetMerchantId }) => {
       if (activeMerchantIdRef.current !== targetMerchantId) return;
@@ -83,7 +90,11 @@ export default function ProductImport() {
       setResult(null);
       toast.success("تم إنشاء معاينة الاستيراد");
     },
-    onError: (err: Error) => toast.error(err?.message ?? "تعذر قراءة الملف"),
+    onError: (err: any) => {
+      const targetMerchantId = err?.targetMerchantId;
+      if (targetMerchantId && activeMerchantIdRef.current !== targetMerchantId) return;
+      toast.error(err?.message ?? "تعذر قراءة الملف");
+    },
   });
 
   const confirmMutation = useMutation({
@@ -93,15 +104,26 @@ export default function ProductImport() {
         throw new Error("جلسة الاستيراد لا تخص المتجر النشط الحالي");
       }
       const targetMerchantId = activeMerchantId;
-      const data = await apiClient.confirmMerchantProductImport(preview.import_id, targetMerchantId);
-      return { data, targetMerchantId };
+      try {
+        const data = await apiClient.confirmMerchantProductImport(preview.import_id, targetMerchantId);
+        return { data, targetMerchantId };
+      } catch (err: any) {
+        if (err && typeof err === "object") {
+          err.targetMerchantId = targetMerchantId;
+        }
+        throw err;
+      }
     },
     onSuccess: ({ data, targetMerchantId }) => {
       if (activeMerchantIdRef.current !== targetMerchantId) return;
       setResult(data);
       toast.success("تم تنفيذ الاستيراد");
     },
-    onError: (err: Error) => toast.error(err?.message ?? "تعذر تأكيد الاستيراد"),
+    onError: (err: any) => {
+      const targetMerchantId = err?.targetMerchantId;
+      if (targetMerchantId && activeMerchantIdRef.current !== targetMerchantId) return;
+      toast.error(err?.message ?? "تعذر تأكيد الاستيراد");
+    },
   });
 
   const canConfirm = useMemo(() => {

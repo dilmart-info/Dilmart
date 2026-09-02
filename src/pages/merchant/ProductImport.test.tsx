@@ -227,4 +227,104 @@ describe("ProductImport Multi-Store Authority and Store Switching Tests", () => 
     expect(screen.queryByText("تقرير نتيجة الاستيراد")).toBeNull();
     expect(toast.success).not.toHaveBeenCalledWith("تم تنفيذ الاستيراد");
   });
+
+  it("DEFERRED PREVIEW REJECTION RACE: error from Store A resolving after switch to Store B does not toast in Store B", async () => {
+    let rejectStoreAPreview!: (err: unknown) => void;
+    const storeAPromise = new Promise((_, reject) => {
+      rejectStoreAPreview = reject;
+    });
+    storeAPromise.catch(() => {});
+    previewMerchantProductImport.mockReturnValue(storeAPromise);
+
+    const { rerender } = renderPage();
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const testFile = new File(["name,sku\nعطر قديم,SKU-OLD"], "products.csv", { type: "text/csv" });
+    fireEvent.change(fileInput, { target: { files: [testFile] } });
+
+    const previewBtn = screen.getByRole("button", { name: "معاينة الاستيراد" });
+    fireEvent.click(previewBtn);
+
+    // Switch store to Store B before Store A rejects
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/products/import"]}>
+          <ProductImport />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Reject Store A request with error
+    await act(async () => {
+      rejectStoreAPreview(new Error("خطأ في ملف المتجر أ القديم"));
+    });
+
+    // Verify error toast was suppressed because Store B is active
+    expect(toast.error).not.toHaveBeenCalledWith("خطأ في ملف المتجر أ القديم");
+  });
+
+  it("DEFERRED CONFIRM REJECTION RACE: error from Store A resolving after switch to Store B does not toast in Store B", async () => {
+    previewMerchantProductImport.mockResolvedValue({
+      import_id: "session-a-err",
+      summary: { total_rows: 1, valid_rows: 1, invalid_rows: 0, warnings_count: 0 },
+      rows: [
+        {
+          row_number: 1,
+          status: "valid",
+          normalized: { name: "عطر متجر أ", category_name: "العطور", price: 1000, sku: "SKU-A" },
+          errors: [],
+          warnings: [],
+        },
+      ],
+    });
+
+    let rejectStoreAConfirm!: (err: unknown) => void;
+    const storeAConfirmPromise = new Promise((_, reject) => {
+      rejectStoreAConfirm = reject;
+    });
+    storeAConfirmPromise.catch(() => {});
+    confirmMerchantProductImport.mockReturnValue(storeAConfirmPromise);
+
+    const { rerender } = renderPage();
+
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const testFile = new File(["name,sku\nعطر,SKU-A"], "products.csv", { type: "text/csv" });
+    fireEvent.change(fileInput, { target: { files: [testFile] } });
+
+    const previewBtn = screen.getByRole("button", { name: "معاينة الاستيراد" });
+    fireEvent.click(previewBtn);
+
+    await screen.findByText("عطر متجر أ");
+    const confirmBtn = screen.getByRole("button", { name: "تأكيد الاستيراد" });
+    fireEvent.click(confirmBtn);
+
+    // Switch store to Store B before Store A confirm rejects
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/products/import"]}>
+          <ProductImport />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Reject Store A confirm with error
+    await act(async () => {
+      rejectStoreAConfirm(new Error("فشل تأكيد استيراد متجر أ"));
+    });
+
+    // Verify error toast was suppressed
+    expect(toast.error).not.toHaveBeenCalledWith("فشل تأكيد استيراد متجر أ");
+  });
 });

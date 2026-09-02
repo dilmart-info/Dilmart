@@ -271,6 +271,11 @@ export class UpdateProductStatusDto {
   @IsBoolean()
   is_active!: boolean;
 
+  /**
+   * Optional on the DTO class for platform admin compatibility.
+   * Required at runtime for all merchant roles (merchant_owner, merchant_manager, merchant_staff),
+   * where omission throws BadRequestException("merchant_id is required.").
+   */
   @IsOptional()
   @IsUUID("4")
   merchant_id?: string;

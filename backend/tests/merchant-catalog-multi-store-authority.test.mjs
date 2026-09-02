@@ -3,7 +3,17 @@ import test from "node:test";
 import { ProductsService } from "../dist/modules/products/products.service.js";
 import { ProductImportService } from "../dist/modules/products/product-import.service.js";
 import { CategoriesService } from "../dist/modules/categories/categories.service.js";
-import { BadRequestException, ForbiddenException } from "@nestjs/common";
+import { MerchantProductsController } from "../dist/modules/products/merchant-products.controller.js";
+import { ProductsController } from "../dist/modules/products/products.controller.js";
+import { ValidationPipe, BadRequestException, ForbiddenException } from "@nestjs/common";
+import {
+  MerchantQuickAddProductDto,
+  MerchantBulkActionDto,
+  MerchantProductDuplicateDto,
+  MerchantProductImportPreviewDto,
+  MerchantProductImportConfirmDto,
+  UpdateProductStatusDto,
+} from "../dist/modules/products/products.dto.js";
 
 const STORE_A = "11111111-1111-4111-8111-111111111111";
 const STORE_B = "22222222-2222-4222-8222-222222222222";
@@ -191,7 +201,18 @@ function makeHarness() {
   const productsService = new ProductsService(supabaseAdmin, scopeResolver, categoriesService);
   const productImportService = new ProductImportService(supabaseAdmin, scopeResolver, auditService, categoriesService);
 
-  return { productsService, productImportService, state };
+  const merchantProductsController = new MerchantProductsController(productsService, productImportService);
+  const productsController = new ProductsController(productsService);
+  const validationPipe = new ValidationPipe({ whitelist: true, transform: true });
+
+  return {
+    productsService,
+    productImportService,
+    merchantProductsController,
+    productsController,
+    validationPipe,
+    state,
+  };
 }
 
 const MULTI_STORE_ACTOR = { actor_role: "merchant_owner", actor_id: "multi-store-user-1" };
@@ -311,9 +332,280 @@ test("Mutations targeting an unauthorized store fail with HTTP 403", async () =>
   );
 });
 
-// ── Missing merchant_id Rejections (HTTP 400) ──────────────────────────────────
+// ── DTO ValidationPipe Boundary Tests (HTTP 400 Bad Request) ──────────────────
 
-test("Mutations missing merchant_id fail with HTTP 400 BadRequestException", async () => {
+test("ValidationPipe rejects missing merchant_id on all merchant catalog DTOs with HTTP 400", async () => {
+  const { validationPipe } = makeHarness();
+
+  // MerchantQuickAddProductDto missing merchant_id
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { name: "عطر", category_id: CATEGORY_ID, price: 5000 },
+        { type: "body", metatype: MerchantQuickAddProductDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // MerchantBulkActionDto missing merchant_id
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { product_ids: [STORE_A], action: "activate" },
+        { type: "body", metatype: MerchantBulkActionDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // MerchantProductDuplicateDto missing merchant_id
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        {},
+        { type: "body", metatype: MerchantProductDuplicateDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // MerchantProductImportPreviewDto missing merchant_id
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        {},
+        { type: "body", metatype: MerchantProductImportPreviewDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // MerchantProductImportConfirmDto missing merchant_id
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { import_id: STORE_A },
+        { type: "body", metatype: MerchantProductImportConfirmDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+});
+
+test("ValidationPipe rejects invalid UUID format on merchant_id and nested ID fields with HTTP 400", async () => {
+  const { validationPipe } = makeHarness();
+
+  // Invalid merchant_id UUID on Quick Add
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { merchant_id: "not-a-valid-uuid", name: "عطر", category_id: CATEGORY_ID, price: 5000 },
+        { type: "body", metatype: MerchantQuickAddProductDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Invalid category_id UUID on Quick Add
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { merchant_id: STORE_A, name: "عطر", category_id: "not-a-uuid", price: 5000 },
+        { type: "body", metatype: MerchantQuickAddProductDto },
+      ),
+    (err) => err instanceof BadRequestException && /category_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Invalid merchant_id UUID on Bulk Action
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { merchant_id: "not-a-valid-uuid", product_ids: [STORE_A], action: "activate" },
+        { type: "body", metatype: MerchantBulkActionDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Invalid product_ids element UUID on Bulk Action
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { merchant_id: STORE_A, product_ids: ["not-a-uuid"], action: "activate" },
+        { type: "body", metatype: MerchantBulkActionDto },
+      ),
+    (err) => err instanceof BadRequestException && /each value in product_ids must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Invalid import_id UUID on Import Confirm
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { merchant_id: STORE_A, import_id: "not-a-uuid" },
+        { type: "body", metatype: MerchantProductImportConfirmDto },
+      ),
+    (err) => err instanceof BadRequestException && /import_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Invalid merchant_id UUID on UpdateProductStatusDto
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { is_active: true, merchant_id: "not-a-uuid" },
+        { type: "body", metatype: UpdateProductStatusDto },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id must be a UUID/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Missing is_active boolean on UpdateProductStatusDto
+  await assert.rejects(
+    () =>
+      validationPipe.transform(
+        { merchant_id: STORE_A },
+        { type: "body", metatype: UpdateProductStatusDto },
+      ),
+    (err) => err instanceof BadRequestException && /is_active must be a boolean/i.test(JSON.stringify(err.getResponse())),
+  );
+
+  // Valid UpdateProductStatusDto without merchant_id (admin compatibility at DTO level)
+  const validAdminDto = await validationPipe.transform(
+    { is_active: true },
+    { type: "body", metatype: UpdateProductStatusDto },
+  );
+  assert.equal(validAdminDto.is_active, true);
+  assert.equal(validAdminDto.merchant_id, undefined);
+});
+
+// ── Controller Boundary Rejection Tests (HTTP 400 & HTTP 403) ─────────────────
+
+test("Controller endpoints reject missing merchant_id and missing payload with HTTP 400", async () => {
+  const { merchantProductsController, productsController } = makeHarness();
+
+  // Quick Add missing merchant_id at controller
+  await assert.rejects(
+    async () =>
+      merchantProductsController.quickAdd(
+        { merchant_id: undefined, name: "عطر", category_id: CATEGORY_ID, price: 5000 },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Bulk Action missing merchant_id at controller
+  await assert.rejects(
+    async () =>
+      merchantProductsController.bulkAction(
+        { merchant_id: undefined, product_ids: ["prod-b-1"], action: "deactivate" },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Duplicate missing merchant_id at controller
+  await assert.rejects(
+    async () =>
+      merchantProductsController.duplicateProduct(
+        "prod-b-1",
+        { merchant_id: undefined },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Import Preview missing file at controller
+  await assert.rejects(
+    async () =>
+      merchantProductsController.previewImport(
+        undefined,
+        { merchant_id: STORE_B },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /CSV file is required/i.test(err.message),
+  );
+
+  // Import Preview missing merchant_id at controller
+  await assert.rejects(
+    async () =>
+      merchantProductsController.previewImport(
+        { buffer: Buffer.from("csv"), originalname: "file.csv" },
+        { merchant_id: undefined },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Import Confirm missing merchant_id at controller
+  await assert.rejects(
+    async () =>
+      merchantProductsController.confirmImport(
+        { import_id: "session-1", merchant_id: undefined },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Status update missing merchant_id for merchant actor at products controller
+  await assert.rejects(
+    async () =>
+      productsController.updateStatus(
+        "prod-b-1",
+        { is_active: false, merchant_id: undefined },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Status update without merchant_id for platform admin succeeds
+  const adminRes = await productsController.updateStatus(
+    "prod-b-1",
+    { is_active: false, merchant_id: undefined },
+    { actorRole: "super_admin", actorId: "admin-1" },
+  );
+  assert.equal(adminRes.ok, true);
+});
+
+test("Controller endpoints reject unauthorized and inactive stores with HTTP 403", async () => {
+  const { merchantProductsController } = makeHarness();
+
+  // Unauthorized store on Quick Add
+  await assert.rejects(
+    async () =>
+      merchantProductsController.quickAdd(
+        { merchant_id: STORE_UNAUTHORIZED, name: "عطر", category_id: CATEGORY_ID, price: 5000 },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof ForbiddenException,
+  );
+
+  // Inactive store on Quick Add
+  await assert.rejects(
+    async () =>
+      merchantProductsController.quickAdd(
+        { merchant_id: STORE_INACTIVE, name: "عطر", category_id: CATEGORY_ID, price: 5000 },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+
+  // Inactive store on Bulk Action
+  await assert.rejects(
+    async () =>
+      merchantProductsController.bulkAction(
+        { merchant_id: STORE_INACTIVE, product_ids: ["prod-inactive-1"], action: "deactivate" },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+
+  // Inactive store on Duplicate
+  await assert.rejects(
+    async () =>
+      merchantProductsController.duplicateProduct(
+        "prod-inactive-1",
+        { merchant_id: STORE_INACTIVE },
+        { actorRole: "merchant_owner", actorId: "user-1" },
+      ),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+});
+
+// ── Service Layer Missing merchant_id Rejections (HTTP 400) ───────────────────
+
+test("Service methods reject missing merchant_id with HTTP 400 BadRequestException", async () => {
   const { productsService, productImportService } = makeHarness();
 
   // Quick Add missing merchant_id
@@ -371,9 +663,9 @@ test("Mutations missing merchant_id fail with HTTP 400 BadRequestException", asy
   );
 });
 
-// ── Inactive Store Rejections (HTTP 403) ───────────────────────────────────────
+// ── Inactive Store Service Rejections (HTTP 403) ───────────────────────────────
 
-test("Mutations targeting an inactive/pending store fail with HTTP 403 ForbiddenException", async () => {
+test("Service mutations targeting an inactive/pending store fail with HTTP 403 ForbiddenException", async () => {
   const { productsService, productImportService } = makeHarness();
 
   await assert.rejects(

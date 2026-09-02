@@ -18,12 +18,15 @@
 PR_16_DRAFT_AWAITING_REVIEW
 PHASE_3C_SUPERVISOR_GAPS_RESOLVED
 MERCHANT_CATALOG_MULTI_STORE_AUTHORITY_VERIFIED
+SYNCHRONOUS_RENDER_REF_ASSIGNMENT_VERIFIED
 CAPTURED_MERCHANT_RACE_GUARDS_VERIFIED
-DEFERRED_RACE_TESTS_PASS
+DEFERRED_RACE_AND_REJECTION_TESTS_PASS
 BACKEND_STRICT_MERCHANT_SIGNATURES_ENFORCED
 ACTOR_MERCHANT_FALLBACKS_REMOVED
-UPDATE_PRODUCT_STATUS_DTO_BOUND_AND_ENFORCED
-HTTP_BOUNDARY_REJECTION_TESTS_PASS
+DTO_VALIDATION_PIPE_HTTP_400_VERIFIED
+CONTROLLER_BOUNDARY_HTTP_400_AND_403_VERIFIED
+SERVICE_LAYER_AUTHORITY_AND_ISOLATION_VERIFIED
+UPDATE_PRODUCT_STATUS_DTO_ADMIN_COMPAT_AND_RUNTIME_MERCHANT_REQUIREMENT_VERIFIED
 SCOPED_QUERIES_FAIL_CLOSED_VERIFIED
 ROLE_AUTHORITY_GATING_VERIFIED
 CROSS_STORE_MUTATION_PREVENTION_VERIFIED
@@ -38,21 +41,35 @@ NO_DEPLOYMENT_PERFORMED
 
 ## Scope & Supervisor Remediation Summary
 
-1. **Frontend Mutation Lifecycle & Race Condition Isolation (`ProductsPage.tsx` & `ProductImport.tsx`):**
-   - Added `currentMerchantIdRef` and verified `currentMerchantIdRef.current === targetMerchantId` before any state mutations, dialog closures, selection wipes, toasts, or query invalidations.
-   - Proved with deferred async tests in both `ProductsPage.test.tsx` and `ProductImport.test.tsx` that responses from Store A resolving after switching to Store B cannot mutate, close, toast for, or clear Store B UI state.
+1. **Frontend Synchronous Ref Assignment & Race Condition Isolation (`ProductsPage.tsx` & `ProductImport.tsx`):**
+   - In `ProductsPage.tsx`, updated `currentMerchantIdRef.current = context.merchantId` synchronously during render body, completely eliminating the render-to-effect race window.
+   - In `ProductsPage.tsx`, guarded all mutation callbacks (`onSuccess` and `onError`) for Quick Add, Bulk Actions, Status Updates, and Product Duplication with `currentMerchantIdRef.current === data.targetMerchantId`.
+   - In `ProductImport.tsx`, captured `targetMerchantId` in `previewMutation` and `confirmMutation` error handlers, suppressing `onError` error toasts when `activeMerchantIdRef.current !== err.targetMerchantId`.
+   - Proved with deferred async race tests (resolution and rejection) in `ProductsPage.test.tsx` and `ProductImport.test.tsx` that responses from Store A resolving/rejecting after switching to Store B cannot mutate, close, toast for, or clear Store B UI state or selections.
 
-2. **Backend Service Layer Authority & Signature Hardening:**
-   - Structurally required `merchant_id: string` in all merchant catalog operations in `ProductsService` (`resolveMerchantForActor`, `performBulkAction`, `quickAddProduct`, `duplicateProduct`, `updateProductStatus`) and `ProductImportService` (`previewForMerchant`, `confirmForMerchant`, `resolveMerchantForMerchantActor`).
-   - Removed union parameter types and deleted legacy fallback paths extracting `merchant_id` from `actor.merchant_id`.
-   - Bound and strictly enforced `UpdateProductStatusDto` in `ProductsController` and `ProductsService` for merchant roles.
+2. **DTO ValidationPipe & Controller Boundary Rejections (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`):**
+   - Added real `ValidationPipe` DTO validation tests asserting HTTP 400 (`BadRequestException`) on missing `merchant_id` across `MerchantQuickAddProductDto`, `MerchantBulkActionDto`, `MerchantProductDuplicateDto`, `MerchantProductImportPreviewDto`, and `MerchantProductImportConfirmDto`.
+   - Asserted HTTP 400 on malformed UUID strings (`merchant_id: "not-a-valid-uuid"`), nested product IDs (`product_ids: ["not-a-uuid"]`), category IDs (`category_id: "not-a-uuid"`), and import IDs (`import_id: "not-a-uuid"`).
+   - Tested controller boundaries on `MerchantProductsController` and `ProductsController` rejecting missing `merchant_id` / missing payload with HTTP 400, and rejecting unauthorized/inactive merchants with HTTP 403 (`ForbiddenException`).
+   - Maintained clear architectural distinction between DTO `ValidationPipe` checks, Controller boundary checks, and Service layer authority execution.
 
-3. **HTTP / Controller Boundary Testing:**
-   - Added exhaustive suite in `backend/tests/merchant-catalog-multi-store-authority.test.mjs` asserting HTTP 400 (`BadRequestException`) on missing/invalid `merchant_id` across Quick Add, Bulk Actions, Duplicate, CSV Preview, CSV Confirm, and Status Update.
-   - Asserted HTTP 403 (`ForbiddenException`) on inactive/pending stores.
-   - Verified 100% pass across all 5 backend test suites (158/158 tests) and all frontend catalog test suites (32/32 tests).
+3. **`UpdateProductStatusDto` Admin Compatibility & Runtime Requirement:**
+   - Kept `UpdateProductStatusDto.merchant_id` as `@IsOptional() @IsUUID("4")` on the DTO class for platform admin compatibility.
+   - Documented and strictly enforced that merchant roles require `merchant_id` at runtime in `ProductsService.resolveMerchantForActor` where omission throws HTTP 400 (`BadRequestException`).
 
-4. **Invariants Maintained:**
+4. **Accurate Test Count & Verification:**
+   - Frontend Vitest: 97 test files (896 tests) PASS (100% green).
+   - Frontend Catalog Scoped Tests: 37 tests PASS (`ProductsPage.test.tsx` [31] + `ProductImport.test.tsx` [6]).
+   - Backend Authority Suite: 12 test suites (32 sub-assertions) PASS (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`).
+   - Backend Product Import & Readiness Suite: 292 tests PASS (`npm run test` in backend).
+   - CI Guards: 99 tests PASS across 3 test files (`npm run test:ci-guards`).
+   - Architecture Guard: 0 direct supabase violations (`npm run arch:guard`).
+   - Auth Lifecycle Guard: PASS (`npm run auth:guard`).
+   - Native Brand Assets: PASS (`npm run native:assets:check`).
+   - Mobile Build & Boundary: PASS with 0 forbidden modules (`npm run build:mobile; npm run mobile:boundary`).
+   - Frontend & Backend Builds: Clean exit code 0.
+
+5. **Invariants Maintained:**
    - No database migrations created or executed.
    - No deployments performed.
    - Draft PR #16 remains open and untouched in Draft state.

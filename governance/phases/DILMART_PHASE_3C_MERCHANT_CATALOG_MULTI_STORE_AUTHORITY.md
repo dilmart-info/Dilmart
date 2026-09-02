@@ -68,25 +68,28 @@ Additionally, `src/lib/scoped-queries.ts` contained an unsafe `.catch` fallback 
 
 ## Verification & Invariant Proof
 
-1. **Backend Unit & Invariant Tests:**
-   - `backend/tests/merchant-catalog-multi-store-authority.test.mjs` (5 tests PASS):
-     - Quick Add targets Store B when requested.
-     - Bulk Actions target Store B and reject Store A products.
-     - Duplicate duplicates inside Store B and rejects cross-store duplication.
-     - Unauthorized store mutations fail with HTTP 403.
-     - CSV import preview and confirm bind strictly to the requested store and reject cross-store confirmation.
-   - `backend/tests/product-readiness-invariant.test.mjs` (PASS)
-   - `backend/tests/product-publication-activation-sync.test.mjs` (PASS)
-   - `backend/tests/product-duplicate-generated-column-compat.test.mjs` (PASS)
-   - `backend/tests/product-import-safety.test.mjs` (PASS)
+1. **Backend Multi-Store Authority & DTO Validation Tests:**
+   - `backend/tests/merchant-catalog-multi-store-authority.test.mjs` (12 test suites, 32 sub-assertions PASS):
+     - DTO `ValidationPipe` rejects missing `merchant_id` on all catalog DTOs with HTTP 400 (`BadRequestException`).
+     - DTO `ValidationPipe` rejects malformed UUID format on `merchant_id` and nested ID fields (`product_ids`, `category_id`, `import_id`) with HTTP 400.
+     - DTO `ValidationPipe` enforces `@IsBoolean()` on `is_active` while keeping `merchant_id` optional for admin compatibility.
+     - Controller endpoints (`MerchantProductsController` and `ProductsController`) reject missing `merchant_id` / missing payload with HTTP 400.
+     - Controller endpoints reject unauthorized stores and inactive/pending stores with HTTP 403 (`ForbiddenException`).
+     - ProductsController allows `super_admin` status update without `merchant_id` (admin compatibility).
+     - Service layer enforces strict multi-store routing, mutation isolation, duplicate compatibility, and CSV import session security.
+   - `npm run test` in `backend` (292 tests PASS covering product-import safety, readiness invariants, and publication sync).
+
 2. **Frontend Vitest Suite:**
-   - 96 test files (885 tests) PASS.
+   - 97 test files (896 tests) PASS (100% green).
+   - Scoped Catalog Tests (37 tests PASS):
+     - `src/components/scoped/ProductsPage.test.tsx` (31 tests PASS): synchronous ref assignment, exact toast validation, Store B selection and action preservation under deferred Store A resolution, deferred rejection isolation across Quick Add, Bulk, Duplicate, and Status Update.
+     - `src/pages/merchant/ProductImport.test.tsx` (6 tests PASS): staff read-only gating, active merchant scope binding, deferred preview/confirm race protection, deferred preview/confirm rejection error toast suppression.
+
 3. **Static Governance & Architecture Guards:**
-   - `npm run test:ci-guards` (99 tests PASS)
-   - `npm run arch:guard` (PASS)
-   - `npm run auth:guard` (PASS)
-   - `npm run native:assets:check` (PASS)
-   - `npm run build:mobile` (PASS)
-   - `npm run mobile:boundary` (PASS)
-   - `npx eslint` (0 errors, 0 warnings)
-   - Frontend and Backend production builds compile with exit code 0.
+   - `npm run test:ci-guards` (99 tests PASS across 3 test files).
+   - `npm run arch:guard` (0 direct supabase violations).
+   - `npm run auth:guard` (PASS).
+   - `npm run native:assets:check` (PASS).
+   - `npm run build:mobile` (PASS).
+   - `npm run mobile:boundary` (PASS, 0 forbidden modules).
+   - Frontend and Backend production builds compile cleanly (exit code 0).

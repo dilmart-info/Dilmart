@@ -72,11 +72,6 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   const merchantRole = membership?.role;
   const canManageCatalog = context.scope === "platform" ? true : canMerchantManageCatalog(merchantRole);
 
-  const currentMerchantIdRef = useRef(context.merchantId);
-  useEffect(() => {
-    currentMerchantIdRef.current = context.merchantId;
-  }, [context.merchantId]);
-
   const merchantIdFromUrl = searchParams.get("merchant_id") ?? "";
   const rawPage = parseInt(searchParams.get("page") || "1", 10);
   const pageFromUrl = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
@@ -94,6 +89,9 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   const [bulkValue, setBulkValue] = useState("");
   const [quickAddOpen, setQuickAddOpen] = useState(false);
   const [quickAdd, setQuickAdd] = useState({ name: "", category_id: "", price: "", stock: "0", image_url: "" });
+
+  const currentMerchantIdRef = useRef(context.merchantId);
+  currentMerchantIdRef.current = context.merchantId;
 
   useEffect(() => {
     setSearchInput(searchFromUrl);
