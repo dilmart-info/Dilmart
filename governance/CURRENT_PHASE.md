@@ -6,40 +6,43 @@
 
 ## Branch
 
-`frontend/dilmart-merchant-catalog-operations`
+`frontend/dilmart-merchant-catalog-operations` (Merged & Deleted)
 
 ## Target Base
 
 `main` (`c4851b8477dfffe8884ec85e9b04d5c16447e066`)
 
+## Merge Details
+
+- **Pull Request:** [#16](https://github.com/dilmart-info/Dilmart/pull/16) (Merged & Closed)
+- **Source HEAD:** `dbde3cfcd8d3358ce8103dc8e56bffb91b81b6eb`
+- **Main Merge SHA:** `2d147230d73632ca5f12d4106640f61a4bb941d3`
+
 ## Status
 
 ```text
-PR_16_DRAFT_AWAITING_REVIEW
-PHASE_3C_SUPERVISOR_GAPS_RESOLVED
-MERCHANT_CATALOG_MULTI_STORE_AUTHORITY_VERIFIED
-SYNCHRONOUS_RENDER_REF_ASSIGNMENT_VERIFIED
-CAPTURED_MERCHANT_RACE_GUARDS_VERIFIED
-DEFERRED_RACE_AND_REJECTION_TESTS_PASS
-BACKEND_STRICT_MERCHANT_SIGNATURES_ENFORCED
-ACTOR_MERCHANT_FALLBACKS_REMOVED
-DTO_VALIDATION_PIPE_HTTP_400_VERIFIED
-CONTROLLER_BOUNDARY_HTTP_400_AND_403_VERIFIED
-SERVICE_LAYER_AUTHORITY_AND_ISOLATION_VERIFIED
-UPDATE_PRODUCT_STATUS_DTO_ADMIN_COMPAT_AND_RUNTIME_MERCHANT_REQUIREMENT_VERIFIED
-SCOPED_QUERIES_FAIL_CLOSED_VERIFIED
-ROLE_AUTHORITY_GATING_VERIFIED
-CROSS_STORE_MUTATION_PREVENTION_VERIFIED
-TARGETED_TESTS_PASS
-FRONTEND_BUILD_PASS
-BACKEND_BUILD_PASS
-CI_GUARDS_PASS
-MOBILE_BOUNDARY_PASS
+PHASE_3C_MERGED
+PR_16_CLOSED
+PR_16_SOURCE_HEAD_DBDE3CF
+PR_16_MERGE_SHA_2D14723
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
-NO_DEPLOYMENT_PERFORMED
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
-## Scope & Supervisor Remediation Summary
+## Post-Merge Verification & CI Evidence
+
+- **Main Critical CI:** SUCCESS — [Run #33625998323](https://github.com/dilmart-info/Dilmart/actions/runs/33625998323)
+- **Native Foundation CI:** SUCCESS — [Run #33625998386](https://github.com/dilmart-info/Dilmart/actions/runs/33625998386)
+- **Netlify Deploy Gate:** Gate-only evaluation ([Run #33626458916](https://github.com/dilmart-info/Dilmart/actions/runs/33626458916)): `FRESH=true`, `CI_OK=true`, `ALREADY=false`, `ENABLED=false`, `DECISION=false`. Build and publish job was skipped; no Netlify production publish occurred.
+- **Render Deployment:** UNVERIFIED — A merge to `main` must not be reported as a verified Render deployment without provider deployment metadata or an authoritative deployed-commit marker.
+- **Database Migrations:** None required or applied (0 migrations).
+
+## Scope & Implementation Summary
 
 1. **Frontend Synchronous Ref Assignment & Race Condition Isolation (`ProductsPage.tsx` & `ProductImport.tsx`):**
    - In `ProductsPage.tsx`, updated `currentMerchantIdRef.current = context.merchantId` synchronously during render body, completely eliminating the render-to-effect race window.
@@ -69,12 +72,14 @@ NO_DEPLOYMENT_PERFORMED
    - Mobile Build & Boundary: PASS with 0 forbidden modules (`npm run build:mobile; npm run mobile:boundary`).
    - Frontend & Backend Builds: Clean exit code 0.
 
-5. **Invariants Maintained:**
-   - No database migrations created or executed.
-   - No deployments performed.
-   - Draft PR #16 remains open and untouched in Draft state.
-
 ## Immediately Completed Governance / Preceding Phases
+
+### Phase 3C: Merchant Catalog Multi-Store Authority & Operations
+- **Task:** `DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
+- **PR:** [#16](https://github.com/dilmart-info/Dilmart/pull/16)
+- **Source HEAD:** `dbde3cfcd8d3358ce8103dc8e56bffb91b81b6eb`
+- **Merge SHA:** `2d147230d73632ca5f12d4106640f61a4bb941d3`
+- **Merge Status:** Merged & Closed
 
 ### Canonical Repository Governance Sync
 - **Task:** `DILMART-CANONICAL-REPOSITORY-GOVERNANCE-SYNC-001`

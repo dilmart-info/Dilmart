@@ -3,9 +3,12 @@
 ## Identity
 
 - **Task ID:** `DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
-- **Branch:** `frontend/dilmart-merchant-catalog-operations`
+- **Branch:** `frontend/dilmart-merchant-catalog-operations` (Merged & Deleted)
+- **Source HEAD:** `dbde3cfcd8d3358ce8103dc8e56bffb91b81b6eb`
 - **Target Base:** `main` (`c4851b8477dfffe8884ec85e9b04d5c16447e066`)
-- **Status:** `IMPLEMENTATION_COMPLETE`
+- **Merge Commit:** `2d147230d73632ca5f12d4106640f61a4bb941d3`
+- **Pull Request:** [#16](https://github.com/dilmart-info/Dilmart/pull/16) (Merged & Closed)
+- **Status:** `MERGED_AND_CLOSED`
 
 ## Problem & Defect Summary
 
@@ -93,3 +96,10 @@ Additionally, `src/lib/scoped-queries.ts` contained an unsafe `.catch` fallback 
    - `npm run build:mobile` (PASS).
    - `npm run mobile:boundary` (PASS, 0 forbidden modules).
    - Frontend and Backend production builds compile cleanly (exit code 0).
+
+4. **Post-Merge CI & Deployment Facts:**
+   - Main Critical CI: SUCCESS — [Run #33625998323](https://github.com/dilmart-info/Dilmart/actions/runs/33625998323)
+   - Native Foundation CI: SUCCESS — [Run #33625998386](https://github.com/dilmart-info/Dilmart/actions/runs/33625998386)
+   - Netlify Deploy Gate: Gate-only evaluation ([Run #33626458916](https://github.com/dilmart-info/Dilmart/actions/runs/33626458916)): `FRESH=true`, `CI_OK=true`, `ALREADY=false`, `ENABLED=false`, `DECISION=false`. Build and publish job was skipped; no Netlify production publish occurred.
+   - Render Deployment: UNVERIFIED — A merge to `main` must not be reported as a verified Render deployment without provider deployment metadata or an authoritative deployed-commit marker.
+   - Database Migrations: None required or applied (0 migrations).
