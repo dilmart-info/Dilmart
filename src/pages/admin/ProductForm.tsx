@@ -11,10 +11,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { toast } from "sonner";
-import { ArrowRight, CalendarDays, Save, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, CalendarDays, Save, Upload, X } from "lucide-react";
 import { attachScopeToPayload, merchantScope, platformScope } from "@/lib/data-scope";
 import { useAuth } from "@/hooks/use-auth";
 import { useCurrentMerchant } from "@/hooks/use-current-merchant";
+import { canMerchantManageCatalog } from "@/lib/merchant-role-authority";
 import { apiClient } from "@/lib/api-client";
 import { listAssignableCategoryOptions } from "@/lib/category-assignability";
 import { codePointLength } from "@/lib/text-length";
@@ -95,7 +96,8 @@ export default function AdminProductForm() {
     const [sizeInput, setSizeInput] = useState("");
     const { isAdmin, isMerchantUser } = useAuth();
     const { data: membership } = useCurrentMerchant();
-    const merchantIdFromMembership = (membership as any)?.merchant_id as string | undefined;
+    const merchantIdFromMembership = membership?.merchant_id;
+    const canManageCatalog = !isMerchantUser || canMerchantManageCatalog(membership?.role);
     const hasValidScope = !isMerchantUser || !!merchantIdFromMembership;
     const scope = isMerchantUser && merchantIdFromMembership ? merchantScope(merchantIdFromMembership) : platformScope();
     const [images, setImages] = useState<string[]>([]);
@@ -476,6 +478,10 @@ export default function AdminProductForm() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canManageCatalog) {
+            toast.error("حساب الموظف لديه صلاحية قراءة فقط.");
+            return;
+        }
         if (!form.merchant_id) {
             toast.error("يرجى اختيار التاجر قبل حفظ المنتج");
             return;
@@ -623,11 +629,20 @@ export default function AdminProductForm() {
                     <ArrowRight size={20} />
                 </Button>
                 <h2 className="text-2xl font-bold">{isEdit ? "تعديل المنتج" : "منتج جديد"}</h2>
-                <Button className="mr-auto gap-2" disabled={loading} type="submit">
+                <Button className="mr-auto gap-2" disabled={loading || !canManageCatalog} type="submit">
                     <Save size={18} />
                     {isEdit ? "حفظ التغييرات" : "إضافة المنتج"}
                 </Button>
             </div>
+
+            {!canManageCatalog ? (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-900 dark:text-amber-200 flex items-center gap-3">
+                    <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                    <p className="text-sm font-medium">
+                        حساب الموظف لديه صلاحية قراءة فقط. لا يمكن إنشاء أو تعديل المنتجات.
+                    </p>
+                </div>
+            ) : null}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">

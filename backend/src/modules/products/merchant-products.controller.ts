@@ -4,6 +4,13 @@ import { CurrentActor } from "../../common/authz/actor-context.decorator";
 import { Roles } from "../../common/authz/roles.decorator";
 import { ProductsService } from "./products.service";
 import { ProductImportService } from "./product-import.service";
+import {
+  MerchantBulkActionDto,
+  MerchantProductDuplicateDto,
+  MerchantProductImportConfirmDto,
+  MerchantProductImportPreviewDto,
+  MerchantQuickAddProductDto,
+} from "./products.dto";
 
 @Controller("merchant/products")
 export class MerchantProductsController {
@@ -26,12 +33,16 @@ export class MerchantProductsController {
   @UseInterceptors(FileInterceptor("file"))
   previewImport(
     @UploadedFile() file: any,
+    @Body() body: MerchantProductImportPreviewDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
     if (!file?.buffer?.length) {
       throw new BadRequestException("CSV file is required.");
     }
-    return this.productImportService.previewForMerchant(file.buffer, file.originalname, {
+    if (!body?.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
+    return this.productImportService.previewForMerchant(file.buffer, file.originalname, body.merchant_id, {
       actor_role: actor?.actorRole,
       actor_id: actor?.actorId,
     });
@@ -40,10 +51,13 @@ export class MerchantProductsController {
   @Post("import/confirm")
   @Roles("merchant_owner", "merchant_manager")
   confirmImport(
-    @Body() payload: { import_id: string },
+    @Body() payload: MerchantProductImportConfirmDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
-    return this.productImportService.confirmForMerchant(payload.import_id, {
+    if (!payload?.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
+    return this.productImportService.confirmForMerchant(payload.import_id, payload.merchant_id, {
       actor_role: actor?.actorRole,
       actor_id: actor?.actorId,
     });
@@ -52,14 +66,12 @@ export class MerchantProductsController {
   @Post("bulk-action")
   @Roles("merchant_owner", "merchant_manager")
   bulkAction(
-    @Body()
-    payload: {
-      product_ids: string[];
-      action: "activate" | "deactivate" | "update_stock" | "change_category" | "adjust_price_percent" | "archive";
-      payload?: Record<string, any>;
-    },
+    @Body() payload: MerchantBulkActionDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
+    if (!payload?.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
     return this.productsService.performBulkAction(payload, {
       actor_role: actor?.actorRole,
       actor_id: actor?.actorId,
@@ -69,18 +81,12 @@ export class MerchantProductsController {
   @Post("quick-add")
   @Roles("merchant_owner", "merchant_manager")
   quickAdd(
-    @Body()
-    payload: {
-      name: string;
-      category_id: string;
-      price: number;
-      stock?: number;
-      image_url?: string;
-      description?: string;
-      is_active?: boolean;
-    },
+    @Body() payload: MerchantQuickAddProductDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
+    if (!payload?.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
     return this.productsService.quickAddProduct(payload, {
       actor_role: actor?.actorRole,
       actor_id: actor?.actorId,
@@ -89,11 +95,17 @@ export class MerchantProductsController {
 
   @Post(":id/duplicate")
   @Roles("merchant_owner", "merchant_manager")
-  duplicateProduct(@Param("id") id: string, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
-    return this.productsService.duplicateProduct(id, {
+  duplicateProduct(
+    @Param("id") id: string,
+    @Body() body: MerchantProductDuplicateDto,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    if (!body?.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
+    return this.productsService.duplicateProduct(id, body.merchant_id, {
       actor_role: actor?.actorRole,
       actor_id: actor?.actorId,
     });
   }
 }
-

@@ -2,55 +2,56 @@
 
 ## Task
 
-`DILMART-CANONICAL-REPOSITORY-GOVERNANCE-SYNC-001`
+`DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
 
 ## Branch
 
-`governance/canonical-repository-authority-sync` (Merged & Deleted)
+`frontend/dilmart-merchant-catalog-operations`
 
-## PR
+## Target Base
 
-PR `#14` — https://github.com/dilmart-info/Dilmart/pull/14 (Merged & Closed)
+`main` (`c4851b8477dfffe8884ec85e9b04d5c16447e066`)
 
 ## Status
 
 ```text
-PHASE_3B_MERGED
-PR_13_CLOSED
-CANONICAL_REPOSITORY_GOVERNANCE_SYNC_MERGED
-PR_14_CLOSED
-PR_14_SOURCE_HEAD_EBDCADD
-PR_14_MERGE_SHA_9A37E19
-MAIN_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-NO_RUNTIME_CHANGE
+PHASE_3C_IMPLEMENTATION_COMPLETE
+MERCHANT_CATALOG_MULTI_STORE_AUTHORITY_VERIFIED
+SCOPED_QUERIES_FAIL_CLOSED_VERIFIED
+ROLE_AUTHORITY_GATING_VERIFIED
+CROSS_STORE_MUTATION_PREVENTION_VERIFIED
+TARGETED_TESTS_PASS
+FRONTEND_BUILD_PASS
+BACKEND_BUILD_PASS
+CI_GUARDS_PASS
+MOBILE_BOUNDARY_PASS
 NO_DB_MIGRATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+NO_DEPLOYMENT_PERFORMED
+READY_FOR_PULL_REQUEST
 ```
 
-## Completed Scope
+## Scope
 
-- Synchronize active repository and deployment governance documents to canonical `dilmart-info/Dilmart`.
-- Add fail-closed static governance guard in CI test suite for active authority files.
-- Align `docs/CANONICAL_WORKSPACE.md` with real operator-agnostic and `scripts/build-production.ps1` rules.
-- Maintain strict preservation of historical evidence, audit records, and PR artifacts.
-- No runtime changes, no DB migrations, no deployment.
+- Enforce explicit `merchant_id` on all merchant catalog mutations (Quick Add, Bulk Actions, Duplicate, CSV Preview, CSV Confirm).
+- Backend service layer requires and resolves exact requested `merchant_id` via `ScopeResolverService`, failing closed (400 for missing/invalid, 403 for unauthorized/inactive).
+- CSV import sessions strictly enforce preview-to-confirm merchant identity match and prevent cross-store confirmation.
+- Scoped product queries in `src/lib/scoped-queries.ts` fail closed on auth/network failure without dropping `merchant_id`.
+- Store switching in frontend UI immediately resets selection checkboxes, bulk actions, quick add modals, and CSV import state.
+- Role authority helper `canMerchantManageCatalog` gates merchant mutation UI controls for staff members (read-only), while backend guards enforce server-side authority.
+- No database migrations, no deployment.
 
-## Immediately Completed Development Phase
+## Immediately Completed Governance / Preceding Phases
+
+### Canonical Repository Governance Sync
+- **Task:** `DILMART-CANONICAL-REPOSITORY-GOVERNANCE-SYNC-001`
+- **PR:** [#14](https://github.com/dilmart-info/Dilmart/pull/14)
+- **Merge SHA:** `9a37e19`
+- **Merge Status:** Merged & Closed
 
 ### Phase 3B: Merchant Order Detail, Decision Queue, and New Order Operations
 - **PR:** [#13](https://github.com/dilmart-info/Dilmart/pull/13)
 - **Merge SHA:** `57c8f6b21f95a11403d3928918bbc6c0c78b2e2c`
 - **Merge Status:** Merged & Closed
-- **Summary:** Backend canonical 404 contract, decision eligibility gating, multi-store event isolation with generation/cancellation-safe refetch race guards, and Jenni delivery integration / sticker authority alignment.
-
-## Next State
-
-- The next development phase has not yet been selected in this document.
-- OTP work has not resumed.
-- Product Readiness migrations remain unapplied unless separately proven.
-- No deployment was performed by this governance closure.
 
 ---
 

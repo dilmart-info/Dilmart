@@ -194,14 +194,41 @@ export class ProductImportService {
   }
 
   /** Merchant self-service import. Requires an active merchant (unchanged from prior behavior). */
-  async previewForMerchant(fileBuffer: Buffer, filename: string | undefined, actor?: Actor) {
-    const merchantId = await this.resolveMerchantForMerchantActor(actor ?? {});
+  async previewForMerchant(
+    fileBuffer: Buffer,
+    filename: string | undefined,
+    merchantIdOrActor: string | Actor,
+    maybeActor?: Actor,
+  ) {
+    let requestedMerchantId: string | undefined;
+    let actor: Actor | undefined;
+    if (typeof merchantIdOrActor === "string") {
+      requestedMerchantId = merchantIdOrActor;
+      actor = maybeActor;
+    } else {
+      actor = merchantIdOrActor;
+      requestedMerchantId = (actor as any)?.merchant_id;
+    }
+    const merchantId = await this.resolveMerchantForMerchantActor(requestedMerchantId, actor ?? {});
     // resolveMerchantForMerchantActor() already asserts status === 'active' above.
     return this.runPreview(merchantId, fileBuffer, filename, actor?.actor_id, "active");
   }
 
-  async confirmForMerchant(importId: string, actor?: Actor) {
-    const merchantId = await this.resolveMerchantForMerchantActor(actor ?? {});
+  async confirmForMerchant(
+    importId: string,
+    merchantIdOrActor: string | Actor,
+    maybeActor?: Actor,
+  ) {
+    let requestedMerchantId: string | undefined;
+    let actor: Actor | undefined;
+    if (typeof merchantIdOrActor === "string") {
+      requestedMerchantId = merchantIdOrActor;
+      actor = maybeActor;
+    } else {
+      actor = merchantIdOrActor;
+      requestedMerchantId = (actor as any)?.merchant_id;
+    }
+    const merchantId = await this.resolveMerchantForMerchantActor(requestedMerchantId, actor ?? {});
     return this.runConfirm(merchantId, importId, actor ?? {}, { isAdmin: false });
   }
 
@@ -240,12 +267,15 @@ export class ProductImportService {
     }
   }
 
-  private async resolveMerchantForMerchantActor(actor: Actor) {
+  private async resolveMerchantForMerchantActor(requestedMerchantId: string | undefined, actor: Actor) {
     if (!this.isMerchantRole(actor?.actor_role)) {
       throw new ForbiddenException("Merchant role required.");
     }
-    const merchantId = await this.scopeResolver.resolveMerchantScope(undefined, actor?.actor_role, actor?.actor_id);
+    const merchantId = await this.scopeResolver.resolveMerchantScope(requestedMerchantId, actor?.actor_role, actor?.actor_id);
     if (!merchantId) throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    if (requestedMerchantId && merchantId !== requestedMerchantId) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
     await this.ensureMerchantActive(merchantId);
     return merchantId;
   }

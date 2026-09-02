@@ -117,12 +117,18 @@ export class ProductsService {
       .replace(/^-|-$/g, "");
   }
 
-  private async resolveMerchantForActor(actor: { actor_role?: string; actor_id?: string }) {
+  private async resolveMerchantForActor(
+    requestedMerchantId: string | undefined,
+    actor: { actor_role?: string; actor_id?: string },
+  ) {
     if (!this.isMerchantRole(actor?.actor_role)) {
       throw new ForbiddenException("Merchant role required.");
     }
-    const merchantId = await this.scopeResolver.resolveMerchantScope(undefined, actor?.actor_role, actor?.actor_id);
+    const merchantId = await this.scopeResolver.resolveMerchantScope(requestedMerchantId, actor?.actor_role, actor?.actor_id);
     if (!merchantId) throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    if (requestedMerchantId && merchantId !== requestedMerchantId) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
     await this.ensureMerchantActiveForMerchantActor(merchantId, actor?.actor_role);
     return merchantId;
   }
@@ -142,13 +148,14 @@ export class ProductsService {
 
   async performBulkAction(
     payload: {
+      merchant_id?: string;
       product_ids: string[];
       action: "activate" | "deactivate" | "update_stock" | "change_category" | "adjust_price_percent" | "archive";
       payload?: Record<string, any>;
     },
     actor?: { actor_role?: string; actor_id?: string },
   ) {
-    const merchantId = await this.resolveMerchantForActor(actor ?? {});
+    const merchantId = await this.resolveMerchantForActor(payload?.merchant_id, actor ?? {});
     const productIds = Array.from(new Set((payload.product_ids ?? []).filter(Boolean)));
     if (productIds.length === 0) throw new BadRequestException("product_ids are required.");
 
@@ -264,6 +271,7 @@ export class ProductsService {
 
   async quickAddProduct(
     payload: {
+      merchant_id?: string;
       name: string;
       category_id: string;
       price: number;
@@ -274,7 +282,7 @@ export class ProductsService {
     },
     actor?: { actor_role?: string; actor_id?: string },
   ) {
-    const merchantId = await this.resolveMerchantForActor(actor ?? {});
+    const merchantId = await this.resolveMerchantForActor(payload?.merchant_id, actor ?? {});
     if (!payload.name?.trim()) throw new BadRequestException("name is required.");
     if (!payload.category_id) throw new BadRequestException("category_id is required.");
     if (Number(payload.price ?? 0) <= 0) throw new BadRequestException("price must be > 0.");
@@ -348,8 +356,21 @@ export class ProductsService {
     return data;
   }
 
-  async duplicateProduct(id: string, actor?: { actor_role?: string; actor_id?: string }) {
-    const merchantId = await this.resolveMerchantForActor(actor ?? {});
+  async duplicateProduct(
+    id: string,
+    merchantIdOrActor: string | { actor_role?: string; actor_id?: string },
+    maybeActor?: { actor_role?: string; actor_id?: string },
+  ) {
+    let requestedMerchantId: string | undefined;
+    let actor: { actor_role?: string; actor_id?: string } | undefined;
+    if (typeof merchantIdOrActor === "string") {
+      requestedMerchantId = merchantIdOrActor;
+      actor = maybeActor;
+    } else {
+      actor = merchantIdOrActor;
+      requestedMerchantId = (actor as any)?.merchant_id;
+    }
+    const merchantId = await this.resolveMerchantForActor(requestedMerchantId, actor ?? {});
     const { data: source, error: sourceError } = await this.supabaseAdmin.client
       .from("products")
       .select("*")

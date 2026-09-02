@@ -85,9 +85,12 @@ export const merchantApi = {
     return request<string>("/merchant/products/import-template", "GET");
   },
 
-  async previewMerchantProductImport(file: File) {
+  async previewMerchantProductImport(file: File, merchantId: string) {
     const formData = new FormData();
     formData.append("file", file);
+    if (merchantId) {
+      formData.append("merchant_id", merchantId);
+    }
     const accessToken = (await authSessionManager.getValidAccessToken()) ?? "";
     return fetch(`${API_BASE_URL}/merchant/products/import/preview`, {
       method: "POST",
@@ -102,7 +105,7 @@ export const merchantApi = {
     });
   },
 
-  confirmMerchantProductImport(importId: string) {
+  confirmMerchantProductImport(importId: string, merchantId: string) {
     return request<{
       total: number;
       created: number;
@@ -117,18 +120,20 @@ export const merchantApi = {
         product_id?: string | null;
         message?: string;
       }>;
-    }>("/merchant/products/import/confirm", "POST", { import_id: importId });
+    }>("/merchant/products/import/confirm", "POST", { import_id: importId, merchant_id: merchantId });
   },
 
   merchantBulkProductAction(payload: {
+    merchant_id: string;
     product_ids: string[];
     action: "activate" | "deactivate" | "update_stock" | "change_category" | "adjust_price_percent" | "archive";
-    payload?: Record<string, any>;
+    payload?: Record<string, unknown>;
   }) {
     return request<{ ok: boolean; affected: number }>("/merchant/products/bulk-action", "POST", payload);
   },
 
   quickAddMerchantProduct(payload: {
+    merchant_id: string;
     name: string;
     category_id: string;
     price: number;
@@ -149,19 +154,20 @@ export const merchantApi = {
     }>("/merchant/products/quick-add", "POST", payload);
   },
 
-  duplicateMerchantProduct(productId: string) {
+  duplicateMerchantProduct(productId: string, merchantId: string) {
     return request<{ id: string; name: string; slug: string; is_active: boolean }>(
       `/merchant/products/${encodeURIComponent(productId)}/duplicate`,
       "POST",
+      { merchant_id: merchantId },
     );
   },
 
   getMerchantProducts(merchantId: string) {
-    return request<Array<any>>(`/products?merchant_id=${encodeURIComponent(merchantId)}`, "GET");
+    return request<Array<Record<string, unknown>>>(`/products?merchant_id=${encodeURIComponent(merchantId)}`, "GET");
   },
 
   getMerchantOrders(merchantId: string) {
-    return request<Array<any>>(`/orders?merchant_id=${encodeURIComponent(merchantId)}`, "GET");
+    return request<Array<Record<string, unknown>>>(`/orders?merchant_id=${encodeURIComponent(merchantId)}`, "GET");
   },
 
   getMerchantDashboardStats(merchantId: string) {

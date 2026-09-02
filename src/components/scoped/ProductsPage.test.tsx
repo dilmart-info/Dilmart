@@ -27,6 +27,15 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+let mockCurrentMerchant = {
+  data: { merchant_id: "merchant-123", role: "owner" },
+  isLoading: false,
+};
+
+vi.mock("@/hooks/use-current-merchant", () => ({
+  useCurrentMerchant: () => mockCurrentMerchant,
+}));
+
 import ProductsPage from "./ProductsPage";
 
 const context = { scope: "merchant" as const, merchantId: "merchant-123" };
@@ -63,6 +72,10 @@ function renderPageWithRouter(customContext = context, initialEntries = ["/produ
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockCurrentMerchant = {
+    data: { merchant_id: "merchant-123", role: "owner" },
+    isLoading: false,
+  };
   getCategoriesAdminList.mockResolvedValue([]);
   getAdminMerchants.mockResolvedValue([]);
 });
@@ -901,6 +914,7 @@ describe("ProductsPage - Server-Side Pagination and Exact Total Count", () => {
 
     // Verify payload strictly contains prod-page2-1 and NEVER hidden/stale prod-page1-1 or prod-page1-2
     expect(merchantBulkProductAction).toHaveBeenLastCalledWith({
+      merchant_id: "merchant-123",
       product_ids: ["prod-page2-1"],
       action: "activate",
       payload: {},
@@ -1093,3 +1107,33 @@ describe("ProductsPage - Data Isolation, Neutral Stock & Responsive UX", () => {
   });
 });
 
+describe("ProductsPage - Merchant Staff Role Gating & Store Change Isolation", () => {
+  it("STAFF READ-ONLY: staff account hides Add, Import, Quick Add, Bulk Actions, and displays 'عرض فقط'", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "merchant-123", role: "staff" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-staff-1",
+        name: "منتج الموظف",
+        price: 5000,
+        stock: 20,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "عطور" },
+        readiness: { is_ready: true, score: 100, checklist: [] },
+      },
+    ]);
+
+    renderPage({ scope: "merchant", merchantId: "merchant-123" });
+
+    await screen.findByText("منتج الموظف");
+    expect(screen.queryByRole("button", { name: "إضافة منتج" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "استيراد CSV" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "إضافة سريعة" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "تطبيق" })).toBeNull();
+    expect(screen.getAllByText("عرض فقط").length).toBeGreaterThan(0);
+  });
+});

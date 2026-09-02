@@ -24,6 +24,8 @@ import { apiClient } from "@/lib/api-client";
 import { listAssignableCategoryOptions, type CategoryRow } from "@/lib/category-assignability";
 import { formatPrice } from "@/lib/format";
 import { toast } from "sonner";
+import { useCurrentMerchant } from "@/hooks/use-current-merchant";
+import { canMerchantManageCatalog } from "@/lib/merchant-role-authority";
 
 type ProductChecklistItem = {
   key: string;
@@ -66,6 +68,10 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
 
+  const { data: membership } = useCurrentMerchant();
+  const merchantRole = membership?.role;
+  const canManageCatalog = context.scope === "platform" ? true : canMerchantManageCatalog(merchantRole);
+
   const merchantIdFromUrl = searchParams.get("merchant_id") ?? "";
   const rawPage = parseInt(searchParams.get("page") || "1", 10);
   const pageFromUrl = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
@@ -87,6 +93,15 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   useEffect(() => {
     setSearchInput(searchFromUrl);
   }, [searchFromUrl]);
+
+  // Reset state whenever active merchant scope changes
+  useEffect(() => {
+    setSelectedIds([]);
+    setBulkAction("");
+    setBulkValue("");
+    setQuickAddOpen(false);
+    setQuickAdd({ name: "", category_id: "", price: "", stock: "0", image_url: "" });
+  }, [context.merchantId]);
 
   // Reset selected IDs whenever page, search query, readiness filter, or merchant scope changes via URL navigation
   useEffect(() => {
@@ -196,7 +211,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       }),
   });
 
-  const products = productsData?.items ?? [];
+  const products = useMemo(() => productsData?.items ?? [], [productsData?.items]);
   const total = productsData?.total ?? products.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const effectivePage = total > 0 ? Math.min(pageFromUrl, totalPages) : pageFromUrl;
@@ -265,6 +280,8 @@ export default function ProductsPage({ context, title = "المنتجات", crea
 
   const bulkActionMutation = useMutation({
     mutationFn: async () => {
+      const targetMerchantId = context.merchantId;
+      if (!targetMerchantId) throw new Error("اختر المتجر أولاً");
       const validSelectedIds = selectedIds.filter((id) =>
         products.some((p: ProductItem) => p.id === id),
       );
@@ -275,6 +292,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       if (bulkAction === "change_category") payload = { category_id: bulkValue };
       if (bulkAction === "adjust_price_percent") payload = { percent: Number(bulkValue) };
       return apiClient.merchantBulkProductAction({
+        merchant_id: targetMerchantId,
         product_ids: validSelectedIds,
         action: bulkAction,
         payload,
@@ -291,14 +309,18 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   });
 
   const quickAddMutation = useMutation({
-    mutationFn: async () =>
-      apiClient.quickAddMerchantProduct({
+    mutationFn: async () => {
+      const targetMerchantId = context.merchantId;
+      if (!targetMerchantId) throw new Error("اختر المتجر أولاً");
+      return apiClient.quickAddMerchantProduct({
+        merchant_id: targetMerchantId,
         name: quickAdd.name,
         category_id: quickAdd.category_id,
         price: Number(quickAdd.price),
         stock: Number(quickAdd.stock || 0),
         image_url: quickAdd.image_url || undefined,
-      }),
+      });
+    },
     onSuccess: (created) => {
       toast.success(
         created?.is_active
@@ -313,7 +335,11 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   });
 
   const duplicateMutation = useMutation({
-    mutationFn: async (productId: string) => apiClient.duplicateMerchantProduct(productId),
+    mutationFn: async (productId: string) => {
+      const targetMerchantId = context.merchantId;
+      if (!targetMerchantId) throw new Error("اختر المتجر أولاً");
+      return apiClient.duplicateMerchantProduct(productId, targetMerchantId);
+    },
     onSuccess: () => {
       toast.success("تم نسخ المنتج");
       queryClient.invalidateQueries({ queryKey: ["scoped-products"] });
@@ -338,7 +364,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
             <Badge variant="secondary" className="text-xs">التاجر: {selectedMerchant.display_name ?? "—"}</Badge>
           ) : null}
           {productsCountLabel ? <Badge variant="outline" className="text-xs">{productsCountLabel}</Badge> : null}
-          {createPath && (
+          {createPath && canManageCatalog && (
             <Link to={createHref}>
               <Button size="sm" className="h-9 gap-1.5 rounded-lg text-xs font-bold" disabled={context.scope === "platform" && !merchantFilter}>
                 <Plus className="h-3.5 w-3.5" />
@@ -346,7 +372,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
               </Button>
             </Link>
           )}
-          {isMerchantScope ? (
+          {isMerchantScope && canManageCatalog ? (
             <>
               <Link to="/merchant/products/import">
                 <Button variant="outline" size="sm" className="h-9 gap-1.5 rounded-lg text-xs font-bold">
@@ -369,7 +395,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       </div>
 
       {/* Quick Add Section */}
-      {quickAddOpen ? (
+      {quickAddOpen && canManageCatalog ? (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3 shadow-xs animate-fade-in">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold text-foreground">إضافة سريعة</p>
@@ -468,7 +494,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       {/* Table Container */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
         {/* Bulk Action Controls */}
-        {isMerchantScope && selectedIds.length > 0 ? (
+        {isMerchantScope && canManageCatalog && selectedIds.length > 0 ? (
           <div className="border-b p-3 bg-muted/40 flex flex-wrap gap-2 items-center">
             <span className="text-xs font-semibold text-foreground">تم اختيار {selectedIds.length} منتج</span>
             <select
@@ -505,7 +531,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
           <Table>
             <TableHeader className={isMerchantScope ? "hidden md:table-header-group" : ""}>
               <TableRow className="bg-muted/30">
-                {isMerchantScope ? (
+                {isMerchantScope && canManageCatalog ? (
                   <TableHead className="w-10">
                     <input
                       type="checkbox"
@@ -603,7 +629,7 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                           : undefined
                       }
                     >
-                      {isMerchantScope ? (
+                      {isMerchantScope && canManageCatalog ? (
                         <TableCell className="p-0 md:p-4 mb-2 md:mb-0 flex md:table-cell items-center justify-between">
                           <input
                             type="checkbox"
@@ -660,32 +686,38 @@ export default function ProductsPage({ context, title = "المنتجات", crea
                       </TableCell>
                       <TableCell className="text-center p-0 md:p-4 pt-2 md:pt-4 border-t border-border/40 md:border-t-0 block md:table-cell">
                         <div className="flex items-center justify-end md:justify-center gap-1.5">
-                          <Link to={editHref}>
-                            <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs font-medium">
-                              تعديل
-                            </Button>
-                          </Link>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-xs"
-                            onClick={() => updateStatus.mutate({ id: p.id, isActive: targetIsActive })}
-                            disabled={updateStatus.isPending}
-                          >
-                            {buttonLabel}
-                          </Button>
-                          {isMerchantScope ? (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => duplicateMutation.mutate(p.id)}
-                              disabled={duplicateMutation.isPending}
-                              title="نسخ المنتج"
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          ) : null}
+                          {canManageCatalog ? (
+                            <>
+                              <Link to={editHref}>
+                                <Button size="sm" variant="outline" className="h-7 px-2.5 text-xs font-medium">
+                                  تعديل
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => updateStatus.mutate({ id: p.id, isActive: targetIsActive })}
+                                disabled={updateStatus.isPending}
+                              >
+                                {buttonLabel}
+                              </Button>
+                              {isMerchantScope ? (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-7 px-2 text-xs"
+                                  onClick={() => duplicateMutation.mutate(p.id)}
+                                  disabled={duplicateMutation.isPending}
+                                  title="نسخ المنتج"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              ) : null}
+                            </>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">عرض فقط</span>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>

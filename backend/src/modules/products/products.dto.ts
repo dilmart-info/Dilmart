@@ -202,3 +202,76 @@ export class ListProductsQueryDto {
   readiness?: "all" | "ready" | "not_ready";
 }
 
+export class MerchantProductImportPreviewDto {
+  @IsUUID("4")
+  merchant_id!: string;
+}
+
+export class MerchantProductImportConfirmDto {
+  @IsUUID("4")
+  import_id!: string;
+
+  @IsUUID("4")
+  merchant_id!: string;
+}
+
+export class MerchantProductDuplicateDto {
+  @IsUUID("4")
+  merchant_id!: string;
+}
+
+export class MerchantBulkActionDto {
+  @IsUUID("4")
+  merchant_id!: string;
+
+  @IsArray()
+  @IsUUID("4", { each: true })
+  product_ids!: string[];
+
+  @IsIn(["activate", "deactivate", "update_stock", "change_category", "adjust_price_percent", "archive"])
+  action!: "activate" | "deactivate" | "update_stock" | "change_category" | "adjust_price_percent" | "archive";
+
+  @IsOptional()
+  payload?: Record<string, any>;
+}
+
+export class MerchantQuickAddProductDto {
+  @IsUUID("4")
+  merchant_id!: string;
+
+  @IsString()
+  name!: string;
+
+  @IsUUID("4")
+  category_id!: string;
+
+  @IsNumber()
+  @Min(0.01)
+  price!: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  stock?: number;
+
+  @IsOptional()
+  @IsString()
+  image_url?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
+}
+
+export class UpdateProductStatusDto {
+  @IsBoolean()
+  is_active!: boolean;
+
+  @IsOptional()
+  @IsUUID("4")
+  merchant_id?: string;
+}
