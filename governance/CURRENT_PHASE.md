@@ -58,8 +58,8 @@ NO_DEPLOYMENT_PERFORMED
    - Documented and strictly enforced that merchant roles require `merchant_id` at runtime in `ProductsService.resolveMerchantForActor` where omission throws HTTP 400 (`BadRequestException`).
 
 4. **Accurate Test Count & Verification:**
-   - Frontend Vitest: 97 test files (896 tests) PASS (100% green).
-   - Frontend Catalog Scoped Tests: 37 tests PASS (`ProductsPage.test.tsx` [31] + `ProductImport.test.tsx` [6]).
+   - Frontend Vitest: 97 test files (898 tests) PASS (100% green).
+   - Frontend Catalog Scoped Tests: 39 tests PASS (`ProductsPage.test.tsx` [33] + `ProductImport.test.tsx` [6]).
    - Backend Authority Suite: 12 test suites (32 sub-assertions) PASS (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`).
    - Backend Product Import & Readiness Suite: 292 tests PASS (`npm run test` in backend).
    - CI Guards: 99 tests PASS across 3 test files (`npm run test:ci-guards`).

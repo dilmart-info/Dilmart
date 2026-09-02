@@ -1450,7 +1450,7 @@ describe("ProductsPage - Merchant Staff Role Gating & Store Change Isolation", (
     expect(toast.error).not.toHaveBeenCalledWith("تعذر تنفيذ العملية الجماعية");
   });
 
-  it("DEFERRED STATUS UPDATE & DUPLICATE RACE: Store A mutation response after switch to Store B does not toast in Store B", async () => {
+  it("DEFERRED DUPLICATE RACE: Store A duplicate response after switch to Store B does not toast in Store B", async () => {
     mockCurrentMerchant = {
       data: { merchant_id: "store-a", role: "owner" },
       isLoading: false,
@@ -1526,5 +1526,173 @@ describe("ProductsPage - Merchant Staff Role Gating & Store Change Isolation", (
     });
 
     expect(toast.success).not.toHaveBeenCalledWith("تم نسخ المنتج");
+  });
+
+  it("DEFERRED STATUS UPDATE SUCCESS RACE: Store A status update resolving after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: false,
+        is_published: false,
+        visibility_status: "private",
+      },
+    ]);
+
+    let resolveStatusA!: (val: unknown) => void;
+    updateProductStatus.mockReturnValue(
+      new Promise((resolve) => {
+        resolveStatusA = resolve;
+      }),
+    );
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Click "تفعيل ونشر"
+    const activateBtn = screen.getByRole("button", { name: "تفعيل ونشر" });
+    await act(async () => {
+      fireEvent.click(activateBtn);
+    });
+
+    // Assert updateProductStatus received Store A's exact merchant context & parameters
+    expect(updateProductStatus).toHaveBeenCalledWith("prod-a-1", {
+      is_active: true,
+      merchant_id: "store-a",
+    });
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // Resolve deferred Store A status response
+    await act(async () => {
+      resolveStatusA({ ok: true });
+    });
+
+    // Verify Store A toast is suppressed
+    expect(toast.success).not.toHaveBeenCalledWith("تم نشر المنتج في المتجر");
+    expect(toast.success).not.toHaveBeenCalledWith("تم تعطيل المنتج");
+  });
+
+  it("DEFERRED STATUS UPDATE REJECTION RACE: Store A status error after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    let rejectStatusA!: (err: unknown) => void;
+    const statusAPromise = new Promise((_, reject) => {
+      rejectStatusA = reject;
+    });
+    statusAPromise.catch(() => {});
+    updateProductStatus.mockReturnValue(statusAPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Click "تعطيل"
+    const deactivateBtn = screen.getByRole("button", { name: "تعطيل" });
+    await act(async () => {
+      fireEvent.click(deactivateBtn);
+    });
+
+    // Assert updateProductStatus received Store A's exact merchant context & parameters
+    expect(updateProductStatus).toHaveBeenCalledWith("prod-a-1", {
+      is_active: false,
+      merchant_id: "store-a",
+    });
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // Reject Store A status mutation
+    await act(async () => {
+      rejectStatusA(new Error("PRODUCT_NOT_READY: فشل تفعيل منتج متجر أ"));
+    });
+
+    // Verify neither the specific readiness error toast nor the fallback error toast is displayed in Store B
+    expect(toast.error).not.toHaveBeenCalledWith("لا يمكن تفعيل المنتج قبل استكمال متطلبات الجاهزية");
+    expect(toast.error).not.toHaveBeenCalledWith("تعذر تحديث حالة المنتج");
   });
 });

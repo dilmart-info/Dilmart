@@ -80,9 +80,9 @@ Additionally, `src/lib/scoped-queries.ts` contained an unsafe `.catch` fallback 
    - `npm run test` in `backend` (292 tests PASS covering product-import safety, readiness invariants, and publication sync).
 
 2. **Frontend Vitest Suite:**
-   - 97 test files (896 tests) PASS (100% green).
-   - Scoped Catalog Tests (37 tests PASS):
-     - `src/components/scoped/ProductsPage.test.tsx` (31 tests PASS): synchronous ref assignment, exact toast validation, Store B selection and action preservation under deferred Store A resolution, deferred rejection isolation across Quick Add, Bulk, Duplicate, and Status Update.
+   - 97 test files (898 tests) PASS (100% green).
+   - Scoped Catalog Tests (39 tests PASS):
+     - `src/components/scoped/ProductsPage.test.tsx` (33 tests PASS): synchronous ref assignment, exact toast validation, Store B selection and action preservation under deferred Store A resolution, deferred rejection isolation across Quick Add, Bulk, Duplicate, and Status Update (with separate success/rejection deferred tests for Status Update asserting exact merchant context).
      - `src/pages/merchant/ProductImport.test.tsx` (6 tests PASS): staff read-only gating, active merchant scope binding, deferred preview/confirm race protection, deferred preview/confirm rejection error toast suppression.
 
 3. **Static Governance & Architecture Guards:**
