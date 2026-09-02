@@ -8,6 +8,7 @@ import { BadRequestException, ForbiddenException } from "@nestjs/common";
 const STORE_A = "11111111-1111-4111-8111-111111111111";
 const STORE_B = "22222222-2222-4222-8222-222222222222";
 const STORE_UNAUTHORIZED = "33333333-3333-4333-8333-333333333333";
+const STORE_INACTIVE = "55555555-5555-4555-8555-555555555555";
 const CATEGORY_ID = "44444444-4444-4444-8444-444444444444";
 const IMAGE_URL = "https://ztplxqlthuqkuktbznbo.supabase.co/storage/v1/object/public/products/img.png";
 
@@ -44,11 +45,27 @@ function makeHarness() {
         short_description: "وصف قصير صالح يحتوي على ما يكفي من التفاصيل الكافية.",
         description: "وصف كامل ومفصل لمنتج متجر ب",
       },
+      {
+        id: "prod-inactive-1",
+        merchant_id: STORE_INACTIVE,
+        name: "منتج متجر غير نشط",
+        slug: "prod-inactive-1",
+        price: 9000,
+        category_id: CATEGORY_ID,
+        images: [IMAGE_URL],
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        short_description: "وصف قصير صالح يحتوي على ما يكفي من التفاصيل الكافية.",
+        description: "وصف كامل ومفصل لمنتج متجر غير نشط",
+      },
     ],
     merchants: [
       { id: STORE_A, status: "active" },
       { id: STORE_B, status: "active" },
       { id: STORE_UNAUTHORIZED, status: "active" },
+      { id: STORE_INACTIVE, status: "pending" },
     ],
     categories: [
       { id: CATEGORY_ID, name: "العطور", slug: "perfumes", is_active: true, is_leaf: true, parent_id: null },
@@ -157,8 +174,8 @@ function makeHarness() {
   const scopeResolver = {
     async resolveMerchantScope(requestedMerchantId, actorRole, actorId) {
       state.scopeResolutionCalls.push({ requestedMerchantId, actorRole, actorId });
-      // Actor belongs to STORE_A and STORE_B only
-      const actorMemberships = [STORE_A, STORE_B];
+      // Actor belongs to STORE_A, STORE_B, and STORE_INACTIVE
+      const actorMemberships = [STORE_A, STORE_B, STORE_INACTIVE];
       if (!requestedMerchantId) return null;
       if (actorMemberships.includes(requestedMerchantId)) {
         return requestedMerchantId;
@@ -294,6 +311,142 @@ test("Mutations targeting an unauthorized store fail with HTTP 403", async () =>
   );
 });
 
+// ── Missing merchant_id Rejections (HTTP 400) ──────────────────────────────────
+
+test("Mutations missing merchant_id fail with HTTP 400 BadRequestException", async () => {
+  const { productsService, productImportService } = makeHarness();
+
+  // Quick Add missing merchant_id
+  await assert.rejects(
+    () =>
+      productsService.quickAddProduct(
+        {
+          merchant_id: undefined,
+          name: "منتج بدون متجر",
+          category_id: CATEGORY_ID,
+          price: 5000,
+        },
+        MULTI_STORE_ACTOR,
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Bulk Action missing merchant_id
+  await assert.rejects(
+    () =>
+      productsService.performBulkAction(
+        {
+          merchant_id: undefined,
+          product_ids: ["prod-b-1"],
+          action: "deactivate",
+        },
+        MULTI_STORE_ACTOR,
+      ),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Duplicate missing merchant_id
+  await assert.rejects(
+    () => productsService.duplicateProduct("prod-b-1", undefined, MULTI_STORE_ACTOR),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Import preview missing merchant_id
+  const csvBuffer = Buffer.from("name,short_description,price,category,sku\n");
+  await assert.rejects(
+    () => productImportService.previewForMerchant(csvBuffer, "test.csv", undefined, MULTI_STORE_ACTOR),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Import confirm missing merchant_id
+  await assert.rejects(
+    () => productImportService.confirmForMerchant("session-1", undefined, MULTI_STORE_ACTOR),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+
+  // Product status update missing merchant_id for merchant actor
+  await assert.rejects(
+    () => productsService.updateProductStatus("prod-b-1", { is_active: false, merchant_id: undefined, ...MULTI_STORE_ACTOR }),
+    (err) => err instanceof BadRequestException && /merchant_id is required/i.test(err.message),
+  );
+});
+
+// ── Inactive Store Rejections (HTTP 403) ───────────────────────────────────────
+
+test("Mutations targeting an inactive/pending store fail with HTTP 403 ForbiddenException", async () => {
+  const { productsService, productImportService } = makeHarness();
+
+  await assert.rejects(
+    () =>
+      productsService.quickAddProduct(
+        {
+          merchant_id: STORE_INACTIVE,
+          name: "منتج في متجر معلق",
+          category_id: CATEGORY_ID,
+          price: 5000,
+        },
+        MULTI_STORE_ACTOR,
+      ),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+
+  await assert.rejects(
+    () =>
+      productsService.performBulkAction(
+        {
+          merchant_id: STORE_INACTIVE,
+          product_ids: ["prod-inactive-1"],
+          action: "deactivate",
+        },
+        MULTI_STORE_ACTOR,
+      ),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+
+  await assert.rejects(
+    () => productsService.duplicateProduct("prod-inactive-1", STORE_INACTIVE, MULTI_STORE_ACTOR),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+
+  const csvBuffer = Buffer.from("name,short_description,price,category,sku\n");
+  await assert.rejects(
+    () => productImportService.previewForMerchant(csvBuffer, "test.csv", STORE_INACTIVE, MULTI_STORE_ACTOR),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+
+  await assert.rejects(
+    () => productsService.updateProductStatus("prod-inactive-1", { is_active: false, merchant_id: STORE_INACTIVE, ...MULTI_STORE_ACTOR }),
+    (err) => err instanceof ForbiddenException && /not active/i.test(err.message),
+  );
+});
+
+// ── Status Update Authority ───────────────────────────────────────────────────
+
+test("Status update succeeds with authorized merchant_id and rejects mismatched merchant_id", async () => {
+  const { productsService, state } = makeHarness();
+
+  // Status update with matching store B
+  const res = await productsService.updateProductStatus("prod-b-1", {
+    is_active: false,
+    merchant_id: STORE_B,
+    ...MULTI_STORE_ACTOR,
+  });
+  assert.equal(res.ok, true);
+  const prodB = state.products.find((p) => p.id === "prod-b-1");
+  assert.equal(prodB.is_active, false);
+
+  // Status update with unauthorized store
+  await assert.rejects(
+    () =>
+      productsService.updateProductStatus("prod-b-1", {
+        is_active: false,
+        merchant_id: STORE_UNAUTHORIZED,
+        ...MULTI_STORE_ACTOR,
+      }),
+    (err) => err instanceof ForbiddenException,
+  );
+});
+
 // ── CSV Import Multi-Store Authority & Cross-Store Protection ──────────────────
 
 test("CSV Import preview and confirmation bind strictly to the requested merchant", async () => {
@@ -335,6 +488,7 @@ test("CSV Import preview and confirmation bind strictly to the requested merchan
 
   await assert.rejects(
     () => productImportService.confirmForMerchant(preview2.import_id, STORE_A, MULTI_STORE_ACTOR),
-    (err) => err instanceof ForbiddenException || /Merchant mismatch/i.test(err.message),
+    (err) => err instanceof ForbiddenException || /Merchant mismatch|not found in merchant scope/i.test(err.message),
   );
 });
+

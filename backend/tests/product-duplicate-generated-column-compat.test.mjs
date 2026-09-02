@@ -133,7 +133,7 @@ test("duplicate never sends the generated readiness column when the source row c
   // Source row as `select("*")` returns it AFTER the migration adds the generated column.
   const { service, state } = makeService([sourceProduct({ is_ready: true })]);
 
-  const copy = await service.duplicateProduct("prod-source", ACTOR);
+  const copy = await service.duplicateProduct("prod-source", MERCHANT_ID, ACTOR);
 
   assert.equal(state.rejected.length, 0, "Postgres must not have rejected the insert");
   assert.equal(state.inserts.length, 1);
@@ -150,7 +150,7 @@ test("duplicate still works when the source row has no generated column yet", as
   // Today's Production schema: `products.is_ready` does not exist at all.
   const { service, state } = makeService([sourceProduct()]);
 
-  const copy = await service.duplicateProduct("prod-source", ACTOR);
+  const copy = await service.duplicateProduct("prod-source", MERCHANT_ID, ACTOR);
 
   assert.equal(state.inserts.length, 1);
   assert.equal(state.inserts[0].is_ready, undefined);
@@ -160,7 +160,7 @@ test("duplicate still works when the source row has no generated column yet", as
 test("duplicate preserves its existing contract: draft copy, new identity, merchant scope", async () => {
   const { service, state } = makeService([sourceProduct({ is_ready: true })]);
 
-  const copy = await service.duplicateProduct("prod-source", ACTOR);
+  const copy = await service.duplicateProduct("prod-source", MERCHANT_ID, ACTOR);
   const payload = state.inserts[0];
 
   // draft publication state (unchanged behaviour)
@@ -194,7 +194,7 @@ test("duplicate still refuses a product outside the actor's merchant scope", asy
   ]);
 
   await assert.rejects(
-    () => service.duplicateProduct("prod-other", ACTOR),
+    () => service.duplicateProduct("prod-other", MERCHANT_ID, ACTOR),
     (error) => error.status === 403 || /not found in merchant scope/i.test(String(error.message)),
   );
   assert.equal(state.inserts.length, 0);

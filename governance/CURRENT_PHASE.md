@@ -15,8 +15,15 @@
 ## Status
 
 ```text
-PHASE_3C_IMPLEMENTATION_COMPLETE
+PR_16_DRAFT_AWAITING_REVIEW
+PHASE_3C_SUPERVISOR_GAPS_RESOLVED
 MERCHANT_CATALOG_MULTI_STORE_AUTHORITY_VERIFIED
+CAPTURED_MERCHANT_RACE_GUARDS_VERIFIED
+DEFERRED_RACE_TESTS_PASS
+BACKEND_STRICT_MERCHANT_SIGNATURES_ENFORCED
+ACTOR_MERCHANT_FALLBACKS_REMOVED
+UPDATE_PRODUCT_STATUS_DTO_BOUND_AND_ENFORCED
+HTTP_BOUNDARY_REJECTION_TESTS_PASS
 SCOPED_QUERIES_FAIL_CLOSED_VERIFIED
 ROLE_AUTHORITY_GATING_VERIFIED
 CROSS_STORE_MUTATION_PREVENTION_VERIFIED
@@ -27,18 +34,28 @@ CI_GUARDS_PASS
 MOBILE_BOUNDARY_PASS
 NO_DB_MIGRATION
 NO_DEPLOYMENT_PERFORMED
-READY_FOR_PULL_REQUEST
 ```
 
-## Scope
+## Scope & Supervisor Remediation Summary
 
-- Enforce explicit `merchant_id` on all merchant catalog mutations (Quick Add, Bulk Actions, Duplicate, CSV Preview, CSV Confirm).
-- Backend service layer requires and resolves exact requested `merchant_id` via `ScopeResolverService`, failing closed (400 for missing/invalid, 403 for unauthorized/inactive).
-- CSV import sessions strictly enforce preview-to-confirm merchant identity match and prevent cross-store confirmation.
-- Scoped product queries in `src/lib/scoped-queries.ts` fail closed on auth/network failure without dropping `merchant_id`.
-- Store switching in frontend UI immediately resets selection checkboxes, bulk actions, quick add modals, and CSV import state.
-- Role authority helper `canMerchantManageCatalog` gates merchant mutation UI controls for staff members (read-only), while backend guards enforce server-side authority.
-- No database migrations, no deployment.
+1. **Frontend Mutation Lifecycle & Race Condition Isolation (`ProductsPage.tsx` & `ProductImport.tsx`):**
+   - Added `currentMerchantIdRef` and verified `currentMerchantIdRef.current === targetMerchantId` before any state mutations, dialog closures, selection wipes, toasts, or query invalidations.
+   - Proved with deferred async tests in both `ProductsPage.test.tsx` and `ProductImport.test.tsx` that responses from Store A resolving after switching to Store B cannot mutate, close, toast for, or clear Store B UI state.
+
+2. **Backend Service Layer Authority & Signature Hardening:**
+   - Structurally required `merchant_id: string` in all merchant catalog operations in `ProductsService` (`resolveMerchantForActor`, `performBulkAction`, `quickAddProduct`, `duplicateProduct`, `updateProductStatus`) and `ProductImportService` (`previewForMerchant`, `confirmForMerchant`, `resolveMerchantForMerchantActor`).
+   - Removed union parameter types and deleted legacy fallback paths extracting `merchant_id` from `actor.merchant_id`.
+   - Bound and strictly enforced `UpdateProductStatusDto` in `ProductsController` and `ProductsService` for merchant roles.
+
+3. **HTTP / Controller Boundary Testing:**
+   - Added exhaustive suite in `backend/tests/merchant-catalog-multi-store-authority.test.mjs` asserting HTTP 400 (`BadRequestException`) on missing/invalid `merchant_id` across Quick Add, Bulk Actions, Duplicate, CSV Preview, CSV Confirm, and Status Update.
+   - Asserted HTTP 403 (`ForbiddenException`) on inactive/pending stores.
+   - Verified 100% pass across all 5 backend test suites (158/158 tests) and all frontend catalog test suites (32/32 tests).
+
+4. **Invariants Maintained:**
+   - No database migrations created or executed.
+   - No deployments performed.
+   - Draft PR #16 remains open and untouched in Draft state.
 
 ## Immediately Completed Governance / Preceding Phases
 

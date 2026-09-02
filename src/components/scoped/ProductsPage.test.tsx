@@ -1136,4 +1136,174 @@ describe("ProductsPage - Merchant Staff Role Gating & Store Change Isolation", (
     expect(screen.queryByRole("button", { name: "تطبيق" })).toBeNull();
     expect(screen.getAllByText("عرض فقط").length).toBeGreaterThan(0);
   });
+
+  it("DEFERRED QUICK ADD RACE: Store A response resolving after switch to Store B does not close Store B modal or clear form", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    getCategoriesAdminList.mockResolvedValue([
+      { id: "cat-1", name: "العطور", is_active: true, is_leaf: true, parent_id: null },
+    ]);
+    listScopedProducts.mockResolvedValue([]);
+
+    let resolveStoreAQuickAdd!: (val: unknown) => void;
+    const storeAPromise = new Promise((resolve) => {
+      resolveStoreAQuickAdd = resolve;
+    });
+    quickAddMerchantProduct.mockReturnValue(storeAPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Open Quick Add in Store A
+    const quickAddBtn = await screen.findByRole("button", { name: "إضافة سريعة" });
+    fireEvent.click(quickAddBtn);
+
+    // Fill Quick Add inputs
+    const nameInput = screen.getByPlaceholderText("الاسم");
+    fireEvent.change(nameInput, { target: { value: "منتج متجر أ" } });
+
+    const priceInput = screen.getByPlaceholderText("السعر");
+    fireEvent.change(priceInput, { target: { value: "5000" } });
+
+    await waitFor(() => expect(screen.getByRole("option", { name: "العطور" })).toBeTruthy());
+    const categorySelect = screen.getByDisplayValue("القسم");
+    fireEvent.change(categorySelect, { target: { value: "cat-1" } });
+
+    // Click Save
+    const saveBtn = screen.getByRole("button", { name: "حفظ المنتج" });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(quickAddMerchantProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "منتج متجر أ", merchant_id: "store-a" }),
+    );
+
+    // Switch store to Store B while request is pending
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // In Store B, open Quick Add again and type something
+    const quickAddBtnB = await screen.findByRole("button", { name: "إضافة سريعة" });
+    fireEvent.click(quickAddBtnB);
+
+    const nameInputB = screen.getByPlaceholderText("الاسم") as HTMLInputElement;
+    fireEvent.change(nameInputB, { target: { value: "منتج متجر ب الجديد" } });
+
+    // Now resolve the deferred Store A response
+    await act(async () => {
+      resolveStoreAQuickAdd({ id: "prod-a-new", name: "منتج متجر أ", is_active: true });
+    });
+
+    // Verify Store B modal is STILL open with user's typed value, and no toast for Store A
+    expect(screen.getByPlaceholderText("الاسم")).toBeTruthy();
+    expect((screen.getByPlaceholderText("الاسم") as HTMLInputElement).value).toBe("منتج متجر ب الجديد");
+    expect(toast.success).not.toHaveBeenCalledWith("تم إضافة المنتج سريعاً");
+  });
+
+  it("DEFERRED BULK ACTION RACE: Store A response resolving after switch to Store B does not clear Store B selections or toast", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    let resolveStoreABulk!: (val: unknown) => void;
+    const storeABulkPromise = new Promise((resolve) => {
+      resolveStoreABulk = resolve;
+    });
+    merchantBulkProductAction.mockReturnValue(storeABulkPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Select row
+    const checkboxes = screen.getAllByRole("checkbox");
+    fireEvent.click(checkboxes[1]);
+
+    // Select bulk action "deactivate"
+    const actionSelect = screen.getByDisplayValue("اختر عملية جماعية");
+    fireEvent.change(actionSelect, { target: { value: "deactivate" } });
+
+    // Click Apply
+    const applyBtn = screen.getByRole("button", { name: "تنفيذ" });
+    await act(async () => {
+      fireEvent.click(applyBtn);
+    });
+
+    expect(merchantBulkProductAction).toHaveBeenCalledWith(
+      expect.objectContaining({ merchant_id: "store-a", action: "deactivate" }),
+    );
+
+    // Switch store to Store B while bulk action is pending
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // Resolve deferred Store A bulk response
+    await act(async () => {
+      resolveStoreABulk({ ok: true, affected: 1 });
+    });
+
+    // Verify toast is not called for Store A
+    expect(toast.success).not.toHaveBeenCalledWith("تم تنفيذ العملية الجماعية بنجاح");
+  });
 });

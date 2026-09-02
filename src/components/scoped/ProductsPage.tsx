@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useSearchParams } from "react-router-dom";
 import {
@@ -71,6 +71,11 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   const { data: membership } = useCurrentMerchant();
   const merchantRole = membership?.role;
   const canManageCatalog = context.scope === "platform" ? true : canMerchantManageCatalog(merchantRole);
+
+  const currentMerchantIdRef = useRef(context.merchantId);
+  useEffect(() => {
+    currentMerchantIdRef.current = context.merchantId;
+  }, [context.merchantId]);
 
   const merchantIdFromUrl = searchParams.get("merchant_id") ?? "";
   const rawPage = parseInt(searchParams.get("page") || "1", 10);
@@ -257,16 +262,32 @@ export default function ProductsPage({ context, title = "المنتجات", crea
   }, [hasMerchantSelection, total]);
 
   const updateStatus = useMutation({
-    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => updateScopedProductStatus(context, id, isActive),
-    onSuccess: (_data, variables) => {
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const targetMerchantId = context.merchantId;
+      try {
+        const res = await updateScopedProductStatus(context, id, isActive);
+        return { res, targetMerchantId, isActive };
+      } catch (e: any) {
+        e.targetMerchantId = targetMerchantId;
+        throw e;
+      }
+    },
+    onSuccess: (data) => {
+      if (context.scope === "merchant" && currentMerchantIdRef.current !== data.targetMerchantId) {
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ["scoped-products"] });
-      if (variables.isActive) {
+      if (data.isActive) {
         toast.success("تم نشر المنتج في المتجر");
       } else {
         toast.success("تم تعطيل المنتج");
       }
     },
     onError: (err: unknown) => {
+      const targetMerchantId = (err as { targetMerchantId?: string })?.targetMerchantId;
+      if (context.scope === "merchant" && targetMerchantId && currentMerchantIdRef.current !== targetMerchantId) {
+        return;
+      }
       const message = String((err as { message?: string })?.message ?? "");
       if (message.includes("PRODUCT_NOT_READY")) {
         toast.error("لا يمكن تفعيل المنتج قبل استكمال متطلبات الجاهزية");
@@ -291,39 +312,63 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       if (bulkAction === "update_stock") payload = { stock: Number(bulkValue) };
       if (bulkAction === "change_category") payload = { category_id: bulkValue };
       if (bulkAction === "adjust_price_percent") payload = { percent: Number(bulkValue) };
-      return apiClient.merchantBulkProductAction({
-        merchant_id: targetMerchantId,
-        product_ids: validSelectedIds,
-        action: bulkAction,
-        payload,
-      });
+      try {
+        const res = await apiClient.merchantBulkProductAction({
+          merchant_id: targetMerchantId,
+          product_ids: validSelectedIds,
+          action: bulkAction,
+          payload,
+        });
+        return { res, targetMerchantId };
+      } catch (e: any) {
+        e.targetMerchantId = targetMerchantId;
+        throw e;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (currentMerchantIdRef.current !== data.targetMerchantId) {
+        return;
+      }
       toast.success("تم تنفيذ العملية الجماعية");
       setSelectedIds([]);
       setBulkValue("");
       setBulkAction("");
       queryClient.invalidateQueries({ queryKey: ["scoped-products"] });
     },
-    onError: (err: unknown) => toast.error((err as { message?: string })?.message ?? "تعذر تنفيذ العملية الجماعية"),
+    onError: (err: unknown) => {
+      const targetMerchantId = (err as { targetMerchantId?: string })?.targetMerchantId;
+      if (targetMerchantId && currentMerchantIdRef.current !== targetMerchantId) {
+        return;
+      }
+      toast.error((err as { message?: string })?.message ?? "تعذر تنفيذ العملية الجماعية");
+    },
   });
 
   const quickAddMutation = useMutation({
     mutationFn: async () => {
       const targetMerchantId = context.merchantId;
       if (!targetMerchantId) throw new Error("اختر المتجر أولاً");
-      return apiClient.quickAddMerchantProduct({
-        merchant_id: targetMerchantId,
-        name: quickAdd.name,
-        category_id: quickAdd.category_id,
-        price: Number(quickAdd.price),
-        stock: Number(quickAdd.stock || 0),
-        image_url: quickAdd.image_url || undefined,
-      });
+      try {
+        const created = await apiClient.quickAddMerchantProduct({
+          merchant_id: targetMerchantId,
+          name: quickAdd.name,
+          category_id: quickAdd.category_id,
+          price: Number(quickAdd.price),
+          stock: Number(quickAdd.stock || 0),
+          image_url: quickAdd.image_url || undefined,
+        });
+        return { created, targetMerchantId };
+      } catch (e: any) {
+        e.targetMerchantId = targetMerchantId;
+        throw e;
+      }
     },
-    onSuccess: (created) => {
+    onSuccess: (data) => {
+      if (currentMerchantIdRef.current !== data.targetMerchantId) {
+        return;
+      }
       toast.success(
-        created?.is_active
+        data.created?.is_active
           ? "تمت إضافة المنتج بسرعة"
           : "تمت إضافة المنتج كمسودة — أكمل الصورة والوصف لتفعيله",
       );
@@ -331,21 +376,43 @@ export default function ProductsPage({ context, title = "المنتجات", crea
       setQuickAdd({ name: "", category_id: "", price: "", stock: "0", image_url: "" });
       queryClient.invalidateQueries({ queryKey: ["scoped-products"] });
     },
-    onError: (err: unknown) => toast.error((err as { message?: string })?.message ?? "تعذر الإضافة السريعة"),
+    onError: (err: unknown) => {
+      const targetMerchantId = (err as { targetMerchantId?: string })?.targetMerchantId;
+      if (targetMerchantId && currentMerchantIdRef.current !== targetMerchantId) {
+        return;
+      }
+      toast.error((err as { message?: string })?.message ?? "تعذر الإضافة السريعة");
+    },
   });
 
   const duplicateMutation = useMutation({
     mutationFn: async (productId: string) => {
       const targetMerchantId = context.merchantId;
       if (!targetMerchantId) throw new Error("اختر المتجر أولاً");
-      return apiClient.duplicateMerchantProduct(productId, targetMerchantId);
+      try {
+        const res = await apiClient.duplicateMerchantProduct(productId, targetMerchantId);
+        return { res, targetMerchantId };
+      } catch (e: any) {
+        e.targetMerchantId = targetMerchantId;
+        throw e;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (currentMerchantIdRef.current !== data.targetMerchantId) {
+        return;
+      }
       toast.success("تم نسخ المنتج");
       queryClient.invalidateQueries({ queryKey: ["scoped-products"] });
     },
-    onError: (err: unknown) => toast.error((err as { message?: string })?.message ?? "تعذر نسخ المنتج"),
+    onError: (err: unknown) => {
+      const targetMerchantId = (err as { targetMerchantId?: string })?.targetMerchantId;
+      if (targetMerchantId && currentMerchantIdRef.current !== targetMerchantId) {
+        return;
+      }
+      toast.error((err as { message?: string })?.message ?? "تعذر نسخ المنتج");
+    },
   });
+
 
   const isMerchantScope = context.scope === "merchant";
 

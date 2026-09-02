@@ -197,39 +197,27 @@ export class ProductImportService {
   async previewForMerchant(
     fileBuffer: Buffer,
     filename: string | undefined,
-    merchantIdOrActor: string | Actor,
-    maybeActor?: Actor,
+    merchantId: string,
+    actor?: Actor,
   ) {
-    let requestedMerchantId: string | undefined;
-    let actor: Actor | undefined;
-    if (typeof merchantIdOrActor === "string") {
-      requestedMerchantId = merchantIdOrActor;
-      actor = maybeActor;
-    } else {
-      actor = merchantIdOrActor;
-      requestedMerchantId = (actor as any)?.merchant_id;
+    if (!merchantId) {
+      throw new BadRequestException("merchant_id is required.");
     }
-    const merchantId = await this.resolveMerchantForMerchantActor(requestedMerchantId, actor ?? {});
+    const resolvedMerchantId = await this.resolveMerchantForMerchantActor(merchantId, actor ?? {});
     // resolveMerchantForMerchantActor() already asserts status === 'active' above.
-    return this.runPreview(merchantId, fileBuffer, filename, actor?.actor_id, "active");
+    return this.runPreview(resolvedMerchantId, fileBuffer, filename, actor?.actor_id, "active");
   }
 
   async confirmForMerchant(
     importId: string,
-    merchantIdOrActor: string | Actor,
-    maybeActor?: Actor,
+    merchantId: string,
+    actor?: Actor,
   ) {
-    let requestedMerchantId: string | undefined;
-    let actor: Actor | undefined;
-    if (typeof merchantIdOrActor === "string") {
-      requestedMerchantId = merchantIdOrActor;
-      actor = maybeActor;
-    } else {
-      actor = merchantIdOrActor;
-      requestedMerchantId = (actor as any)?.merchant_id;
+    if (!merchantId) {
+      throw new BadRequestException("merchant_id is required.");
     }
-    const merchantId = await this.resolveMerchantForMerchantActor(requestedMerchantId, actor ?? {});
-    return this.runConfirm(merchantId, importId, actor ?? {}, { isAdmin: false });
+    const resolvedMerchantId = await this.resolveMerchantForMerchantActor(merchantId, actor ?? {});
+    return this.runConfirm(resolvedMerchantId, importId, actor ?? {}, { isAdmin: false });
   }
 
   /**
@@ -267,13 +255,15 @@ export class ProductImportService {
     }
   }
 
-  private async resolveMerchantForMerchantActor(requestedMerchantId: string | undefined, actor: Actor) {
+  private async resolveMerchantForMerchantActor(requestedMerchantId: string, actor: Actor) {
     if (!this.isMerchantRole(actor?.actor_role)) {
       throw new ForbiddenException("Merchant role required.");
     }
+    if (!requestedMerchantId) {
+      throw new BadRequestException("merchant_id is required.");
+    }
     const merchantId = await this.scopeResolver.resolveMerchantScope(requestedMerchantId, actor?.actor_role, actor?.actor_id);
-    if (!merchantId) throw new ForbiddenException("Merchant scope is not allowed for this actor.");
-    if (requestedMerchantId && merchantId !== requestedMerchantId) {
+    if (!merchantId || merchantId !== requestedMerchantId) {
       throw new ForbiddenException("Merchant scope is not allowed for this actor.");
     }
     await this.ensureMerchantActive(merchantId);

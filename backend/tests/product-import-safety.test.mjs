@@ -395,6 +395,20 @@ function makeService({ merchants = [], categories = [], products = [], sessions 
   const auditService = { log: async (entry) => auditEntries.push(entry) };
   const categoriesService = new CategoriesService(supabaseAdmin);
   const service = new ProductImportService(supabaseAdmin, scopeResolver, auditService, categoriesService);
+  const origPreview = service.previewForMerchant.bind(service);
+  service.previewForMerchant = (fileBuffer, filename, merchantIdOrActor, maybeActor) => {
+    if (typeof merchantIdOrActor === "string") {
+      return origPreview(fileBuffer, filename, merchantIdOrActor, maybeActor);
+    }
+    return origPreview(fileBuffer, filename, merchantId, merchantIdOrActor);
+  };
+  const origConfirm = service.confirmForMerchant.bind(service);
+  service.confirmForMerchant = (importId, merchantIdOrActor, maybeActor) => {
+    if (typeof merchantIdOrActor === "string") {
+      return origConfirm(importId, merchantIdOrActor, maybeActor);
+    }
+    return origConfirm(importId, merchantId, merchantIdOrActor);
+  };
   return { service, fake, auditEntries, categoriesService };
 }
 
