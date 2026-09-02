@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { ValidationPipe, ParseUUIDPipe, BadRequestException, ForbiddenException, NotFoundException } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
 import { MerchantsService } from "../dist/modules/merchants/merchants.service.js";
 import { MerchantsController } from "../dist/modules/merchants/merchants.controller.js";
 import {
@@ -457,4 +458,155 @@ test("SERVICE AUTHORITY: platform admin requires explicit merchant ID, checks ex
     async () => service.getMerchantFinanceSummary("99999999-9999-4999-8999-999999999999", adminActor),
     (err) => err instanceof NotFoundException
   );
+});
+
+test("HTTP CONTROLLER ROUTE: GET /merchants/:id/finance/summary, statement, and payout-history actual HTTP routes", async (t) => {
+  const recordedCalls = {
+    summary: [],
+    statement: [],
+    payouts: [],
+  };
+
+  const stubService = {
+    getMerchantFinanceSummary: async (id, actor) => {
+      recordedCalls.summary.push({ id, actor });
+      return { merchant_id: id, total_payable: 150000, currency_code: "IQD" };
+    },
+    listMerchantStatementEntries: async (id, actor, query) => {
+      recordedCalls.statement.push({ id, actor, query });
+      return { merchant_id: id, entries: [], total: 0, limit: query?.limit ?? 20, offset: query?.offset ?? 0 };
+    },
+    listMerchantPayoutHistory: async (id, actor, query) => {
+      recordedCalls.payouts.push({ id, actor, query });
+      return { merchant_id: id, payouts: [], total: 0, limit: query?.limit ?? 10, offset: query?.offset ?? 0 };
+    },
+    // Stubs for other methods to satisfy controller
+    getActiveMerchants: async () => [],
+    getStorefrontDefaultMerchant: async () => null,
+    getActiveMerchantBySlug: async () => null,
+    getAllMerchants: async () => [],
+    getMerchantSettings: async () => null,
+    upsertMerchantSettings: async () => null,
+    getMerchantById: async () => null,
+    getMerchantReadiness: async () => null,
+    getMerchantPerformanceScorecard: async () => null,
+    updateMerchantRegistrationDetails: async () => null,
+  };
+
+  const moduleRef = await Test.createTestingModule({
+    controllers: [MerchantsController],
+    providers: [
+      {
+        provide: MerchantsService,
+        useValue: stubService,
+      },
+    ],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.listen(0);
+  const port = app.getHttpServer().address().port;
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  // 1. Malformed UUID => HTTP 400 and service method NOT called
+  {
+    const resSummary = await fetch(`${baseUrl}/merchants/not-a-uuid/finance/summary`);
+    assert.equal(resSummary.status, 400, "malformed UUID on summary must return HTTP 400");
+    assert.equal(recordedCalls.summary.length, 0, "service summary must not be called on malformed UUID");
+
+    const resStatement = await fetch(`${baseUrl}/merchants/12345/finance/statement`);
+    assert.equal(resStatement.status, 400, "malformed UUID on statement must return HTTP 400");
+    assert.equal(recordedCalls.statement.length, 0, "service statement must not be called on malformed UUID");
+
+    const resPayouts = await fetch(`${baseUrl}/merchants/invalid-id/finance/payout-history`);
+    assert.equal(resPayouts.status, 400, "malformed UUID on payouts must return HTTP 400");
+    assert.equal(recordedCalls.payouts.length, 0, "service payouts must not be called on malformed UUID");
+  }
+
+  // 2. Statement route parameter validation through real HTTP boundary
+  {
+    // Invalid status enum
+    const res = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?status=invalid_status`);
+    assert.equal(res.status, 400, "invalid statement status must return HTTP 400");
+
+    // NaN limit
+    const resNan = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?limit=abc`);
+    assert.equal(resNan.status, 400, "non-integer limit must return HTTP 400");
+
+    // Negative limit
+    const resNegLimit = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?limit=-5`);
+    assert.equal(resNegLimit.status, 400, "negative limit must return HTTP 400");
+
+    // Negative offset
+    const resNegOffset = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?offset=-1`);
+    assert.equal(resNegOffset.status, 400, "negative offset must return HTTP 400");
+
+    // Excessive limit (> 200)
+    const resExcessLimit = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?limit=250`);
+    assert.equal(resExcessLimit.status, 400, "excessive limit > 200 must return HTTP 400");
+
+    // Invalid ISO date string
+    const resInvalidDate = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?from=not-a-date`);
+    assert.equal(resInvalidDate.status, 400, "invalid date format must return HTTP 400");
+
+    // from > to date range violation
+    const resFromGtTo = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?from=2026-05-15T00:00:00.000Z&to=2026-05-01T00:00:00.000Z`);
+    assert.equal(resFromGtTo.status, 400, "from > to date range must return HTTP 400");
+
+    // Non-whitelisted query parameter
+    const resNonWhitelisted = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?unauthorized_param=hack`);
+    assert.equal(resNonWhitelisted.status, 400, "non-whitelisted query parameter must return HTTP 400");
+  }
+
+  // 3. Payout history route parameter validation through real HTTP boundary
+  {
+    // Invalid payout status
+    const res = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/payout-history?status=invalid_batch_status`);
+    assert.equal(res.status, 400, "invalid payout status must return HTTP 400");
+
+    // Excessive payout limit (> 100)
+    const resExcess = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/payout-history?limit=150`);
+    assert.equal(resExcess.status, 400, "payout limit > 100 must return HTTP 400");
+
+    // from > to in payout history
+    const resFromGtTo = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/payout-history?from=2026-06-01T00:00:00.000Z&to=2026-05-01T00:00:00.000Z`);
+    assert.equal(resFromGtTo.status, 400, "payout from > to must return HTTP 400");
+  }
+
+  // 4. Valid HTTP requests reach service with transformed types
+  {
+    // Summary
+    const resSummary = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/summary`);
+    assert.equal(resSummary.status, 200, "valid summary request must return HTTP 200");
+    const summaryBody = await resSummary.json();
+    assert.equal(summaryBody.merchant_id, STORE_A);
+    assert.equal(recordedCalls.summary.at(-1)?.id, STORE_A);
+
+    // Statement with transformed query numbers
+    const resStatement = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?limit=50&offset=10&status=payable&from=2026-05-01T00:00:00.000Z&to=2026-05-10T00:00:00.000Z`);
+    assert.equal(resStatement.status, 200, "valid statement request must return HTTP 200");
+    assert.equal(recordedCalls.statement.at(-1)?.id, STORE_A);
+    assert.equal(recordedCalls.statement.at(-1)?.query.limit, 50, "limit must be transformed to number");
+    assert.equal(recordedCalls.statement.at(-1)?.query.offset, 10, "offset must be transformed to number");
+    assert.equal(recordedCalls.statement.at(-1)?.query.status, "payable");
+    assert.equal(recordedCalls.statement.at(-1)?.query.from, "2026-05-01T00:00:00.000Z");
+    assert.equal(recordedCalls.statement.at(-1)?.query.to, "2026-05-10T00:00:00.000Z");
+
+    // Statement with valid 'disputed' status
+    const resDisputed = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/statement?status=disputed`);
+    assert.equal(resDisputed.status, 200, "valid disputed status must return HTTP 200");
+    assert.equal(recordedCalls.statement.at(-1)?.query.status, "disputed");
+
+    // Payout history with transformed query numbers
+    const resPayouts = await fetch(`${baseUrl}/merchants/${STORE_A}/finance/payout-history?limit=25&offset=5&status=settled`);
+    assert.equal(resPayouts.status, 200, "valid payout history request must return HTTP 200");
+    assert.equal(recordedCalls.payouts.at(-1)?.id, STORE_A);
+    assert.equal(recordedCalls.payouts.at(-1)?.query.limit, 25, "payout limit must be transformed to number");
+    assert.equal(recordedCalls.payouts.at(-1)?.query.offset, 5, "payout offset must be transformed to number");
+    assert.equal(recordedCalls.payouts.at(-1)?.query.status, "settled");
+  }
 });

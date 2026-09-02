@@ -12,20 +12,25 @@
 
 `main` (`6d1f1ea89de97c6025cc106996cffcda03fefe55`)
 
+## Pull Request
+
+- **Draft PR:** [#18](https://github.com/dilmart-info/Dilmart/pull/18)
+- **Reviewed Initial Source HEAD:** `42948cf3548918d8e967363a0efd3d9662ba4c52`
+
 ## Status
 
 ```text
-PHASE_3D_IMPLEMENTATION_COMPLETE
+PHASE_3D_MICRO_CLOSURE_COMPLETE
 ALL_VERIFICATIONS_PASS
-FRONTEND_TESTS_PASS (12/12 Finance.test.tsx, 11/11 MerchantLayout.foundation.test.tsx)
-BACKEND_TESTS_PASS (8/8 merchant-finance-multi-store-authority.test.mjs, 292/292 full backend suite)
+FRONTEND_TESTS_PASS (15/15 Finance.test.tsx, 11/11 MerchantLayout.foundation.test.tsx, 4/4 merchant-role-authority.test.ts; 98 files, 913 tests total)
+BACKEND_TESTS_PASS (9/9 merchant-finance-multi-store-authority.test.mjs, 292/292 full backend suite)
 CI_GUARDS_PASS (99/99)
 ARCHITECTURE_GUARD_PASS
 AUTH_LIFECYCLE_GUARD_PASS
 NATIVE_BRAND_ASSETS_PASS
 MOBILE_BOUNDARY_PASS
 NO_DB_MIGRATION
-DRAFT_PR_PREPARED
+DRAFT_PR_UPDATED
 NOT_MERGED
 NOT_DEPLOYED
 ```
@@ -35,32 +40,37 @@ NOT_DEPLOYED
 1. **Synchronous Store Reset (Keyed Workspace Pattern):**
    - In `MerchantFinance`, resolved `useCurrentMerchant()` and rendered `<MerchantFinanceWorkspace key={merchantId} merchantId={merchantId} />`.
    - The React `key={merchantId}` synchronously unmounts and remounts local filters, pagination, and query state upon switching the active store without performing `setState` during render.
+   - Verified by test proving Store A date inputs, status filters, and pagination offsets reset completely upon switching to Store B.
 2. **Response Contract Validation:**
    - Implemented `assertFinanceContractMerchantId` inside each `queryFn` (summary, statement, payout history) before responses enter React Query cache.
-3. **Centralized Backend Finance Scope Helper:**
+3. **Multi-Store Isolation & Shared QueryClient Deferred Race Tests:**
+   - Proved with real shared `QueryClient` tests that late-resolving or late-rejecting requests from Store A after switching to Store B do not mutate, alter, or produce errors/toasts in Store B UI.
+4. **Centralized Backend Finance Scope Helper:**
    - Private helper `resolveMerchantFinanceReadScope(merchantId, actor)` in `MerchantsService`:
      - Missing actor identity/role => HTTP 403 `ForbiddenException`.
      - Merchant roles (`owner`, `manager`, `staff`) => exact membership in `merchant_users` and exact status `active` in `merchants`.
      - Admin/super_admin => explicit merchant ID required and existence checked in `merchants` (non-active merchants inspectable for platform oversight).
      - Unknown roles => HTTP 403 `ForbiddenException`.
      - No membership fallback; no first-store fallback.
-4. **Authoritative Ledger & Payout Status Enums:**
-   - `merchant_ledger_entries.status`: `["pending", "accrued", "payable", "in_payout", "settled", "reversed", "disputed"]`.
-   - `merchant_payout_batches.status`: `["draft", "approved", "processing", "settled", "cancelled"]`.
-   - Added `"disputed"` to frontend `STATUS_OPTIONS` and labels.
-5. **Date Range Validation:**
-   - Class-validator constraint `@Validate(IsDateRangeValidConstraint)` ensuring `from <= to` across `ValidationPipe` returning HTTP 400 `BadRequestException`.
+5. **Real Controller HTTP Boundary Validation:**
+   - Tested real NestJS HTTP routes on ephemeral ports via `@nestjs/testing`:
+     - `GET /merchants/:id/finance/summary`
+     - `GET /merchants/:id/finance/statement`
+     - `GET /merchants/:id/finance/payout-history`
+   - Verified that malformed UUIDs, invalid statuses, negative/excessive pagination, invalid ISO timestamps, `from > to` violations, and non-whitelisted parameters return HTTP 400 (`BadRequestException`) and do not invoke service methods.
+   - Verified that valid parameters are properly transformed into numeric types (`limit`, `offset`) before reaching the service.
 6. **Finance Navigation Authority:**
    - `MerchantLayout.tsx` derives `/merchant/finance` visibility from `canMerchantViewFinance(membership?.role)`.
-7. **Truthful Independent States:**
+7. **Truthful Independent States & Retry Isolation:**
    - Independent loading skeleton cards and error cards with retry for summary (never 0 IQD).
    - Independent error state with retry for statement and payout history (never empty healthy lists).
-   - Successful sections remain visible if an independent section fails.
-8. **Truthful CSV Export:**
+   - Retrying one failed section (e.g. summary) refetches only that section for the current merchant and does not trigger refetches on the other sections.
+8. **Truthful CSV Export Contract:**
    - Button labeled "تصدير الصفحة CSV".
    - Disabled during loading, error, contract mismatch, or empty statement.
-   - Filename contains exact current `merchantId`.
-   - Revokes object URL upon download.
+   - Filename contains exact current `merchantId` and ends in `.csv`.
+   - Generates exact CSV containing only currently displayed page rows with correct headers.
+   - Revokes object URL immediately upon download.
 
 ---
 

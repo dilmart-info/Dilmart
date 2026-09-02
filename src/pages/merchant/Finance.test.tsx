@@ -37,17 +37,27 @@ vi.mock("@/lib/api-client", () => ({
   },
 }));
 
-function renderFinance() {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+        gcTime: 0,
+      },
+    },
   });
-  return render(
+}
+
+function renderFinance(customQueryClient?: QueryClient) {
+  const queryClient = customQueryClient ?? createTestQueryClient();
+  const renderResult = render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/merchant/finance"]}>
         <MerchantFinance />
       </MemoryRouter>
     </QueryClientProvider>
   );
+  return { ...renderResult, queryClient };
 }
 
 const mockSummaryA = {
@@ -64,7 +74,7 @@ const mockSummaryA = {
 
 const mockStatementA = {
   merchant_id: "store-a-uuid",
-  total: 1,
+  total: 45,
   limit: 20,
   offset: 0,
   entries: [
@@ -84,7 +94,7 @@ const mockStatementA = {
 
 const mockPayoutsA = {
   merchant_id: "store-a-uuid",
-  total: 1,
+  total: 25,
   limit: 10,
   offset: 0,
   payouts: [
@@ -277,11 +287,29 @@ describe("MerchantFinance — Truthful States, Multi-Store Authority & Contract 
     expect(exportBtn).toBeDisabled();
   });
 
-  it("enables CSV export button when current store statement succeeds and triggers download", async () => {
-    const createObjectURLMock = vi.fn(() => "blob:http://localhost/test-uuid");
+  it("complete CSV contract test: verifies filename, blob content, page-only rows, and object URL revocation", async () => {
+    let capturedBlob: Blob | null = null;
+    const mockUrl = "blob:http://localhost/test-uuid-statement-export";
+
+    const createObjectURLMock = vi.fn((blob: Blob) => {
+      capturedBlob = blob;
+      return mockUrl;
+    });
     const revokeObjectURLMock = vi.fn();
     global.URL.createObjectURL = createObjectURLMock;
     global.URL.revokeObjectURL = revokeObjectURLMock;
+
+    let clickedAnchor: HTMLAnchorElement | null = null;
+    const originalCreateElement = document.createElement.bind(document);
+    const createElementSpy = vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
+      const el = originalCreateElement(tagName);
+      if (tagName.toLowerCase() === "a") {
+        el.click = vi.fn(() => {
+          clickedAnchor = el as HTMLAnchorElement;
+        });
+      }
+      return el;
+    });
 
     renderFinance();
 
@@ -292,8 +320,36 @@ describe("MerchantFinance — Truthful States, Multi-Store Authority & Contract 
 
     fireEvent.click(exportBtn);
 
-    expect(createObjectURLMock).toHaveBeenCalled();
-    expect(revokeObjectURLMock).toHaveBeenCalled();
+    expect(createObjectURLMock).toHaveBeenCalledTimes(1);
+    expect(capturedBlob).toBeInstanceOf(Blob);
+
+    // Read generated CSV text from blob
+    const csvText = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsText(capturedBlob!);
+    });
+
+    // Header assertion
+    expect(csvText).toContain("التاريخ,نوع القيد,الاتجاه,المبلغ,الحالة,رقم الطلب,الوصف");
+    // Row assertions - contains Store A loaded row
+    expect(csvText).toContain("ord-1111-2222");
+    expect(csvText).toContain("150000");
+    // Row assertions - does NOT contain Store B row
+    expect(csvText).not.toContain("ord-bbbb-2222");
+
+
+    // Anchor filename assertions
+    expect(clickedAnchor).not.toBeNull();
+    expect(clickedAnchor!.download).toContain("store-a-uuid");
+    expect(clickedAnchor!.download.endsWith(".csv")).toBe(true);
+    expect(clickedAnchor!.download).toMatch(/^merchant_statement_store-a-uuid_\d+\.csv$/);
+
+    // Object URL revocation assertion
+    expect(revokeObjectURLMock).toHaveBeenCalledWith(mockUrl);
+
+
+    createElementSpy.mockRestore();
   });
 
   it("staff role (merchant_staff) has read-only finance visibility", async () => {
@@ -326,35 +382,47 @@ describe("MerchantFinance — Truthful States, Multi-Store Authority & Contract 
     expect(mockGetMerchantFinanceSummary).not.toHaveBeenCalled();
   });
 
-  it("handles multi-store switch isolation and deferred 3-query race conditions", async () => {
-    // 1. Initial render with Store A
+  it("real shared QueryClient race test: Store A -> Store B switch with late resolution", async () => {
+    const queryClient = createTestQueryClient();
+
     let resolveSummaryA!: (val: typeof mockSummaryA) => void;
     let resolveStatementA!: (val: typeof mockStatementA) => void;
     let resolvePayoutsA!: (val: typeof mockPayoutsA) => void;
 
-    mockGetMerchantFinanceSummary.mockReturnValue(new Promise((res) => { resolveSummaryA = res; }));
-    mockGetMerchantFinanceStatement.mockReturnValue(new Promise((res) => { resolveStatementA = res; }));
-    mockGetMerchantPayoutHistory.mockReturnValue(new Promise((res) => { resolvePayoutsA = res; }));
+    mockGetMerchantFinanceSummary.mockImplementation((id: string) => {
+      if (id === "store-a-uuid") {
+        return new Promise((res) => { resolveSummaryA = res; });
+      }
+      return Promise.resolve(mockSummaryB);
+    });
 
-    const { rerender } = renderFinance();
+    mockGetMerchantFinanceStatement.mockImplementation((id: string) => {
+      if (id === "store-a-uuid") {
+        return new Promise((res) => { resolveStatementA = res; });
+      }
+      return Promise.resolve(mockStatementB);
+    });
 
-    // Store A queries launched
+    mockGetMerchantPayoutHistory.mockImplementation((id: string) => {
+      if (id === "store-a-uuid") {
+        return new Promise((res) => { resolvePayoutsA = res; });
+      }
+      return Promise.resolve(mockPayoutsB);
+    });
+
+    // 1. Initial render with Store A using shared queryClient
+    const { rerender } = renderFinance(queryClient);
+
     expect(mockGetMerchantFinanceSummary).toHaveBeenCalledWith("store-a-uuid");
 
-    // 2. User switches to Store B while Store A is still pending
-    mockGetMerchantFinanceSummary.mockResolvedValue(mockSummaryB);
-    mockGetMerchantFinanceStatement.mockResolvedValue(mockStatementB);
-    mockGetMerchantPayoutHistory.mockResolvedValue(mockPayoutsB);
-
+    // 2. User switches to Store B while Store A requests are still pending
     mockCurrentMerchant.data = {
       merchant_id: "store-b-uuid",
       role: "owner",
       merchants: { id: "store-b-uuid", display_name: "متجر البصرة", status: "active" },
     };
 
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false, gcTime: 0 } },
-    });
+    // Rerender using the exact same QueryClient instance
     rerender(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter initialEntries={["/merchant/finance"]}>
@@ -376,7 +444,7 @@ describe("MerchantFinance — Truthful States, Multi-Store Authority & Contract 
     resolveStatementA(mockStatementA);
     resolvePayoutsA(mockPayoutsA);
 
-    // 5. Store B view remains pure and unaltered
+    // 5. Store B view remains pure and unaltered under the same cache
     await waitFor(() => {
       expect(screen.getByText(formatPrice(80000))).toBeInTheDocument();
       expect(screen.getByText(formatPrice(175000))).toBeInTheDocument();
@@ -386,5 +454,218 @@ describe("MerchantFinance — Truthful States, Multi-Store Authority & Contract 
       expect(screen.queryByText(/payout-batch-1/)).not.toBeInTheDocument();
     });
   });
-});
 
+  it("late rejection race test: Store A requests reject after switch to Store B", async () => {
+    const queryClient = createTestQueryClient();
+
+    let rejectSummaryA!: (err: Error) => void;
+    let rejectStatementA!: (err: Error) => void;
+    let rejectPayoutsA!: (err: Error) => void;
+
+    // Attach catch handlers internally in the test promise tracking to prevent unhandled rejection warnings
+    const summaryPromiseA = new Promise<typeof mockSummaryA>((_, rej) => { rejectSummaryA = rej; });
+    summaryPromiseA.catch(() => {});
+    const statementPromiseA = new Promise<typeof mockStatementA>((_, rej) => { rejectStatementA = rej; });
+    statementPromiseA.catch(() => {});
+    const payoutsPromiseA = new Promise<typeof mockPayoutsA>((_, rej) => { rejectPayoutsA = rej; });
+    payoutsPromiseA.catch(() => {});
+
+    mockGetMerchantFinanceSummary.mockImplementation((id: string) => {
+      if (id === "store-a-uuid") return summaryPromiseA;
+      return Promise.resolve(mockSummaryB);
+    });
+
+    mockGetMerchantFinanceStatement.mockImplementation((id: string) => {
+      if (id === "store-a-uuid") return statementPromiseA;
+      return Promise.resolve(mockStatementB);
+    });
+
+    mockGetMerchantPayoutHistory.mockImplementation((id: string) => {
+      if (id === "store-a-uuid") return payoutsPromiseA;
+      return Promise.resolve(mockPayoutsB);
+    });
+
+    // 1. Initial render with Store A
+    const { rerender } = renderFinance(queryClient);
+
+    // 2. Switch to Store B while Store A requests are pending
+    mockCurrentMerchant.data = {
+      merchant_id: "store-b-uuid",
+      role: "owner",
+      merchants: { id: "store-b-uuid", display_name: "متجر البصرة", status: "active" },
+    };
+
+    // Rerender with the exact same QueryClient
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/finance"]}>
+          <MerchantFinance />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // 3. Store B loads and renders successfully
+    await waitFor(() => {
+      expect(screen.getByText(formatPrice(80000))).toBeInTheDocument();
+      expect(screen.getByText(formatPrice(175000))).toBeInTheDocument();
+      expect(screen.getByText(/ord-bbbb/)).toBeInTheDocument();
+      expect(screen.getByText(/payout-b/)).toBeInTheDocument();
+    });
+
+    // 4. Reject Store A requests afterward
+    rejectSummaryA(new Error("Store A summary network error"));
+    rejectStatementA(new Error("Store A statement server error"));
+    rejectPayoutsA(new Error("Store A payouts timeout"));
+
+    // 5. Store B data and UI state remain unchanged; no errors appear
+    await waitFor(() => {
+      expect(screen.getByText(formatPrice(80000))).toBeInTheDocument();
+      expect(screen.getByText(formatPrice(175000))).toBeInTheDocument();
+      expect(screen.getByText(/ord-bbbb/)).toBeInTheDocument();
+      expect(screen.getByText(/payout-b/)).toBeInTheDocument();
+    });
+
+    expect(screen.queryByTestId("finance-summary-error")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("statement-error")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("payout-error")).not.toBeInTheDocument();
+    expect(screen.queryByText("تعذر تحميل ملخص المالية للمتجر الحالي.")).not.toBeInTheDocument();
+  });
+
+  it("filter and pagination reset proof: switching store synchronously resets date inputs, status, and pagination", async () => {
+    const queryClient = createTestQueryClient();
+
+    // 1. Initial render with Store A
+    const { rerender } = renderFinance(queryClient);
+
+    await waitFor(() => {
+      expect(screen.getByText(formatPrice(150000))).toBeInTheDocument();
+      expect(screen.queryByTestId("statement-loading")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("payout-loading")).not.toBeInTheDocument();
+    });
+
+    // 2. Modify Store A local state
+    const fromInput = screen.getByLabelText("من تاريخ") as HTMLInputElement;
+    const toInput = screen.getByLabelText("إلى تاريخ") as HTMLInputElement;
+    fireEvent.change(fromInput, { target: { value: "2026-05-01" } });
+    fireEvent.change(toInput, { target: { value: "2026-05-15" } });
+
+    // Click "قابل للدفع" status filter
+    const payableFilterBtn = screen.getByRole("button", { name: "قابل للدفع" });
+    fireEvent.click(payableFilterBtn);
+
+    // Wait for statement query after filter change to settle and both pagination controls to be ready
+    await waitFor(() => {
+      expect(screen.queryByTestId("statement-loading")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("payout-loading")).not.toBeInTheDocument();
+      const nextButtons = screen.getAllByRole("button", { name: "التالي" });
+      expect(nextButtons).toHaveLength(2);
+      expect(nextButtons[0]).not.toBeDisabled();
+      expect(nextButtons[1]).not.toBeDisabled();
+    });
+
+    const nextButtons = screen.getAllByRole("button", { name: "التالي" });
+    // Advance statement pagination (total: 45, limit: 20)
+    fireEvent.click(nextButtons[0]);
+
+    // Advance payout pagination (total: 25, limit: 10)
+    fireEvent.click(nextButtons[1]);
+
+    // Verify Store A has modified values
+    expect(fromInput.value).toBe("2026-05-01");
+    expect(toInput.value).toBe("2026-05-15");
+
+
+    // 3. Switch to Store B
+    mockGetMerchantFinanceSummary.mockResolvedValue(mockSummaryB);
+    mockGetMerchantFinanceStatement.mockResolvedValue(mockStatementB);
+    mockGetMerchantPayoutHistory.mockResolvedValue(mockPayoutsB);
+
+    mockCurrentMerchant.data = {
+      merchant_id: "store-b-uuid",
+      role: "owner",
+      merchants: { id: "store-b-uuid", display_name: "متجر البصرة", status: "active" },
+    };
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/finance"]}>
+          <MerchantFinance />
+        </MemoryRouter>
+      </QueryClientProvider>
+    );
+
+    // 4. Assert that Store B workspace has synchronously reset all local state
+    await waitFor(() => {
+      expect(screen.getByText(formatPrice(80000))).toBeInTheDocument();
+    });
+
+    const fromInputB = screen.getByLabelText("من تاريخ") as HTMLInputElement;
+    const toInputB = screen.getByLabelText("إلى تاريخ") as HTMLInputElement;
+    expect(fromInputB.value).toBe("");
+    expect(toInputB.value).toBe("");
+
+    // Assert that Store B API calls contained only B's merchant ID and default pagination/filters
+    const lastStatementCall = mockGetMerchantFinanceStatement.mock.calls.at(-1);
+    expect(lastStatementCall?.[0]).toBe("store-b-uuid");
+    expect(lastStatementCall?.[1]).toEqual({
+      limit: 20,
+      offset: 0,
+      status: undefined,
+      from: undefined,
+      to: undefined,
+    });
+
+    const lastPayoutCall = mockGetMerchantPayoutHistory.mock.calls.at(-1);
+    expect(lastPayoutCall?.[0]).toBe("store-b-uuid");
+    expect(lastPayoutCall?.[1]).toEqual({
+      limit: 10,
+      offset: 0,
+      from: undefined,
+      to: undefined,
+    });
+  });
+
+  it("retry isolation: retrying one failed section refetches only that section for current merchant", async () => {
+    // 1. Initial load for Store B with summary error, statement and payout success
+    mockGetMerchantFinanceSummary.mockRejectedValue(new Error("Network error on summary"));
+    mockGetMerchantFinanceStatement.mockResolvedValue(mockStatementB);
+    mockGetMerchantPayoutHistory.mockResolvedValue(mockPayoutsB);
+
+    mockCurrentMerchant.data = {
+      merchant_id: "store-b-uuid",
+      role: "owner",
+      merchants: { id: "store-b-uuid", display_name: "متجر البصرة", status: "active" },
+    };
+
+    renderFinance();
+
+    // Summary fails, statement & payouts succeed
+    await waitFor(() => {
+      expect(screen.getByTestId("finance-summary-error")).toBeInTheDocument();
+      expect(screen.getByText(/ord-bbbb/)).toBeInTheDocument();
+      expect(screen.getByText(/payout-b/)).toBeInTheDocument();
+    });
+
+    const summaryCallsBefore = mockGetMerchantFinanceSummary.mock.calls.length;
+    const statementCallsBefore = mockGetMerchantFinanceStatement.mock.calls.length;
+    const payoutCallsBefore = mockGetMerchantPayoutHistory.mock.calls.length;
+
+    // 2. Now summary retry succeeds
+    mockGetMerchantFinanceSummary.mockResolvedValue(mockSummaryB);
+
+    const retryBtn = screen.getByRole("button", { name: /إعادة المحاولة/ });
+    fireEvent.click(retryBtn);
+
+    // 3. Summary succeeds and displays data
+    await waitFor(() => {
+      expect(screen.getByTestId("finance-summary-cards")).toBeInTheDocument();
+      expect(screen.getByText(formatPrice(80000))).toBeInTheDocument();
+    });
+
+    // 4. Verify only summary was refetched, statement and payouts were NOT refetched
+    expect(mockGetMerchantFinanceSummary.mock.calls.length).toBe(summaryCallsBefore + 1);
+    expect(mockGetMerchantFinanceSummary.mock.calls.at(-1)?.[0]).toBe("store-b-uuid");
+    expect(mockGetMerchantFinanceStatement.mock.calls.length).toBe(statementCallsBefore);
+    expect(mockGetMerchantPayoutHistory.mock.calls.length).toBe(payoutCallsBefore);
+  });
+});
