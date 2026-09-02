@@ -2,55 +2,90 @@
 
 ## Task
 
-`DILMART-CANONICAL-REPOSITORY-GOVERNANCE-SYNC-001`
+`DILMART-PHASE-3C-MERCHANT-CATALOG-MULTI-STORE-AUTHORITY-001`
 
 ## Branch
 
-`governance/canonical-repository-authority-sync` (Merged & Deleted)
+`frontend/dilmart-merchant-catalog-operations`
 
-## PR
+## Target Base
 
-PR `#14` — https://github.com/dilmart-info/Dilmart/pull/14 (Merged & Closed)
+`main` (`c4851b8477dfffe8884ec85e9b04d5c16447e066`)
 
 ## Status
 
 ```text
-PHASE_3B_MERGED
-PR_13_CLOSED
-CANONICAL_REPOSITORY_GOVERNANCE_SYNC_MERGED
-PR_14_CLOSED
-PR_14_SOURCE_HEAD_EBDCADD
-PR_14_MERGE_SHA_9A37E19
-MAIN_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-NO_RUNTIME_CHANGE
+PR_16_DRAFT_AWAITING_REVIEW
+PHASE_3C_SUPERVISOR_GAPS_RESOLVED
+MERCHANT_CATALOG_MULTI_STORE_AUTHORITY_VERIFIED
+SYNCHRONOUS_RENDER_REF_ASSIGNMENT_VERIFIED
+CAPTURED_MERCHANT_RACE_GUARDS_VERIFIED
+DEFERRED_RACE_AND_REJECTION_TESTS_PASS
+BACKEND_STRICT_MERCHANT_SIGNATURES_ENFORCED
+ACTOR_MERCHANT_FALLBACKS_REMOVED
+DTO_VALIDATION_PIPE_HTTP_400_VERIFIED
+CONTROLLER_BOUNDARY_HTTP_400_AND_403_VERIFIED
+SERVICE_LAYER_AUTHORITY_AND_ISOLATION_VERIFIED
+UPDATE_PRODUCT_STATUS_DTO_ADMIN_COMPAT_AND_RUNTIME_MERCHANT_REQUIREMENT_VERIFIED
+SCOPED_QUERIES_FAIL_CLOSED_VERIFIED
+ROLE_AUTHORITY_GATING_VERIFIED
+CROSS_STORE_MUTATION_PREVENTION_VERIFIED
+TARGETED_TESTS_PASS
+FRONTEND_BUILD_PASS
+BACKEND_BUILD_PASS
+CI_GUARDS_PASS
+MOBILE_BOUNDARY_PASS
 NO_DB_MIGRATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+NO_DEPLOYMENT_PERFORMED
 ```
 
-## Completed Scope
+## Scope & Supervisor Remediation Summary
 
-- Synchronize active repository and deployment governance documents to canonical `dilmart-info/Dilmart`.
-- Add fail-closed static governance guard in CI test suite for active authority files.
-- Align `docs/CANONICAL_WORKSPACE.md` with real operator-agnostic and `scripts/build-production.ps1` rules.
-- Maintain strict preservation of historical evidence, audit records, and PR artifacts.
-- No runtime changes, no DB migrations, no deployment.
+1. **Frontend Synchronous Ref Assignment & Race Condition Isolation (`ProductsPage.tsx` & `ProductImport.tsx`):**
+   - In `ProductsPage.tsx`, updated `currentMerchantIdRef.current = context.merchantId` synchronously during render body, completely eliminating the render-to-effect race window.
+   - In `ProductsPage.tsx`, guarded all mutation callbacks (`onSuccess` and `onError`) for Quick Add, Bulk Actions, Status Updates, and Product Duplication with `currentMerchantIdRef.current === data.targetMerchantId`.
+   - In `ProductImport.tsx`, captured `targetMerchantId` in `previewMutation` and `confirmMutation` error handlers, suppressing `onError` error toasts when `activeMerchantIdRef.current !== err.targetMerchantId`.
+   - Proved with deferred async race tests (resolution and rejection) in `ProductsPage.test.tsx` and `ProductImport.test.tsx` that responses from Store A resolving/rejecting after switching to Store B cannot mutate, close, toast for, or clear Store B UI state or selections.
 
-## Immediately Completed Development Phase
+2. **DTO ValidationPipe & Controller Boundary Rejections (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`):**
+   - Added real `ValidationPipe` DTO validation tests asserting HTTP 400 (`BadRequestException`) on missing `merchant_id` across `MerchantQuickAddProductDto`, `MerchantBulkActionDto`, `MerchantProductDuplicateDto`, `MerchantProductImportPreviewDto`, and `MerchantProductImportConfirmDto`.
+   - Asserted HTTP 400 on malformed UUID strings (`merchant_id: "not-a-valid-uuid"`), nested product IDs (`product_ids: ["not-a-uuid"]`), category IDs (`category_id: "not-a-uuid"`), and import IDs (`import_id: "not-a-uuid"`).
+   - Tested controller boundaries on `MerchantProductsController` and `ProductsController` rejecting missing `merchant_id` / missing payload with HTTP 400, and rejecting unauthorized/inactive merchants with HTTP 403 (`ForbiddenException`).
+   - Maintained clear architectural distinction between DTO `ValidationPipe` checks, Controller boundary checks, and Service layer authority execution.
+
+3. **`UpdateProductStatusDto` Admin Compatibility & Runtime Requirement:**
+   - Kept `UpdateProductStatusDto.merchant_id` as `@IsOptional() @IsUUID("4")` on the DTO class for platform admin compatibility.
+   - Documented and strictly enforced that merchant roles require `merchant_id` at runtime in `ProductsService.resolveMerchantForActor` where omission throws HTTP 400 (`BadRequestException`).
+
+4. **Accurate Test Count & Verification:**
+   - Frontend Vitest: 97 test files (898 tests) PASS (100% green).
+   - Frontend Catalog Scoped Tests: 39 tests PASS (`ProductsPage.test.tsx` [33] + `ProductImport.test.tsx` [6]).
+   - Backend Authority Suite: 12 test suites (32 sub-assertions) PASS (`backend/tests/merchant-catalog-multi-store-authority.test.mjs`).
+   - Backend Product Import & Readiness Suite: 292 tests PASS (`npm run test` in backend).
+   - CI Guards: 99 tests PASS across 3 test files (`npm run test:ci-guards`).
+   - Architecture Guard: 0 direct supabase violations (`npm run arch:guard`).
+   - Auth Lifecycle Guard: PASS (`npm run auth:guard`).
+   - Native Brand Assets: PASS (`npm run native:assets:check`).
+   - Mobile Build & Boundary: PASS with 0 forbidden modules (`npm run build:mobile; npm run mobile:boundary`).
+   - Frontend & Backend Builds: Clean exit code 0.
+
+5. **Invariants Maintained:**
+   - No database migrations created or executed.
+   - No deployments performed.
+   - Draft PR #16 remains open and untouched in Draft state.
+
+## Immediately Completed Governance / Preceding Phases
+
+### Canonical Repository Governance Sync
+- **Task:** `DILMART-CANONICAL-REPOSITORY-GOVERNANCE-SYNC-001`
+- **PR:** [#14](https://github.com/dilmart-info/Dilmart/pull/14)
+- **Merge SHA:** `9a37e19`
+- **Merge Status:** Merged & Closed
 
 ### Phase 3B: Merchant Order Detail, Decision Queue, and New Order Operations
 - **PR:** [#13](https://github.com/dilmart-info/Dilmart/pull/13)
 - **Merge SHA:** `57c8f6b21f95a11403d3928918bbc6c0c78b2e2c`
 - **Merge Status:** Merged & Closed
-- **Summary:** Backend canonical 404 contract, decision eligibility gating, multi-store event isolation with generation/cancellation-safe refetch race guards, and Jenni delivery integration / sticker authority alignment.
-
-## Next State
-
-- The next development phase has not yet been selected in this document.
-- OTP work has not resumed.
-- Product Readiness migrations remain unapplied unless separately proven.
-- No deployment was performed by this governance closure.
 
 ---
 

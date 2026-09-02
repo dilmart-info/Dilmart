@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { ProductsService } from "./products.service";
-import { ListProductsQueryDto, ProductScopeQueryDto, UpsertProductDto } from "./products.dto";
+import { ListProductsQueryDto, ProductScopeQueryDto, UpdateProductStatusDto, UpsertProductDto } from "./products.dto";
 import { Roles } from "../../common/authz/roles.decorator";
 import { CurrentActor } from "../../common/authz/actor-context.decorator";
 
@@ -38,8 +38,12 @@ export class ProductsController {
 
   @Post()
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager")
-  create(@Body() payload: UpsertProductDto, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
-    return this.productsService.createProduct(payload, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
+  create(
+    @Body() payload: UpsertProductDto,
+    @Query() query: ProductScopeQueryDto,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    return this.productsService.createProduct(payload, { ...query, actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
 
   @Post(":id")
@@ -57,7 +61,7 @@ export class ProductsController {
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager")
   updateStatus(
     @Param("id") id: string,
-    @Body() payload: { is_active: boolean; merchant_id?: string },
+    @Body() payload: UpdateProductStatusDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
     return this.productsService.updateProductStatus(id, { ...payload, actor_role: actor?.actorRole, actor_id: actor?.actorId });

@@ -240,6 +240,7 @@ test("Bulk activate writes all three public fields atomically and makes exactly 
   const { service, state } = makeService([p1, p2]);
 
   const result = await service.performBulkAction({
+    merchant_id: MERCHANT_ID,
     product_ids: ["prod-1", "prod-2"],
     action: "activate",
   }, ACTOR);
@@ -256,6 +257,7 @@ test("Bulk deactivate sets is_active=false", async () => {
   const { service, state } = makeService([p1, p2]);
 
   const result = await service.performBulkAction({
+    merchant_id: MERCHANT_ID,
     product_ids: ["prod-1", "prod-2"],
     action: "deactivate",
   }, ACTOR);
@@ -290,7 +292,7 @@ test("Failed bulk readiness validation performs no update if one product lacks a
   const { service, state } = makeService([p1, p2]);
 
   await assert.rejects(
-    () => service.performBulkAction({ product_ids: ["prod-1", "prod-2"], action: "activate" }, ACTOR),
+    () => service.performBulkAction({ merchant_id: MERCHANT_ID, product_ids: ["prod-1", "prod-2"], action: "activate" }, ACTOR),
     (error) => error?.response?.code === "PRODUCT_NOT_READY" && error?.response?.product_id === "prod-2",
   );
   assert.equal(state.updates.length, 0);
@@ -301,8 +303,8 @@ test("Merchant scope prevents cross-merchant updates in bulk actions", async () 
   const { service, state } = makeService([p1]);
 
   await assert.rejects(
-    () => service.performBulkAction({ product_ids: ["prod-1"], action: "activate" }, ACTOR),
-    (error) => error.status === 403 || error.message.includes("scope"),
+    () => service.performBulkAction({ merchant_id: MERCHANT_ID, product_ids: ["prod-1"], action: "activate" }, ACTOR),
+    (error) => error.status === 403 || error.message.includes("scope") || error.message.includes("Forbidden"),
   );
   assert.equal(state.updates.length, 0);
 });
@@ -515,6 +517,7 @@ test("QuickAddProduct with an explicit is_active=true and a READY payload activa
   const { service, state } = makeService();
 
   await service.quickAddProduct({
+    merchant_id: MERCHANT_ID,
     name: "سريع نشط",
     category_id: CATEGORY_ID,
     price: 100,
@@ -533,6 +536,7 @@ test("QuickAddProduct with is_active=false always creates a draft", async () => 
   const { service, state } = makeService();
 
   await service.quickAddProduct({
+    merchant_id: MERCHANT_ID,
     name: "سريع معطل",
     category_id: CATEGORY_ID,
     price: 100,
@@ -548,6 +552,7 @@ test("REGRESSION: minimal QuickAddProduct (name/category/price/stock only) canno
   const { service, state } = makeService();
 
   const created = await service.quickAddProduct({
+    merchant_id: MERCHANT_ID,
     name: "سريع ناقص",
     category_id: CATEGORY_ID,
     price: 100,
@@ -567,6 +572,7 @@ test("REGRESSION: QuickAddProduct explicitly asking to activate an incomplete pr
 
   await assert.rejects(
     () => service.quickAddProduct({
+      merchant_id: MERCHANT_ID,
       name: "سريع ناقص مفعّل",
       category_id: CATEGORY_ID,
       price: 100,
@@ -588,6 +594,7 @@ test("QuickAddProduct without is_active activates only when the payload is fully
   const { service, state } = makeService();
 
   await service.quickAddProduct({
+    merchant_id: MERCHANT_ID,
     name: "سريع مكتمل",
     category_id: CATEGORY_ID,
     price: 100,
@@ -613,7 +620,7 @@ test("REGRESSION: duplicating a published product leaves the copy inactive, unpu
   });
   const { service, state } = makeService([source]);
 
-  await service.duplicateProduct("prod-1", ACTOR);
+  await service.duplicateProduct("prod-1", MERCHANT_ID, ACTOR);
 
   assert.equal(state.inserts.length, 1);
   assert.equal(state.inserts[0].is_active, false);

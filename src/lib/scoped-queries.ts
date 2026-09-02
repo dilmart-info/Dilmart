@@ -37,21 +37,7 @@ export async function getScopedProducts(context: ScopedContext, filters: QueryFi
     page: filters.page,
     readiness: filters.readiness,
   };
-  const response = await apiClient.listScopedProducts(payload).catch((error: any) => {
-    // If merchant_id scope was explicitly rejected by the server, retry without it
-    // so the actor's server-resolved scope is used instead.
-    const msg = String(error?.message ?? "");
-    if (context.scope === "merchant" && payload.merchant_id && msg.includes("Merchant scope is not allowed")) {
-      return apiClient.listScopedProducts({
-        search: filters.search,
-        offset: filters.offset,
-        limit: filters.limit,
-        page: filters.page,
-        readiness: filters.readiness,
-      });
-    }
-    throw error;
-  });
+  const response = await apiClient.listScopedProducts(payload);
 
   if (Array.isArray(response)) {
     return {

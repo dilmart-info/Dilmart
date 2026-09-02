@@ -27,6 +27,15 @@ vi.mock("sonner", () => ({
   toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() },
 }));
 
+let mockCurrentMerchant = {
+  data: { merchant_id: "merchant-123", role: "owner" },
+  isLoading: false,
+};
+
+vi.mock("@/hooks/use-current-merchant", () => ({
+  useCurrentMerchant: () => mockCurrentMerchant,
+}));
+
 import ProductsPage from "./ProductsPage";
 
 const context = { scope: "merchant" as const, merchantId: "merchant-123" };
@@ -63,6 +72,10 @@ function renderPageWithRouter(customContext = context, initialEntries = ["/produ
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockCurrentMerchant = {
+    data: { merchant_id: "merchant-123", role: "owner" },
+    isLoading: false,
+  };
   getCategoriesAdminList.mockResolvedValue([]);
   getAdminMerchants.mockResolvedValue([]);
 });
@@ -901,6 +914,7 @@ describe("ProductsPage - Server-Side Pagination and Exact Total Count", () => {
 
     // Verify payload strictly contains prod-page2-1 and NEVER hidden/stale prod-page1-1 or prod-page1-2
     expect(merchantBulkProductAction).toHaveBeenLastCalledWith({
+      merchant_id: "merchant-123",
       product_ids: ["prod-page2-1"],
       action: "activate",
       payload: {},
@@ -1093,3 +1107,592 @@ describe("ProductsPage - Data Isolation, Neutral Stock & Responsive UX", () => {
   });
 });
 
+describe("ProductsPage - Merchant Staff Role Gating & Store Change Isolation", () => {
+  it("STAFF READ-ONLY: staff account hides Add, Import, Quick Add, Bulk Actions, and displays 'عرض فقط'", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "merchant-123", role: "staff" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-staff-1",
+        name: "منتج الموظف",
+        price: 5000,
+        stock: 20,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+        categories: { name: "عطور" },
+        readiness: { is_ready: true, score: 100, checklist: [] },
+      },
+    ]);
+
+    renderPage({ scope: "merchant", merchantId: "merchant-123" });
+
+    await screen.findByText("منتج الموظف");
+    expect(screen.queryByRole("button", { name: "إضافة منتج" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "استيراد CSV" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "إضافة سريعة" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "تطبيق" })).toBeNull();
+    expect(screen.getAllByText("عرض فقط").length).toBeGreaterThan(0);
+  });
+
+  it("DEFERRED QUICK ADD RACE: Store A response resolving after switch to Store B does not close Store B modal or clear form", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    getCategoriesAdminList.mockResolvedValue([
+      { id: "cat-1", name: "العطور", is_active: true, is_leaf: true, parent_id: null },
+    ]);
+    listScopedProducts.mockResolvedValue([]);
+
+    let resolveStoreAQuickAdd!: (val: unknown) => void;
+    const storeAPromise = new Promise((resolve) => {
+      resolveStoreAQuickAdd = resolve;
+    });
+    quickAddMerchantProduct.mockReturnValue(storeAPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Open Quick Add in Store A
+    const quickAddBtn = await screen.findByRole("button", { name: "إضافة سريعة" });
+    fireEvent.click(quickAddBtn);
+
+    // Fill Quick Add inputs
+    const nameInput = screen.getByPlaceholderText("الاسم");
+    fireEvent.change(nameInput, { target: { value: "منتج متجر أ" } });
+
+    const priceInput = screen.getByPlaceholderText("السعر");
+    fireEvent.change(priceInput, { target: { value: "5000" } });
+
+    await waitFor(() => expect(screen.getByRole("option", { name: "العطور" })).toBeTruthy());
+    const categorySelect = screen.getByDisplayValue("القسم");
+    fireEvent.change(categorySelect, { target: { value: "cat-1" } });
+
+    // Click Save
+    const saveBtn = screen.getByRole("button", { name: "حفظ المنتج" });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    expect(quickAddMerchantProduct).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "منتج متجر أ", merchant_id: "store-a" }),
+    );
+
+    // Switch store to Store B while request is pending
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // In Store B, open Quick Add again and type something
+    const quickAddBtnB = await screen.findByRole("button", { name: "إضافة سريعة" });
+    fireEvent.click(quickAddBtnB);
+
+    const nameInputB = screen.getByPlaceholderText("الاسم") as HTMLInputElement;
+    fireEvent.change(nameInputB, { target: { value: "منتج متجر ب الجديد" } });
+
+    // Now resolve the deferred Store A response
+    await act(async () => {
+      resolveStoreAQuickAdd({ id: "prod-a-new", name: "منتج متجر أ", is_active: true });
+    });
+
+    // Verify Store B modal is STILL open with user's typed value, and no toast for Store A
+    expect(screen.getByPlaceholderText("الاسم")).toBeTruthy();
+    expect((screen.getByPlaceholderText("الاسم") as HTMLInputElement).value).toBe("منتج متجر ب الجديد");
+    expect(toast.success).not.toHaveBeenCalledWith("تمت إضافة المنتج بسرعة");
+    expect(toast.success).not.toHaveBeenCalledWith("تمت إضافة المنتج كمسودة — أكمل الصورة والوصف لتفعيله");
+  });
+
+  it("DEFERRED QUICK ADD REJECTION RACE: Store A error after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    getCategoriesAdminList.mockResolvedValue([
+      { id: "cat-1", name: "العطور", is_active: true, is_leaf: true, parent_id: null },
+    ]);
+    listScopedProducts.mockResolvedValue([]);
+
+    let rejectStoreAQuickAdd!: (err: unknown) => void;
+    const storeAPromise = new Promise((_, reject) => {
+      rejectStoreAQuickAdd = reject;
+    });
+    storeAPromise.catch(() => {});
+    quickAddMerchantProduct.mockReturnValue(storeAPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    const quickAddBtn = await screen.findByRole("button", { name: "إضافة سريعة" });
+    fireEvent.click(quickAddBtn);
+
+    const nameInput = screen.getByPlaceholderText("الاسم");
+    fireEvent.change(nameInput, { target: { value: "منتج متجر أ" } });
+    const priceInput = screen.getByPlaceholderText("السعر");
+    fireEvent.change(priceInput, { target: { value: "5000" } });
+    await waitFor(() => expect(screen.getByRole("option", { name: "العطور" })).toBeTruthy());
+    const categorySelect = screen.getByDisplayValue("القسم");
+    fireEvent.change(categorySelect, { target: { value: "cat-1" } });
+
+    const saveBtn = screen.getByRole("button", { name: "حفظ المنتج" });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Reject Store A quick add
+    await act(async () => {
+      rejectStoreAQuickAdd(new Error("فشل إضافة منتج متجر أ"));
+    });
+
+    expect(toast.error).not.toHaveBeenCalledWith("فشل إضافة منتج متجر أ");
+    expect(toast.error).not.toHaveBeenCalledWith("تعذر الإضافة السريعة");
+  });
+
+  it("DEFERRED BULK ACTION RACE: Store A response resolving after switch to Store B preserves Store B selection and suppresses Store A toast", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    let resolveStoreABulk!: (val: unknown) => void;
+    const storeABulkPromise = new Promise((resolve) => {
+      resolveStoreABulk = resolve;
+    });
+    merchantBulkProductAction.mockReturnValue(storeABulkPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Select Store A row
+    const checkboxes = screen.getAllByRole("checkbox");
+    fireEvent.click(checkboxes[1]);
+
+    // Select bulk action "deactivate"
+    const actionSelect = screen.getByDisplayValue("اختر عملية جماعية");
+    fireEvent.change(actionSelect, { target: { value: "deactivate" } });
+
+    // Click Apply
+    const applyBtn = screen.getByRole("button", { name: "تنفيذ" });
+    await act(async () => {
+      fireEvent.click(applyBtn);
+    });
+
+    expect(merchantBulkProductAction).toHaveBeenCalledWith(
+      expect.objectContaining({ merchant_id: "store-a", action: "deactivate" }),
+    );
+
+    // Switch store to Store B while bulk action is pending
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // In Store B, select Store B product and choose action "activate"
+    const checkboxesB = screen.getAllByRole("checkbox");
+    fireEvent.click(checkboxesB[1]);
+    expect((checkboxesB[1] as HTMLInputElement).checked).toBe(true);
+
+    const actionSelectB = screen.getByDisplayValue("اختر عملية جماعية") as HTMLSelectElement;
+    fireEvent.change(actionSelectB, { target: { value: "activate" } });
+    expect(actionSelectB.value).toBe("activate");
+
+    // Resolve deferred Store A bulk response
+    await act(async () => {
+      resolveStoreABulk({ ok: true, affected: 1 });
+    });
+
+    // Verify toast is not called for Store A
+    expect(toast.success).not.toHaveBeenCalledWith("تم تنفيذ العملية الجماعية");
+
+    // Verify Store B product selection and selected action remain intact
+    expect((checkboxesB[1] as HTMLInputElement).checked).toBe(true);
+    expect(actionSelectB.value).toBe("activate");
+  });
+
+  it("DEFERRED BULK ACTION REJECTION RACE: Store A error after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    let rejectStoreABulk!: (err: unknown) => void;
+    const storeABulkPromise = new Promise((_, reject) => {
+      rejectStoreABulk = reject;
+    });
+    storeABulkPromise.catch(() => {});
+    merchantBulkProductAction.mockReturnValue(storeABulkPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+    const checkboxes = screen.getAllByRole("checkbox");
+    fireEvent.click(checkboxes[1]);
+    const actionSelect = screen.getByDisplayValue("اختر عملية جماعية");
+    fireEvent.change(actionSelect, { target: { value: "deactivate" } });
+    const applyBtn = screen.getByRole("button", { name: "تنفيذ" });
+    await act(async () => {
+      fireEvent.click(applyBtn);
+    });
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Reject Store A bulk action
+    await act(async () => {
+      rejectStoreABulk(new Error("فشل تنفيذ العملية الجماعية لمتجر أ"));
+    });
+
+    expect(toast.error).not.toHaveBeenCalledWith("فشل تنفيذ العملية الجماعية لمتجر أ");
+    expect(toast.error).not.toHaveBeenCalledWith("تعذر تنفيذ العملية الجماعية");
+  });
+
+  it("DEFERRED DUPLICATE RACE: Store A duplicate response after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: false,
+        is_published: false,
+        visibility_status: "private",
+      },
+    ]);
+
+    let resolveDuplicateA!: (val: unknown) => void;
+    duplicateMerchantProduct.mockReturnValue(
+      new Promise((resolve) => {
+        resolveDuplicateA = resolve;
+      }),
+    );
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Click Duplicate in Store A
+    const duplicateBtn = screen.getByTitle("نسخ المنتج");
+    await act(async () => {
+      fireEvent.click(duplicateBtn);
+    });
+
+    expect(duplicateMerchantProduct).toHaveBeenCalledWith("prod-a-1", "store-a");
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // Resolve deferred Store A duplicate
+    await act(async () => {
+      resolveDuplicateA({ id: "prod-a-copy", name: "نسخة منتج متجر أ" });
+    });
+
+    expect(toast.success).not.toHaveBeenCalledWith("تم نسخ المنتج");
+  });
+
+  it("DEFERRED STATUS UPDATE SUCCESS RACE: Store A status update resolving after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: false,
+        is_published: false,
+        visibility_status: "private",
+      },
+    ]);
+
+    let resolveStatusA!: (val: unknown) => void;
+    updateProductStatus.mockReturnValue(
+      new Promise((resolve) => {
+        resolveStatusA = resolve;
+      }),
+    );
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Click "تفعيل ونشر"
+    const activateBtn = screen.getByRole("button", { name: "تفعيل ونشر" });
+    await act(async () => {
+      fireEvent.click(activateBtn);
+    });
+
+    // Assert updateProductStatus received Store A's exact merchant context & parameters
+    expect(updateProductStatus).toHaveBeenCalledWith("prod-a-1", {
+      is_active: true,
+      merchant_id: "store-a",
+    });
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // Resolve deferred Store A status response
+    await act(async () => {
+      resolveStatusA({ ok: true });
+    });
+
+    // Verify Store A toast is suppressed
+    expect(toast.success).not.toHaveBeenCalledWith("تم نشر المنتج في المتجر");
+    expect(toast.success).not.toHaveBeenCalledWith("تم تعطيل المنتج");
+  });
+
+  it("DEFERRED STATUS UPDATE REJECTION RACE: Store A status error after switch to Store B does not toast in Store B", async () => {
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-a", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-a-1",
+        name: "منتج متجر أ",
+        price: 100,
+        stock: 5,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    let rejectStatusA!: (err: unknown) => void;
+    const statusAPromise = new Promise((_, reject) => {
+      rejectStatusA = reject;
+    });
+    statusAPromise.catch(() => {});
+    updateProductStatus.mockReturnValue(statusAPromise);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-a" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر أ");
+
+    // Click "تعطيل"
+    const deactivateBtn = screen.getByRole("button", { name: "تعطيل" });
+    await act(async () => {
+      fireEvent.click(deactivateBtn);
+    });
+
+    // Assert updateProductStatus received Store A's exact merchant context & parameters
+    expect(updateProductStatus).toHaveBeenCalledWith("prod-a-1", {
+      is_active: false,
+      merchant_id: "store-a",
+    });
+
+    // Switch store to Store B
+    mockCurrentMerchant = {
+      data: { merchant_id: "store-b", role: "owner" },
+      isLoading: false,
+    };
+    listScopedProducts.mockResolvedValue([
+      {
+        id: "prod-b-1",
+        name: "منتج متجر ب",
+        price: 200,
+        stock: 10,
+        is_active: true,
+        is_published: true,
+        visibility_status: "public",
+      },
+    ]);
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/products"]}>
+          <ProductsPage context={{ scope: "merchant", merchantId: "store-b" }} editPathBase="/products" />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("منتج متجر ب");
+
+    // Reject Store A status mutation
+    await act(async () => {
+      rejectStatusA(new Error("PRODUCT_NOT_READY: فشل تفعيل منتج متجر أ"));
+    });
+
+    // Verify neither the specific readiness error toast nor the fallback error toast is displayed in Store B
+    expect(toast.error).not.toHaveBeenCalledWith("لا يمكن تفعيل المنتج قبل استكمال متطلبات الجاهزية");
+    expect(toast.error).not.toHaveBeenCalledWith("تعذر تحديث حالة المنتج");
+  });
+});

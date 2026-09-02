@@ -263,7 +263,7 @@ for (const entry of MATRIX) {
       readyProduct({ id: "prod-2", slug: "slug-2", ...entry.productPatch }),
     ]);
     await assert.rejects(
-      () => service.performBulkAction({ product_ids: ["prod-1", "prod-2"], action: "activate" }, ACTOR),
+      () => service.performBulkAction({ merchant_id: MERCHANT_ID, product_ids: ["prod-1", "prod-2"], action: "activate" }, ACTOR),
       (error) => isNotReady(error) && error.response.product_id === "prod-2",
     );
     assert.equal(state.updates.length, 0);
@@ -275,6 +275,7 @@ for (const entry of MATRIX) {
       () =>
         service.quickAddProduct(
           {
+            merchant_id: MERCHANT_ID,
             name: "سريع",
             category_id: CATEGORY_ID,
             price: 100,
@@ -302,12 +303,13 @@ test("every activation path accepts the same fully ready product", async () => {
   assert.equal(status.state.updates[0].payload.is_active, true);
 
   const bulk = makeService([readyProduct({ id: "prod-1" })]);
-  await bulk.service.performBulkAction({ product_ids: ["prod-1"], action: "activate" }, ACTOR);
+  await bulk.service.performBulkAction({ merchant_id: MERCHANT_ID, product_ids: ["prod-1"], action: "activate" }, ACTOR);
   assert.equal(bulk.state.updates[0].payload.is_active, true);
 
   const quick = makeService();
   await quick.service.quickAddProduct(
     {
+      merchant_id: MERCHANT_ID,
       name: "سريع جاهز",
       category_id: CATEGORY_ID,
       price: 100,
@@ -323,7 +325,7 @@ test("every activation path accepts the same fully ready product", async () => {
 
 test("archival always leaves the product inactive, unpublished and archived", async () => {
   const bulk = makeService([readyProduct({ id: "prod-1", is_active: true, is_published: true, visibility_status: "public" })]);
-  await bulk.service.performBulkAction({ product_ids: ["prod-1"], action: "archive" }, ACTOR);
+  await bulk.service.performBulkAction({ merchant_id: MERCHANT_ID, product_ids: ["prod-1"], action: "archive" }, ACTOR);
   assert.deepEqual(
     {
       is_active: bulk.state.updates[0].payload.is_active,
@@ -578,7 +580,7 @@ test("bulk deactivate writes the full private triple and leaves archived product
   const archived = readyProduct({ id: "prod-2", slug: "s2", is_active: false, is_published: false, visibility_status: "archived" });
   const { service, state } = makeService([live, archived]);
 
-  await service.performBulkAction({ product_ids: ["prod-1", "prod-2"], action: "deactivate" }, ACTOR);
+  await service.performBulkAction({ merchant_id: MERCHANT_ID, product_ids: ["prod-1", "prod-2"], action: "deactivate" }, ACTOR);
 
   assert.equal(state.updates.length, 2);
   const byVisibility = Object.fromEntries(state.updates.map((u) => [u.payload.visibility_status, u]));
