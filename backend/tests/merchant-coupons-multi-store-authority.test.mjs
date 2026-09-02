@@ -9,6 +9,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from "@nestjs/common";
+import { APP_GUARD } from "@nestjs/core";
 import { Test } from "@nestjs/testing";
 import { CouponsService } from "../dist/modules/coupons/coupons.service.js";
 import { CouponsController } from "../dist/modules/coupons/coupons.controller.js";
@@ -17,11 +18,16 @@ import {
   UpsertCouponDto,
   ValidateCouponDto,
 } from "../dist/modules/coupons/coupons.dto.js";
+import { RolesGuard } from "../dist/common/authz/roles.guard.js";
+import { SupabaseActorResolverService } from "../dist/common/authz/supabase-actor-resolver.service.js";
 
 const STORE_A = "11111111-1111-4111-8111-111111111111";
 const STORE_B = "22222222-2222-4222-8222-222222222222";
 const STORE_STRICT = "33333333-3333-4333-8333-333333333333";
 const STORE_INACTIVE = "44444444-4444-4444-8444-444444444444";
+
+const COUPON_A_ID = "c0000000-1111-4111-8111-111111111111";
+const COUPON_B_ID = "c0000000-2222-4222-8222-222222222222";
 
 const USER_STORE_A_OWNER = "user-store-a-owner";
 const USER_STORE_A_MANAGER = "user-store-a-manager";
@@ -48,7 +54,7 @@ function makeHarness() {
     ],
     coupons: [
       {
-        id: "c-11111111-1111-4111-8111-111111111111",
+        id: COUPON_A_ID,
         code: "BAGHDAD10",
         discount_type: "percentage",
         value: 10,
@@ -60,7 +66,7 @@ function makeHarness() {
         created_at: "2026-05-01T10:00:00.000Z",
       },
       {
-        id: "c-22222222-2222-4222-8222-222222222222",
+        id: COUPON_B_ID,
         code: "BASRA5000",
         discount_type: "fixed",
         value: 5000,
@@ -78,9 +84,6 @@ function makeHarness() {
   const client = {
     from(table) {
       const filters = {};
-      let orderCol = null;
-      let orderAsc = true;
-      let limitVal = null;
       let isDelete = false;
       let isUpdate = false;
       let updatePayload = null;
@@ -97,13 +100,10 @@ function makeHarness() {
           filters[`!${col}`] = val;
           return builder;
         },
-        order(col, { ascending = true } = {}) {
-          orderCol = col;
-          orderAsc = ascending;
+        order(_col, { ascending = true } = {}) {
           return builder;
         },
-        limit(val) {
-          limitVal = val;
+        limit(_val) {
           return builder;
         },
         delete() {
@@ -117,7 +117,7 @@ function makeHarness() {
         },
         async insert(payload) {
           const row = {
-            id: payload.id || `c-${Math.random().toString(36).slice(2, 10)}`,
+            id: payload.id || `c0000000-${Math.random().toString(36).slice(2, 6)}-4000-8000-${Math.random().toString(36).slice(2, 14)}`,
             ...payload,
             created_at: new Date().toISOString(),
           };
@@ -180,7 +180,7 @@ function makeHarness() {
                 updated = r;
               }
             }
-            return Promise.resolve({ data: updated, error: null }).then(resolve, reject);
+            return Promise.resolve({ data: updated ? [updated] : [], error: null }).then(resolve, reject);
           }
 
           const matched = rows.filter((r) => {
@@ -364,7 +364,7 @@ test("3. Role Authority Gating — staff can list coupons, but is strictly forbi
   // Staff cannot delete coupons
   await assert.rejects(
     () =>
-      service.deleteCoupon("c-11111111-1111-4111-8111-111111111111", STORE_A, {
+      service.deleteCoupon(COUPON_A_ID, STORE_A, {
         actor_role: "merchant_staff",
         actor_id: USER_STORE_A_STAFF,
       }),
@@ -375,13 +375,11 @@ test("3. Role Authority Gating — staff can list coupons, but is strictly forbi
 test("4. Edit IDOR Closure — Store A owner cannot edit or transfer Store B's coupon", async () => {
   const { service, state } = makeHarness();
 
-  const storeBCouponId = "c-22222222-2222-4222-8222-222222222222";
-
   // Store A owner attempts to update Store B's coupon by passing its ID
   await assert.rejects(
     () =>
       service.upsertCoupon({
-        id: storeBCouponId,
+        id: COUPON_B_ID,
         code: "HIJACKED",
         discount_type: "fixed",
         value: 9999,
@@ -394,7 +392,7 @@ test("4. Edit IDOR Closure — Store A owner cannot edit or transfer Store B's c
   );
 
   // Verify Store B's coupon was NOT mutated
-  const storeBCoupon = state.coupons.find((c) => c.id === storeBCouponId);
+  const storeBCoupon = state.coupons.find((c) => c.id === COUPON_B_ID);
   assert.equal(storeBCoupon.code, "BASRA5000");
   assert.equal(storeBCoupon.value, 5000);
 });
@@ -405,7 +403,7 @@ test("5. Authoritative Deletion — proves actual row deletion; cross-store or m
   // Cross-store delete: Store A owner attempts to delete Store B's coupon
   await assert.rejects(
     () =>
-      service.deleteCoupon("c-22222222-2222-4222-8222-222222222222", STORE_A, {
+      service.deleteCoupon(COUPON_B_ID, STORE_A, {
         actor_role: "merchant_owner",
         actor_id: USER_STORE_A_OWNER,
       }),
@@ -416,7 +414,7 @@ test("5. Authoritative Deletion — proves actual row deletion; cross-store or m
   // Missing coupon delete returns 404
   await assert.rejects(
     () =>
-      service.deleteCoupon("c-non-existent-uuid-9999", STORE_A, {
+      service.deleteCoupon("99999999-9999-4999-8999-999999999999", STORE_A, {
         actor_role: "merchant_owner",
         actor_id: USER_STORE_A_OWNER,
       }),
@@ -424,13 +422,13 @@ test("5. Authoritative Deletion — proves actual row deletion; cross-store or m
   );
 
   // Authorized delete: Store A owner deletes Store A's coupon
-  const result = await service.deleteCoupon("c-11111111-1111-4111-8111-111111111111", STORE_A, {
+  const result = await service.deleteCoupon(COUPON_A_ID, STORE_A, {
     actor_role: "merchant_owner",
     actor_id: USER_STORE_A_OWNER,
   });
   assert.deepEqual(result, { ok: true });
   assert.equal(state.coupons.length, 1);
-  assert.equal(state.coupons[0].id, "c-22222222-2222-4222-8222-222222222222");
+  assert.equal(state.coupons[0].id, COUPON_B_ID);
 });
 
 test("6. Commercial Policy Enforcement — server enforces balanced & strict profiles, fails closed on DB error", async () => {
@@ -567,4 +565,261 @@ test("8. Platform Admin Oversight — platform admin can list all coupons or man
     actor_id: USER_ADMIN,
   });
   assert.deepEqual(result, { ok: true });
+});
+
+test("9. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, Global ValidationPipe, RolesGuard, and UUIDs", async (t) => {
+  const { service, state } = makeHarness();
+
+  const tokenMap = {
+    "token-store-a-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_A_OWNER },
+    "token-store-a-manager": { ok: true, actorRole: "merchant_manager", actorId: USER_STORE_A_MANAGER },
+    "token-store-a-staff": { ok: true, actorRole: "merchant_staff", actorId: USER_STORE_A_STAFF },
+    "token-store-b-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_B_OWNER },
+    "token-admin": { ok: true, actorRole: "super_admin", actorId: USER_ADMIN },
+    "token-customer": { ok: true, actorRole: "customer", actorId: "user-cust-1" },
+  };
+
+  const moduleRef = await Test.createTestingModule({
+    controllers: [CouponsController],
+    providers: [
+      {
+        provide: CouponsService,
+        useValue: service,
+      },
+      {
+        provide: SupabaseActorResolverService,
+        useValue: {
+          resolve: async (token) => {
+            const mapped = tokenMap[token];
+            if (mapped) {
+              return { ...mapped, actorToken: token };
+            }
+            return { ok: false, reason: "invalid_token" };
+          },
+        },
+      },
+      {
+        provide: APP_GUARD,
+        useClass: RolesGuard,
+      },
+    ],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  // EXACT production pipe from backend/src/main.ts
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  await app.listen(0);
+  const port = app.getHttpServer().address().port;
+  const baseUrl = `http://127.0.0.1:${port}`;
+
+  t.after(async () => {
+    await app.close();
+  });
+
+  const authHeader = (tok) => (tok ? { Authorization: `Bearer ${tok}` } : {});
+
+  // ── ROUTE 1: GET /coupons ──
+  {
+    // A. Missing bearer token => HTTP 403
+    const resNoToken = await fetch(`${baseUrl}/coupons?merchant_id=${STORE_A}`);
+    assert.equal(resNoToken.status, 403, "missing token must return HTTP 403");
+
+    // B. Invalid bearer token => HTTP 403
+    const resBadToken = await fetch(`${baseUrl}/coupons?merchant_id=${STORE_A}`, {
+      headers: authHeader("totally-invalid-token"),
+    });
+    assert.equal(resBadToken.status, 403, "invalid token must return HTTP 403");
+
+    // C. Customer token (unauthorized role) => HTTP 403
+    const resCust = await fetch(`${baseUrl}/coupons?merchant_id=${STORE_A}`, {
+      headers: authHeader("token-customer"),
+    });
+    assert.equal(resCust.status, 403, "customer role must return HTTP 403");
+
+    // D. Malformed merchant_id UUID => HTTP 400 (ValidationPipe on ListCouponsQueryDto)
+    const resBadUuid = await fetch(`${baseUrl}/coupons?merchant_id=not-a-uuid`, {
+      headers: authHeader("token-store-a-owner"),
+    });
+    assert.equal(resBadUuid.status, 400, "malformed query UUID must return HTTP 400");
+
+    // E. Staff reading Store A coupons => HTTP 200
+    const resStaff = await fetch(`${baseUrl}/coupons?merchant_id=${STORE_A}`, {
+      headers: authHeader("token-store-a-staff"),
+    });
+    assert.equal(resStaff.status, 200, "staff member can view coupons via HTTP 200");
+    const staffData = await resStaff.json();
+    assert.equal(Array.isArray(staffData), true);
+    assert.equal(staffData.length, 1);
+    assert.equal(staffData[0].code, "BAGHDAD10");
+
+    // F. Cross-store access: Store B owner requesting Store A coupons => HTTP 403 (membership check in service)
+    const resCross = await fetch(`${baseUrl}/coupons?merchant_id=${STORE_A}`, {
+      headers: authHeader("token-store-b-owner"),
+    });
+    assert.equal(resCross.status, 403, "cross-store owner cannot list other store's coupons");
+  }
+
+  // ── ROUTE 2: POST /coupons ──
+  {
+    // A. Staff attempting to create coupon => HTTP 403 (RolesGuard rejects merchant_staff on POST)
+    const resStaffPost = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-staff"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: "STAFFFAIL",
+        discount_type: "percentage",
+        value: 10,
+        merchant_id: STORE_A,
+      }),
+    });
+    assert.equal(resStaffPost.status, 403, "RolesGuard must reject merchant_staff on POST with HTTP 403");
+
+    // B. Malformed payload: missing required code => HTTP 400
+    const resNoCode = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        discount_type: "percentage",
+        value: 10,
+        merchant_id: STORE_A,
+        is_active: true,
+      }),
+    });
+    assert.equal(resNoCode.status, 400, "missing code must return HTTP 400");
+
+    // C. Malformed payload: percentage value > 100 => HTTP 400
+    const resOver100 = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: "OVER100HTTP",
+        discount_type: "percentage",
+        value: 150,
+        merchant_id: STORE_A,
+        is_active: true,
+      }),
+    });
+    assert.equal(resOver100.status, 400, "percentage > 100 must return HTTP 400");
+
+    // D. Unknown fields in payload: production ValidationPipe whitelist strips unknown fields without failing
+    // Proving exact production behavior (Directive 8)
+    const resUnknownField = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: "STRIPTEST",
+        discount_type: "fixed",
+        value: 2000,
+        merchant_id: STORE_A,
+        is_active: true,
+        injected_malicious_column: "DROP TABLE coupons",
+      }),
+    });
+    assert.equal(resUnknownField.status, 201, "production whitelist strips unknown fields and succeeds with 201");
+    const createdCoupon = state.coupons.find((c) => c.code === "STRIPTEST");
+    assert.ok(createdCoupon, "coupon must be created");
+    assert.equal(createdCoupon.injected_malicious_column, undefined, "unknown field must be stripped");
+
+    // E. Commercial policy limit violation: attempting 75% on Store A (balanced limit = 70%) => HTTP 400
+    const resPolicyViolate = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: "BALANCED75HTTP",
+        discount_type: "percentage",
+        value: 75,
+        merchant_id: STORE_A,
+        is_active: true,
+      }),
+    });
+    assert.equal(resPolicyViolate.status, 400, "policy violation returns HTTP 400");
+
+    // F. Commercial policy DB failure => HTTP 503 Service Unavailable (fails closed)
+    state.policyTableError = new Error("DB Connection Error");
+    const resPolicyFail = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: "POLICYFAILHTTP",
+        discount_type: "fixed",
+        value: 1000,
+        merchant_id: STORE_A,
+        is_active: true,
+      }),
+    });
+    assert.equal(resPolicyFail.status, 503, "policy DB failure must fail closed with HTTP 503");
+    state.policyTableError = null;
+
+    // G. Duplicate coupon code => HTTP 409 Conflict
+    const resDup = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        code: "BAGHDAD10", // already exists
+        discount_type: "percentage",
+        value: 15,
+        merchant_id: STORE_A,
+        is_active: true,
+      }),
+    });
+    assert.equal(resDup.status, 409, "duplicate coupon code must return HTTP 409");
+
+    // H. IDOR update attempt: Store A owner attempts to update Store B's coupon ID => HTTP 404
+    const resIdor = await fetch(`${baseUrl}/coupons`, {
+      method: "POST",
+      headers: { ...authHeader("token-store-a-owner"), "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id: COUPON_B_ID,
+        code: "HIJACKHTTP",
+        discount_type: "fixed",
+        value: 5000,
+        merchant_id: STORE_A,
+        is_active: true,
+      }),
+    });
+    assert.equal(resIdor.status, 404, "cross-store IDOR coupon update must return HTTP 404");
+  }
+
+  // ── ROUTE 3: DELETE /coupons/:id ──
+  {
+    // A. Staff attempting to delete coupon => HTTP 403 (RolesGuard rejects merchant_staff on DELETE)
+    const resStaffDel = await fetch(`${baseUrl}/coupons/${COUPON_A_ID}?merchant_id=${STORE_A}`, {
+      method: "DELETE",
+      headers: authHeader("token-store-a-staff"),
+    });
+    assert.equal(resStaffDel.status, 403, "RolesGuard must reject merchant_staff on DELETE with HTTP 403");
+
+    // B. Malformed UUID param in URL => HTTP 400 (ParseUUIDPipe on :id)
+    const resBadParam = await fetch(`${baseUrl}/coupons/not-a-valid-uuid?merchant_id=${STORE_A}`, {
+      method: "DELETE",
+      headers: authHeader("token-store-a-owner"),
+    });
+    assert.equal(resBadParam.status, 400, "ParseUUIDPipe must reject non-UUID param with HTTP 400");
+
+    // C. Non-existent valid UUID coupon => HTTP 404
+    const resMissing = await fetch(`${baseUrl}/coupons/88888888-8888-4888-8888-888888888888?merchant_id=${STORE_A}`, {
+      method: "DELETE",
+      headers: authHeader("token-store-a-owner"),
+    });
+    assert.equal(resMissing.status, 404, "non-existent coupon deletion must return HTTP 404");
+
+    // D. Cross-store deletion: Store A owner attempts to delete Store B's coupon => HTTP 404
+    const resCrossDel = await fetch(`${baseUrl}/coupons/${COUPON_B_ID}?merchant_id=${STORE_A}`, {
+      method: "DELETE",
+      headers: authHeader("token-store-a-owner"),
+    });
+    assert.equal(resCrossDel.status, 404, "cross-store coupon deletion must return HTTP 404");
+    assert.ok(state.coupons.find((c) => c.id === COUPON_B_ID), "Store B's coupon must remain intact");
+
+    // E. Authorized deletion: Store A owner deletes Store A's coupon => HTTP 200
+    const resAuthDel = await fetch(`${baseUrl}/coupons/${COUPON_A_ID}?merchant_id=${STORE_A}`, {
+      method: "DELETE",
+      headers: authHeader("token-store-a-owner"),
+    });
+    assert.equal(resAuthDel.status, 200, "authorized deletion must return HTTP 200");
+    const delJson = await resAuthDel.json();
+    assert.deepEqual(delJson, { ok: true });
+    assert.equal(state.coupons.find((c) => c.id === COUPON_A_ID), undefined, "Store A coupon deleted");
+  }
 });

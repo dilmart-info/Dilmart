@@ -92,16 +92,25 @@ export async function fetchMerchantCommercialPolicyProfileStrict(merchantId?: st
   if (!merchantId) {
     return PROFILES.balanced;
   }
-  const res = await apiClient.getCommercialPolicyAssignment({ merchant_id: merchantId });
+  const res = (await apiClient.getCommercialPolicyAssignment({ merchant_id: merchantId })) as any;
   if (!res || typeof res !== "object") {
     throw new Error("استجابة السياسة التجارية فارغة أو غير صالحة.");
   }
-  const profileId = (res as any).profile_id;
+  if (res.error) {
+    throw new Error(`خطأ في استجابة السياسة التجارية: ${String(res.error)}`);
+  }
+  if (res.source === "fallback_default") {
+    throw new Error("فشل استرداد السياسة المخصصة واستخدام القيمة الاحتياطية مرفوض في الوضع الصارم.");
+  }
+  if (res.merchant_id !== merchantId) {
+    throw new Error("تطابق المتجر غير صحيح أو مفقود في استجابة السياسة التجارية.");
+  }
+  const profileId = res.profile_id;
   if (!profileId || !(profileId in PROFILES)) {
     throw new Error(`ملف السياسة التجارية غير معروف: ${String(profileId)}`);
   }
-  if ((res as any).merchant_id && (res as any).merchant_id !== merchantId) {
-    throw new Error("تطابق المتجر غير صحيح في استجابة السياسة التجارية.");
+  if (res.profile && res.profile.id !== profileId) {
+    throw new Error(`عدم تطابق بين profile_id (${String(profileId)}) و profile.id (${String(res.profile.id)}).`);
   }
   return PROFILES[profileId as CommercialPolicyProfileId];
 }

@@ -11,9 +11,6 @@ const MerchantCoupons = () => {
 
   const liveMerchantIdRef = React.useRef(merchantId);
   liveMerchantIdRef.current = merchantId;
-  React.useEffect(() => {
-    liveMerchantIdRef.current = merchantId;
-  }, [merchantId]);
 
   if (isLoading) {
     return (
