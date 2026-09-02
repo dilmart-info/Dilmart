@@ -9,6 +9,12 @@ const MerchantCoupons = () => {
   const merchantId = membership?.merchant_id;
   const role = membership?.role;
 
+  const liveMerchantIdRef = React.useRef(merchantId);
+  liveMerchantIdRef.current = merchantId;
+  React.useEffect(() => {
+    liveMerchantIdRef.current = merchantId;
+  }, [merchantId]);
+
   if (isLoading) {
     return (
       <div className="space-y-4 p-6 animate-pulse" data-testid="merchant-coupons-loading">
@@ -27,10 +33,6 @@ const MerchantCoupons = () => {
   }
 
   const canManage = canMerchantManageCoupons(role);
-  const liveMerchantIdRef = React.useRef(merchantId);
-  React.useEffect(() => {
-    liveMerchantIdRef.current = merchantId;
-  }, [merchantId]);
 
   return (
     <MerchantCouponsWorkspace

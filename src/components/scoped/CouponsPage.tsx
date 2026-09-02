@@ -9,7 +9,7 @@ import { deleteScopedCoupon, getScopedCoupons, upsertScopedCoupon } from "@/lib/
 import { apiClient } from "@/lib/api-client";
 import { formatPrice } from "@/lib/format";
 import { toast } from "sonner";
-import { getCommercialPolicyProfile, resolveMerchantCommercialPolicyProfile } from "@/lib/commercial-policy-profiles";
+import { fetchMerchantCommercialPolicyProfileStrict } from "@/lib/commercial-policy-profiles";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
 export function assertCouponsContractMerchantId(
@@ -61,9 +61,9 @@ export default function CouponsPage({ context, title = "الكوبونات", can
     isError: policyError,
   } = useQuery({
     queryKey: ["commercial-policy-assignment-coupons", policyMerchantId],
-    queryFn: () => resolveMerchantCommercialPolicyProfile(policyMerchantId),
+    queryFn: () => fetchMerchantCommercialPolicyProfileStrict(policyMerchantId),
   });
-  const policy = policyData ?? getCommercialPolicyProfile("balanced");
+  const policy = policyData ?? null;
 
   const { data: merchants } = useQuery({
     queryKey: ["scoped-coupons-merchants"],
@@ -116,7 +116,9 @@ export default function CouponsPage({ context, title = "الكوبونات", can
       if (context.scope === "merchant" && liveMerchantIdRef?.current && liveMerchantIdRef.current !== context.merchantId) {
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["scoped-coupons"] });
+      queryClient.invalidateQueries({
+        queryKey: ["scoped-coupons", context.scope, context.scope === "merchant" ? context.merchantId : undefined],
+      });
       setForm({
         code: "",
         discount_type: "fixed",
@@ -160,7 +162,7 @@ export default function CouponsPage({ context, title = "الكوبونات", can
       toast.error("ليس لديك صلاحية إدارة الكوبونات.");
       return;
     }
-    if (policyError) {
+    if (policyError || !policy) {
       toast.error("تعذر التحقق من السياسة التجارية. حفظ الكوبونات معطل مؤقتًا.");
       return;
     }
@@ -186,7 +188,9 @@ export default function CouponsPage({ context, title = "الكوبونات", can
       if (context.scope === "merchant" && liveMerchantIdRef?.current && liveMerchantIdRef.current !== context.merchantId) {
         return;
       }
-      queryClient.invalidateQueries({ queryKey: ["scoped-coupons"] });
+      queryClient.invalidateQueries({
+        queryKey: ["scoped-coupons", context.scope, context.scope === "merchant" ? context.merchantId : undefined],
+      });
       toast.success("تم حذف الكوبون");
     },
     onError: (err: any) => {
@@ -259,7 +263,7 @@ export default function CouponsPage({ context, title = "الكوبونات", can
             <div className="h-10 rounded-md border border-input bg-muted px-3 text-sm flex items-center">كوبون لمتجرك</div>
           )}
           <Button
-            disabled={!form.code || !form.value || saveCoupon.isPending || policyLoading || policyError}
+            disabled={!form.code || !form.value || saveCoupon.isPending || policyLoading || policyError || !policy}
             onClick={handleSaveCoupon}
             data-testid="coupon-save-btn"
           >
@@ -284,14 +288,14 @@ export default function CouponsPage({ context, title = "الكوبونات", can
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>تعذر تحميل السياسة التجارية للمتجر. حفظ الكوبونات معطل مؤقتًا لحماية هوامش الربح.</span>
         </div>
-      ) : (
+      ) : policy ? (
         <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-800 dark:border-indigo-900/40 dark:bg-indigo-950/20 dark:text-indigo-300">
           <p className="font-semibold">السياسة التجارية: {policy.label}</p>
           <p className="mt-1">أقصى خصم نسبي مسموح: {policy.maxDiscountPercent}%</p>
           <p className="mt-1">أدنى حد للطلب: {policy.minCouponOrderAmount} د.ع</p>
           <p className="mt-1">أقصى استخدام للكوبون: {policy.maxCouponUsage}</p>
         </div>
-      )}
+      ) : null}
 
       {context.scope === "platform" && (
         <select

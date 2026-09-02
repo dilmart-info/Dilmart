@@ -98,6 +98,14 @@ describe("MerchantCoupons — Multi-Store Authority, Truthful States & Role Isol
       minCouponOrderAmount: 0,
       maxCouponUsage: 2000,
     });
+    vi.spyOn(commercialPolicy, "fetchMerchantCommercialPolicyProfileStrict").mockResolvedValue({
+      id: "balanced",
+      label: "Balanced",
+      description: "سياسة متوازنة",
+      maxDiscountPercent: 70,
+      minCouponOrderAmount: 0,
+      maxCouponUsage: 2000,
+    });
   });
 
   it("LOADING SKELETON: renders skeleton when merchant data is loading", () => {
@@ -241,7 +249,7 @@ describe("MerchantCoupons — Multi-Store Authority, Truthful States & Role Isol
   });
 
   it("POLICY ERROR HANDLING: displays policy error and disables save button if policy resolution fails", async () => {
-    vi.spyOn(commercialPolicy, "resolveMerchantCommercialPolicyProfile").mockRejectedValueOnce(
+    vi.spyOn(commercialPolicy, "fetchMerchantCommercialPolicyProfileStrict").mockRejectedValueOnce(
       new Error("Policy table unavailable"),
     );
 

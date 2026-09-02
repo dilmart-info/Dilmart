@@ -83,6 +83,29 @@ export async function resolveMerchantCommercialPolicyProfile(merchantId?: string
   return getCommercialPolicyProfile("balanced");
 }
 
+/**
+ * Strict policy resolution for authoritatively validating commercial rules.
+ * Fails closed on transport or server error without swallowing exceptions or masking
+ * service unavailability with a synthetic "balanced" profile.
+ */
+export async function fetchMerchantCommercialPolicyProfileStrict(merchantId?: string | null): Promise<CommercialPolicyProfile> {
+  if (!merchantId) {
+    return PROFILES.balanced;
+  }
+  const res = await apiClient.getCommercialPolicyAssignment({ merchant_id: merchantId });
+  if (!res || typeof res !== "object") {
+    throw new Error("استجابة السياسة التجارية فارغة أو غير صالحة.");
+  }
+  const profileId = (res as any).profile_id;
+  if (!profileId || !(profileId in PROFILES)) {
+    throw new Error(`ملف السياسة التجارية غير معروف: ${String(profileId)}`);
+  }
+  if ((res as any).merchant_id && (res as any).merchant_id !== merchantId) {
+    throw new Error("تطابق المتجر غير صحيح في استجابة السياسة التجارية.");
+  }
+  return PROFILES[profileId as CommercialPolicyProfileId];
+}
+
 export async function assignMerchantCommercialPolicyProfile(merchantId: string, profileId: CommercialPolicyProfileId) {
   try {
     const res = await apiClient.upsertCommercialPolicyAssignment(merchantId, { profile_id: profileId });

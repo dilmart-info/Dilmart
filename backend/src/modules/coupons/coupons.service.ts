@@ -4,10 +4,14 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { UpsertCouponDto, ValidateCouponDto } from "./coupons.dto";
-import { getCommercialPolicyProfile } from "../../common/commercial-policy";
+import {
+  getCommercialPolicyProfile,
+  isValidCommercialPolicyProfileId,
+} from "../../common/commercial-policy";
 
 @Injectable()
 export class CouponsService {
@@ -131,10 +135,18 @@ export class CouponsService {
       .maybeSingle();
 
     if (error) {
-      throw new BadRequestException(`Failed to resolve commercial policy: ${error.message}`);
+      throw new ServiceUnavailableException("السياسة التجارية للمتجر غير متاحة مؤقتًا. تعذر إتمام العملية.");
     }
 
-    const profileId = (data as { profile_id?: string | null } | null)?.profile_id ?? "balanced";
+    let profileId: string = "balanced";
+    if (data) {
+      const assigned = (data as { profile_id?: string | null }).profile_id;
+      if (!isValidCommercialPolicyProfileId(assigned)) {
+        throw new ServiceUnavailableException("ملف السياسة التجارية المحدد غير صالح أو غير معتمد.");
+      }
+      profileId = assigned;
+    }
+
     const policy = getCommercialPolicyProfile(profileId);
 
     if (payload.discount_type === "percentage" && payload.value > policy.maxDiscountPercent) {
@@ -255,8 +267,11 @@ export class CouponsService {
         updateQuery = updateQuery.eq("merchant_id", scopedMerchantId);
       }
 
-      const { error: updateError } = await updateQuery;
+      const { data: updatedRows, error: updateError } = await updateQuery.select("id");
       if (updateError) throw updateError;
+      if (!updatedRows || updatedRows.length === 0) {
+        throw new NotFoundException("Coupon not found or scope mismatch.");
+      }
       return { ok: true };
     }
 

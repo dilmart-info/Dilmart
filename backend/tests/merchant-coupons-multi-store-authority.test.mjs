@@ -7,6 +7,7 @@ import {
   ConflictException,
   ForbiddenException,
   NotFoundException,
+  ServiceUnavailableException,
 } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { CouponsService } from "../dist/modules/coupons/coupons.service.js";
@@ -484,7 +485,7 @@ test("6. Commercial Policy Enforcement — server enforces balanced & strict pro
     (err) => err instanceof BadRequestException && err.message.includes("الحد الأدنى للطلب يجب أن يكون 5000 د.ع أو أكثر"),
   );
 
-  // Database error on policy assignment table must FAIL CLOSED (throw BadRequestException, NOT silently fall back)
+  // Database error on policy assignment table must FAIL CLOSED (throw ServiceUnavailableException, NOT silently fall back)
   state.policyTableError = new Error("Connection refused to policy replica");
   await assert.rejects(
     () =>
@@ -497,7 +498,7 @@ test("6. Commercial Policy Enforcement — server enforces balanced & strict pro
         actor_role: "merchant_owner",
         actor_id: USER_STORE_A_OWNER,
       }),
-    (err) => err instanceof BadRequestException && err.message.includes("Failed to resolve commercial policy"),
+    (err) => err instanceof ServiceUnavailableException && err.message.includes("السياسة التجارية للمتجر غير متاحة"),
   );
 });
 

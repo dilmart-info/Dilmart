@@ -353,15 +353,10 @@ export class AdminService {
     return { profiles: Object.values(COMMERCIAL_POLICY_PROFILES) };
   }
 
-  private getCommercialPolicyProfile(profileId?: string | null): CommercialPolicyProfile {
-    if (profileId === "strict") return COMMERCIAL_POLICY_PROFILES.strict;
-    return COMMERCIAL_POLICY_PROFILES.balanced;
-  }
-
   async getCommercialPolicyAssignment(params: { merchant_id?: string; actor_role?: string; actor_id?: string }) {
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(params.merchant_id, params.actor_role, params.actor_id);
     if (!resolvedMerchantId) {
-      const profile = this.getCommercialPolicyProfile("balanced");
+      const profile = getCommercialPolicyProfile("balanced");
       return { merchant_id: null, profile_id: profile.id, profile, source: "default" as const };
     }
 
@@ -371,7 +366,7 @@ export class AdminService {
       .eq("merchant_id", resolvedMerchantId)
       .maybeSingle();
     if (error) {
-      const profile = this.getCommercialPolicyProfile("balanced");
+      const profile = getCommercialPolicyProfile("balanced");
       return {
         merchant_id: resolvedMerchantId,
         profile_id: profile.id,
@@ -381,7 +376,7 @@ export class AdminService {
         error: error.message,
       };
     }
-    const assignedProfile = this.getCommercialPolicyProfile((data as { profile_id?: string | null } | null)?.profile_id ?? "balanced");
+    const assignedProfile = getCommercialPolicyProfile((data as { profile_id?: string | null } | null)?.profile_id ?? "balanced");
     return {
       merchant_id: resolvedMerchantId,
       profile_id: assignedProfile.id,
@@ -395,7 +390,7 @@ export class AdminService {
   async upsertCommercialPolicyAssignment(merchantId: string, profileId: CommercialPolicyProfileId, actor: ActorContext) {
     const actorId = actor.actorId ?? "";
     const actorRole = actor.actorRole as AppActorRole;
-    const profile = this.getCommercialPolicyProfile(profileId);
+    const profile = getCommercialPolicyProfile(profileId);
     const row = {
       merchant_id: merchantId,
       profile_id: profile.id,

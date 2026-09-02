@@ -28,7 +28,14 @@ export const COMMERCIAL_POLICY_PROFILES: Record<CommercialPolicyProfileId, Comme
   },
 };
 
+export function isValidCommercialPolicyProfileId(profileId: unknown): profileId is CommercialPolicyProfileId {
+  return typeof profileId === "string" && (profileId === "balanced" || profileId === "strict");
+}
+
 export function getCommercialPolicyProfile(profileId?: string | null): CommercialPolicyProfile {
   if (profileId === "strict") return COMMERCIAL_POLICY_PROFILES.strict;
-  return COMMERCIAL_POLICY_PROFILES.balanced;
+  if (profileId === "balanced" || profileId === null || profileId === undefined) {
+    return COMMERCIAL_POLICY_PROFILES.balanced;
+  }
+  throw new Error(`ملف السياسة التجارية غير معروف: ${profileId}`);
 }
