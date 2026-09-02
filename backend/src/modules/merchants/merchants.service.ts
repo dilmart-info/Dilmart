@@ -4,11 +4,14 @@ import { ScopeResolverService } from "../scope-resolver/scope-resolver.service";
 import {
   AssignMerchantOwnerDto,
   CreateMerchantDto,
+  MerchantFinanceStatementQueryDto,
+  MerchantPayoutHistoryQueryDto,
   UpdateMerchantDto,
   UpdateMerchantStatusDto,
   UpsertMerchantSettingsDto,
   UpdateMerchantRegistrationDetailsDto,
 } from "./merchants.dto";
+
 
 const MERCHANT_SETTINGS_RPC = "upsert_merchant_settings_atomic";
 
@@ -844,9 +847,70 @@ export class MerchantsService {
     };
   }
 
+  private isMerchantFinanceRole(role?: string) {
+    return role === "merchant_owner" || role === "merchant_manager" || role === "merchant_staff";
+  }
+
+  private isPlatformFinanceRole(role?: string) {
+    return role === "super_admin" || role === "admin";
+  }
+
+  private async resolveMerchantFinanceReadScope(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+  ): Promise<string> {
+    if (!merchantId || typeof merchantId !== "string" || !merchantId.trim()) {
+      throw new ForbiddenException("Merchant id is required.");
+    }
+    if (!actor?.actor_role || !actor?.actor_id) {
+      throw new ForbiddenException("Actor identity and role are required.");
+    }
+
+    if (this.isPlatformFinanceRole(actor.actor_role)) {
+      const { data: merchant, error: merchantError } = await this.supabaseAdmin.client
+        .from("merchants")
+        .select("id")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (merchantError) throw merchantError;
+      if (!merchant?.id) {
+        throw new NotFoundException("Merchant not found.");
+      }
+      return merchantId;
+    }
+
+    if (!this.isMerchantFinanceRole(actor.actor_role)) {
+      throw new ForbiddenException("Finance read access is not permitted for this role.");
+    }
+
+    // Exact membership in merchant_users for target merchantId (no first membership fallback)
+    const { data: membership, error: membershipError } = await this.supabaseAdmin.client
+      .from("merchant_users")
+      .select("merchant_id")
+      .eq("user_id", actor.actor_id)
+      .eq("merchant_id", merchantId)
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership?.merchant_id) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+
+    // Exact merchant status in merchants table must equal 'active'
+    const { data: merchant, error: merchantError } = await this.supabaseAdmin.client
+      .from("merchants")
+      .select("status")
+      .eq("id", merchantId)
+      .maybeSingle();
+    if (merchantError) throw merchantError;
+    if (!merchant || merchant.status !== "active") {
+      throw new ForbiddenException("Merchant is not active.");
+    }
+
+    return merchantId;
+  }
+
   async getMerchantFinanceSummary(merchantId: string, actor?: { actor_role?: string; actor_id?: string }) {
-    const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(merchantId, actor?.actor_role, actor?.actor_id);
-    if (!resolvedMerchantId) throw new ForbiddenException("Merchant id is required.");
+    const resolvedMerchantId = await this.resolveMerchantFinanceReadScope(merchantId, actor);
 
     const { data: ledgerRows, error: ledgerError } = await this.supabaseAdmin.client
       .from("merchant_ledger_entries")
@@ -892,20 +956,19 @@ export class MerchantsService {
   async listMerchantStatementEntries(
     merchantId: string,
     actor?: { actor_role?: string; actor_id?: string },
-    params?: { limit?: number; offset?: number; status?: string; from?: string; to?: string },
+    params?: MerchantFinanceStatementQueryDto,
   ) {
-    const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(merchantId, actor?.actor_role, actor?.actor_id);
-    if (!resolvedMerchantId) throw new ForbiddenException("Merchant id is required.");
+    const resolvedMerchantId = await this.resolveMerchantFinanceReadScope(merchantId, actor);
+
+    const limit = Math.min(Math.max(params?.limit ?? 50, 1), 200);
+    const offset = Math.max(params?.offset ?? 0, 0);
 
     let req = this.supabaseAdmin.client
       .from("merchant_ledger_entries")
       .select("id,order_id,entry_type,direction,amount,status,created_at,effective_at,settled_at,description,payout_batch_id", { count: "exact" })
       .eq("merchant_id", resolvedMerchantId)
       .order("effective_at", { ascending: false })
-      .range(
-        Math.max(params?.offset ?? 0, 0),
-        Math.max(params?.offset ?? 0, 0) + Math.min(Math.max(params?.limit ?? 50, 1), 200) - 1,
-      );
+      .range(offset, offset + limit - 1);
     if (params?.status) req = req.eq("status", params.status);
     if (params?.from) req = req.gte("effective_at", params.from);
     if (params?.to) req = req.lte("effective_at", params.to);
@@ -915,18 +978,20 @@ export class MerchantsService {
       merchant_id: resolvedMerchantId,
       entries: data ?? [],
       total: count ?? 0,
-      limit: Math.min(Math.max(params?.limit ?? 50, 1), 200),
-      offset: Math.max(params?.offset ?? 0, 0),
+      limit,
+      offset,
     };
   }
 
   async listMerchantPayoutHistory(
     merchantId: string,
     actor?: { actor_role?: string; actor_id?: string },
-    params?: { limit?: number; offset?: number; from?: string; to?: string },
+    params?: MerchantPayoutHistoryQueryDto,
   ) {
-    const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(merchantId, actor?.actor_role, actor?.actor_id);
-    if (!resolvedMerchantId) throw new ForbiddenException("Merchant id is required.");
+    const resolvedMerchantId = await this.resolveMerchantFinanceReadScope(merchantId, actor);
+
+    const limit = Math.min(Math.max(params?.limit ?? 20, 1), 100);
+    const offset = Math.max(params?.offset ?? 0, 0);
 
     let req = this.supabaseAdmin.client
       .from("merchant_payout_batches")
@@ -935,10 +1000,8 @@ export class MerchantsService {
       })
       .eq("merchant_id", resolvedMerchantId)
       .order("created_at", { ascending: false })
-      .range(
-        Math.max(params?.offset ?? 0, 0),
-        Math.max(params?.offset ?? 0, 0) + Math.min(Math.max(params?.limit ?? 20, 1), 100) - 1,
-      );
+      .range(offset, offset + limit - 1);
+    if (params?.status) req = req.eq("status", params.status);
     if (params?.from) req = req.gte("created_at", params.from);
     if (params?.to) req = req.lte("created_at", params.to);
     const { data, error, count } = await req;
@@ -947,10 +1010,11 @@ export class MerchantsService {
       merchant_id: resolvedMerchantId,
       payouts: data ?? [],
       total: count ?? 0,
-      limit: Math.min(Math.max(params?.limit ?? 20, 1), 100),
-      offset: Math.max(params?.offset ?? 0, 0),
+      limit,
+      offset,
     };
   }
+
 
   /**
    * M4.8 — platform-wide readiness summaries for executive governance (admin only).

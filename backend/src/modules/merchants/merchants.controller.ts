@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Patch, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query, Patch, UsePipes, ValidationPipe } from "@nestjs/common";
 import { MerchantsService } from "./merchants.service";
 import { Roles } from "../../common/authz/roles.decorator";
 import { CurrentActor } from "../../common/authz/actor-context.decorator";
@@ -6,11 +6,14 @@ import {
   AssignMerchantOwnerDto,
   CreateMerchantDto,
   GetMerchantSettingsQueryDto,
+  MerchantFinanceStatementQueryDto,
+  MerchantPayoutHistoryQueryDto,
   UpdateMerchantDto,
   UpdateMerchantStatusDto,
   UpsertMerchantSettingsDto,
   UpdateMerchantRegistrationDetailsDto,
 } from "./merchants.dto";
+
 
 @Controller("merchants")
 export class MerchantsController {
@@ -100,51 +103,51 @@ export class MerchantsController {
 
   @Get(":id/finance/summary")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
-  getFinanceSummary(@Param("id") id: string, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
+  getFinanceSummary(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
     return this.merchantsService.getMerchantFinanceSummary(id, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
 
   @Get(":id/finance/statement")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
   getFinanceStatement(
-    @Param("id") id: string,
-    @Query("limit") limit?: string,
-    @Query("offset") offset?: string,
-    @Query("status") status?: string,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Query() query: MerchantFinanceStatementQueryDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
     return this.merchantsService.listMerchantStatementEntries(
       id,
       { actor_role: actor?.actorRole, actor_id: actor?.actorId },
-      {
-        limit: limit ? Number(limit) : undefined,
-        offset: offset ? Number(offset) : undefined,
-        status,
-        from,
-        to,
-      },
+      query,
     );
   }
 
   @Get(":id/finance/payout-history")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
   getPayoutHistory(
-    @Param("id") id: string,
-    @Query("limit") limit?: string,
-    @Query("offset") offset?: string,
-    @Query("from") from?: string,
-    @Query("to") to?: string,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Query() query: MerchantPayoutHistoryQueryDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
-    return this.merchantsService.listMerchantPayoutHistory(id, { actor_role: actor?.actorRole, actor_id: actor?.actorId }, {
-      limit: limit ? Number(limit) : 20,
-      offset: offset ? Number(offset) : 0,
-      from,
-      to,
-    });
+    return this.merchantsService.listMerchantPayoutHistory(
+      id,
+      { actor_role: actor?.actorRole, actor_id: actor?.actorId },
+      query,
+    );
   }
+
 
   @Patch(":id/registration-details")
   @Roles("super_admin", "admin")

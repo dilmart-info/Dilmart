@@ -1,32 +1,41 @@
 import { describe, expect, it } from "vitest";
-import { canMerchantDecide, canMerchantManageCatalog, isMerchantStaff } from "./merchant-role-authority";
+import { canMerchantDecide, canMerchantManageCatalog, canMerchantViewFinance, isMerchantStaff } from "./merchant-role-authority";
 
 describe("merchant-role-authority — Role Gating Matrix", () => {
-  it("allows owner to make merchant decisions and manage catalog", () => {
+  it("allows owner to make merchant decisions, manage catalog, and view finance", () => {
     expect(canMerchantDecide("owner")).toBe(true);
     expect(canMerchantDecide("merchant_owner")).toBe(true);
     expect(canMerchantDecide("OWNER")).toBe(true);
     expect(canMerchantManageCatalog("owner")).toBe(true);
     expect(canMerchantManageCatalog("merchant_owner")).toBe(true);
     expect(canMerchantManageCatalog("OWNER")).toBe(true);
+    expect(canMerchantViewFinance("owner")).toBe(true);
+    expect(canMerchantViewFinance("merchant_owner")).toBe(true);
+    expect(canMerchantViewFinance("OWNER")).toBe(true);
   });
 
-  it("allows manager to make merchant decisions and manage catalog", () => {
+  it("allows manager to make merchant decisions, manage catalog, and view finance", () => {
     expect(canMerchantDecide("manager")).toBe(true);
     expect(canMerchantDecide("merchant_manager")).toBe(true);
     expect(canMerchantDecide("MANAGER")).toBe(true);
     expect(canMerchantManageCatalog("manager")).toBe(true);
     expect(canMerchantManageCatalog("merchant_manager")).toBe(true);
     expect(canMerchantManageCatalog("MANAGER")).toBe(true);
+    expect(canMerchantViewFinance("manager")).toBe(true);
+    expect(canMerchantViewFinance("merchant_manager")).toBe(true);
+    expect(canMerchantViewFinance("MANAGER")).toBe(true);
   });
 
-  it("strictly forbids staff from making merchant decisions and mutating catalog", () => {
+  it("allows staff to view finance while strictly forbidding decisions and catalog mutations", () => {
     expect(canMerchantDecide("staff")).toBe(false);
     expect(canMerchantDecide("merchant_staff")).toBe(false);
     expect(canMerchantDecide("STAFF")).toBe(false);
     expect(canMerchantManageCatalog("staff")).toBe(false);
     expect(canMerchantManageCatalog("merchant_staff")).toBe(false);
     expect(canMerchantManageCatalog("STAFF")).toBe(false);
+    expect(canMerchantViewFinance("staff")).toBe(true);
+    expect(canMerchantViewFinance("merchant_staff")).toBe(true);
+    expect(canMerchantViewFinance("STAFF")).toBe(true);
     expect(isMerchantStaff("staff")).toBe(true);
     expect(isMerchantStaff("merchant_staff")).toBe(true);
   });
@@ -45,5 +54,13 @@ describe("merchant-role-authority — Role Gating Matrix", () => {
     expect(canMerchantManageCatalog("customer")).toBe(false);
     expect(canMerchantManageCatalog("viewer")).toBe(false);
     expect(canMerchantManageCatalog("super_admin")).toBe(false);
+
+    expect(canMerchantViewFinance(null)).toBe(false);
+    expect(canMerchantViewFinance(undefined)).toBe(false);
+    expect(canMerchantViewFinance("")).toBe(false);
+    expect(canMerchantViewFinance("customer")).toBe(false);
+    expect(canMerchantViewFinance("viewer")).toBe(false);
+    expect(canMerchantViewFinance("super_admin")).toBe(false);
+    expect(canMerchantViewFinance("admin")).toBe(false);
   });
 });
