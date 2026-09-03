@@ -91,8 +91,8 @@ export function parseCanonicalSettingsResponse(res: unknown, expectedMerchantId:
   }
 
   if (!r.settings_exists) {
-    if (r.settings !== null && r.settings !== undefined) {
-      throw new Error("Contradictory settings response: settings_exists is false but settings is not null.");
+    if (!Object.prototype.hasOwnProperty.call(r, "settings") || r.settings !== null) {
+      throw new Error("Contradictory settings response: settings_exists is false but settings key is missing or not explicitly null.");
     }
     return {
       merchant_id: expectedMerchantId,
@@ -199,6 +199,12 @@ export function parseCanonicalSettingsResponse(res: unknown, expectedMerchantId:
   };
 }
 
+const ISO_8601_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+
+export function isValidIsoTimestamp(val: unknown): val is string {
+  return typeof val === "string" && ISO_8601_REGEX.test(val) && !Number.isNaN(Date.parse(val));
+}
+
 export function parseCanonicalPushDeviceListResponse(res: unknown, expectedMerchantId: string): {
   merchant_id: string;
   scope: "store" | "own";
@@ -241,8 +247,8 @@ export function parseCanonicalPushDeviceListResponse(res: unknown, expectedMerch
     if (typeof d.status !== "string") {
       throw new Error(`Device at index ${idx} missing valid status.`);
     }
-    if (typeof d.created_at !== "string" || typeof d.updated_at !== "string") {
-      throw new Error(`Device at index ${idx} missing valid timestamps.`);
+    if (!isValidIsoTimestamp(d.created_at) || !isValidIsoTimestamp(d.updated_at)) {
+      throw new Error(`Device at index ${idx} missing valid ISO-8601 timestamps.`);
     }
     if (typeof d.is_own !== "boolean") {
       throw new Error(`Device at index ${idx} missing boolean is_own flag.`);
@@ -305,11 +311,11 @@ export function parseCanonicalRegisterPushResponse(res: unknown, expectedMerchan
   if (typeof s.status !== "string" || !s.status.trim()) {
     throw new Error("Register push subscription missing valid status.");
   }
-  if (typeof s.created_at !== "string" || Number.isNaN(Date.parse(s.created_at))) {
-    throw new Error("Register push subscription created_at must be a valid ISO date string.");
+  if (!isValidIsoTimestamp(s.created_at)) {
+    throw new Error("Register push subscription created_at must be a valid ISO-8601 date string.");
   }
-  if (typeof s.updated_at !== "string" || Number.isNaN(Date.parse(s.updated_at))) {
-    throw new Error("Register push subscription updated_at must be a valid ISO date string.");
+  if (!isValidIsoTimestamp(s.updated_at)) {
+    throw new Error("Register push subscription updated_at must be a valid ISO-8601 date string.");
   }
   if (typeof s.is_own !== "boolean") {
     throw new Error("Register push subscription is_own must be a boolean.");
@@ -384,8 +390,10 @@ export function parseCanonicalTestPushResponse(res: unknown, expectedMerchantId:
     if (typeof it.id !== "string" || !it.id.trim() || typeof it.ok !== "boolean") {
       throw new Error("Test push response result item malformed.");
     }
-    if ("error" in it && it.error !== undefined && it.error !== null && typeof it.error !== "string") {
-      throw new Error("Test push response error must be a string.");
+    if (Object.prototype.hasOwnProperty.call(it, "error")) {
+      if (typeof it.error !== "string") {
+        throw new Error("Test push response error must be a string when error property is present.");
+      }
     }
   }
   return {

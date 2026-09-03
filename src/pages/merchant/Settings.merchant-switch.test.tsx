@@ -166,6 +166,21 @@ describe("1. Strict Fail-Closed Contract Parsers & Security Assertions", () => {
     ).toThrow(/Contradictory settings response/);
   });
 
+  it("Settings Parser: rejects settings_exists=false when settings key is missing or undefined", () => {
+    // Missing settings key
+    expect(() =>
+      parseCanonicalSettingsResponse({ merchant_id: STORE_A, settings_exists: false }, STORE_A),
+    ).toThrow(/settings key is missing or not explicitly null/);
+
+    // Undefined settings
+    expect(() =>
+      parseCanonicalSettingsResponse(
+        { merchant_id: STORE_A, settings_exists: false, settings: undefined },
+        STORE_A,
+      ),
+    ).toThrow(/settings key is missing or not explicitly null/);
+  });
+
   it("Settings Parser: rejects contradictory settings_exists=true with null settings", () => {
     expect(() =>
       parseCanonicalSettingsResponse({ merchant_id: STORE_A, settings_exists: true, settings: null }, STORE_A),
@@ -302,8 +317,8 @@ describe("1. Strict Fail-Closed Contract Parsers & Security Assertions", () => {
           device_label: "phone",
           user_agent: "agent",
           status: "active",
-          created_at: "2026-01-01",
-          updated_at: "2026-01-01",
+          created_at: "2026-01-01T00:00:00Z",
+          updated_at: "2026-01-01T00:00:00Z",
           is_own: true,
           endpoint: "https://leaked-endpoint.com",
         },
@@ -351,7 +366,7 @@ describe("1. Strict Fail-Closed Contract Parsers & Security Assertions", () => {
         },
         STORE_A,
       ),
-    ).toThrow(/valid ISO date string/);
+    ).toThrow(/valid ISO-8601 date string/);
 
     // Invalid type for device_label
     expect(() =>
@@ -363,6 +378,43 @@ describe("1. Strict Fail-Closed Contract Parsers & Security Assertions", () => {
         STORE_A,
       ),
     ).toThrow(/must be string or null/);
+  });
+
+  it("Register Push Parser: rejects parsable non-ISO timestamps (e.g. general date strings)", () => {
+    const validRegister = {
+      merchant_id: STORE_A,
+      subscription: {
+        id: SUB_1,
+        device_label: "phone",
+        user_agent: "agent",
+        status: "active",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
+        is_own: true,
+      },
+    };
+
+    // Slash format parsable by Date.parse but NOT ISO-8601
+    expect(() =>
+      parseCanonicalRegisterPushResponse(
+        {
+          merchant_id: STORE_A,
+          subscription: { ...validRegister.subscription, created_at: "2026/01/01" },
+        },
+        STORE_A,
+      ),
+    ).toThrow(/valid ISO-8601 date string/);
+
+    // Human string parsable by Date.parse but NOT ISO-8601
+    expect(() =>
+      parseCanonicalRegisterPushResponse(
+        {
+          merchant_id: STORE_A,
+          subscription: { ...validRegister.subscription, updated_at: "January 1, 2026" },
+        },
+        STORE_A,
+      ),
+    ).toThrow(/valid ISO-8601 date string/);
   });
 
   it("Register Push Parser: rejects sensitive leakage (endpoint, keys, user_id)", () => {
@@ -432,7 +484,7 @@ describe("1. Strict Fail-Closed Contract Parsers & Security Assertions", () => {
         },
         STORE_A,
       ),
-    ).toThrow(/error must be a string/);
+    ).toThrow(/error must be a string when error property is present/);
 
     expect(() =>
       parseCanonicalTestPushResponse(
@@ -444,6 +496,43 @@ describe("1. Strict Fail-Closed Contract Parsers & Security Assertions", () => {
         STORE_A,
       ),
     ).toThrow(/invalid scope/);
+  });
+
+  it("Test Push Parser: rejects error property when present with null or undefined value", () => {
+    // error present as null
+    expect(() =>
+      parseCanonicalTestPushResponse(
+        {
+          merchant_id: STORE_A,
+          scope: "store",
+          results: [{ id: SUB_1, ok: false, error: null }],
+        },
+        STORE_A,
+      ),
+    ).toThrow(/error must be a string when error property is present/);
+
+    // error present as undefined
+    expect(() =>
+      parseCanonicalTestPushResponse(
+        {
+          merchant_id: STORE_A,
+          scope: "store",
+          results: [{ id: SUB_1, ok: false, error: undefined }],
+        },
+        STORE_A,
+      ),
+    ).toThrow(/error must be a string when error property is present/);
+
+    // Absent error property is permitted
+    const validWithoutError = parseCanonicalTestPushResponse(
+      {
+        merchant_id: STORE_A,
+        scope: "store",
+        results: [{ id: SUB_1, ok: true }],
+      },
+      STORE_A,
+    );
+    expect(validWithoutError.results[0].ok).toBe(true);
   });
 
   it("Readiness Parser: rejects missing/mismatched merchant_id and validates non-negative bounds and integrity", () => {
@@ -1194,8 +1283,8 @@ describe("3. Decoupled Push Device Registration & No-Mutation Invariant", () => 
         device_label: "mock-label",
         user_agent: "mock-agent",
         status: "active",
-        created_at: "2026-01-01",
-        updated_at: "2026-01-01",
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-01T00:00:00Z",
         is_own: true,
       },
     });
