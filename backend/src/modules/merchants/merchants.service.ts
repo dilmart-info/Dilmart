@@ -8,6 +8,7 @@ import {
   ListMerchantCustomersQueryDto,
   MerchantFinanceStatementQueryDto,
   MerchantPayoutHistoryQueryDto,
+  PatchMerchantSettingsDto,
   UpdateMerchantDto,
   UpdateMerchantStatusDto,
   UpsertMerchantSettingsDto,
@@ -38,6 +39,26 @@ const MERCHANT_SETTINGS_PATCH_FIELDS = [
 /** The canonical settings snapshot: the merchant_settings row plus the merchant's logo. */
 export type MerchantSettingsSnapshot = Record<string, unknown> & { merchant_id: string; logo_url: string | null };
 
+export type CanonicalMerchantSettings = {
+  contact_phone: string | null;
+  whatsapp_phone: string | null;
+  support_email: string | null;
+  city: string | null;
+  address: string | null;
+  delivery_notes: string | null;
+  logo_url: string | null;
+  push_enabled: boolean;
+  sound_enabled: boolean;
+  sound_repeat_interval_seconds: number;
+  sound_max_duration_seconds: number;
+};
+
+export type CanonicalMerchantSettingsResponse = {
+  merchant_id: string;
+  settings_exists: boolean;
+  settings: CanonicalMerchantSettings | null;
+};
+
 /**
  * Builds the RPC patch from the validated DTO.
  *
@@ -50,7 +71,7 @@ export type MerchantSettingsSnapshot = Record<string, unknown> & { merchant_id: 
  * both leave the logo untouched (null is NOT reinterpreted as "clear"), while `""` clears it and a
  * URL replaces it.
  */
-function buildMerchantSettingsPatch(payload: UpsertMerchantSettingsDto): Record<string, unknown> {
+function buildMerchantSettingsPatch(payload: UpsertMerchantSettingsDto | PatchMerchantSettingsDto): Record<string, unknown> {
   const patch: Record<string, unknown> = {};
   const source = payload as unknown as Record<string, unknown>;
   for (const field of MERCHANT_SETTINGS_PATCH_FIELDS) {
@@ -367,7 +388,196 @@ export class MerchantsService {
     private readonly scopeResolver: ScopeResolverService,
   ) {}
 
+  private isSettingsPlatformRole(role?: string): boolean {
+    return role === "super_admin" || role === "admin";
+  }
+
+  private isSettingsMerchantReadRole(role?: string): boolean {
+    const normalized = (role ?? "").trim().toLowerCase();
+    return (
+      normalized === "merchant_owner" ||
+      normalized === "owner" ||
+      normalized === "merchant_manager" ||
+      normalized === "manager" ||
+      normalized === "merchant_staff" ||
+      normalized === "staff"
+    );
+  }
+
+  private isSettingsMerchantMutateRole(role?: string): boolean {
+    const normalized = (role ?? "").trim().toLowerCase();
+    return (
+      normalized === "merchant_owner" ||
+      normalized === "owner" ||
+      normalized === "merchant_manager" ||
+      normalized === "manager"
+    );
+  }
+
+  async resolveMerchantSettingsScope(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+    requireMutation = false,
+  ): Promise<string> {
+    if (!actor?.actor_role || !actor?.actor_id) {
+      throw new ForbiddenException("Actor context is required.");
+    }
+
+    if (this.isSettingsPlatformRole(actor.actor_role)) {
+      const { data: merchant, error } = await this.supabaseAdmin.client
+        .from("merchants")
+        .select("id")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!merchant) throw new NotFoundException("Merchant not found.");
+      return merchantId;
+    }
+
+    if (requireMutation) {
+      if (!this.isSettingsMerchantMutateRole(actor.actor_role)) {
+        throw new ForbiddenException("Staff is not permitted to mutate store settings.");
+      }
+    } else {
+      if (!this.isSettingsMerchantReadRole(actor.actor_role)) {
+        throw new ForbiddenException("Actor is not permitted to view store settings.");
+      }
+    }
+
+    // Exact membership in merchant_users (no first-store fallback)
+    const { data: membership, error: memError } = await this.supabaseAdmin.client
+      .from("merchant_users")
+      .select("role")
+      .eq("user_id", actor.actor_id)
+      .eq("merchant_id", merchantId)
+      .maybeSingle();
+
+    if (memError) throw memError;
+    if (!membership) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+
+    if (requireMutation) {
+      const normalizedRole = (membership.role ?? "").trim().toLowerCase();
+      if (normalizedRole !== "owner" && normalizedRole !== "manager") {
+        throw new ForbiddenException("Staff is not permitted to mutate store settings.");
+      }
+    }
+
+    // Exact merchant status in merchants table must equal 'active'
+    const { data: merchant, error: merchError } = await this.supabaseAdmin.client
+      .from("merchants")
+      .select("id, status")
+      .eq("id", merchantId)
+      .maybeSingle();
+
+    if (merchError) throw merchError;
+    if (!merchant) throw new NotFoundException("Merchant not found.");
+    if (merchant.status !== "active") {
+      throw new ForbiddenException("Merchant is not active.");
+    }
+
+    return merchantId;
+  }
+
+  async getMerchantSettingsExplicit(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+  ): Promise<CanonicalMerchantSettingsResponse> {
+    const resolvedMerchantId = await this.resolveMerchantSettingsScope(merchantId, actor, false);
+
+    const { data, error } = await this.supabaseAdmin.client
+      .from("merchants")
+      .select("logo_url, merchant_settings(*)")
+      .eq("id", resolvedMerchantId)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) throw new NotFoundException("Merchant not found.");
+
+    const row = data as { logo_url?: string | null; merchant_settings?: unknown };
+    const logoUrl = (typeof row.logo_url === "string" && row.logo_url.trim()) ? row.logo_url : null;
+    const rawSettings = normalizeEmbeddedSettings(row.merchant_settings);
+
+    if (!rawSettings) {
+      return {
+        merchant_id: resolvedMerchantId,
+        settings_exists: false,
+        settings: null,
+      };
+    }
+
+    return {
+      merchant_id: resolvedMerchantId,
+      settings_exists: true,
+      settings: {
+        contact_phone: (rawSettings.contact_phone as string) ?? null,
+        whatsapp_phone: (rawSettings.whatsapp_phone as string) ?? null,
+        support_email: (rawSettings.support_email as string) ?? null,
+        city: (rawSettings.city as string) ?? null,
+        address: (rawSettings.address as string) ?? null,
+        delivery_notes: (rawSettings.delivery_notes as string) ?? null,
+        logo_url: logoUrl,
+        push_enabled: rawSettings.push_enabled !== false,
+        sound_enabled: rawSettings.sound_enabled !== false,
+        sound_repeat_interval_seconds:
+          typeof rawSettings.sound_repeat_interval_seconds === "number"
+            ? rawSettings.sound_repeat_interval_seconds
+            : 15,
+        sound_max_duration_seconds:
+          typeof rawSettings.sound_max_duration_seconds === "number"
+            ? rawSettings.sound_max_duration_seconds
+            : 300,
+      },
+    };
+  }
+
+  async patchMerchantSettingsExplicit(
+    merchantId: string,
+    payload: PatchMerchantSettingsDto,
+    actor?: { actor_role?: string; actor_id?: string },
+  ): Promise<CanonicalMerchantSettingsResponse> {
+    const resolvedMerchantId = await this.resolveMerchantSettingsScope(merchantId, actor, true);
+
+    const patch = buildMerchantSettingsPatch(payload);
+    const { data, error } = await this.supabaseAdmin.client.rpc(MERCHANT_SETTINGS_RPC, {
+      p_merchant_id: resolvedMerchantId,
+      p_patch: patch,
+    });
+    if (error) throw error;
+    const snapshot = parseMerchantSettingsSnapshot(data);
+
+    const logoUrl = (typeof snapshot.logo_url === "string" && snapshot.logo_url.trim()) ? snapshot.logo_url : null;
+
+    return {
+      merchant_id: resolvedMerchantId,
+      settings_exists: true,
+      settings: {
+        contact_phone: (snapshot.contact_phone as string) ?? null,
+        whatsapp_phone: (snapshot.whatsapp_phone as string) ?? null,
+        support_email: (snapshot.support_email as string) ?? null,
+        city: (snapshot.city as string) ?? null,
+        address: (snapshot.address as string) ?? null,
+        delivery_notes: (snapshot.delivery_notes as string) ?? null,
+        logo_url: logoUrl,
+        push_enabled: snapshot.push_enabled !== false,
+        sound_enabled: snapshot.sound_enabled !== false,
+        sound_repeat_interval_seconds:
+          typeof snapshot.sound_repeat_interval_seconds === "number"
+            ? snapshot.sound_repeat_interval_seconds
+            : 15,
+        sound_max_duration_seconds:
+          typeof snapshot.sound_max_duration_seconds === "number"
+            ? snapshot.sound_max_duration_seconds
+            : 300,
+      },
+    };
+  }
+
   async getMerchantSettings(merchantId: string, actor?: { actor_role?: string; actor_id?: string }) {
+    if (actor?.actor_role && !this.isSettingsPlatformRole(actor.actor_role)) {
+      throw new ForbiddenException("Legacy settings endpoint is restricted to platform administrators.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(merchantId, actor?.actor_role, actor?.actor_id);
     if (!resolvedMerchantId) throw new ForbiddenException("Merchant id is required.");
     // ONE statement, ONE snapshot. The previous Promise.all issued two independent reads, so a
@@ -392,6 +602,9 @@ export class MerchantsService {
   }
 
   async upsertMerchantSettings(payload: UpsertMerchantSettingsDto, actor?: { actor_role?: string; actor_id?: string }) {
+    if (actor?.actor_role && !this.isSettingsPlatformRole(actor.actor_role)) {
+      throw new ForbiddenException("Legacy settings endpoint is restricted to platform administrators.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(payload.merchant_id, actor?.actor_role, actor?.actor_id);
     if (!resolvedMerchantId) throw new ForbiddenException("Merchant id is required.");
     // ONE transaction. The settings write and the logo write used to be two statements: the first

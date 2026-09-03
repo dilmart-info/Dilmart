@@ -39,29 +39,58 @@ export const merchantApi = {
   },
 
   getMerchantSettings(merchantId: string) {
-    const params = new URLSearchParams({ merchant_id: merchantId });
-    return request<Record<string, unknown> | null>(`/merchants/settings?${params.toString()}`, "GET");
+    return request<{
+      merchant_id: string;
+      settings_exists: boolean;
+      settings: {
+        contact_phone: string | null;
+        whatsapp_phone: string | null;
+        support_email: string | null;
+        city: string | null;
+        address: string | null;
+        delivery_notes: string | null;
+        logo_url: string | null;
+        push_enabled: boolean;
+        sound_enabled: boolean;
+        sound_repeat_interval_seconds: number;
+        sound_max_duration_seconds: number;
+      } | null;
+    }>(`/merchants/${encodeURIComponent(merchantId)}/settings`, "GET");
   },
 
-  getMerchantDashboard(merchantId?: string) {
-    const params = merchantId ? new URLSearchParams({ merchant_id: merchantId }) : new URLSearchParams();
+  patchMerchantSettings(
+    merchantId: string,
+    payload: {
+      contact_phone?: string;
+      whatsapp_phone?: string;
+      support_email?: string;
+      city?: string;
+      address?: string;
+      delivery_notes?: string;
+      logo_url?: string;
+      push_enabled?: boolean;
+      sound_enabled?: boolean;
+      sound_repeat_interval_seconds?: number;
+      sound_max_duration_seconds?: number;
+    },
+  ) {
     return request<{
-      products: { total: number; active: number; inactive: number; low_stock: number };
-      orders: { today: number; completed_7d: number; average_order_value_7d: number; revenue_7d: number };
-      top_products: Array<{ product_id: string; name: string; units_sold: number; revenue: number }>;
-      low_stock_products: Array<{ product_id: string; name: string; stock: number; threshold: number }>;
-      recent_orders: Array<{ id: string; order_number: string; status: string; total: number; created_at: string }>;
-    }>(`/merchant/dashboard?${params.toString()}`, "GET");
-  },
-
-  getMerchantDashboardLegacy() {
-    return request<{
-      products: { total: number; active: number; inactive: number; low_stock: number };
-      orders: { today: number; completed_7d: number; average_order_value_7d: number; revenue_7d: number };
-      top_products: Array<{ product_id: string; name: string; units_sold: number; revenue: number }>;
-      low_stock_products: Array<{ product_id: string; name: string; stock: number; threshold: number }>;
-      recent_orders: Array<{ id: string; order_number: string; status: string; total: number; created_at: string }>;
-    }>("/merchant/dashboard", "GET");
+      merchant_id: string;
+      settings_exists: boolean;
+      settings: {
+        contact_phone: string | null;
+        whatsapp_phone: string | null;
+        support_email: string | null;
+        city: string | null;
+        address: string | null;
+        delivery_notes: string | null;
+        logo_url: string | null;
+        push_enabled: boolean;
+        sound_enabled: boolean;
+        sound_repeat_interval_seconds: number;
+        sound_max_duration_seconds: number;
+      } | null;
+    }>(`/merchants/${encodeURIComponent(merchantId)}/settings`, "PATCH", payload);
   },
 
   upsertMerchantSettings(payload: {
@@ -78,7 +107,8 @@ export const merchantApi = {
     sound_repeat_interval_seconds?: number;
     sound_max_duration_seconds?: number;
   }) {
-    return request<Record<string, unknown>>("/merchants/settings", "POST", payload);
+    const { merchant_id, ...rest } = payload;
+    return merchantApi.patchMerchantSettings(merchant_id, rest);
   },
 
   downloadMerchantImportTemplate() {
@@ -332,20 +362,19 @@ export const merchantApi = {
   },
 
   listPushSubscriptions(merchantId: string) {
-    const params = new URLSearchParams({ merchant_id: merchantId });
-    return request<Array<{
-      id: string;
+    return request<{
       merchant_id: string;
-      user_id: string;
-      device_label: string | null;
-      user_agent: string | null;
-      status: string;
-      last_success_at: string | null;
-      last_failure_at: string | null;
-      failure_count: number;
-      created_at: string;
-      updated_at: string;
-    }>>(`/merchant/push-subscriptions?${params.toString()}`, "GET");
+      scope: "store" | "own";
+      devices: Array<{
+        id: string;
+        device_label: string | null;
+        user_agent: string | null;
+        status: string;
+        created_at: string;
+        updated_at: string;
+        is_own: boolean;
+      }>;
+    }>(`/merchants/${encodeURIComponent(merchantId)}/push-subscriptions`, "GET");
   },
 
   registerPushSubscription(payload: {
@@ -355,21 +384,37 @@ export const merchantApi = {
     device_label?: string;
     user_agent?: string;
   }) {
-    return request<Record<string, unknown>>("/merchant/push-subscriptions", "POST", payload);
+    const { merchant_id, ...body } = payload;
+    return request<{
+      merchant_id: string;
+      subscription: {
+        id: string;
+        device_label: string | null;
+        user_agent: string | null;
+        status: string;
+        created_at: string;
+        updated_at: string;
+        is_own: boolean;
+      };
+    }>(`/merchants/${encodeURIComponent(merchant_id)}/push-subscriptions`, "POST", body);
   },
 
-  deletePushSubscription(id: string) {
-    return request<{ success: boolean }>(`/merchant/push-subscriptions/${encodeURIComponent(id)}`, "DELETE");
+  deletePushSubscription(merchantId: string, subscriptionId: string) {
+    return request<{ merchant_id: string; deleted_id: string; success: boolean }>(
+      `/merchants/${encodeURIComponent(merchantId)}/push-subscriptions/${encodeURIComponent(subscriptionId)}`,
+      "DELETE",
+    );
   },
 
   testPushSubscription(merchantId: string, subscriptionId?: string) {
-    return request<{ success: boolean; results: Array<{ id: string; ok: boolean; error?: string }> }>(
-      "/merchant/push-subscriptions/test",
+    return request<{
+      merchant_id: string;
+      scope: "store" | "own";
+      results: Array<{ id: string; ok: boolean; error?: string }>;
+    }>(
+      `/merchants/${encodeURIComponent(merchantId)}/push-subscriptions/test`,
       "POST",
-      {
-        merchant_id: merchantId,
-        ...(subscriptionId ? { subscription_id: subscriptionId } : {}),
-      },
+      subscriptionId ? { subscription_id: subscriptionId } : {},
     );
   },
 

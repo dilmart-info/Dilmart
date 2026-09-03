@@ -5,6 +5,9 @@ import {
   canMerchantManageCoupons,
   canMerchantViewFinance,
   canMerchantViewCustomers,
+  canMerchantManageSettings,
+  canMerchantManageGlobalPushPolicy,
+  canMerchantManageStoreDevices,
   isMerchantStaff,
 } from "./merchant-role-authority";
 
@@ -103,5 +106,36 @@ describe("merchant-role-authority — Role Gating Matrix", () => {
     expect(canMerchantViewCustomers("super_admin")).toBe(false);
     expect(canMerchantViewCustomers("admin")).toBe(false);
     expect(canMerchantViewCustomers("unauthorized_role")).toBe(false);
+  });
+
+  it("authorizes owner and manager for settings and global push policy, while strictly forbidding staff", () => {
+    // canMerchantManageSettings
+    expect(canMerchantManageSettings("owner")).toBe(true);
+    expect(canMerchantManageSettings("merchant_owner")).toBe(true);
+    expect(canMerchantManageSettings("manager")).toBe(true);
+    expect(canMerchantManageSettings("merchant_manager")).toBe(true);
+    expect(canMerchantManageSettings("staff")).toBe(false);
+    expect(canMerchantManageSettings("merchant_staff")).toBe(false);
+    expect(canMerchantManageSettings(null)).toBe(false);
+    expect(canMerchantManageSettings(undefined)).toBe(false);
+    expect(canMerchantManageSettings("customer")).toBe(false);
+
+    // canMerchantManageGlobalPushPolicy
+    expect(canMerchantManageGlobalPushPolicy("owner")).toBe(true);
+    expect(canMerchantManageGlobalPushPolicy("merchant_owner")).toBe(true);
+    expect(canMerchantManageGlobalPushPolicy("manager")).toBe(true);
+    expect(canMerchantManageGlobalPushPolicy("merchant_manager")).toBe(true);
+    expect(canMerchantManageGlobalPushPolicy("staff")).toBe(false);
+    expect(canMerchantManageGlobalPushPolicy("merchant_staff")).toBe(false);
+    expect(canMerchantManageGlobalPushPolicy(null)).toBe(false);
+
+    // canMerchantManageStoreDevices
+    expect(canMerchantManageStoreDevices("owner")).toBe(true);
+    expect(canMerchantManageStoreDevices("merchant_owner")).toBe(true);
+    expect(canMerchantManageStoreDevices("manager")).toBe(true);
+    expect(canMerchantManageStoreDevices("merchant_manager")).toBe(true);
+    expect(canMerchantManageStoreDevices("staff")).toBe(false);
+    expect(canMerchantManageStoreDevices("merchant_staff")).toBe(false);
+    expect(canMerchantManageStoreDevices(null)).toBe(false);
   });
 });

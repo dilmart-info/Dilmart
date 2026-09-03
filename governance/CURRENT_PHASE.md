@@ -3,19 +3,57 @@
 ## Status
 
 ```text
-PHASE_3F_MERGED
-PR_22_CLOSED
-PR_22_SOURCE_HEAD_D905943
-PR_22_MERGE_SHA_A8BA5E0
-MAIN_CI_PASS
-NATIVE_CI_PASS
-NETLIFY_GATE_PASS
+PHASE_3G_FINAL_CORRECTION
+TASK_ID_DILMART_PHASE_3G_MERCHANT_SETTINGS_MULTI_STORE_MUTATION_AUTHORITY_001
+PR_24_DRAFT_OPEN
+ALL_BACKEND_TESTS_PASS (292/292)
+ALL_FRONTEND_TESTS_PASS (1023/1023)
+CI_GUARDS_PASS (99/99)
+GRANULAR_BACKEND_SUITE_PASS (33/33)
+EXTENDED_FRONTEND_SWITCH_PASS (37/37)
+REAL_HTTP_BOUNDARY_TEST_PASS
 NETLIFY_PUBLISH_SKIPPED
 RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
 NO_LIVE_DB_MUTATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+DRAFT_PR_ONLY
 ```
+
+---
+
+## Active Implementation Phase
+
+### Phase 3G: Merchant Settings Multi-Store Mutation Authority & Push Device Isolation
+- **Task:** `DILMART-PHASE-3G-MERCHANT-SETTINGS-MULTI-STORE-MUTATION-AUTHORITY-001`
+- **Feature Branch:** `frontend/dilmart-merchant-settings-authority`
+- **Base SHA:** `ae81a2a1dc8fd3da21636627493979cb50b1bbdc`
+- **Final Targeted Correction Scope Delivered:**
+  - Hardened `parseCanonicalSettingsResponse`: enforces presence of all canonical keys, rejects undefined as null, validates integer sound bounds and logo_url protocol. When settings_exists is false, strictly requires hasOwnProperty and explicit literal null settings.
+  - Hardened `parseCanonicalRegisterPushResponse`: enforces explicit device_label and user_agent types, validates strict ISO-8601 timestamp format, rejects general non-ISO dates, and rejects sensitive field leakage.
+  - Hardened `parseCanonicalTestPushResponse`: strictly asserts id, ok, and string error type when error property is present (rejects null, undefined, numbers, objects).
+  - Added strict `parseCanonicalReadinessResponse`: validates merchant_id, is_ready boolean, non-negative integer scores, passed_checks <= total_checks, and integrated into Settings queryFn.
+  - Added discrete deferred race tests covering late readiness success, late readiness rejection, late registration success, late registration rejection, late delete success, late delete rejection, late test success, and late test rejection.
+  - Decoupled push device registration from store global settings patch (device registration NEVER mutates global store settings).
+  - Unified `isCurrentOperation(targetMerchantId, generation)` race guards across all async await boundaries (settings, save, logo upload, push registration, test, delete).
+  - Explicit settings endpoints (`GET /merchants/:id/settings` and `PATCH /merchants/:id/settings`).
+  - Strict UUID and DTO validation with bounds.
+  - Non-existent row treated as valid state (`settings_exists: false, settings: null`).
+  - Canonical contract `{ merchant_id, settings_exists, settings }` on read and mutation.
+  - Legacy routes locked to platform admins only; merchant roles rejected with HTTP 403.
+  - Explicit push endpoints (`GET`, `POST`, `POST /test`, `DELETE` on `/merchants/:id/push-subscriptions`).
+  - Safe push device projections omitting secret keys and internal user IDs.
+  - Staff device isolation and non-disclosing 404 for foreign device access.
+  - Product image upload shared endpoint preserved; logo upload hidden from staff in Settings UI.
+  - Frontend Keyed Workspace `<MerchantSettingsWorkspace key={merchantId} ... />` with synchronous reset and dirty form protection.
+  - Truthful independent loading/error/empty UI states.
+- **Verification Suites:**
+  - `backend/tests/merchant-settings-multi-store-authority.test.mjs` (33 discrete tests, all pass)
+  - `src/pages/merchant/Settings.merchant-switch.test.tsx` (37 tests, all pass)
+  - `src/lib/merchant-role-authority.test.ts` (6 tests, all pass)
+  - Full frontend suite: 102 files, 1023 tests passed.
+  - Full backend suite: 292 tests passed.
+  - CI guards: 3 files, 99 tests passed, 0 violations.
+- **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
 
