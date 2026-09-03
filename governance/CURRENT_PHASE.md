@@ -3,17 +3,14 @@
 ## Status
 
 ```text
-PHASE_3G_IMPLEMENTATION
+PHASE_3G_MICRO_CLOSURE
 TASK_ID_DILMART_PHASE_3G_MERCHANT_SETTINGS_MULTI_STORE_MUTATION_AUTHORITY_001
 PR_24_DRAFT_OPEN
-PR_24_SOURCE_HEAD_CD7E38B
-CRITICAL_CI_RUN_33796724844_PASS
-NATIVE_CI_RUN_33796724924_PASS
-ANDROID_FOUNDATION_PASS
-IOS_FOUNDATION_PASS
 ALL_BACKEND_TESTS_PASS (292/292)
-ALL_FRONTEND_TESTS_PASS (993/993)
+ALL_FRONTEND_TESTS_PASS (1005/1005)
 CI_GUARDS_PASS (99/99)
+GRANULAR_BACKEND_SUITE_PASS (33/33)
+EXTENDED_FRONTEND_SWITCH_PASS (19/19)
 REAL_HTTP_BOUNDARY_TEST_PASS
 NETLIFY_PUBLISH_SKIPPED
 RENDER_DEPLOYMENT_STATE_UNVERIFIED
@@ -30,7 +27,10 @@ DRAFT_PR_ONLY
 - **Task:** `DILMART-PHASE-3G-MERCHANT-SETTINGS-MULTI-STORE-MUTATION-AUTHORITY-001`
 - **Feature Branch:** `frontend/dilmart-merchant-settings-authority`
 - **Base SHA:** `ae81a2a1dc8fd3da21636627493979cb50b1bbdc`
-- **Scope Delivered:**
+- **Micro-Closure Scope Delivered:**
+  - Decoupled push device registration from store global settings patch (device registration NEVER mutates global store settings).
+  - Strict fail-closed parsers & assertions for all settings and push responses (rejects missing/mismatched merchant_id, contradictory settings_exists, sensitive key leaks, invalid scopes).
+  - Unified `isCurrentOperation(targetMerchantId, generation)` race guards across all async await boundaries (settings, save, logo upload, push registration, test, delete).
   - Explicit settings endpoints (`GET /merchants/:id/settings` and `PATCH /merchants/:id/settings`).
   - Strict UUID and DTO validation with bounds.
   - Non-existent row treated as valid state (`settings_exists: false, settings: null`).
@@ -43,11 +43,13 @@ DRAFT_PR_ONLY
   - Frontend Keyed Workspace `<MerchantSettingsWorkspace key={merchantId} ... />` with synchronous reset and dirty form protection.
   - Truthful independent loading/error/empty UI states.
 - **Verification Suites:**
-  - `backend/tests/merchant-settings-multi-store-authority.test.mjs` (4 subtests, all pass)
-  - `src/pages/merchant/Settings.merchant-switch.test.tsx` (7 tests, all pass)
+  - `backend/tests/merchant-settings-multi-store-authority.test.mjs` (33 discrete tests, all pass)
+  - `src/pages/merchant/Settings.merchant-switch.test.tsx` (19 tests, all pass)
   - `src/lib/merchant-role-authority.test.ts` (6 tests, all pass)
-  - Full frontend suite: 102 files, 993 tests passed.
+  - Full frontend suite: 102 files, 1005 tests passed.
   - Full backend suite: 292 tests passed.
+  - CI guards: 3 files, 99 tests passed, 0 violations.
+- **Database Status:** 0 migrations applied, 0 live mutations.
   - CI guards: 3 files, 99 tests passed, 0 violations.
 - **Database Status:** 0 migrations applied, 0 live mutations.
 

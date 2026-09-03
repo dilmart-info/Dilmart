@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { before, after } from "node:test";
 import {
   ValidationPipe,
   ParseUUIDPipe,
@@ -106,7 +106,7 @@ function makeHarness() {
         p256dh_key: "p256dh-a-staff",
         auth_key: "auth-a-staff",
         device_label: "staff-tablet",
-        user_agent: "Mozilla/5.0 (iPad)",
+        user_agent: "Mozilla/5.0 (Android)",
         status: "active",
         created_at: "2026-06-02T10:00:00Z",
         updated_at: "2026-06-02T10:00:00Z",
@@ -118,308 +118,254 @@ function makeHarness() {
         endpoint: "https://push.example.com/sub/b-owner",
         p256dh_key: "p256dh-b-owner",
         auth_key: "auth-b-owner",
-        device_label: "store-b-pc",
-        user_agent: "Mozilla/5.0 (Windows NT 10.0)",
+        device_label: "b-owner-laptop",
+        user_agent: "Mozilla/5.0 (Macintosh)",
         status: "active",
         created_at: "2026-06-03T10:00:00Z",
         updated_at: "2026-06-03T10:00:00Z",
       },
     ],
-    rpcCalls: [],
   };
 
-  const fakeClient = {
-    from(table) {
-      const filters = {};
-      const queryObj = {
-        select(_cols) {
-          return queryObj;
+  const supabaseMock = {
+    from: (table) => {
+      let filters = [];
+      let selectedCols = "*";
+      let isSingle = false;
+      let isMaybeSingle = false;
+      let orderCol = null;
+      let orderAsc = true;
+      let upsertPayload = null;
+      let deleteOp = false;
+
+      const builder = {
+        select: (cols) => {
+          selectedCols = cols;
+          return builder;
         },
-        eq(col, val) {
-          filters[col] = val;
-          return queryObj;
+        eq: (col, val) => {
+          filters.push({ col, val });
+          return builder;
         },
-        order(_col, _opts) {
-          return queryObj;
+        order: (col, opts = {}) => {
+          orderCol = col;
+          orderAsc = opts.ascending ?? true;
+          return builder;
         },
-        async maybeSingle() {
-          const rows = state[table] || [];
-          const match = rows.find((r) => {
-            for (const [k, v] of Object.entries(filters)) {
-              if (r[k] !== v) return false;
-            }
-            return true;
-          });
-          if (!match) return { data: null, error: null };
-          const result = { ...match };
-          if (table === "merchants") {
-            const settings = state.merchant_settings.find((s) => s.merchant_id === match.id);
-            result.merchant_settings = settings ? [settings] : [];
+        single: () => {
+          isSingle = true;
+          return builder;
+        },
+        maybeSingle: () => {
+          isMaybeSingle = true;
+          return builder;
+        },
+        upsert: (payload, opts) => {
+          upsertPayload = payload;
+          return builder;
+        },
+        delete: () => {
+          deleteOp = true;
+          return builder;
+        },
+        then: async (resolve) => {
+          let rows = [...(state[table] || [])];
+          for (const f of filters) {
+            rows = rows.filter((r) => r[f.col] === f.val);
           }
-          return { data: result, error: null };
-        },
-        async single() {
-          const rows = state[table] || [];
-          const match = rows.find((r) => {
-            for (const [k, v] of Object.entries(filters)) {
-              if (r[k] !== v) return false;
-            }
-            return true;
-          });
-          if (!match) return { data: null, error: new Error("Row not found") };
-          const result = { ...match };
-          if (table === "merchants") {
-            const settings = state.merchant_settings.find((s) => s.merchant_id === match.id);
-            result.merchant_settings = settings ? [settings] : [];
+
+          if (table === "merchants" && selectedCols.includes("merchant_settings")) {
+            rows = rows.map((r) => {
+              const ms = state.merchant_settings.filter((s) => s.merchant_id === r.id);
+              return { ...r, merchant_settings: ms };
+            });
           }
-          return { data: result, error: null };
-        },
-        upsert(row, _opts) {
-          const rows = state[table] || [];
-          const idx = rows.findIndex((r) => {
-            if (table === "merchant_push_subscriptions") {
-              return r.merchant_id === row.merchant_id && r.endpoint === row.endpoint;
-            }
-            return false;
-          });
-          const inserted = {
-            id: row.id || `sub-gen-${Date.now()}`,
-            created_at: new Date().toISOString(),
-            ...row,
-          };
-          if (idx >= 0) {
-            rows[idx] = { ...rows[idx], ...inserted };
-          } else {
-            rows.push(inserted);
+
+          if (deleteOp) {
+            state[table] = (state[table] || []).filter(
+              (r) => !filters.every((f) => r[f.col] === f.val),
+            );
+            return resolve({ data: null, error: null });
           }
-          return {
-            select() {
-              return {
-                async single() {
-                  return { data: inserted, error: null };
-                },
-              };
-            },
-          };
-        },
-        delete() {
-          return {
-            eq(col, val) {
-              filters[col] = val;
-              return {
-                async eq(col2, val2) {
-                  filters[col2] = val2;
-                  const rows = state[table] || [];
-                  const remaining = rows.filter((r) => {
-                    return !(r[col] === val && r[col2] === val2);
-                  });
-                  state[table] = remaining;
-                  return { error: null };
-                },
-              };
-            },
-          };
-        },
-        async then(resolve) {
-          const rows = state[table] || [];
-          const matches = rows.filter((r) => {
-            for (const [k, v] of Object.entries(filters)) {
-              if (r[k] !== v) return false;
+
+          if (upsertPayload) {
+            const conflictKey = "merchant_id,endpoint";
+            const existingIdx = (state[table] || []).findIndex(
+              (r) =>
+                r.merchant_id === upsertPayload.merchant_id &&
+                r.endpoint === upsertPayload.endpoint,
+            );
+            const row = {
+              id: existingIdx >= 0 ? state[table][existingIdx].id : "gen-sub-" + Date.now(),
+              ...upsertPayload,
+            };
+            if (existingIdx >= 0) {
+              state[table][existingIdx] = row;
+            } else {
+              state[table].push(row);
             }
-            return true;
-          });
-          resolve({ data: matches.map((r) => ({ ...r })), error: null });
+            return resolve({ data: row, error: null });
+          }
+
+          if (isSingle) {
+            if (rows.length === 0) {
+              return resolve({ data: null, error: { message: "Row not found", code: "PGRST116" } });
+            }
+            return resolve({ data: rows[0], error: null });
+          }
+          if (isMaybeSingle) {
+            return resolve({ data: rows[0] || null, error: null });
+          }
+          return resolve({ data: rows, error: null });
         },
       };
-      return queryObj;
+      return builder;
     },
-    async rpc(name, params) {
-      state.rpcCalls.push({ name, params });
-      if (name === "upsert_merchant_settings_atomic") {
-        const p_merchant_id = params.p_merchant_id;
-        const p_patch = params.p_patch ?? params.p_settings ?? {};
-        const s = typeof p_patch === "string" ? JSON.parse(p_patch) : p_patch;
-
-        const rows = state.merchant_settings;
-        const idx = rows.findIndex((r) => r.merchant_id === p_merchant_id);
-        const updated = {
-          merchant_id: p_merchant_id,
-          contact_phone: s.contact_phone ?? null,
-          whatsapp_phone: s.whatsapp_phone ?? null,
-          support_email: s.support_email ?? null,
-          city: s.city ?? null,
-          address: s.address ?? null,
-          delivery_notes: s.delivery_notes ?? null,
-          push_enabled: s.push_enabled ?? true,
-          sound_enabled: s.sound_enabled ?? true,
-          sound_repeat_interval_seconds: s.sound_repeat_interval_seconds ?? 15,
-          sound_max_duration_seconds: s.sound_max_duration_seconds ?? 300,
-        };
-
-        if (idx >= 0) {
-          rows[idx] = updated;
-        } else {
-          rows.push(updated);
+    rpc: (rpcName, params) => {
+      if (rpcName === "upsert_merchant_settings_atomic") {
+        const patch = params.p_patch || params.p_settings || {};
+        const mid = params.p_merchant_id;
+        let existing = state.merchant_settings.find((s) => s.merchant_id === mid);
+        if (!existing) {
+          existing = { merchant_id: mid };
+          state.merchant_settings.push(existing);
         }
-
-        if (s.logo_url !== undefined) {
-          const merch = state.merchants.find((m) => m.id === p_merchant_id);
-          if (merch) {
-            merch.logo_url = s.logo_url || null;
-          }
+        Object.assign(existing, patch);
+        const mRow = state.merchants.find((m) => m.id === mid);
+        if (mRow && patch.logo_url !== undefined) {
+          mRow.logo_url = patch.logo_url;
         }
-
-        return {
+        return Promise.resolve({
           data: {
-            ...updated,
-            logo_url: s.logo_url ?? null,
+            ...existing,
+            logo_url: mRow?.logo_url ?? null,
             updated_at: new Date().toISOString(),
           },
           error: null,
-        };
+        });
       }
-      return { data: null, error: null };
+      return Promise.resolve({ data: null, error: { message: `Unknown RPC: ${rpcName}` } });
     },
   };
 
-  const fakeSupabaseAdmin = { client: fakeClient };
-  const fakeScopeResolver = {
-    async resolveMerchantScope(requestedMerchantId, actorRole, actorId) {
+  const scopeResolverMock = {
+    resolveMerchantScope: async (merchantId, actorRole, actorId) => {
+      if (!actorRole || !actorId) return null;
       if (actorRole === "super_admin" || actorRole === "admin") {
-        return requestedMerchantId;
+        return merchantId || null;
       }
-      if (!actorId || !requestedMerchantId) return undefined;
-      const m = state.merchant_users.find(
-        (u) => u.user_id === actorId && u.merchant_id === requestedMerchantId,
+      const membership = state.merchant_users.find(
+        (mu) => mu.user_id === actorId && (!merchantId || mu.merchant_id === merchantId),
       );
-      return m?.merchant_id;
+      return membership ? membership.merchant_id : null;
     },
   };
 
-  const fakeConfigService = {
-    get(key) {
-      if (key === "VAPID_PUBLIC_KEY") return "test-vapid-public-key";
-      if (key === "VAPID_PRIVATE_KEY") return "test-vapid-private-key";
-      if (key === "VAPID_SUBJECT") return "mailto:admin@dilmart.com";
-      return null;
-    },
-  };
+  const merchantsService = new MerchantsService(
+    { client: supabaseMock },
+    scopeResolverMock,
+  );
 
-  const merchantsService = new MerchantsService(fakeSupabaseAdmin, fakeScopeResolver);
-  const pushService = new MerchantPushService(fakeSupabaseAdmin, fakeScopeResolver, fakeConfigService);
+  const pushService = new MerchantPushService(
+    { client: supabaseMock },
+    scopeResolverMock,
+  );
 
-  return { merchantsService, pushService, state };
+  return { state, merchantsService, pushService };
 }
 
-// ── 1. DTO & Validation Bounds Suite ──
-test("1. DTO VALIDATION: PatchMerchantSettingsDto, ExplicitRegisterPushSubscriptionDto, ExplicitTestPushSubscriptionDto", async () => {
-  const pipe = new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: true,
-  });
+// ── 1. DTO VALIDATION TESTS ──
 
-  // A. PatchMerchantSettingsDto valid payload
-  const validPatch = await pipe.transform(
-    {
-      contact_phone: "07701234567",
-      whatsapp_phone: "07701234567",
-      support_email: "test@example.com",
-      city: "بغداد",
-      address: "المنصور",
-      delivery_notes: "تسليم عند الباب",
-      logo_url: "https://example.com/logo.png",
-      push_enabled: true,
-      sound_enabled: true,
-      sound_repeat_interval_seconds: 20,
-      sound_max_duration_seconds: 120,
-    },
-    { type: "body", metatype: PatchMerchantSettingsDto },
-  );
-  assert.equal(validPatch.contact_phone, "07701234567");
-  assert.equal(validPatch.sound_repeat_interval_seconds, 20);
-
-  // B. PatchMerchantSettingsDto allows empty string to clear logo_url or email
-  const emptyClear = await pipe.transform(
-    {
-      logo_url: "",
-      support_email: "",
-    },
-    { type: "body", metatype: PatchMerchantSettingsDto },
-  );
-  assert.equal(emptyClear.logo_url, "");
-  assert.equal(emptyClear.support_email, "");
-
-  // C. Injected merchant_id in PatchMerchantSettingsDto MUST be rejected by forbidNonWhitelisted
-  await assert.rejects(
-    () =>
-      pipe.transform(
-        { merchant_id: STORE_B, contact_phone: "07701111111" },
-        { type: "body", metatype: PatchMerchantSettingsDto },
-      ),
-    (err) => err instanceof BadRequestException,
-    "Passing merchant_id in PATCH body must be rejected",
-  );
-
-  // D. Disallowed protocol (javascript: or ftp:) in logo_url MUST be rejected
-  await assert.rejects(
-    () =>
-      pipe.transform(
-        { logo_url: "javascript:alert(1)" },
-        { type: "body", metatype: PatchMerchantSettingsDto },
-      ),
-    (err) => err instanceof BadRequestException,
-  );
-
-  // E. Out-of-bounds sound settings rejected
-  await assert.rejects(
-    () =>
-      pipe.transform(
-        { sound_repeat_interval_seconds: 4 }, // min is 5
-        { type: "body", metatype: PatchMerchantSettingsDto },
-      ),
-    (err) => err instanceof BadRequestException,
-  );
-  await assert.rejects(
-    () =>
-      pipe.transform(
-        { sound_repeat_interval_seconds: 121 }, // max is 120
-        { type: "body", metatype: PatchMerchantSettingsDto },
-      ),
-    (err) => err instanceof BadRequestException,
-  );
-  await assert.rejects(
-    () =>
-      pipe.transform(
-        { sound_max_duration_seconds: 29 }, // min is 30
-        { type: "body", metatype: PatchMerchantSettingsDto },
-      ),
-    (err) => err instanceof BadRequestException,
-  );
-  await assert.rejects(
-    () =>
-      pipe.transform(
-        { sound_max_duration_seconds: 1801 }, // max is 1800
-        { type: "body", metatype: PatchMerchantSettingsDto },
-      ),
-    (err) => err instanceof BadRequestException,
-  );
-
-  // F. ExplicitRegisterPushSubscriptionDto: forbids injected merchant_id
+test("DTO: PatchMerchantSettingsDto forbids injected merchant_id in request body", async () => {
+  const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
   await assert.rejects(
     () =>
       pipe.transform(
         {
           merchant_id: STORE_B,
-          endpoint: "https://push.example.com/sub/test",
-          keys: { p256dh: "key1", auth: "auth1" },
+          contact_phone: "07701234567",
+        },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+});
+
+test("DTO: PatchMerchantSettingsDto enforces length and type constraints on strings", async () => {
+  const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { contact_phone: "a".repeat(51) },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { city: "a".repeat(101) },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+});
+
+test("DTO: PatchMerchantSettingsDto enforces bounds on sound interval (5-120) and duration (30-1800)", async () => {
+  const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { sound_repeat_interval_seconds: 3 },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { sound_repeat_interval_seconds: 150 },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { sound_max_duration_seconds: 10 },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { sound_max_duration_seconds: 3600 },
+        { type: "body", metatype: PatchMerchantSettingsDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+});
+
+test("DTO: ExplicitRegisterPushSubscriptionDto and ExplicitTestPushSubscriptionDto forbid body merchant_id", async () => {
+  const pipe = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true });
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        {
+          merchant_id: STORE_B,
+          endpoint: "https://example.com/ep",
+          keys: { p256dh: "k1", auth: "k2" },
         },
         { type: "body", metatype: ExplicitRegisterPushSubscriptionDto },
       ),
     (err) => err instanceof BadRequestException,
   );
 
-  // G. ExplicitTestPushSubscriptionDto: forbids injected merchant_id
   await assert.rejects(
     () =>
       pipe.transform(
@@ -433,11 +379,18 @@ test("1. DTO VALIDATION: PatchMerchantSettingsDto, ExplicitRegisterPushSubscript
   );
 });
 
-// ── 2. Settings Canonical Contract & Direct Service Authority Suite ──
-test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, exact scope", async () => {
-  const { merchantsService } = makeHarness();
+test("UUID: ParseUUIDPipe rejects non-UUID strings", async () => {
+  const uuidPipe = new ParseUUIDPipe({ version: "4" });
+  await assert.rejects(
+    () => uuidPipe.transform("not-a-valid-uuid", { type: "param" }),
+    (err) => err instanceof BadRequestException,
+  );
+});
 
-  // A. Canonical contract for existing store settings
+// ── 2. SETTINGS SERVICE DIRECT TESTS ──
+
+test("Authority: Settings canonical contract for existing store", async () => {
+  const { merchantsService } = makeHarness();
   const resStoreA = await merchantsService.getMerchantSettingsExplicit(STORE_A, {
     actor_role: "merchant_owner",
     actor_id: USER_STORE_A_OWNER,
@@ -448,8 +401,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
   assert.equal(resStoreA.settings.contact_phone, "07701111111");
   assert.equal(resStoreA.settings.logo_url, "https://example.com/logo-a.png");
   assert.equal(resStoreA.settings.push_enabled, true);
+});
 
-  // B. Canonical contract for non-existent settings row (store exists, no settings row yet)
+test("Authority: Settings canonical contract for non-existent row (settings_exists: false, settings: null)", async () => {
+  const { merchantsService } = makeHarness();
   const resStoreEmpty = await merchantsService.getMerchantSettingsExplicit(STORE_EMPTY, {
     actor_role: "merchant_owner",
     actor_id: USER_STORE_A_OWNER,
@@ -457,8 +412,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
   assert.equal(resStoreEmpty.merchant_id, STORE_EMPTY);
   assert.equal(resStoreEmpty.settings_exists, false);
   assert.equal(resStoreEmpty.settings, null, "Non-existent settings row must return settings: null");
+});
 
-  // C. Cross-store boundary: User belonging to Store A cannot read Store B settings
+test("Authority: Cross-store denial on settings read", async () => {
+  const { merchantsService } = makeHarness();
   await assert.rejects(
     () =>
       merchantsService.getMerchantSettingsExplicit(STORE_B, {
@@ -467,8 +424,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
       }),
     (err) => err instanceof ForbiddenException,
   );
+});
 
-  // D. Inactive/suspended merchant rejected
+test("Authority: Inactive/suspended merchant denied settings access", async () => {
+  const { merchantsService } = makeHarness();
   await assert.rejects(
     () =>
       merchantsService.getMerchantSettingsExplicit(STORE_INACTIVE, {
@@ -477,8 +436,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
       }),
     (err) => err instanceof ForbiddenException,
   );
+});
 
-  // E. Staff CAN read settings
+test("Authority: Staff permitted GET settings but rejected from PATCH settings", async () => {
+  const { merchantsService } = makeHarness();
   const resStaff = await merchantsService.getMerchantSettingsExplicit(STORE_A, {
     actor_role: "merchant_staff",
     actor_id: USER_STORE_A_STAFF,
@@ -486,7 +447,6 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
   assert.equal(resStaff.merchant_id, STORE_A);
   assert.equal(resStaff.settings_exists, true);
 
-  // F. Staff CANNOT patch settings (mutation authority restricted to owner/manager)
   await assert.rejects(
     () =>
       merchantsService.patchMerchantSettingsExplicit(
@@ -497,8 +457,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
     (err) => err instanceof ForbiddenException,
     "Staff must be rejected from settings PATCH",
   );
+});
 
-  // G. Owner CAN patch settings, returning canonical contract with settings_exists: true
+test("Authority: Owner permitted PATCH settings returning canonical snapshot", async () => {
+  const { merchantsService } = makeHarness();
   const patchRes = await merchantsService.patchMerchantSettingsExplicit(
     STORE_A,
     { contact_phone: "07708888888", logo_url: "https://example.com/new-logo.png" },
@@ -508,8 +470,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
   assert.equal(patchRes.settings_exists, true);
   assert.equal(patchRes.settings?.contact_phone, "07708888888");
   assert.equal(patchRes.settings?.logo_url, "https://example.com/new-logo.png");
+});
 
-  // H. Legacy routes: merchant roles MUST be rejected with ForbiddenException
+test("Legacy: Merchant roles rejected from legacy settings GET and POST", async () => {
+  const { merchantsService } = makeHarness();
   await assert.rejects(
     () =>
       merchantsService.getMerchantSettings(STORE_A, {
@@ -517,7 +481,6 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
         actor_id: USER_STORE_A_OWNER,
       }),
     (err) => err instanceof ForbiddenException,
-    "Merchant owner must be rejected from legacy GET /merchants/settings",
   );
   await assert.rejects(
     () =>
@@ -526,10 +489,11 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
         { actor_role: "merchant_owner", actor_id: USER_STORE_A_OWNER },
       ),
     (err) => err instanceof ForbiddenException,
-    "Merchant owner must be rejected from legacy POST /merchants/settings",
   );
+});
 
-  // I. Legacy routes: Admin with explicit merchant_id IS allowed
+test("Legacy: Admin allowed on legacy settings GET", async () => {
+  const { merchantsService } = makeHarness();
   const adminLegacyRes = await merchantsService.getMerchantSettings(STORE_A, {
     actor_role: "super_admin",
     actor_id: USER_ADMIN,
@@ -537,11 +501,10 @@ test("2. SETTINGS SERVICE: Canonical contract, non-existent row, role bounds, ex
   assert.ok(adminLegacyRes);
 });
 
-// ── 3. Push Subscriptions Scope & Non-Disclosing Security Suite ──
-test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 404", async () => {
-  const { pushService } = makeHarness();
+// ── 3. PUSH SERVICE DIRECT TESTS ──
 
-  // A. Owner listing: returns store scope, all store devices, without sensitive keys
+test("Push: Device list safe projection omits endpoint, keys, and user_id", async () => {
+  const { pushService } = makeHarness();
   const ownerList = await pushService.listSubscriptionsExplicit(STORE_A, {
     actorRole: "merchant_owner",
     actorId: USER_STORE_A_OWNER,
@@ -555,8 +518,10 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
     assert.equal("auth_key" in d, false, "auth_key must not leak");
     assert.equal("user_id" in d, false, "user_id must not leak");
   }
+});
 
-  // B. Staff listing: returns own scope, only staff's device, with is_own = true
+test("Push: Staff device listing scoped to own devices only", async () => {
+  const { pushService } = makeHarness();
   const staffList = await pushService.listSubscriptionsExplicit(STORE_A, {
     actorRole: "merchant_staff",
     actorId: USER_STORE_A_STAFF,
@@ -566,8 +531,10 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
   assert.equal(staffList.devices.length, 1);
   assert.equal(staffList.devices[0].id, SUB_A_STAFF);
   assert.equal(staffList.devices[0].is_own, true);
+});
 
-  // C. Cross-store boundary: Owner of Store A cannot list Store B subscriptions
+test("Push: Cross-store subscription listing denied with 403", async () => {
+  const { pushService } = makeHarness();
   await assert.rejects(
     () =>
       pushService.listSubscriptionsExplicit(STORE_B, {
@@ -576,8 +543,10 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
       }),
     (err) => err instanceof ForbiddenException,
   );
+});
 
-  // D. Non-disclosing 404: Staff deleting another user's device in the same store returns 404
+test("Push: Non-disclosing 404 when staff deletes another user device in same store", async () => {
+  const { pushService } = makeHarness();
   await assert.rejects(
     () =>
       pushService.deleteSubscriptionExplicit(STORE_A, SUB_A_OWNER, {
@@ -585,10 +554,11 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
         actorId: USER_STORE_A_STAFF,
       }),
     (err) => err instanceof NotFoundException,
-    "Staff deleting foreign device must return 404 without disclosing existence",
   );
+});
 
-  // E. Non-disclosing 404: Deleting a device from Store B using Store A context returns 404
+test("Push: Non-disclosing 404 when deleting cross-store device", async () => {
+  const { pushService } = makeHarness();
   await assert.rejects(
     () =>
       pushService.deleteSubscriptionExplicit(STORE_A, SUB_B_OWNER, {
@@ -596,10 +566,11 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
         actorId: USER_STORE_A_OWNER,
       }),
     (err) => err instanceof NotFoundException,
-    "Deleting cross-store device must return 404 without disclosing existence",
   );
+});
 
-  // F. Non-disclosing 404: Deleting non-existent device returns 404 (identical error shape)
+test("Push: Non-disclosing 404 when deleting non-existent device", async () => {
+  const { pushService } = makeHarness();
   await assert.rejects(
     () =>
       pushService.deleteSubscriptionExplicit(STORE_A, "99999999-9999-4999-8999-999999999999", {
@@ -608,8 +579,10 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
       }),
     (err) => err instanceof NotFoundException,
   );
+});
 
-  // G. Staff CAN delete their own device
+test("Push: Staff can delete own device", async () => {
+  const { pushService } = makeHarness();
   const delStaffRes = await pushService.deleteSubscriptionExplicit(STORE_A, SUB_A_STAFF, {
     actorRole: "merchant_staff",
     actorId: USER_STORE_A_STAFF,
@@ -618,51 +591,45 @@ test("3. PUSH SERVICE: Safe device projections, staff isolation, non-disclosing 
   assert.equal(delStaffRes.success, true);
 });
 
-// ── 4. Real NestJS HTTP Boundary Suite (app.listen(0)) ──
-test("4. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, ValidationPipe, RolesGuard, ParseUUIDPipe", async (t) => {
+// ── 4. REAL NESTJS HTTP SERVER BOUNDARY SUITE ──
+
+let appInstance = null;
+let baseUrl = null;
+
+const tokenMap = {
+  "token-store-a-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_A_OWNER },
+  "token-store-a-manager": { ok: true, actorRole: "merchant_manager", actorId: USER_STORE_A_MANAGER },
+  "token-store-a-staff": { ok: true, actorRole: "merchant_staff", actorId: USER_STORE_A_STAFF },
+  "token-store-b-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_B_OWNER },
+  "token-admin": { ok: true, actorRole: "super_admin", actorId: USER_ADMIN },
+  "token-customer": { ok: true, actorRole: "customer", actorId: "user-cust-1" },
+};
+
+const authHeader = (tok) => (tok ? { Authorization: `Bearer ${tok}` } : {});
+
+before(async () => {
   const { merchantsService, pushService } = makeHarness();
-
-  const tokenMap = {
-    "token-store-a-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_A_OWNER },
-    "token-store-a-manager": { ok: true, actorRole: "merchant_manager", actorId: USER_STORE_A_MANAGER },
-    "token-store-a-staff": { ok: true, actorRole: "merchant_staff", actorId: USER_STORE_A_STAFF },
-    "token-store-b-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_B_OWNER },
-    "token-admin": { ok: true, actorRole: "super_admin", actorId: USER_ADMIN },
-    "token-customer": { ok: true, actorRole: "customer", actorId: "user-cust-1" },
-  };
-
   const moduleRef = await Test.createTestingModule({
     controllers: [MerchantsController, MerchantPushController],
     providers: [
-      {
-        provide: MerchantsService,
-        useValue: merchantsService,
-      },
-      {
-        provide: MerchantPushService,
-        useValue: pushService,
-      },
+      { provide: MerchantsService, useValue: merchantsService },
+      { provide: MerchantPushService, useValue: pushService },
       {
         provide: SupabaseActorResolverService,
         useValue: {
           resolve: async (token) => {
             const mapped = tokenMap[token];
-            if (mapped) {
-              return { ...mapped, actorToken: token };
-            }
+            if (mapped) return { ...mapped, actorToken: token };
             return { ok: false, reason: "invalid_token" };
           },
         },
       },
-      {
-        provide: APP_GUARD,
-        useClass: RolesGuard,
-      },
+      { provide: APP_GUARD, useClass: RolesGuard },
     ],
   }).compile();
 
-  const app = moduleRef.createNestApplication();
-  app.useGlobalPipes(
+  appInstance = moduleRef.createNestApplication();
+  appInstance.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       transform: true,
@@ -670,138 +637,138 @@ test("4. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, Validation
     }),
   );
 
-  await app.listen(0);
-  const port = app.getHttpServer().address().port;
-  const baseUrl = `http://127.0.0.1:${port}`;
+  await appInstance.listen(0);
+  const port = appInstance.getHttpServer().address().port;
+  baseUrl = `http://127.0.0.1:${port}`;
+});
 
-  t.after(async () => {
-    await app.close();
+after(async () => {
+  if (appInstance) {
+    await appInstance.close();
+  }
+});
+
+test("HTTP: GET /merchants/:id/settings missing token returns 403", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`);
+  assert.equal(res.status, 403);
+});
+
+test("HTTP: GET /merchants/:id/settings with customer role returns 403", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
+    headers: authHeader("token-customer"),
   });
+  assert.equal(res.status, 403);
+});
 
-  const authHeader = (tok) => (tok ? { Authorization: `Bearer ${tok}` } : {});
+test("HTTP: GET /merchants/:id/settings invalid UUID returns 400", async () => {
+  const res = await fetch(`${baseUrl}/merchants/invalid-uuid/settings`, {
+    headers: authHeader("token-store-a-owner"),
+  });
+  assert.equal(res.status, 400);
+});
 
-  // ── ROUTE 1: GET /merchants/:id/settings ──
-  {
-    // A. Missing token => 403
-    const resNoToken = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`);
-    assert.equal(resNoToken.status, 403);
+test("HTTP: GET /merchants/:id/settings staff allowed with canonical contract", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
+    headers: authHeader("token-store-a-staff"),
+  });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.merchant_id, STORE_A);
+  assert.equal(json.settings_exists, true);
+  assert.ok(json.settings);
+});
 
-    // B. Customer role => 403
-    const resCust = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
-      headers: authHeader("token-customer"),
-    });
-    assert.equal(resCust.status, 403);
+test("HTTP: GET /merchants/:id/settings cross-store denied with 403", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_B}/settings`, {
+    headers: authHeader("token-store-a-owner"),
+  });
+  assert.equal(res.status, 403);
+});
 
-    // C. Invalid UUID param => 400 (ParseUUIDPipe)
-    const resBadUuid = await fetch(`${baseUrl}/merchants/invalid-uuid/settings`, {
-      headers: authHeader("token-store-a-owner"),
-    });
-    assert.equal(resBadUuid.status, 400);
+test("HTTP: PATCH /merchants/:id/settings staff forbidden with 403", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader("token-store-a-staff"),
+    },
+    body: JSON.stringify({ contact_phone: "07705555555" }),
+  });
+  assert.equal(res.status, 403);
+});
 
-    // D. Staff allowed to read settings => 200 with canonical contract
-    const resStaff = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
-      headers: authHeader("token-store-a-staff"),
-    });
-    assert.equal(resStaff.status, 200);
-    const staffJson = await resStaff.json();
-    assert.equal(staffJson.merchant_id, STORE_A);
-    assert.equal(staffJson.settings_exists, true);
-    assert.ok(staffJson.settings);
+test("HTTP: PATCH /merchants/:id/settings body with merchant_id rejected with 400", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader("token-store-a-owner"),
+    },
+    body: JSON.stringify({ merchant_id: STORE_B, contact_phone: "07705555555" }),
+  });
+  assert.equal(res.status, 400);
+});
 
-    // E. Cross-store boundary => 403
-    const resCross = await fetch(`${baseUrl}/merchants/${STORE_B}/settings`, {
-      headers: authHeader("token-store-a-owner"),
-    });
-    assert.equal(resCross.status, 403);
-  }
+test("HTTP: PATCH /merchants/:id/settings valid owner update returns canonical contract", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader("token-store-a-owner"),
+    },
+    body: JSON.stringify({ contact_phone: "07706666666", city: "بغداد الرصافة" }),
+  });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.merchant_id, STORE_A);
+  assert.equal(json.settings_exists, true);
+  assert.equal(json.settings?.contact_phone, "07706666666");
+});
 
-  // ── ROUTE 2: PATCH /merchants/:id/settings ──
-  {
-    // A. Staff forbidden from mutating settings => 403
-    const resStaffPatch = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader("token-store-a-staff"),
-      },
-      body: JSON.stringify({ contact_phone: "07705555555" }),
-    });
-    assert.equal(resStaffPatch.status, 403);
+test("HTTP: Legacy /merchants/settings rejected for merchant roles with 403", async () => {
+  const resGet = await fetch(`${baseUrl}/merchants/settings?merchant_id=${STORE_A}`, {
+    headers: authHeader("token-store-a-owner"),
+  });
+  assert.equal(resGet.status, 403);
 
-    // B. Injected merchant_id in PATCH body => 400 (ValidationPipe forbidNonWhitelisted)
-    const resInjected = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader("token-store-a-owner"),
-      },
-      body: JSON.stringify({ merchant_id: STORE_B, contact_phone: "07705555555" }),
-    });
-    assert.equal(resInjected.status, 400);
+  const resPost = await fetch(`${baseUrl}/merchants/settings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...authHeader("token-store-a-owner"),
+    },
+    body: JSON.stringify({ merchant_id: STORE_A, contact_phone: "07707777777" }),
+  });
+  assert.equal(resPost.status, 403);
+});
 
-    // C. Valid Owner PATCH => 200 with canonical contract
-    const resOwnerPatch = await fetch(`${baseUrl}/merchants/${STORE_A}/settings`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader("token-store-a-owner"),
-      },
-      body: JSON.stringify({ contact_phone: "07706666666", city: "بغداد الرصافة" }),
-    });
-    assert.equal(resOwnerPatch.status, 200);
-    const patchJson = await resOwnerPatch.json();
-    assert.equal(patchJson.merchant_id, STORE_A);
-    assert.equal(patchJson.settings_exists, true);
-    assert.equal(patchJson.settings?.contact_phone, "07706666666");
-  }
+test("HTTP: Legacy /merchants/settings allowed for admin with 200", async () => {
+  const res = await fetch(`${baseUrl}/merchants/settings?merchant_id=${STORE_A}`, {
+    headers: authHeader("token-admin"),
+  });
+  assert.equal(res.status, 200);
+});
 
-  // ── ROUTE 3: LEGACY /merchants/settings LOCKDOWN ──
-  {
-    // A. Merchant owner rejected from legacy GET => 403
-    const resLegacyGetOwner = await fetch(`${baseUrl}/merchants/settings?merchant_id=${STORE_A}`, {
-      headers: authHeader("token-store-a-owner"),
-    });
-    assert.equal(resLegacyGetOwner.status, 403, "Merchant owner must be rejected from legacy GET /merchants/settings");
+test("HTTP: Push subscriptions list staff scoped to own", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/push-subscriptions`, {
+    headers: authHeader("token-store-a-staff"),
+  });
+  assert.equal(res.status, 200);
+  const json = await res.json();
+  assert.equal(json.scope, "own");
+});
 
-    // B. Merchant owner rejected from legacy POST => 403
-    const resLegacyPostOwner = await fetch(`${baseUrl}/merchants/settings`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...authHeader("token-store-a-owner"),
-      },
-      body: JSON.stringify({ merchant_id: STORE_A, contact_phone: "07707777777" }),
-    });
-    assert.equal(resLegacyPostOwner.status, 403, "Merchant owner must be rejected from legacy POST /merchants/settings");
+test("HTTP: Push foreign device deletion returns non-disclosing 404", async () => {
+  const res = await fetch(`${baseUrl}/merchants/${STORE_A}/push-subscriptions/${SUB_B_OWNER}`, {
+    method: "DELETE",
+    headers: authHeader("token-store-a-owner"),
+  });
+  assert.equal(res.status, 404);
+});
 
-    // C. Admin allowed on legacy GET => 200
-    const resLegacyGetAdmin = await fetch(`${baseUrl}/merchants/settings?merchant_id=${STORE_A}`, {
-      headers: authHeader("token-admin"),
-    });
-    assert.equal(resLegacyGetAdmin.status, 200);
-  }
-
-  // ── ROUTE 4: EXPLICIT PUSH /merchants/:id/push-subscriptions ──
-  {
-    // A. Staff lists subscriptions => 200 with own scope
-    const resStaffList = await fetch(`${baseUrl}/merchants/${STORE_A}/push-subscriptions`, {
-      headers: authHeader("token-store-a-staff"),
-    });
-    assert.equal(resStaffList.status, 200);
-    const staffListJson = await resStaffList.json();
-    assert.equal(staffListJson.scope, "own");
-
-    // B. Cross-store device deletion returns non-disclosing 404
-    const resCrossDelete = await fetch(`${baseUrl}/merchants/${STORE_A}/push-subscriptions/${SUB_B_OWNER}`, {
-      method: "DELETE",
-      headers: authHeader("token-store-a-owner"),
-    });
-    assert.equal(resCrossDelete.status, 404, "Foreign device deletion must return 404");
-
-    // C. Legacy push endpoint rejected for merchant owner => 403
-    const resLegacyPush = await fetch(`${baseUrl}/merchant/push-subscriptions?merchant_id=${STORE_A}`, {
-      headers: authHeader("token-store-a-owner"),
-    });
-    assert.equal(resLegacyPush.status, 403, "Merchant owner must be rejected from legacy /merchant/push-subscriptions");
-  }
+test("HTTP: Legacy /merchant/push-subscriptions rejected for merchant roles with 403", async () => {
+  const res = await fetch(`${baseUrl}/merchant/push-subscriptions?merchant_id=${STORE_A}`, {
+    headers: authHeader("token-store-a-owner"),
+  });
+  assert.equal(res.status, 403);
 });

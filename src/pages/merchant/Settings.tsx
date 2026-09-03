@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { apiClient } from "@/lib/api-client";
 import { merchantApi } from "@/lib/api/merchant";
 import { useQuery } from "@tanstack/react-query";
-import { Upload, X, RefreshCw, AlertCircle, CheckCircle2, Bell, Volume2, ShieldAlert, Smartphone, Trash2, Send } from "lucide-react";
+import { Upload, X, RefreshCw, AlertCircle, Bell, Volume2, ShieldAlert, Smartphone, Trash2, Send } from "lucide-react";
 import {
   canMerchantManageSettings,
   canMerchantManageGlobalPushPolicy,
@@ -22,7 +22,7 @@ import {
   getOrCreateMerchantDeviceId,
 } from "@/lib/merchant-push";
 
-interface SettingsFormState {
+export interface SettingsFormState {
   contact_phone: string;
   whatsapp_phone: string;
   support_email: string;
@@ -36,7 +36,7 @@ interface SettingsFormState {
   sound_max_duration_seconds: number;
 }
 
-const EMPTY_SETTINGS_FORM: SettingsFormState = {
+export const EMPTY_SETTINGS_FORM: SettingsFormState = {
   contact_phone: "",
   whatsapp_phone: "",
   support_email: "",
@@ -50,7 +50,7 @@ const EMPTY_SETTINGS_FORM: SettingsFormState = {
   sound_max_duration_seconds: 300,
 };
 
-type PushDevice = {
+export type PushDevice = {
   id: string;
   device_label: string | null;
   user_agent: string | null;
@@ -60,9 +60,293 @@ type PushDevice = {
   is_own: boolean;
 };
 
+// ─── STRICT FAIL-CLOSED PARSERS & ASSERTIONS ───────────────────────────────────
+
+export function parseCanonicalSettingsResponse(res: unknown, expectedMerchantId: string): {
+  merchant_id: string;
+  settings_exists: boolean;
+  settings: {
+    contact_phone: string | null;
+    whatsapp_phone: string | null;
+    support_email: string | null;
+    city: string | null;
+    address: string | null;
+    delivery_notes: string | null;
+    logo_url: string | null;
+    push_enabled: boolean;
+    sound_enabled: boolean;
+    sound_repeat_interval_seconds: number;
+    sound_max_duration_seconds: number;
+  } | null;
+} {
+  if (!res || typeof res !== "object" || Array.isArray(res)) {
+    throw new Error("Settings response must be a non-null object.");
+  }
+  const r = res as Record<string, unknown>;
+  if (typeof r.merchant_id !== "string" || r.merchant_id !== expectedMerchantId) {
+    throw new Error(`Settings response merchant_id mismatch: expected "${expectedMerchantId}", got "${String(r.merchant_id)}"`);
+  }
+  if (typeof r.settings_exists !== "boolean") {
+    throw new Error("Settings response missing boolean settings_exists flag.");
+  }
+
+  if (!r.settings_exists) {
+    if (r.settings !== null && r.settings !== undefined) {
+      throw new Error("Contradictory settings response: settings_exists is false but settings is not null.");
+    }
+    return {
+      merchant_id: expectedMerchantId,
+      settings_exists: false,
+      settings: null,
+    };
+  }
+
+  if (!r.settings || typeof r.settings !== "object" || Array.isArray(r.settings)) {
+    throw new Error("Contradictory settings response: settings_exists is true but settings object is missing.");
+  }
+  const s = r.settings as Record<string, unknown>;
+
+  const checkStrOrNull = (val: unknown, name: string): string | null => {
+    if (val === null || val === undefined) return null;
+    if (typeof val === "string") return val;
+    throw new Error(`Field ${name} must be a string or null, got ${typeof val}`);
+  };
+
+  const contact_phone = checkStrOrNull(s.contact_phone, "contact_phone");
+  const whatsapp_phone = checkStrOrNull(s.whatsapp_phone, "whatsapp_phone");
+  const support_email = checkStrOrNull(s.support_email, "support_email");
+  const city = checkStrOrNull(s.city, "city");
+  const address = checkStrOrNull(s.address, "address");
+  const delivery_notes = checkStrOrNull(s.delivery_notes, "delivery_notes");
+  const logo_url = checkStrOrNull(s.logo_url, "logo_url");
+
+  if (typeof s.push_enabled !== "boolean") {
+    throw new Error("Field push_enabled must be a boolean");
+  }
+  if (typeof s.sound_enabled !== "boolean") {
+    throw new Error("Field sound_enabled must be a boolean");
+  }
+  if (
+    typeof s.sound_repeat_interval_seconds !== "number" ||
+    !Number.isFinite(s.sound_repeat_interval_seconds) ||
+    s.sound_repeat_interval_seconds < 5 ||
+    s.sound_repeat_interval_seconds > 120
+  ) {
+    throw new Error("Field sound_repeat_interval_seconds must be a number between 5 and 120");
+  }
+  if (
+    typeof s.sound_max_duration_seconds !== "number" ||
+    !Number.isFinite(s.sound_max_duration_seconds) ||
+    s.sound_max_duration_seconds < 30 ||
+    s.sound_max_duration_seconds > 1800
+  ) {
+    throw new Error("Field sound_max_duration_seconds must be a number between 30 and 1800");
+  }
+
+  return {
+    merchant_id: expectedMerchantId,
+    settings_exists: true,
+    settings: {
+      contact_phone,
+      whatsapp_phone,
+      support_email,
+      city,
+      address,
+      delivery_notes,
+      logo_url,
+      push_enabled: s.push_enabled,
+      sound_enabled: s.sound_enabled,
+      sound_repeat_interval_seconds: s.sound_repeat_interval_seconds,
+      sound_max_duration_seconds: s.sound_max_duration_seconds,
+    },
+  };
+}
+
+export function parseCanonicalPushDeviceListResponse(res: unknown, expectedMerchantId: string): {
+  merchant_id: string;
+  scope: "store" | "own";
+  devices: PushDevice[];
+} {
+  if (!res || typeof res !== "object" || Array.isArray(res)) {
+    throw new Error("Push devices response must be a non-null object.");
+  }
+  const r = res as Record<string, unknown>;
+  if (typeof r.merchant_id !== "string" || r.merchant_id !== expectedMerchantId) {
+    throw new Error(`Push devices response merchant_id mismatch: expected "${expectedMerchantId}", got "${String(r.merchant_id)}"`);
+  }
+  if (r.scope !== "store" && r.scope !== "own") {
+    throw new Error(`Invalid push devices scope: expected "store" or "own", got "${String(r.scope)}"`);
+  }
+  if (!Array.isArray(r.devices)) {
+    throw new Error("Field devices must be an array.");
+  }
+
+  const devices: PushDevice[] = r.devices.map((item, idx) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Device at index ${idx} is not a valid object.`);
+    }
+    const d = item as Record<string, unknown>;
+
+    // Sensitive leakage assertion
+    if ("endpoint" in d || "p256dh_key" in d || "auth_key" in d || "user_id" in d) {
+      throw new Error(`Security violation: device at index ${idx} leaked sensitive push subscription fields.`);
+    }
+
+    if (typeof d.id !== "string" || !d.id.trim()) {
+      throw new Error(`Device at index ${idx} missing valid id.`);
+    }
+    if (d.device_label !== null && d.device_label !== undefined && typeof d.device_label !== "string") {
+      throw new Error(`Device at index ${idx} has invalid device_label type.`);
+    }
+    if (d.user_agent !== null && d.user_agent !== undefined && typeof d.user_agent !== "string") {
+      throw new Error(`Device at index ${idx} has invalid user_agent type.`);
+    }
+    if (typeof d.status !== "string") {
+      throw new Error(`Device at index ${idx} missing valid status.`);
+    }
+    if (typeof d.created_at !== "string" || typeof d.updated_at !== "string") {
+      throw new Error(`Device at index ${idx} missing valid timestamps.`);
+    }
+    if (typeof d.is_own !== "boolean") {
+      throw new Error(`Device at index ${idx} missing boolean is_own flag.`);
+    }
+
+    return {
+      id: d.id,
+      device_label: (d.device_label as string) ?? null,
+      user_agent: (d.user_agent as string) ?? null,
+      status: d.status,
+      created_at: d.created_at,
+      updated_at: d.updated_at,
+      is_own: d.is_own,
+    };
+  });
+
+  return {
+    merchant_id: expectedMerchantId,
+    scope: r.scope,
+    devices,
+  };
+}
+
+export function parseCanonicalRegisterPushResponse(res: unknown, expectedMerchantId: string): {
+  merchant_id: string;
+  subscription: PushDevice;
+} {
+  if (!res || typeof res !== "object" || Array.isArray(res)) {
+    throw new Error("Register push response must be a non-null object.");
+  }
+  const r = res as Record<string, unknown>;
+  if (typeof r.merchant_id !== "string" || r.merchant_id !== expectedMerchantId) {
+    throw new Error(`Register push response merchant_id mismatch: expected "${expectedMerchantId}", got "${String(r.merchant_id)}"`);
+  }
+  if (!r.subscription || typeof r.subscription !== "object" || Array.isArray(r.subscription)) {
+    throw new Error("Register push response missing subscription object.");
+  }
+  const s = r.subscription as Record<string, unknown>;
+
+  if ("endpoint" in s || "p256dh_key" in s || "auth_key" in s || "user_id" in s) {
+    throw new Error("Security violation: subscription object leaked sensitive fields.");
+  }
+
+  if (typeof s.id !== "string" || typeof s.status !== "string" || typeof s.is_own !== "boolean") {
+    throw new Error("Register push subscription missing required attributes.");
+  }
+
+  return {
+    merchant_id: expectedMerchantId,
+    subscription: {
+      id: s.id,
+      device_label: (s.device_label as string) ?? null,
+      user_agent: (s.user_agent as string) ?? null,
+      status: s.status,
+      created_at: s.created_at as string,
+      updated_at: s.updated_at as string,
+      is_own: s.is_own,
+    },
+  };
+}
+
+export function parseCanonicalDeletePushResponse(
+  res: unknown,
+  expectedMerchantId: string,
+  expectedSubscriptionId: string,
+): {
+  merchant_id: string;
+  deleted_id: string;
+  success: boolean;
+} {
+  if (!res || typeof res !== "object" || Array.isArray(res)) {
+    throw new Error("Delete push response must be a non-null object.");
+  }
+  const r = res as Record<string, unknown>;
+  if (typeof r.merchant_id !== "string" || r.merchant_id !== expectedMerchantId) {
+    throw new Error(`Delete push response merchant_id mismatch: expected "${expectedMerchantId}", got "${String(r.merchant_id)}"`);
+  }
+  if (typeof r.deleted_id !== "string" || r.deleted_id !== expectedSubscriptionId) {
+    throw new Error(`Delete push response deleted_id mismatch: expected "${expectedSubscriptionId}", got "${String(r.deleted_id)}"`);
+  }
+  if (r.success !== true) {
+    throw new Error("Delete push response success flag is not true.");
+  }
+  return {
+    merchant_id: expectedMerchantId,
+    deleted_id: expectedSubscriptionId,
+    success: true,
+  };
+}
+
+export function parseCanonicalTestPushResponse(res: unknown, expectedMerchantId: string): {
+  merchant_id: string;
+  scope: "store" | "own";
+  results: Array<{ id: string; ok: boolean; error?: string }>;
+} {
+  if (!res || typeof res !== "object" || Array.isArray(res)) {
+    throw new Error("Test push response must be a non-null object.");
+  }
+  const r = res as Record<string, unknown>;
+  if (typeof r.merchant_id !== "string" || r.merchant_id !== expectedMerchantId) {
+    throw new Error(`Test push response merchant_id mismatch: expected "${expectedMerchantId}", got "${String(r.merchant_id)}"`);
+  }
+  if (r.scope !== "store" && r.scope !== "own") {
+    throw new Error(`Test push response invalid scope: expected "store" or "own", got "${String(r.scope)}"`);
+  }
+  if (!Array.isArray(r.results)) {
+    throw new Error("Test push response results must be an array.");
+  }
+  for (const item of r.results) {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error("Test push response result item malformed.");
+    }
+    const it = item as Record<string, unknown>;
+    if (typeof it.id !== "string" || typeof it.ok !== "boolean") {
+      throw new Error("Test push response result item malformed.");
+    }
+  }
+  return {
+    merchant_id: expectedMerchantId,
+    scope: r.scope,
+    results: r.results as Array<{ id: string; ok: boolean; error?: string }>,
+  };
+}
+
+function getErrorMessage(err: unknown, fallback: string): string {
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === "string") return err;
+  return fallback;
+}
+
+// ─── TOP LEVEL COMPONENT ───────────────────────────────────────────────────────
+
 const MerchantSettings = () => {
   const { data: rawMembership, isLoading } = useCurrentMerchant();
-  const membership = rawMembership as any;
+  const membership = rawMembership as
+    | {
+        merchant_id?: string;
+        role?: string;
+        merchants?: { display_name?: string; status?: string };
+      }
+    | undefined;
   const merchantId = membership?.merchant_id ?? null;
   const role = membership?.role ?? null;
 
@@ -89,8 +373,8 @@ const MerchantSettings = () => {
       key={merchantId}
       merchantId={merchantId}
       role={role}
-      storeName={(membership?.merchants as any)?.display_name ?? "متجر"}
-      storeStatus={(membership?.merchants as any)?.status ?? "غير معروف"}
+      storeName={membership?.merchants?.display_name ?? "متجر"}
+      storeStatus={membership?.merchants?.status ?? "غير معروف"}
     />
   );
 };
@@ -115,6 +399,13 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
       generationRef.current += 1;
     };
   }, [merchantId]);
+
+  const isCurrentOperation = useCallback(
+    (targetMerchantId: string, gen: number): boolean => {
+      return isMountedRef.current && liveMerchantIdRef.current === targetMerchantId && generationRef.current === gen;
+    },
+    [],
+  );
 
   const canManage = canMerchantManageSettings(role);
   const canManagePushPolicy = canMerchantManageGlobalPushPolicy(role);
@@ -149,7 +440,7 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
     enabled: !!merchantId,
     queryFn: async () => {
       const res = await apiClient.getMerchantReadiness(merchantId);
-      if (!res || res.merchant_id !== merchantId) {
+      if (!res || typeof res !== "object" || res.merchant_id !== merchantId) {
         throw new Error("Readiness response merchant_id mismatch");
       }
       return res;
@@ -172,16 +463,13 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
       setSettingsErrorMessage(null);
 
       try {
-        const res = await merchantApi.getMerchantSettings(targetMerchantId);
+        const rawRes = await merchantApi.getMerchantSettings(targetMerchantId);
 
-        if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+        if (!isCurrentOperation(targetMerchantId, currentGen)) {
           return;
         }
 
-        // Canonical contract verification: merchant_id MUST match targetMerchantId
-        if (!res || typeof res !== "object" || res.merchant_id !== targetMerchantId) {
-          throw new Error("Settings contract response mismatch or malformed payload.");
-        }
+        const res = parseCanonicalSettingsResponse(rawRes, targetMerchantId);
 
         if (res.settings_exists && res.settings) {
           setForm({
@@ -192,10 +480,10 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
             address: res.settings.address ?? "",
             delivery_notes: res.settings.delivery_notes ?? "",
             logo_url: res.settings.logo_url ?? "",
-            push_enabled: res.settings.push_enabled !== false,
-            sound_enabled: res.settings.sound_enabled !== false,
-            sound_repeat_interval_seconds: res.settings.sound_repeat_interval_seconds ?? 15,
-            sound_max_duration_seconds: res.settings.sound_max_duration_seconds ?? 300,
+            push_enabled: res.settings.push_enabled,
+            sound_enabled: res.settings.sound_enabled,
+            sound_repeat_interval_seconds: res.settings.sound_repeat_interval_seconds,
+            sound_max_duration_seconds: res.settings.sound_max_duration_seconds,
           });
         } else {
           // Valid state: store has no settings row yet
@@ -204,18 +492,22 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
 
         setIsDirty(false);
         setSettingsStatus("loaded");
-      } catch (err: any) {
-        if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      } catch (err: unknown) {
+        if (!isCurrentOperation(targetMerchantId, currentGen)) {
           return;
         }
         setSettingsStatus("error");
-        setSettingsErrorMessage(err?.message ? `تعذر تحميل إعدادات المتجر: ${err.message}` : "تعذر تحميل إعدادات المتجر");
+        setSettingsErrorMessage(
+          err instanceof Error && err.message
+            ? `تعذر تحميل إعدادات المتجر: ${err.message}`
+            : "تعذر تحميل إعدادات المتجر",
+        );
         if (isManualRetry) {
           toast.error("تعذر تحميل إعدادات المتجر");
         }
       }
     },
-    [merchantId, isDirty],
+    [merchantId, isDirty, isCurrentOperation],
   );
 
   // Load Devices Function
@@ -228,31 +520,29 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
       setDevicesError(null);
 
       try {
-        const res = await merchantApi.listPushSubscriptions(targetMerchantId);
+        const rawRes = await merchantApi.listPushSubscriptions(targetMerchantId);
 
-        if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+        if (!isCurrentOperation(targetMerchantId, currentGen)) {
           return;
         }
 
-        if (!res || typeof res !== "object" || res.merchant_id !== targetMerchantId || !Array.isArray(res.devices)) {
-          throw new Error("Push devices contract response mismatch or malformed payload.");
-        }
+        const res = parseCanonicalPushDeviceListResponse(rawRes, targetMerchantId);
 
         setPushScope(res.scope);
         setDevices(res.devices.filter((d) => d.status === "active"));
         setDevicesLoading(false);
-      } catch (err: any) {
-        if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      } catch (err: unknown) {
+        if (!isCurrentOperation(targetMerchantId, currentGen)) {
           return;
         }
         setDevicesLoading(false);
-        setDevicesError(err?.message || "تعذر تحميل قائمة الأجهزة");
+        setDevicesError(getErrorMessage(err, "تعذر تحميل قائمة الأجهزة"));
         if (isManualRetry) {
           toast.error("تعذر تحميل قائمة الأجهزة");
         }
       }
     },
-    [merchantId],
+    [merchantId, isCurrentOperation],
   );
 
   // Mount effect
@@ -273,7 +563,7 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
 
     setSaving(true);
     try {
-      const res = await merchantApi.patchMerchantSettings(targetMerchantId, {
+      const rawRes = await merchantApi.patchMerchantSettings(targetMerchantId, {
         contact_phone: form.contact_phone.trim() || undefined,
         whatsapp_phone: form.whatsapp_phone.trim() || undefined,
         support_email: form.support_email.trim() || undefined,
@@ -287,24 +577,29 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
         sound_max_duration_seconds: form.sound_max_duration_seconds,
       });
 
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
 
-      if (!res || res.merchant_id !== targetMerchantId) {
-        throw new Error("Saved settings response mismatch");
+      const res = parseCanonicalSettingsResponse(rawRes, targetMerchantId);
+      if (!res.settings_exists || !res.settings) {
+        throw new Error("Saved settings response must contain an active settings object.");
       }
 
       setIsDirty(false);
       toast.success("تم حفظ إعدادات المتجر بنجاح");
-      void refetchReadiness();
-    } catch (e: any) {
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      await refetchReadiness();
+
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
-      toast.error(e?.message || "تعذّر حفظ الإعدادات");
+    } catch (e: unknown) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
+        return;
+      }
+      toast.error(getErrorMessage(e, "تعذّر حفظ الإعدادات"));
     } finally {
-      if (isMountedRef.current && liveMerchantIdRef.current === targetMerchantId && generationRef.current === currentGen) {
+      if (isCurrentOperation(targetMerchantId, currentGen)) {
         setSaving(false);
       }
     }
@@ -351,20 +646,20 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
         merchant_id: targetMerchantId,
       });
 
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
 
       setForm((p) => ({ ...p, logo_url: uploaded.public_url }));
       setIsDirty(true);
       toast.success("تم رفع الشعار. اضغط «حفظ الإعدادات» لتثبيته في المتجر");
-    } catch (err: any) {
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+    } catch (err: unknown) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
-      toast.error(err?.message || "تعذر رفع اللوجو");
+      toast.error(getErrorMessage(err, "تعذر رفع اللوجو"));
     } finally {
-      if (isMountedRef.current && liveMerchantIdRef.current === targetMerchantId && generationRef.current === currentGen) {
+      if (isCurrentOperation(targetMerchantId, currentGen)) {
         setUploadingLogo(false);
         e.target.value = "";
       }
@@ -372,6 +667,7 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
   };
 
   // Enable Push For This Device
+  // STRICT RULE: Registering device NEVER calls patchMerchantSettings. Global policy is managed strictly via settings form!
   const handleEnablePushForThisDevice = async () => {
     const currentGen = generationRef.current;
     const targetMerchantId = merchantId;
@@ -380,21 +676,26 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
     try {
       const { publicKey } = await merchantApi.getPushVapidPublicKey();
 
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
+        return;
+      }
+
       const result = await subscribeMerchantPush({
         vapidPublicKey: publicKey,
         merchantId: targetMerchantId,
         register: async (body) => {
-          return merchantApi.registerPushSubscription({
+          const rawReg = await merchantApi.registerPushSubscription({
             merchant_id: targetMerchantId,
             endpoint: body.endpoint,
             keys: body.keys,
             device_label: body.device_label,
             user_agent: body.user_agent,
           });
+          return parseCanonicalRegisterPushResponse(rawReg, targetMerchantId);
         },
       });
 
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
 
@@ -405,25 +706,26 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
 
       setMerchantSoundEnabledLocally(true);
 
-      // Only owner/manager can update store-wide push policy if needed
-      if (canManagePushPolicy && (!form.push_enabled || !form.sound_enabled)) {
-        await merchantApi.patchMerchantSettings(targetMerchantId, {
-          push_enabled: true,
-          sound_enabled: true,
-        });
-        setForm((p) => ({ ...p, push_enabled: true, sound_enabled: true }));
+      // Truthful informational feedback if global policy is off, without ANY extra mutation!
+      if (!form.push_enabled || !form.sound_enabled) {
+        toast.info("تم تسجيل هذا الجهاز. ملاحظة: إشعارات أو أصوات المتجر العامة معطلة حالياً وتتطلب تفعيلها من سياسة المتجر لتصلك التنبيهات.");
       }
 
       await loadDevices();
-      toast.success("تم تفعيل إشعارات الطلبات على هذا الجهاز بنجاح");
-      toast.message(getPwaInstallInstructions());
-    } catch (e: any) {
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
-      toast.error(e?.message || "تعذر تفعيل الإشعارات على هذا الجهاز");
+
+      toast.success("تم تفعيل إشعارات الطلبات على هذا الجهاز بنجاح");
+      toast.message(getPwaInstallInstructions());
+    } catch (e: unknown) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
+        return;
+      }
+      toast.error(getErrorMessage(e, "تعذر تفعيل الإشعارات على هذا الجهاز"));
     } finally {
-      if (isMountedRef.current && liveMerchantIdRef.current === targetMerchantId && generationRef.current === currentGen) {
+      if (isCurrentOperation(targetMerchantId, currentGen)) {
         setDeviceActionBusy(null);
       }
     }
@@ -436,11 +738,13 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
 
     setDeviceActionBusy(`test-${subscriptionId || "all"}`);
     try {
-      const res = await merchantApi.testPushSubscription(targetMerchantId, subscriptionId);
+      const rawRes = await merchantApi.testPushSubscription(targetMerchantId, subscriptionId);
 
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
+
+      const res = parseCanonicalTestPushResponse(rawRes, targetMerchantId);
 
       if (res.results.some((r) => r.ok)) {
         toast.success(
@@ -453,13 +757,13 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
       } else {
         toast.error("فشل إرسال الإشعار التجريبي");
       }
-    } catch (e: any) {
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+    } catch (e: unknown) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
-      toast.error(e?.message || "فشل إرسال الإشعار التجريبي");
+      toast.error(getErrorMessage(e, "فشل إرسال الإشعار التجريبي"));
     } finally {
-      if (isMountedRef.current && liveMerchantIdRef.current === targetMerchantId && generationRef.current === currentGen) {
+      if (isCurrentOperation(targetMerchantId, currentGen)) {
         setDeviceActionBusy(null);
       }
     }
@@ -472,23 +776,28 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
 
     setDeviceActionBusy(`delete-${subscriptionId}`);
     try {
-      const res = await merchantApi.deletePushSubscription(targetMerchantId, subscriptionId);
+      const rawRes = await merchantApi.deletePushSubscription(targetMerchantId, subscriptionId);
 
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
 
-      if (res.success) {
-        toast.success("تم إزالة الجهاز بنجاح");
-        await loadDevices();
-      }
-    } catch (e: any) {
-      if (!isMountedRef.current || liveMerchantIdRef.current !== targetMerchantId || generationRef.current !== currentGen) {
+      parseCanonicalDeletePushResponse(rawRes, targetMerchantId, subscriptionId);
+
+      await loadDevices();
+
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
         return;
       }
-      toast.error(e?.message || "تعذر إزالة الجهاز");
+
+      toast.success("تم إزالة الجهاز بنجاح");
+    } catch (e: unknown) {
+      if (!isCurrentOperation(targetMerchantId, currentGen)) {
+        return;
+      }
+      toast.error(getErrorMessage(e, "تعذر إزالة الجهاز"));
     } finally {
-      if (isMountedRef.current && liveMerchantIdRef.current === targetMerchantId && generationRef.current === currentGen) {
+      if (isCurrentOperation(targetMerchantId, currentGen)) {
         setDeviceActionBusy(null);
       }
     }

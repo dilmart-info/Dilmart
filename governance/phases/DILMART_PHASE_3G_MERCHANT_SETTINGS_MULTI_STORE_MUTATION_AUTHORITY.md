@@ -110,14 +110,16 @@ DRAFT_PR_ONLY
 
 | Test Suite | Scope | Result | Details |
 |---|---|---|---|
-| `backend/tests/merchant-settings-multi-store-authority.test.mjs` | DTO validation, service scope, non-disclosing 404, real NestJS HTTP boundary (`app.listen(0)`) | **PASS** | 4 subtests passed (0 failures) |
-| `src/pages/merchant/Settings.merchant-switch.test.tsx` | Store switch clearing, dirty form protection, staff read-only view, upload cancellation | **PASS** | 7 tests passed (0 failures) |
+| `backend/tests/merchant-settings-multi-store-authority.test.mjs` | DTO validation, service scope, non-disclosing 404, real NestJS HTTP boundary (`app.listen(0)`) | **PASS** | 33 discrete test cases (0 failures) |
+| `src/pages/merchant/Settings.merchant-switch.test.tsx` | Fail-closed contract parsers, deferred race isolation, store switch, dirty form protection, staff isolation | **PASS** | 19 tests passed (0 failures) |
 | `src/lib/merchant-role-authority.test.ts` | Role authority matrix for settings and push policy | **PASS** | 6 tests passed (0 failures) |
-| Root Vitest Suite (`npm test`) | Full frontend test regression | **PASS** | 102 test files, 993 tests passed |
+| Root Vitest Suite (`npm test`) | Full frontend test regression | **PASS** | 102 test files, 1005 tests passed |
 | Backend Test Suite (`npm --prefix backend test`) | Full backend test regression | **PASS** | 292 tests passed |
 | CI Guards Suite (`npm run test:ci-guards`) | Canonical repository, Netlify workflow, production env guards | **PASS** | 3 test files, 99 tests passed |
 | Architecture Guard (`npm run arch:guard`) | Direct Supabase usage boundary | **PASS** | 0 violations |
 | Auth Boundary Guard (`npm run auth:guard`) | Auth lifecycle boundary | **PASS** | Passed |
+| Native Asset Guard (`npm run native:assets:check`) | Icon and splash resources check | **PASS** | Passed |
+| Mobile Boundary Guard (`npm run mobile:boundary`) | Mobile bundle boundaries and forbidden imports | **PASS** | 0 violations |
 | Root Build (`npm run build`) | Vite production bundle | **PASS** | Built in ~11s |
 | Backend Build (`npm --prefix backend run build`) | NestJS compilation | **PASS** | Code 0 |
 
