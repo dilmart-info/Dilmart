@@ -372,4 +372,29 @@ export const merchantApi = {
       },
     );
   },
+
+  listMerchantCustomers(
+    merchantId: string,
+    payload?: { search?: string; page?: number; limit?: number },
+  ) {
+    const params = new URLSearchParams();
+    if (payload?.search) params.set("search", payload.search);
+    if (payload?.page) params.set("page", String(payload.page));
+    if (payload?.limit) params.set("limit", String(payload.limit));
+    const suffix = params.size > 0 ? `?${params.toString()}` : "";
+    return request<{
+      merchant_id: string;
+      items: Array<{
+        customer_ref: string;
+        phone_masked: string;
+        orders: number;
+        spent: number;
+        last_order_at: string;
+      }>;
+      page: number;
+      limit: number;
+      total: number;
+      hasMore: boolean;
+    }>(`/merchants/${encodeURIComponent(merchantId)}/customers${suffix}`, "GET");
+  },
 };

@@ -1,9 +1,11 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { ScopeResolverService } from "../scope-resolver/scope-resolver.service";
+import { sanitizeSearchTerm } from "../../common/search-utils";
 import {
   AssignMerchantOwnerDto,
   CreateMerchantDto,
+  ListMerchantCustomersQueryDto,
   MerchantFinanceStatementQueryDto,
   MerchantPayoutHistoryQueryDto,
   UpdateMerchantDto,
@@ -1179,5 +1181,175 @@ export class MerchantsService {
 
     // 6. Return refreshed getMerchantById result
     return this.getMerchantById(id);
+  }
+
+  private isMerchantCustomerRole(role?: string): boolean {
+    if (!role || typeof role !== "string") return false;
+    const normalized = role.trim().toLowerCase();
+    return (
+      normalized === "owner" ||
+      normalized === "merchant_owner" ||
+      normalized === "manager" ||
+      normalized === "merchant_manager" ||
+      normalized === "staff" ||
+      normalized === "merchant_staff"
+    );
+  }
+
+  private isPlatformCustomerRole(role?: string): boolean {
+    if (!role || typeof role !== "string") return false;
+    const normalized = role.trim().toLowerCase();
+    return normalized === "super_admin" || normalized === "admin";
+  }
+
+  private async resolveMerchantCustomerReadScope(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+  ): Promise<string> {
+    if (!merchantId || typeof merchantId !== "string" || !merchantId.trim()) {
+      throw new ForbiddenException("Merchant id is required.");
+    }
+    if (!actor?.actor_role || !actor?.actor_id || typeof actor.actor_id !== "string" || !actor.actor_id.trim()) {
+      throw new ForbiddenException("Actor identity and role are required.");
+    }
+
+    if (this.isPlatformCustomerRole(actor.actor_role)) {
+      const { data: merchant, error: merchantError } = await this.supabaseAdmin.client
+        .from("merchants")
+        .select("id")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (merchantError) throw merchantError;
+      if (!merchant?.id) {
+        throw new NotFoundException("Merchant not found.");
+      }
+      return merchantId;
+    }
+
+    if (!this.isMerchantCustomerRole(actor.actor_role)) {
+      throw new ForbiddenException("Customer read access is not permitted for this role.");
+    }
+
+    // Exact membership in merchant_users for target merchantId (no first membership fallback)
+    const { data: membership, error: membershipError } = await this.supabaseAdmin.client
+      .from("merchant_users")
+      .select("merchant_id")
+      .eq("user_id", actor.actor_id)
+      .eq("merchant_id", merchantId)
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership?.merchant_id) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+
+    // Exact merchant status in merchants table must equal 'active'
+    const { data: merchant, error: merchantError } = await this.supabaseAdmin.client
+      .from("merchants")
+      .select("status")
+      .eq("id", merchantId)
+      .maybeSingle();
+    if (merchantError) throw merchantError;
+    if (!merchant || merchant.status !== "active") {
+      throw new ForbiddenException("Merchant is not active.");
+    }
+
+    return merchantId;
+  }
+
+  async listMerchantCustomers(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+    query?: ListMerchantCustomersQueryDto,
+  ) {
+    const resolvedMerchantId = await this.resolveMerchantCustomerReadScope(merchantId, actor);
+
+    const rpcLimit = Math.min(Math.max(1, Math.floor(Number(query?.limit ?? 50))), 200);
+    const rpcPage = Math.max(1, Math.floor(Number(query?.page ?? 1)));
+    const rpcOffset = (rpcPage - 1) * rpcLimit;
+    const sanitizedSearch = sanitizeSearchTerm(query?.search) || null;
+
+    const { data, error } = await this.supabaseAdmin.client.rpc("merchant_customer_summary", {
+      p_merchant_id: resolvedMerchantId,
+      p_search: sanitizedSearch,
+      p_limit: rpcLimit,
+      p_offset: rpcOffset,
+    });
+    if (error) throw error;
+
+    // Strict structural validation: do not tolerate malformed or missing RPC payload
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new ServiceUnavailableException("Malformed customer summary payload received from database.");
+    }
+
+    const raw = data as Record<string, unknown>;
+
+    if (!Array.isArray(raw.items)) {
+      throw new ServiceUnavailableException("Malformed customer summary items received from database.");
+    }
+
+    const total = Number(raw.total);
+    if (!Number.isInteger(total) || total < 0) {
+      throw new ServiceUnavailableException("Malformed customer summary total received from database.");
+    }
+
+    const limit = Number(raw.limit);
+    if (!Number.isInteger(limit) || limit < 0) {
+      throw new ServiceUnavailableException("Malformed customer summary limit received from database.");
+    }
+
+    const offset = Number(raw.offset);
+    if (!Number.isInteger(offset) || offset < 0) {
+      throw new ServiceUnavailableException("Malformed customer summary offset received from database.");
+    }
+
+    if (typeof raw.has_more !== "boolean") {
+      throw new ServiceUnavailableException("Malformed customer summary pagination state received from database.");
+    }
+
+    const validatedItems = raw.items.map((item, index) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) {
+        throw new ServiceUnavailableException(`Malformed customer item at index ${index}.`);
+      }
+      const it = item as Record<string, unknown>;
+
+      if (typeof it.customer_ref !== "string" || !it.customer_ref.trim()) {
+        throw new ServiceUnavailableException(`Invalid customer_ref at index ${index}.`);
+      }
+
+      if (typeof it.phone_masked !== "string" || !it.phone_masked.trim()) {
+        throw new ServiceUnavailableException(`Invalid phone_masked at index ${index}.`);
+      }
+
+      const orders = Number(it.orders);
+      if (!Number.isInteger(orders) || orders < 0) {
+        throw new ServiceUnavailableException(`Invalid orders count at index ${index}.`);
+      }
+
+      const spent = Number(it.spent);
+      if (typeof spent !== "number" || !Number.isFinite(spent) || spent < 0) {
+        throw new ServiceUnavailableException(`Invalid spent amount at index ${index}.`);
+      }
+
+      if (typeof it.last_order_at !== "string" || isNaN(Date.parse(it.last_order_at))) {
+        throw new ServiceUnavailableException(`Invalid last_order_at timestamp at index ${index}.`);
+      }
+
+      return {
+        customer_ref: it.customer_ref,
+        phone_masked: it.phone_masked,
+        orders,
+        spent,
+        last_order_at: it.last_order_at,
+      };
+    });
+
+    return {
+      merchant_id: resolvedMerchantId,
+      items: validatedItems,
+      page: rpcPage,
+      limit: rpcLimit,
+      total,
+      hasMore: raw.has_more,
+    };
   }
 }

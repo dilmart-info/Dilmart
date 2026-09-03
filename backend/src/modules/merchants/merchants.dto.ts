@@ -254,3 +254,22 @@ export class UpdateMerchantRegistrationDetailsDto {
   @Type(() => OwnerSafeUpdateDto)
   owner?: OwnerSafeUpdateDto;
 }
+
+export class ListMerchantCustomersQueryDto {
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(200)
+  limit?: number;
+}

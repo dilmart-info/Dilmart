@@ -21,7 +21,7 @@ export class AdminController {
   }
 
   @Get("customers")
-  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @Roles("super_admin", "admin")
   getScopedCustomers(
     @Query("merchant_id") merchantId?: string,
     @Query("search") search?: string,

@@ -4,6 +4,7 @@ import {
   canMerchantManageCatalog,
   canMerchantManageCoupons,
   canMerchantViewFinance,
+  canMerchantViewCustomers,
   isMerchantStaff,
 } from "./merchant-role-authority";
 
@@ -77,10 +78,30 @@ describe("merchant-role-authority — Role Gating Matrix", () => {
     expect(canMerchantManageCoupons("customer")).toBe(false);
     expect(canMerchantManageCoupons("viewer")).toBe(false);
     expect(canMerchantManageCoupons("super_admin")).toBe(false);
-    expect(canMerchantManageCoupons("admin")).toBe(false);
-    expect(canMerchantManageCoupons("owner")).toBe(true);
-    expect(canMerchantManageCoupons("merchant_owner")).toBe(true);
     expect(canMerchantManageCoupons("manager")).toBe(true);
     expect(canMerchantManageCoupons("merchant_manager")).toBe(true);
+  });
+
+  it("authorizes owner, manager, staff for viewing customers and fails closed on unknown/null", () => {
+    // Authorized roles and case-insensitive aliases
+    expect(canMerchantViewCustomers("owner")).toBe(true);
+    expect(canMerchantViewCustomers("merchant_owner")).toBe(true);
+    expect(canMerchantViewCustomers("OWNER")).toBe(true);
+    expect(canMerchantViewCustomers("manager")).toBe(true);
+    expect(canMerchantViewCustomers("merchant_manager")).toBe(true);
+    expect(canMerchantViewCustomers("MANAGER")).toBe(true);
+    expect(canMerchantViewCustomers("staff")).toBe(true);
+    expect(canMerchantViewCustomers("merchant_staff")).toBe(true);
+    expect(canMerchantViewCustomers("STAFF")).toBe(true);
+
+    // Fail-closed cases
+    expect(canMerchantViewCustomers(null)).toBe(false);
+    expect(canMerchantViewCustomers(undefined)).toBe(false);
+    expect(canMerchantViewCustomers("")).toBe(false);
+    expect(canMerchantViewCustomers("customer")).toBe(false);
+    expect(canMerchantViewCustomers("viewer")).toBe(false);
+    expect(canMerchantViewCustomers("super_admin")).toBe(false);
+    expect(canMerchantViewCustomers("admin")).toBe(false);
+    expect(canMerchantViewCustomers("unauthorized_role")).toBe(false);
   });
 });

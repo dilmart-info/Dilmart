@@ -3,26 +3,46 @@
 ## Status
 
 ```text
-PHASE_3E_MERGED
-PR_20_CLOSED
-PR_20_SOURCE_HEAD_11C5158
-PR_20_MERGE_SHA_7A4B866
-MAIN_CI_PASS
-NATIVE_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-RENDER_DEPLOYMENT_STATE_UNVERIFIED
+PHASE_3F_IMPLEMENTATION_COMPLETE
+LOCAL_GATES_PASS
+PR_DRAFT_AWAITING_CREATION
 NO_DB_MIGRATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+NO_DEPLOYMENT
 ```
 
-## Phase 3E Post-Merge Closure Details
+## Phase 3F Implementation Details
 
+- **Task:** `DILMART-PHASE-3F-MERCHANT-CUSTOMERS-PRIVACY-MULTI-STORE-AUTHORITY-001`
+- **Feature Branch:** `frontend/dilmart-merchant-customers-authority`
+- **Base Commit:** `1335c534230e97922da945062f778a98b1c7ed07`
+- **Pull Request:** Draft PR TBD (Awaiting Creation)
+- **Scope Delivered:**
+  - Dedicated endpoint `GET /merchants/:id/customers` with strict UUID and query validation.
+  - Endpoint separation: `/admin/customers` restricted to `super_admin, admin` only; merchant roles rejected with HTTP 403.
+  - Multi-store isolation with exact-membership checks in `merchant_users` for the requested merchant ID; zero first-store fallback.
+  - Verification of both `actor_id` and `actor_role` (invalid/missing actor_id returns HTTP 403).
+  - Rejection of inactive or suspended merchants (HTTP 403).
+  - Support for case-insensitive role aliases (`owner`/`merchant_owner`, `manager`/`merchant_manager`, `staff`/`merchant_staff`).
+  - Structural RPC validation for `merchant_customer_summary` returning HTTP 503 `ServiceUnavailableException` on malformed payloads without converting to empty state.
+  - Single camelCase pagination contract `{ merchant_id, items, page, limit, total, hasMore }`.
+  - Privacy assurance: zero raw PII (names, emails, unmasked phones) exposed.
+  - Keyed Workspace pattern (`key={merchantId}`) resetting search and pagination on store switch.
+  - Client response assertion `assertCustomersContractMerchantId`.
+  - Separate data adapters for merchant (strict) vs platform (backward compatible).
+  - Role gating via `canMerchantViewCustomers` and hidden navigation item for unauthorized roles.
+  - Truthful states: dedicated loading skeleton, truthful error banner, unattached banner, unauthorized banner, and honest empty state.
+- **Database Status:** 0 migrations applied, 0 live mutations.
+
+---
+
+## Preceding Governance / Merged Phases
+
+### Phase 3E: Merchant Coupons Multi-Store Authority & Policy Isolation
 - **Task:** `DILMART-PHASE-3E-MERCHANT-COUPONS-MULTI-STORE-AUTHORITY-001`
-- **Feature Branch:** `frontend/dilmart-merchant-coupons-authority` (Merged & Deleted)
+- **PR:** [#20](https://github.com/dilmart-info/Dilmart/pull/20) (Merged & Closed)
 - **Source HEAD:** `11c5158ed8ac3e8701e96d0749547b631a8126ce`
 - **Merge SHA:** `7a4b8667dce4f90004efb018df6ac0aee492ac94`
-- **Pull Request:** [#20](https://github.com/dilmart-info/Dilmart/pull/20) (Merged & Closed)
+- **Closure PR:** [#21](https://github.com/dilmart-info/Dilmart/pull/21) (`1335c534230e97922da945062f778a98b1c7ed07`)
 - **Post-Merge Governance Branch:** `governance/pr20-post-merge-phase3e-closure`
 - **Post-Merge Verification Evidence:**
   - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33761749597` — success

@@ -7,11 +7,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { ScopedContext } from "@/lib/scoped-queries";
 import { getScopedCustomers } from "@/lib/scoped-queries";
 
+// eslint-disable-next-line react-refresh/only-export-components
+export function assertCustomersContractMerchantId(response: unknown, expectedMerchantId: string): void {
+  if (!response || typeof response !== "object" || Array.isArray(response)) {
+    throw new Error("استجابة غير صالحة من الخادم لعملاء المتجر.");
+  }
+  const r = response as Record<string, unknown>;
+  if (r.merchant_id !== expectedMerchantId) {
+    throw new Error(`خرق عقد أمان المتجر: المتجر المستلم '${r.merchant_id}' لا يطابق المطلوب '${expectedMerchantId}'.`);
+  }
+  if (!Array.isArray(r.items)) {
+    throw new Error("استجابة غير صالحة: قائمة العملاء مفقودة.");
+  }
+}
+
 const PAGE_SIZE = 50;
 
 type Props = {
   context: ScopedContext;
   title?: string;
+  liveMerchantIdRef?: React.RefObject<string | undefined>;
 };
 
 /** Merchant customer row from RPC (masked, no PII) */
@@ -41,20 +56,46 @@ type PaginatedResponse<T> = {
   hasMore: boolean;
 };
 
-export default function CustomersPage({ context, title = "العملاء" }: Props) {
+export default function CustomersPage({ context, title = "العملاء", liveMerchantIdRef }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
   const { data: response, isLoading, isError, error, refetch } = useQuery({
     queryKey: ["scoped-customers", context.scope, context.merchantId, search, page],
-    queryFn: () => getScopedCustomers(context, { search, page, limit: PAGE_SIZE }),
+    queryFn: async () => {
+      const res = await getScopedCustomers(context, { search, page, limit: PAGE_SIZE });
+      if (context.scope === "merchant") {
+        assertCustomersContractMerchantId(res, context.merchantId!);
+      }
+      return res;
+    },
   });
 
-  // Handle both old array response (backward compat) and new paginated response
-  const paginated = (Array.isArray(response)
-    ? { items: response, page: 1, limit: PAGE_SIZE, total: response.length, hasMore: false }
-    : response ?? { items: [], page: 1, limit: PAGE_SIZE, total: 0, hasMore: false }
-  ) as PaginatedResponse<MerchantCustomer | PlatformCustomer>;
+  // Separate data adapters: strict contract for merchant, backward-compat for platform
+  let paginated: PaginatedResponse<MerchantCustomer | PlatformCustomer>;
+  if (context.scope === "merchant") {
+    const r = response as {
+      merchant_id?: string;
+      items?: MerchantCustomer[];
+      page?: number;
+      limit?: number;
+      total?: number;
+      hasMore?: boolean;
+    } | undefined;
+    paginated = {
+      items: r?.items ?? [],
+      page: r?.page ?? 1,
+      limit: r?.limit ?? PAGE_SIZE,
+      total: r?.total ?? 0,
+      hasMore: r?.hasMore ?? false,
+    };
+  } else {
+    // Platform adapter (preserves legacy array or object support for admin)
+    paginated = (Array.isArray(response)
+      ? { items: response, page: 1, limit: PAGE_SIZE, total: response.length, hasMore: false }
+      : response ?? { items: [], page: 1, limit: PAGE_SIZE, total: 0, hasMore: false }
+    ) as PaginatedResponse<PlatformCustomer>;
+  }
 
   const items = paginated.items ?? [];
   const total = paginated.total ?? 0;
@@ -148,7 +189,7 @@ export default function CustomersPage({ context, title = "العملاء" }: Pro
       </div>
 
       {/* ── Pagination Controls ── */}
-      {total > 0 && (
+      {!isLoading && !isError && total > 0 && (
         <div className="flex items-center justify-between text-sm text-muted-foreground">
           <span>
             عرض {from} – {to} من {total}

@@ -60,3 +60,16 @@ export function canMerchantManageCoupons(role?: string | null): boolean {
     normalized === "merchant_manager"
   );
 }
+
+export function canMerchantViewCustomers(role?: string | null): boolean {
+  if (!role || typeof role !== "string") return false;
+  const normalized = role.trim().toLowerCase();
+  return (
+    normalized === "owner" ||
+    normalized === "merchant_owner" ||
+    normalized === "manager" ||
+    normalized === "merchant_manager" ||
+    normalized === "staff" ||
+    normalized === "merchant_staff"
+  );
+}
