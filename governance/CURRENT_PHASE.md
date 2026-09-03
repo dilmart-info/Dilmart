@@ -3,29 +3,45 @@
 ## Status
 
 ```text
-PHASE_3E_IMPLEMENTATION_COMPLETE
-LOCAL_GATES_PASS
-REMOTE_CI_PASS
-PR_20_DRAFT_AWAITING_REVIEW
+PHASE_3E_MERGED
+PR_20_CLOSED
+PR_20_SOURCE_HEAD_11C5158
+PR_20_MERGE_SHA_7A4B866
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
-NO_DEPLOYMENT
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
-## Active Phase 3E Details
+## Phase 3E Post-Merge Closure Details
 
 - **Task:** `DILMART-PHASE-3E-MERCHANT-COUPONS-MULTI-STORE-AUTHORITY-001`
-- **Branch:** `frontend/dilmart-merchant-coupons-authority`
-- **Pull Request:** Draft PR [#20](https://github.com/dilmart-info/Dilmart/pull/20) (`https://github.com/dilmart-info/Dilmart/pull/20`)
-- **Scope:**
-  - Hardening Merchant Coupons across backend controller/service, frontend workspace, and aligned commercial policy authority.
-  - Multi-store isolation with Keyed Workspace (`key={merchantId}`) resetting component-local state and active observers on store switch (cache isolation provided by merchant-scoped query keys).
-  - Fail-closed response assertion (`assertCouponsContractMerchantId`) preventing cross-store query data leakage.
-  - Edit IDOR closure preventing cross-store coupon mutations via `id` spoofing.
-  - Authoritative deletion proving row removal and returning 404 for foreign or non-existent coupons.
-  - Role authority gating: `merchant_staff` can view (GET) coupons in read-only mode, but is strictly blocked from upsert and delete operations.
-  - Truthful states: dedicated loading skeleton, truthful error banner with retry action, distinct empty state.
-  - Server-side and client-side commercial policy enforcement (balanced / strict profiles), failing closed on table read failures with `ServiceUnavailableException` (HTTP 503). Backend and frontend use aligned canonical profile definitions in separate backend/frontend modules.
-  - Race condition immunity: late list results are isolated by merchant-scoped query keys and keyed workspace remounting; `isMountedRef` and `liveMerchantIdRef` protect late mutation callbacks, toasts, form resets, and query invalidations.
+- **Feature Branch:** `frontend/dilmart-merchant-coupons-authority` (Merged & Deleted)
+- **Source HEAD:** `11c5158ed8ac3e8701e96d0749547b631a8126ce`
+- **Merge SHA:** `7a4b8667dce4f90004efb018df6ac0aee492ac94`
+- **Pull Request:** [#20](https://github.com/dilmart-info/Dilmart/pull/20) (Merged & Closed)
+- **Post-Merge Governance Branch:** `governance/pr20-post-merge-phase3e-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33761749597` — success
+  - Native CI (`Native Foundation CI`): run `33761749579` — success
+  - Netlify gate runs: `33762231769` and `33762263873`
+  - Final comprehensive Netlify gate: `33762263873`
+  - Both Netlify publish jobs: skipped (`NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled)
+  - Render deployment state: unverified (no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations.
+  - Scope delivered:
+    - Hardening Merchant Coupons across backend controller/service, frontend workspace, and aligned commercial policy authority.
+    - Multi-store isolation with Keyed Workspace (`key={merchantId}`) resetting component-local state and active observers on store switch (cache isolation provided by merchant-scoped query keys).
+    - Fail-closed response assertion (`assertCouponsContractMerchantId`) preventing cross-store query data leakage.
+    - Edit IDOR closure preventing cross-store coupon mutations via `id` spoofing.
+    - Authoritative deletion proving row removal and returning 404 for foreign or non-existent coupons.
+    - Role authority gating: `merchant_staff` can view (GET) coupons in read-only mode, but is strictly blocked from upsert and delete operations.
+    - Truthful states: dedicated loading skeleton, truthful error banner with retry action, distinct empty state.
+    - Server-side and client-side commercial policy enforcement (balanced / strict profiles), failing closed on table read failures with `ServiceUnavailableException` (HTTP 503). Backend and frontend use aligned canonical profile definitions in separate backend/frontend modules.
+    - Race condition immunity: late list results are isolated by merchant-scoped query keys and keyed workspace remounting; `isMountedRef` and `liveMerchantIdRef` protect late mutation callbacks, toasts, form resets, and query invalidations.
 - **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
