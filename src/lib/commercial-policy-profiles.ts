@@ -92,7 +92,13 @@ export async function fetchMerchantCommercialPolicyProfileStrict(merchantId?: st
   if (!merchantId) {
     return PROFILES.balanced;
   }
-  const res = (await apiClient.getCommercialPolicyAssignment({ merchant_id: merchantId })) as any;
+  const res = (await apiClient.getCommercialPolicyAssignment({ merchant_id: merchantId })) as {
+    error?: unknown;
+    source?: string;
+    merchant_id?: string;
+    profile_id?: string;
+    profile?: { id?: string };
+  } | null | undefined;
   if (!res || typeof res !== "object") {
     throw new Error("استجابة السياسة التجارية فارغة أو غير صالحة.");
   }

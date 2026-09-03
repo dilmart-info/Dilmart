@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { fetchMerchantCommercialPolicyProfileStrict } from "@/lib/commercial-policy-profiles";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function assertCouponsContractMerchantId(
   coupons: Array<{ merchant_id?: string | null }>,
   expectedMerchantId: string,
@@ -24,6 +25,23 @@ export function assertCouponsContractMerchantId(
     }
   }
 }
+
+type MerchantOption = {
+  id: string;
+  display_name: string;
+};
+
+type CouponListItem = {
+  id: string;
+  code: string;
+  discount_type: "fixed" | "percentage";
+  value: number;
+  min_order_amount?: number | null;
+  max_uses?: number | null;
+  expires_at?: string | null;
+  is_active: boolean;
+  merchants?: { display_name?: string } | null;
+};
 
 type Props = {
   context: ScopedContext;
@@ -131,12 +149,12 @@ export default function CouponsPage({ context, title = "الكوبونات", can
       });
       toast.success("تم حفظ الكوبون");
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       if (!isMountedRef.current) return;
       if (context.scope === "merchant" && liveMerchantIdRef?.current && liveMerchantIdRef.current !== context.merchantId) {
         return;
       }
-      const message = String(err?.message ?? "");
+      const message = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? "");
       if (message.includes("COUPON_CODE_EXISTS")) {
         toast.error("كود الكوبون مستخدم مسبقًا. يرجى اختيار كود آخر.");
         return;
@@ -153,7 +171,7 @@ export default function CouponsPage({ context, title = "الكوبونات", can
         toast.error("الحد الأقصى للاستخدام يجب أن يكون عددًا صحيحًا أكبر من صفر.");
         return;
       }
-      toast.error(err?.message || "تعذر حفظ الكوبون");
+      toast.error(message || "تعذر حفظ الكوبون");
     },
   });
 
@@ -193,12 +211,13 @@ export default function CouponsPage({ context, title = "الكوبونات", can
       });
       toast.success("تم حذف الكوبون");
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       if (!isMountedRef.current) return;
       if (context.scope === "merchant" && liveMerchantIdRef?.current && liveMerchantIdRef.current !== context.merchantId) {
         return;
       }
-      toast.error(err?.message || "تعذر حذف الكوبون");
+      const message = err instanceof Error ? err.message : String((err as { message?: string })?.message ?? "");
+      toast.error(message || "تعذر حذف الكوبون");
     },
   });
 
@@ -253,7 +272,7 @@ export default function CouponsPage({ context, title = "الكوبونات", can
               onChange={(e) => setForm((p) => ({ ...p, merchant_id: e.target.value }))}
             >
               <option value="platform">عام</option>
-              {(merchants ?? []).map((m: any) => (
+              {((merchants as MerchantOption[]) ?? []).map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.display_name}
                 </option>
@@ -304,7 +323,7 @@ export default function CouponsPage({ context, title = "الكوبونات", can
           onChange={(e) => setMerchantFilter(e.target.value)}
         >
           <option value="all">كل التجار</option>
-          {(merchants ?? []).map((m: any) => (
+          {((merchants as MerchantOption[]) ?? []).map((m) => (
             <option key={m.id} value={m.id}>
               {m.display_name}
             </option>
@@ -365,11 +384,11 @@ export default function CouponsPage({ context, title = "الكوبونات", can
                   </TableCell>
                 </TableRow>
               ) : (
-                (coupons ?? []).map((c: any) => (
+                ((coupons as CouponListItem[]) ?? []).map((c) => (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.code}</TableCell>
                     <TableCell>{c.discount_type === "percentage" ? `${c.value}%` : formatPrice(c.value)}</TableCell>
-                    {context.scope === "platform" && <TableCell>{(c.merchants as any)?.display_name || "عام"}</TableCell>}
+                    {context.scope === "platform" && <TableCell>{c.merchants?.display_name || "عام"}</TableCell>}
                     <TableCell>
                       <div className="space-y-1 text-xs text-muted-foreground">
                         <p>حد أدنى: {formatPrice(Number(c.min_order_amount ?? 0))}</p>
