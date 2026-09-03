@@ -9,6 +9,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "test:policy": "npm run build && node --test tests/policy-matrix.test.mjs tests/policy-endpoints.test.mjs tests/profiles-acl-lockdown.test.mjs tests/orders-acl-lockdown.test.mjs tests/product-import-acl-lockdown.test.mjs tests/product-import-behavior-acl.test.mjs",
     "test:commercial": "npm run build && node --test tests/commercial-rule-resolution.test.mjs",
+    "test:merchant-coupons": "npm run build && node --test tests/merchant-coupons-multi-store-authority.test.mjs",
     "test:hardening": "npm run build && node --test tests/hardening-regression.test.mjs",
     "test:merchant-registration-data": "npm run build && node --test tests/admin-merchant-registration-data.test.mjs",
     "test:merchant-push": "npm run build && node --test tests/merchant-push-alerts.test.mjs",

@@ -1,0 +1,822 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import React from "react";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import MerchantCoupons from "./Coupons";
+import * as scopedQueries from "@/lib/scoped-queries";
+import * as commercialPolicy from "@/lib/commercial-policy-profiles";
+import { toast } from "sonner";
+
+const { mockCurrentMerchant } = vi.hoisted(() => ({
+  mockCurrentMerchant: {
+    data: {
+      merchant_id: "m-123",
+      role: "owner",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    } as { merchant_id: string; role: string; merchants: { id: string; display_name: string; status: string } } | null,
+    isLoading: false,
+  },
+}));
+
+vi.mock("@/hooks/use-current-merchant", () => ({
+  useCurrentMerchant: () => mockCurrentMerchant,
+}));
+
+vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
+}));
+
+function renderCoupons(queryClient?: QueryClient) {
+  const client =
+    queryClient ??
+    new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+
+  return render(
+    <QueryClientProvider client={client}>
+      <MemoryRouter initialEntries={["/merchant/coupons"]}>
+        <MerchantCoupons />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+const mockCouponsA = [
+  {
+    id: "c-1",
+    code: "BAGHDAD20",
+    discount_type: "percentage",
+    value: 20,
+    min_order_amount: 10000,
+    max_uses: 100,
+    expires_at: "2026-12-31T23:59:59Z",
+    is_active: true,
+    merchant_id: "m-123",
+  },
+];
+
+const mockCouponsB = [
+  {
+    id: "c-2",
+    code: "BASRA10",
+    discount_type: "fixed",
+    value: 5000,
+    min_order_amount: 25000,
+    max_uses: 50,
+    expires_at: "2026-11-30T23:59:59Z",
+    is_active: true,
+    merchant_id: "m-456",
+  },
+];
+
+describe("MerchantCoupons — Multi-Store Authority, Truthful States & Role Isolation", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockCurrentMerchant.isLoading = false;
+    mockCurrentMerchant.data = {
+      merchant_id: "m-123",
+      role: "owner",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    };
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockResolvedValue(mockCouponsA);
+    vi.spyOn(scopedQueries, "upsertScopedCoupon").mockResolvedValue(undefined);
+    vi.spyOn(scopedQueries, "deleteScopedCoupon").mockResolvedValue(undefined);
+    vi.spyOn(commercialPolicy, "resolveMerchantCommercialPolicyProfile").mockResolvedValue({
+      id: "balanced",
+      label: "Balanced",
+      description: "سياسة متوازنة",
+      maxDiscountPercent: 70,
+      minCouponOrderAmount: 0,
+      maxCouponUsage: 2000,
+    });
+    vi.spyOn(commercialPolicy, "fetchMerchantCommercialPolicyProfileStrict").mockResolvedValue({
+      id: "balanced",
+      label: "Balanced",
+      description: "سياسة متوازنة",
+      maxDiscountPercent: 70,
+      minCouponOrderAmount: 0,
+      maxCouponUsage: 2000,
+    });
+  });
+
+  it("LOADING SKELETON: renders skeleton when merchant data is loading", () => {
+    mockCurrentMerchant.isLoading = true;
+    renderCoupons();
+    expect(screen.getByTestId("merchant-coupons-loading")).toBeTruthy();
+  });
+
+  it("UNATTACHED STATE: renders unattached prompt if merchant_id is missing", () => {
+    mockCurrentMerchant.data = null;
+    renderCoupons();
+    expect(screen.getByTestId("merchant-coupons-unattached")).toBeTruthy();
+    expect(screen.getByText("لا يوجد متجر مرتبط بحسابك.")).toBeTruthy();
+  });
+
+  it("TRUTHFUL ERROR STATE: displays error card with retry button on query failure, never 'لا توجد كوبونات'", async () => {
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockRejectedValueOnce(new Error("Database connection lost"));
+    renderCoupons();
+
+    const errorScreen = await screen.findByTestId("coupons-error");
+    expect(errorScreen).toBeTruthy();
+    expect(screen.getByText("تعذر تحميل بيانات الكوبونات")).toBeTruthy();
+    expect(screen.getByText("Database connection lost")).toBeTruthy();
+    expect(screen.queryByTestId("coupons-empty")).toBeNull();
+
+    // Clicking retry refetches
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockResolvedValueOnce(mockCouponsA);
+    const retryBtn = screen.getByRole("button", { name: /إعادة المحاولة/i });
+    fireEvent.click(retryBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText("BAGHDAD20")).toBeTruthy();
+    });
+  });
+
+  it("TRUTHFUL EMPTY STATE: displays empty row only when query resolves with empty array", async () => {
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockResolvedValueOnce([]);
+    renderCoupons();
+
+    expect(await screen.findByTestId("coupons-empty")).toBeTruthy();
+    expect(screen.getByText("لا توجد كوبونات.")).toBeTruthy();
+  });
+
+  it("CONTRACT VALIDATION: rejects response and displays error if coupon belongs to different merchant", async () => {
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockResolvedValueOnce([
+      {
+        id: "c-evil",
+        code: "HACKED",
+        discount_type: "fixed",
+        value: 1000,
+        is_active: true,
+        merchant_id: "m-evil", // Foreign merchant ID!
+      },
+    ]);
+
+    renderCoupons();
+
+    const errorScreen = await screen.findByTestId("coupons-error");
+    expect(errorScreen).toBeTruthy();
+    expect(screen.getByText(/Contract violation/)).toBeTruthy();
+  });
+
+  it("MULTI-STORE KEYED WORKSPACE: switching Store A -> Store B resets draft form and mounts fresh workspace", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") return mockCouponsA;
+      if (ctx.merchantId === "m-456") return mockCouponsB;
+      return [];
+    });
+
+    // 1. Initial render on Store A
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText("BAGHDAD20")).toBeTruthy();
+
+    // Type draft code in Store A form
+    const codeInput = screen.getByPlaceholderText("الكود") as HTMLInputElement;
+    fireEvent.change(codeInput, { target: { value: "DRAFTCODE100" } });
+    expect(codeInput.value).toBe("DRAFTCODE100");
+
+    // 2. Switch to Store B
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // 3. Verify Store B is rendered, draft form is completely blank, and Store B coupon is visible
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+    expect(screen.queryByText("BAGHDAD20")).toBeNull();
+
+    const newCodeInput = screen.getByPlaceholderText("الكود") as HTMLInputElement;
+    expect(newCodeInput.value).toBe(""); // Cleanly reset by Keyed Workspace!
+  });
+
+  it("ROLE AUTHORITY GATING: staff role sees read-only banner; creation form and delete buttons are omitted", async () => {
+    mockCurrentMerchant.data = {
+      merchant_id: "m-123",
+      role: "staff",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    };
+
+    renderCoupons();
+
+    expect(await screen.findByText("BAGHDAD20")).toBeTruthy();
+    expect(screen.getByTestId("staff-readonly-banner")).toBeTruthy();
+    expect(screen.queryByTestId("coupon-create-form")).toBeNull();
+    expect(screen.queryByTestId("delete-coupon-c-1")).toBeNull();
+  });
+
+  it("ROLE AUTHORITY GATING: manager role sees creation form and delete buttons", async () => {
+    mockCurrentMerchant.data = {
+      merchant_id: "m-123",
+      role: "manager",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    };
+
+    renderCoupons();
+
+    expect(await screen.findByText("BAGHDAD20")).toBeTruthy();
+    expect(screen.getByTestId("coupon-create-form")).toBeTruthy();
+    expect(screen.getByTestId("delete-coupon-c-1")).toBeTruthy();
+    expect(screen.queryByTestId("staff-readonly-banner")).toBeNull();
+  });
+
+  it("POLICY ERROR HANDLING: displays policy error and disables save button if policy resolution fails", async () => {
+    vi.spyOn(commercialPolicy, "fetchMerchantCommercialPolicyProfileStrict").mockRejectedValueOnce(
+      new Error("Policy table unavailable"),
+    );
+
+    renderCoupons();
+
+    expect(await screen.findByTestId("policy-error")).toBeTruthy();
+    expect(screen.getByText(/تعذر تحميل السياسة التجارية/)).toBeTruthy();
+
+    const saveBtn = screen.getByTestId("coupon-save-btn");
+    expect(saveBtn.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("COMMERCIAL POLICY ENFORCEMENT: rejects discount exceeding policy limits before mutation", async () => {
+    renderCoupons();
+
+    await screen.findByText("BAGHDAD20");
+
+    const codeInput = screen.getByPlaceholderText("الكود");
+    const typeSelect = screen.getByDisplayValue("مبلغ ثابت");
+    const valueInput = screen.getByPlaceholderText("قيمة الخصم");
+    const saveBtn = screen.getByTestId("coupon-save-btn");
+
+    fireEvent.change(codeInput, { target: { value: "SUPER75" } });
+    fireEvent.change(typeSelect, { target: { value: "percentage" } });
+    fireEvent.change(valueInput, { target: { value: "85" } }); // Exceeds 70% policy limit!
+
+    fireEvent.click(saveBtn);
+
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringContaining("الحد الأقصى لخصم النسبة هو 70%"),
+    );
+    expect(scopedQueries.upsertScopedCoupon).not.toHaveBeenCalled();
+  });
+
+  it("SUCCESSFUL COUPON CREATION: converts datetime-local to ISO and submits", async () => {
+    renderCoupons();
+
+    await screen.findByText("BAGHDAD20");
+
+    const codeInput = screen.getByPlaceholderText("الكود");
+    const valueInput = screen.getByPlaceholderText("قيمة الخصم");
+    const minOrderInput = screen.getByPlaceholderText("الحد الأدنى للطلب");
+    const maxUsesInput = screen.getByPlaceholderText("الحد الأقصى للاستخدام");
+    const dateInput = screen.getByPlaceholderText("تاريخ الانتهاء");
+    const saveBtn = screen.getByTestId("coupon-save-btn");
+
+    fireEvent.change(codeInput, { target: { value: "NEWYEAR25" } });
+    fireEvent.change(valueInput, { target: { value: "25000" } });
+    fireEvent.change(minOrderInput, { target: { value: "50000" } });
+    fireEvent.change(maxUsesInput, { target: { value: "100" } });
+    fireEvent.change(dateInput, { target: { value: "2026-12-31T20:00" } });
+
+    fireEvent.click(saveBtn);
+
+    await waitFor(() => {
+      expect(scopedQueries.upsertScopedCoupon).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: "merchant", merchantId: "m-123" }),
+        expect.objectContaining({
+          code: "NEWYEAR25",
+          discount_type: "fixed",
+          value: 25000,
+          min_order_amount: 50000,
+          max_uses: 100,
+          is_active: true,
+          merchant_id: "m-123",
+          expires_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
+        }),
+      );
+      expect(toast.success).toHaveBeenCalledWith("تم حفظ الكوبون");
+    });
+  });
+
+  it("LOADING TRANSITION: isLoading=true -> isLoading=false with valid merchant renders workspace without hook-order regression", async () => {
+    const warnSpy = vi.spyOn(console, "warn");
+    const errorSpy = vi.spyOn(console, "error");
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    mockCurrentMerchant.isLoading = true;
+    mockCurrentMerchant.data = null;
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("merchant-coupons-loading")).toBeTruthy();
+
+    mockCurrentMerchant.isLoading = false;
+    mockCurrentMerchant.data = {
+      merchant_id: "m-123",
+      role: "owner",
+      merchants: { id: "m-123", display_name: "متجر الفرات", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BAGHDAD20")).toBeTruthy();
+    expect(screen.queryByTestId("merchant-coupons-loading")).toBeNull();
+
+    const hookWarnings = [...warnSpy.mock.calls, ...errorSpy.mock.calls].filter((args) =>
+      args.some((arg) => typeof arg === "string" && (
+        arg.includes("Rendered more hooks") ||
+        arg.includes("Rendered fewer hooks") ||
+        arg.includes("change in the order of Hooks")
+      ))
+    );
+    expect(hookWarnings).toHaveLength(0);
+  });
+
+  it("LOADING TRANSITION: isLoading=true -> isLoading=false with no membership renders unattached state without hook-order regression", async () => {
+    const warnSpy = vi.spyOn(console, "warn");
+    const errorSpy = vi.spyOn(console, "error");
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+    mockCurrentMerchant.isLoading = true;
+    mockCurrentMerchant.data = null;
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("merchant-coupons-loading")).toBeTruthy();
+
+    mockCurrentMerchant.isLoading = false;
+    mockCurrentMerchant.data = null;
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(screen.getByTestId("merchant-coupons-unattached")).toBeTruthy();
+    expect(screen.getByText("لا يوجد متجر مرتبط بحسابك.")).toBeTruthy();
+    expect(screen.queryByTestId("merchant-coupons-loading")).toBeNull();
+
+    const hookWarnings = [...warnSpy.mock.calls, ...errorSpy.mock.calls].filter((args) =>
+      args.some((arg) => typeof arg === "string" && (
+        arg.includes("Rendered more hooks") ||
+        arg.includes("Rendered fewer hooks") ||
+        arg.includes("change in the order of Hooks")
+      ))
+    );
+    expect(hookWarnings).toHaveLength(0);
+  });
+
+  it("SHARED QUERYCLIENT LIST RACE: Store A deferred query settling after switch to Store B never leaks into Store B", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    let resolveStoreAPromise!: (data: any) => void;
+    const slowStoreAPromise = new Promise((resolve) => {
+      resolveStoreAPromise = resolve;
+    });
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") {
+        return slowStoreAPromise as any;
+      }
+      if (ctx.merchantId === "m-456") {
+        return mockCouponsB;
+      }
+      return [];
+    });
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Switch to Store B while Store A query is still pending
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+
+    // Now resolve the late Store A query
+    await act(async () => {
+      resolveStoreAPromise(mockCouponsA);
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Store B must still be shown; BAGHDAD20 from Store A must NEVER leak into Store B view
+    expect(screen.getByText("BASRA10")).toBeTruthy();
+    expect(screen.queryByText("BAGHDAD20")).toBeNull();
+  });
+
+  it("SHARED QUERYCLIENT LIST RACE: Store A deferred query rejection does not show error, toast, or remove Store B data", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+
+    let rejectStoreAPromise!: (err: any) => void;
+    const slowStoreAPromise = new Promise((_, reject) => {
+      rejectStoreAPromise = reject;
+    });
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") {
+        return slowStoreAPromise as any;
+      }
+      if (ctx.merchantId === "m-456") {
+        return mockCouponsB;
+      }
+      return [];
+    });
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    // Switch to Store B while Store A is pending
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+
+    // Reject the abandoned Store A query
+    await act(async () => {
+      rejectStoreAPromise(new Error("Store A connection failed"));
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Store B remains active and healthy; no error banner, no toast, and data is preserved
+    expect(screen.getByText("BASRA10")).toBeTruthy();
+    expect(screen.queryByTestId("coupons-error")).toBeNull();
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it("SAVE MUTATION RACE: late resolving save for Store A does not affect Store B or invalidate Store B cache", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") return mockCouponsA;
+      if (ctx.merchantId === "m-456") return mockCouponsB;
+      return [];
+    });
+
+    let resolveSavePromise!: () => void;
+    const slowSavePromise = new Promise<void>((resolve) => {
+      resolveSavePromise = resolve;
+    });
+    vi.spyOn(scopedQueries, "upsertScopedCoupon").mockReturnValueOnce(slowSavePromise);
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("BAGHDAD20");
+
+    // Initiate save in Store A
+    const codeInput = screen.getByPlaceholderText("الكود");
+    const valueInput = screen.getByPlaceholderText("قيمة الخصم");
+    const saveBtn = screen.getByTestId("coupon-save-btn");
+
+    fireEvent.change(codeInput, { target: { value: "SLOWCODE" } });
+    fireEvent.change(valueInput, { target: { value: "10000" } });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    // Switch to Store B before slow save resolves
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+
+    invalidateSpy.mockClear();
+
+    // Resolve the slow save for Store A now
+    await act(async () => {
+      resolveSavePromise();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Toast success must NOT have been called because Store A was abandoned
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+    // Store B cache was NOT invalidated by abandoned Store A callback
+    expect(invalidateSpy).not.toHaveBeenCalled();
+    expect(screen.getByText("BASRA10")).toBeTruthy();
+  });
+
+  it("SAVE MUTATION RACE: late failing save for Store A does not fire toast, corrupt form, or invalidate Store B cache", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") return mockCouponsA;
+      if (ctx.merchantId === "m-456") return mockCouponsB;
+      return [];
+    });
+
+    let rejectSavePromise!: (err: any) => void;
+    const slowSavePromise = new Promise<void>((_, reject) => {
+      rejectSavePromise = reject;
+    });
+    vi.spyOn(scopedQueries, "upsertScopedCoupon").mockReturnValueOnce(slowSavePromise);
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("BAGHDAD20");
+
+    const codeInput = screen.getByPlaceholderText("الكود");
+    const valueInput = screen.getByPlaceholderText("قيمة الخصم");
+    const saveBtn = screen.getByTestId("coupon-save-btn");
+
+    fireEvent.change(codeInput, { target: { value: "FAILCODE" } });
+    fireEvent.change(valueInput, { target: { value: "10000" } });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+    });
+
+    // Switch to Store B before failure returns
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+    const storeBCodeInput = screen.getByPlaceholderText("الكود") as HTMLInputElement;
+    expect(storeBCodeInput.value).toBe("");
+
+    invalidateSpy.mockClear();
+
+    // Reject the slow save for Store A now
+    await act(async () => {
+      rejectSavePromise(new Error("Database timeout"));
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Toast error and success must NOT be called for the abandoned Store A action
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    // Store B's form and displayed coupons remain unchanged
+    expect(storeBCodeInput.value).toBe("");
+    expect(screen.getByText("BASRA10")).toBeTruthy();
+    // Store B query cache is not invalidated by Store A's abandoned mutation
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+
+  it("DELETE MUTATION RACE: late resolving delete for Store A does not fire toast, corrupt Store B rows, or invalidate Store B cache", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") return mockCouponsA;
+      if (ctx.merchantId === "m-456") return mockCouponsB;
+      return [];
+    });
+
+    let resolveDeletePromise!: () => void;
+    const slowDeletePromise = new Promise<void>((resolve) => {
+      resolveDeletePromise = resolve;
+    });
+    vi.spyOn(scopedQueries, "deleteScopedCoupon").mockReturnValueOnce(slowDeletePromise);
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("BAGHDAD20");
+
+    const deleteBtn = screen.getByTestId("delete-coupon-c-1");
+    await act(async () => {
+      fireEvent.click(deleteBtn);
+    });
+
+    // Switch to Store B before delete completes
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+    invalidateSpy.mockClear();
+
+    // Now resolve delete for Store A
+    await act(async () => {
+      resolveDeletePromise();
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    // Toast success and error must NOT have been called on Store B
+    expect(toast.success).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+    // Store B rows remain displayed
+    expect(screen.getByText("BASRA10")).toBeTruthy();
+    // Store B query cache is not invalidated by Store A's abandoned mutation
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+
+  it("DELETE MUTATION RACE: late failing delete for Store A does not fire toast, corrupt Store B rows, or invalidate Store B cache", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, "invalidateQueries");
+
+    vi.spyOn(scopedQueries, "getScopedCoupons").mockImplementation(async (ctx) => {
+      if (ctx.merchantId === "m-123") return mockCouponsA;
+      if (ctx.merchantId === "m-456") return mockCouponsB;
+      return [];
+    });
+
+    let rejectDeletePromise!: (err: any) => void;
+    const slowDeletePromise = new Promise<void>((_, reject) => {
+      rejectDeletePromise = reject;
+    });
+    vi.spyOn(scopedQueries, "deleteScopedCoupon").mockReturnValueOnce(slowDeletePromise);
+
+    const { rerender } = render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/merchant/coupons"]}>
+          <MerchantCoupons />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+
+    await screen.findByText("BAGHDAD20");
+
+    const deleteBtn = screen.getByTestId("delete-coupon-c-1");
+    await act(async () => {
+      fireEvent.click(deleteBtn);
+    });
+
+    // Switch to Store B
+    mockCurrentMerchant.data = {
+      merchant_id: "m-456",
+      role: "owner",
+      merchants: { id: "m-456", display_name: "متجر البصرة", status: "active" },
+    };
+
+    await act(async () => {
+      rerender(
+        <QueryClientProvider client={queryClient}>
+          <MemoryRouter initialEntries={["/merchant/coupons"]}>
+            <MerchantCoupons />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      );
+    });
+
+    expect(await screen.findByText("BASRA10")).toBeTruthy();
+    invalidateSpy.mockClear();
+
+    // Reject delete for Store A
+    await act(async () => {
+      rejectDeletePromise(new Error("Cannot delete coupon"));
+      await new Promise((r) => setTimeout(r, 50));
+    });
+
+    expect(toast.error).not.toHaveBeenCalled();
+    expect(toast.success).not.toHaveBeenCalled();
+    // Store B rows remain displayed
+    expect(screen.getByText("BASRA10")).toBeTruthy();
+    // Store B query cache is not invalidated by Store A's abandoned mutation
+    expect(invalidateSpy).not.toHaveBeenCalled();
+  });
+});

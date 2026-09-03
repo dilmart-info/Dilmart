@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { canMerchantDecide, canMerchantManageCatalog, canMerchantViewFinance, isMerchantStaff } from "./merchant-role-authority";
+import {
+  canMerchantDecide,
+  canMerchantManageCatalog,
+  canMerchantManageCoupons,
+  canMerchantViewFinance,
+  isMerchantStaff,
+} from "./merchant-role-authority";
 
 describe("merchant-role-authority — Role Gating Matrix", () => {
   it("allows owner to make merchant decisions, manage catalog, and view finance", () => {
@@ -62,5 +68,19 @@ describe("merchant-role-authority — Role Gating Matrix", () => {
     expect(canMerchantViewFinance("viewer")).toBe(false);
     expect(canMerchantViewFinance("super_admin")).toBe(false);
     expect(canMerchantViewFinance("admin")).toBe(false);
+
+    expect(canMerchantManageCoupons(null)).toBe(false);
+    expect(canMerchantManageCoupons(undefined)).toBe(false);
+    expect(canMerchantManageCoupons("")).toBe(false);
+    expect(canMerchantManageCoupons("staff")).toBe(false);
+    expect(canMerchantManageCoupons("merchant_staff")).toBe(false);
+    expect(canMerchantManageCoupons("customer")).toBe(false);
+    expect(canMerchantManageCoupons("viewer")).toBe(false);
+    expect(canMerchantManageCoupons("super_admin")).toBe(false);
+    expect(canMerchantManageCoupons("admin")).toBe(false);
+    expect(canMerchantManageCoupons("owner")).toBe(true);
+    expect(canMerchantManageCoupons("merchant_owner")).toBe(true);
+    expect(canMerchantManageCoupons("manager")).toBe(true);
+    expect(canMerchantManageCoupons("merchant_manager")).toBe(true);
   });
 });

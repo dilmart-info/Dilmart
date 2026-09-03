@@ -80,35 +80,12 @@ type GovernanceTaskRow = {
   note?: string | null;
 };
 
-type CommercialPolicyProfileId = "balanced" | "strict";
-
-type CommercialPolicyProfile = {
-  id: CommercialPolicyProfileId;
-  label: string;
-  description: string;
-  maxDiscountPercent: number;
-  minCouponOrderAmount: number;
-  maxCouponUsage: number;
-};
-
-const COMMERCIAL_POLICY_PROFILES: Record<CommercialPolicyProfileId, CommercialPolicyProfile> = {
-  balanced: {
-    id: "balanced",
-    label: "Balanced",
-    description: "سياسة متوازنة للتوسع التجاري المعتدل.",
-    maxDiscountPercent: 70,
-    minCouponOrderAmount: 0,
-    maxCouponUsage: 2000,
-  },
-  strict: {
-    id: "strict",
-    label: "Strict",
-    description: "سياسة محافظة لحماية الهوامش التجارية.",
-    maxDiscountPercent: 50,
-    minCouponOrderAmount: 5000,
-    maxCouponUsage: 500,
-  },
-};
+import {
+  CommercialPolicyProfileId,
+  CommercialPolicyProfile,
+  COMMERCIAL_POLICY_PROFILES,
+  getCommercialPolicyProfile,
+} from "../../common/commercial-policy";
 
 @Injectable()
 export class AdminService {
@@ -376,15 +353,10 @@ export class AdminService {
     return { profiles: Object.values(COMMERCIAL_POLICY_PROFILES) };
   }
 
-  private getCommercialPolicyProfile(profileId?: string | null): CommercialPolicyProfile {
-    if (profileId === "strict") return COMMERCIAL_POLICY_PROFILES.strict;
-    return COMMERCIAL_POLICY_PROFILES.balanced;
-  }
-
   async getCommercialPolicyAssignment(params: { merchant_id?: string; actor_role?: string; actor_id?: string }) {
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(params.merchant_id, params.actor_role, params.actor_id);
     if (!resolvedMerchantId) {
-      const profile = this.getCommercialPolicyProfile("balanced");
+      const profile = getCommercialPolicyProfile("balanced");
       return { merchant_id: null, profile_id: profile.id, profile, source: "default" as const };
     }
 
@@ -394,7 +366,7 @@ export class AdminService {
       .eq("merchant_id", resolvedMerchantId)
       .maybeSingle();
     if (error) {
-      const profile = this.getCommercialPolicyProfile("balanced");
+      const profile = getCommercialPolicyProfile("balanced");
       return {
         merchant_id: resolvedMerchantId,
         profile_id: profile.id,
@@ -404,7 +376,7 @@ export class AdminService {
         error: error.message,
       };
     }
-    const assignedProfile = this.getCommercialPolicyProfile((data as { profile_id?: string | null } | null)?.profile_id ?? "balanced");
+    const assignedProfile = getCommercialPolicyProfile((data as { profile_id?: string | null } | null)?.profile_id ?? "balanced");
     return {
       merchant_id: resolvedMerchantId,
       profile_id: assignedProfile.id,
@@ -418,7 +390,7 @@ export class AdminService {
   async upsertCommercialPolicyAssignment(merchantId: string, profileId: CommercialPolicyProfileId, actor: ActorContext) {
     const actorId = actor.actorId ?? "";
     const actorRole = actor.actorRole as AppActorRole;
-    const profile = this.getCommercialPolicyProfile(profileId);
+    const profile = getCommercialPolicyProfile(profileId);
     const row = {
       merchant_id: merchantId,
       profile_id: profile.id,
