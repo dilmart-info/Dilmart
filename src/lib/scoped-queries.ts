@@ -133,9 +133,18 @@ export async function deleteScopedCoupon(context: ScopedContext, couponId: strin
 
 export async function getScopedCustomers(context: ScopedContext, filters: QueryFilters = {}) {
   assertScope(context);
+  if (context.scope === "merchant") {
+    return apiClient.listMerchantCustomers(context.merchantId!, {
+      search: filters.search,
+      page: filters.page,
+      limit: filters.limit,
+    });
+  }
   const payload = {
     merchant_id: merchantIdForContext(context, filters.merchantId),
     search: filters.search,
+    page: filters.page,
+    limit: filters.limit,
   };
   return apiClient.listScopedCustomers(payload);
 }

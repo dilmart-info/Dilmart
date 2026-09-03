@@ -7,6 +7,7 @@ import {
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   Validate,
   ValidateNested,
@@ -253,4 +254,24 @@ export class UpdateMerchantRegistrationDetailsDto {
   @ValidateNested()
   @Type(() => OwnerSafeUpdateDto)
   owner?: OwnerSafeUpdateDto;
+}
+
+export class ListMerchantCustomersQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
 }

@@ -25,7 +25,7 @@ import { usePendingOrders } from "@/hooks/use-pending-orders";
 import { merchantApi } from "@/lib/api/merchant";
 import { getOrCreateMerchantDeviceId } from "@/lib/merchant-push";
 import { stopMerchantOrderAlertLoop } from "@/lib/notifications";
-import { canMerchantDecide, canMerchantViewFinance } from "@/lib/merchant-role-authority";
+import { canMerchantDecide, canMerchantViewFinance, canMerchantViewCustomers } from "@/lib/merchant-role-authority";
 import { isBackofficeNavPathActive, findActiveBackofficeNavItem } from "@/lib/backoffice-navigation";
 
 import { toast } from "sonner";
@@ -70,6 +70,9 @@ export const MerchantLayout: React.FC<MerchantLayoutProps> = ({ children }) => {
     return navItems.filter((item) => {
       if (item.href === "/merchant/finance") {
         return canMerchantViewFinance(membership?.role);
+      }
+      if (item.href === "/merchant/customers") {
+        return canMerchantViewCustomers(membership?.role);
       }
       return true;
     });

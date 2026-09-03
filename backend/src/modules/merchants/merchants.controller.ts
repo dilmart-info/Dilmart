@@ -6,6 +6,7 @@ import {
   AssignMerchantOwnerDto,
   CreateMerchantDto,
   GetMerchantSettingsQueryDto,
+  ListMerchantCustomersQueryDto,
   MerchantFinanceStatementQueryDto,
   MerchantPayoutHistoryQueryDto,
   UpdateMerchantDto,
@@ -148,6 +149,25 @@ export class MerchantsController {
     );
   }
 
+
+  @Get(":id/customers")
+  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
+  listCustomers(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Query() query: ListMerchantCustomersQueryDto,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    return this.merchantsService.listMerchantCustomers(
+      id,
+      { actor_role: actor?.actorRole, actor_id: actor?.actorId },
+      query,
+    );
+  }
 
   @Patch(":id/registration-details")
   @Roles("super_admin", "admin")

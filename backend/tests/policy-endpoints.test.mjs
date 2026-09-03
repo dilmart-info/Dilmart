@@ -185,11 +185,11 @@ test("merchant denied on foreign products scope", async () => {
   assert.equal(res.status, 403);
 });
 
-test("merchant can access own scoped customers", async () => {
+test("merchant denied on legacy admin customers route", async () => {
   const res = await get("/api/admin/customers?merchant_id=merchant-a", {
     authorization: "Bearer token-merchant-a",
   });
-  assert.equal(res.status, 200);
+  assert.equal(res.status, 403);
 });
 
 test("merchant denied on foreign scoped customers", async () => {
