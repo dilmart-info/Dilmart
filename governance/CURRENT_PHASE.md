@@ -3,43 +3,56 @@
 ## Status
 
 ```text
-PHASE_3F_IMPLEMENTATION_COMPLETE
-LOCAL_GATES_PASS
-PR_22_DRAFT_AWAITING_REVIEW
+PHASE_3F_MERGED
+PR_22_CLOSED
+PR_22_SOURCE_HEAD_D905943
+PR_22_MERGE_SHA_A8BA5E0
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
-NO_DEPLOYMENT
+NO_LIVE_DB_MUTATION
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
-
-## Phase 3F Implementation Details
-
-- **Task:** `DILMART-PHASE-3F-MERCHANT-CUSTOMERS-PRIVACY-MULTI-STORE-AUTHORITY-001`
-- **Feature Branch:** `frontend/dilmart-merchant-customers-authority`
-- **Base Commit:** `1335c534230e97922da945062f778a98b1c7ed07`
-- **Pull Request:** [Draft PR #22](https://github.com/dilmart-info/Dilmart/pull/22)
-- **Scope Delivered:**
-  - Dedicated endpoint `GET /merchants/:id/customers` with strict UUID and query validation.
-  - Endpoint separation: `/admin/customers` restricted to `super_admin, admin` only; merchant roles rejected with HTTP 403.
-  - Multi-store isolation with exact-membership checks in `merchant_users` for the requested merchant ID; zero first-store fallback.
-  - Verification of both `actor_id` and `actor_role` (invalid/missing actor_id returns HTTP 403).
-  - Rejection of inactive or suspended merchants (HTTP 403).
-  - Support for case-insensitive role aliases (`owner`/`merchant_owner`, `manager`/`merchant_manager`, `staff`/`merchant_staff`).
-  - Structural RPC validation for `merchant_customer_summary` returning HTTP 503 `ServiceUnavailableException` on malformed payloads without converting to empty state.
-  - Single camelCase pagination contract `{ merchant_id, items, page, limit, total, hasMore }`.
-  - Strict privacy regex contracts: `phone_masked` (`/^\*{4}\d{4}$/`), `customer_ref` (`/^عميل #[A-F0-9]{4}$/`). Raw PII (unmasked phone, personal name, email) inside masked fields is strictly rejected with HTTP 503.
-  - Extraneous fields (`full_name`, `email`, `phone`) are dropped at both backend and frontend layers; only the 5 canonical fields are exposed.
-  - Unified limit cap: `ListMerchantCustomersQueryDto` `@Max(100)`, service limit clamped to 100 with default 50, HTTP boundary returns HTTP 400 for `limit > 100` before invoking RPC.
-  - Keyed Workspace pattern (`key={merchantId}`) resetting search and pagination on store switch.
-  - Client response validation via strict typed `parseMerchantCustomersResponse` checking response object, `merchant_id` match, `items` array, integer `page >= 1`, integer `limit >= 1`, integer `total >= 0`, boolean `hasMore`, and every customer item field before caching in React Query.
-  - Complete removal of dead `liveMerchantIdRef` prop/ref.
-  - Backend query DTO with `@MaxLength(100)` on `search` parameter, rejecting overlong searches at HTTP boundary with HTTP 400.
-  - Separate data adapters for merchant (strict canonical without fallback operators masking malformed data) vs platform (backward compatible).
-  - Role gating via `canMerchantViewCustomers` and hidden navigation item for unauthorized roles.
-  - Truthful states: dedicated loading skeleton, truthful error banner with retry button, unattached banner, unauthorized banner, and honest empty state.
-- **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
 
 ## Preceding Governance / Merged Phases
+
+### Phase 3F: Merchant Customers Privacy & Multi-Store Authority
+- **Task:** `DILMART-PHASE-3F-MERCHANT-CUSTOMERS-PRIVACY-MULTI-STORE-AUTHORITY-001`
+- **PR:** [#22](https://github.com/dilmart-info/Dilmart/pull/22) (Merged & Closed)
+- **Source HEAD:** `d90594389d7d94658b9ca6ed0fb21c0871a7b3e3`
+- **Merge SHA:** `a8ba5e052658b7bcce04c75e4fdf9314f25cdb4f`
+- **Post-Merge Governance Branch:** `governance/pr22-post-merge-phase3f-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33783122855` — success (5m 20s)
+  - Native CI (`Native Foundation CI`): run `33783122819` — success (4m 46s)
+  - Netlify gate runs: `33783611208` and `33783667116`
+  - Final comprehensive Netlify gate: `33783667116` (FRESH=true, CI_OK=true, ALREADY=false, ENABLED=false, decision=false)
+  - Both Netlify publish jobs: skipped (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled)
+  - Render deployment state: unverified (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations.
+- **Scope Delivered:**
+  - Dedicated explicit merchant customers endpoint (`GET /merchants/:id/customers`) with strict UUID and query DTO validation (`@MaxLength(100)` on search, `@Max(100)` / `@Min(1)` on limit).
+  - Exact merchant membership in `merchant_users` without first-store fallback.
+  - Active-store enforcement (`status === 'active'`).
+  - Admin/merchant HTTP route separation (`GET /admin/customers` restricted strictly to super_admin/admin; merchant roles rejected with HTTP 403).
+  - Canonical merchant_id response contract (`{ merchant_id, items, page, limit, total, hasMore }`).
+  - Fail-closed Backend and Frontend payload validation.
+  - Masked-only customer identity and phone contract (`phone_masked`: `/^\*{4}\d{4}$/`, `customer_ref`: `/^عميل #[A-F0-9]{4}$/`).
+  - No raw customer name/email/phone exposure; extraneous fields dropped from JSON payload and UI.
+  - Keyed Workspace (`key={merchantId}`) and merchant-scoped QueryClient isolation.
+  - Late resolve/rejection race isolation across store switch.
+  - Search and pagination reset on store switch.
+  - Truthful loading/error/empty/retry states (loading skeleton, unauthorized banner, unattached banner, retryable error banner, pagination-free empty state).
+  - Role authority for owner/manager/staff (`canMerchantViewCustomers`).
+  - No migrations and no live operations.
+- **Database Status:** 0 migrations applied, 0 live mutations.
+
+---
 
 ### Phase 3E: Merchant Coupons Multi-Store Authority & Policy Isolation
 - **Task:** `DILMART-PHASE-3E-MERCHANT-COUPONS-MULTI-STORE-AUTHORITY-001`
@@ -69,8 +82,6 @@ NO_DEPLOYMENT
 - **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
-
-## Preceding Governance / Merged Phases
 
 ### Phase 3D: Merchant Finance Multi-Store Authority & Truthful States
 - **Task:** `DILMART-PHASE-3D-MERCHANT-FINANCE-MULTI-STORE-AUTHORITY-001`
