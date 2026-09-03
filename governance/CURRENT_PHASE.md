@@ -27,10 +27,12 @@ NO_DEPLOYMENT
   - Single camelCase pagination contract `{ merchant_id, items, page, limit, total, hasMore }`.
   - Privacy assurance: zero raw PII (names, emails, unmasked phones) exposed.
   - Keyed Workspace pattern (`key={merchantId}`) resetting search and pagination on store switch.
-  - Client response assertion `assertCustomersContractMerchantId`.
-  - Separate data adapters for merchant (strict) vs platform (backward compatible).
+  - Client response validation via strict typed `parseMerchantCustomersResponse` checking response object, `merchant_id` match, `items` array, integer `page >= 1`, integer `limit >= 1`, integer `total >= 0`, boolean `hasMore`, and every customer item field before caching in React Query.
+  - Complete removal of dead `liveMerchantIdRef` prop/ref.
+  - Backend query DTO with `@MaxLength(100)` on `search` parameter, rejecting overlong searches at HTTP boundary with HTTP 400.
+  - Separate data adapters for merchant (strict canonical without fallback operators masking malformed data) vs platform (backward compatible).
   - Role gating via `canMerchantViewCustomers` and hidden navigation item for unauthorized roles.
-  - Truthful states: dedicated loading skeleton, truthful error banner, unattached banner, unauthorized banner, and honest empty state.
+  - Truthful states: dedicated loading skeleton, truthful error banner with retry button, unattached banner, unauthorized banner, and honest empty state.
 - **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---

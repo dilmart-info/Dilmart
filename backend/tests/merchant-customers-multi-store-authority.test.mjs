@@ -204,6 +204,16 @@ test("1. DTO & Validation Authority — ListMerchantCustomersQueryDto validation
     (err) => err instanceof BadRequestException,
   );
 
+  // Rejects search query exceeding 100 characters
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { search: "a".repeat(101) },
+        { type: "query", metatype: ListMerchantCustomersQueryDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+
   // ParseUUIDPipe rejects malformed merchant UUID
   const uuidPipe = new ParseUUIDPipe({ version: "4" });
   await assert.rejects(
@@ -454,7 +464,7 @@ test("7. Privacy Contract & PII Exclusion — raw customer names, emails, and fu
 
 // ── 8. Real NestJS HTTP Server Boundary ──
 test("8. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, ValidationPipe, RolesGuard, and Route Separation", async (t) => {
-  const { merchantsService, adminService } = makeHarness();
+  const { merchantsService, adminService, state } = makeHarness();
 
   const tokenMap = {
     "token-store-a-owner": { ok: true, actorRole: "merchant_owner", actorId: USER_STORE_A_OWNER },
@@ -536,6 +546,15 @@ test("8. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, Validation
       headers: authHeader("token-store-a-owner"),
     });
     assert.equal(resBadQuery.status, 400, "unknown query param must return HTTP 400");
+
+    // E2. Search parameter exceeding 100 characters => HTTP 400 and RPC NOT called
+    const rpcCallsBefore = state.rpcCalls.length;
+    const resOverlongSearch = await fetch(
+      `${baseUrl}/merchants/${STORE_A}/customers?search=${"x".repeat(101)}`,
+      { headers: authHeader("token-store-a-owner") },
+    );
+    assert.equal(resOverlongSearch.status, 400, "search > 100 chars must return HTTP 400");
+    assert.equal(state.rpcCalls.length, rpcCallsBefore, "RPC must not be invoked when search > 100 chars");
 
     // F. Store A owner accesses Store A => HTTP 200
     const resOwnerA = await fetch(`${baseUrl}/merchants/${STORE_A}/customers?page=1&limit=20`, {

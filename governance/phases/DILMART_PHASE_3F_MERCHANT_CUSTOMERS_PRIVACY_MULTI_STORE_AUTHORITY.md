@@ -48,10 +48,20 @@
 
 ### D. Frontend Workspace & Truthful States
 - **Keyed Workspace Pattern:** `src/pages/merchant/Customers.tsx` renders `<MerchantCustomersWorkspace key={merchantId} merchantId={merchantId} />`. Switching active stores causes clean unmounting of the previous store's state, preventing stale search queries or pagination states from persisting.
-- **Client Assertion:** `assertCustomersContractMerchantId` asserts `response.merchant_id === expectedMerchantId` and valid items array, failing closed on contract violation.
+- **Client Contract Parser:** `parseMerchantCustomersResponse` validates the raw HTTP response before caching in React Query:
+  - `raw` is a non-null object and not an array.
+  - `merchant_id` is a non-empty string matching the expected `merchantId`.
+  - `items` is an array.
+  - `page` is an integer >= 1.
+  - `limit` is an integer >= 1.
+  - `total` is an integer >= 0.
+  - `hasMore` is a boolean.
+  - Every customer item contains: non-empty string `customer_ref`, non-empty string `phone_masked`, non-negative integer `orders`, finite non-negative number `spent`, valid date string `last_order_at`.
+  - Returns canonical typed `CanonicalMerchantCustomersResponse`; throws descriptive Error on violation, failing closed into truthful error state.
+- **Removed Dead Refs:** Removed unused `liveMerchantIdRef` completely from `Customers.tsx` and `CustomersPage.tsx`.
 - **Separated Data Adapters:**
-  - Merchant path strictly enforces the paginated contract.
-  - Admin path maintains backward-compatible support for array and paginated objects.
+  - Merchant path strictly enforces the canonical typed contract without fallback operators (`?? 1`, `?? 0`, etc.) masking malformed data.
+  - Admin path maintains backward-compatible support for legacy array and paginated objects.
 - **Role Authority & Navigation:**
   - `canMerchantViewCustomers` added to `src/lib/merchant-role-authority.ts`.
   - Navigation item `/merchant/customers` in `src/components/MerchantLayout.tsx` is filtered out if unauthorized.
@@ -67,12 +77,12 @@
 ## 3. Verification & Quality Gates
 
 - **Backend Unit & HTTP Suite:**
-  - `backend/tests/merchant-customers-multi-store-authority.test.mjs`: 8 passed / 0 failed (including real Nest HTTP server with `app.listen(0)` and `fetch`).
+  - `backend/tests/merchant-customers-multi-store-authority.test.mjs`: 8 passed / 0 failed (including DTO `@MaxLength(100)` enforcement and real Nest HTTP server with `app.listen(0)` and `fetch`).
   - Full backend test suite: 292 passed / 0 failed.
 - **Frontend Unit & Integration Suite:**
   - `src/lib/merchant-role-authority.test.ts`: 5 passed / 0 failed.
-  - `src/pages/merchant/Customers.test.tsx`: 10 passed / 0 failed.
-  - Full frontend test suite: 102 test files passed, 960 passed / 0 failed.
+  - `src/pages/merchant/Customers.test.tsx`: 33 passed / 0 failed (including late rejection safety across store switch, pagination reset, network error retry, and 23 contract failure matrix tests).
+  - Full frontend test suite: 102 test files passed, 983 passed / 0 failed.
 - **Architecture & Security Guards:**
   - `npm run arch:guard`: PASSED (0 new direct Supabase violations).
   - `npm run auth:guard`: PASSED (Session lifecycle owned by `src/lib/auth` only).

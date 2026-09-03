@@ -7,18 +7,102 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import type { ScopedContext } from "@/lib/scoped-queries";
 import { getScopedCustomers } from "@/lib/scoped-queries";
 
+export type CanonicalMerchantCustomersResponse = {
+  merchant_id: string;
+  items: MerchantCustomer[];
+  page: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+};
+
 // eslint-disable-next-line react-refresh/only-export-components
-export function assertCustomersContractMerchantId(response: unknown, expectedMerchantId: string): void {
-  if (!response || typeof response !== "object" || Array.isArray(response)) {
-    throw new Error("استجابة غير صالحة من الخادم لعملاء المتجر.");
+export function parseMerchantCustomersResponse(
+  raw: unknown,
+  expectedMerchantId: string,
+): CanonicalMerchantCustomersResponse {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("استجابة غير صالحة من الخادم لعملاء المتجر: البيانات ليست كائناً.");
   }
-  const r = response as Record<string, unknown>;
+  const r = raw as Record<string, unknown>;
+
+  if (typeof r.merchant_id !== "string" || !r.merchant_id.trim()) {
+    throw new Error("استجابة غير صالحة: معرف المتجر مفقود.");
+  }
   if (r.merchant_id !== expectedMerchantId) {
     throw new Error(`خرق عقد أمان المتجر: المتجر المستلم '${r.merchant_id}' لا يطابق المطلوب '${expectedMerchantId}'.`);
   }
+
   if (!Array.isArray(r.items)) {
     throw new Error("استجابة غير صالحة: قائمة العملاء مفقودة.");
   }
+
+  if (typeof r.page !== "number" || !Number.isInteger(r.page) || r.page < 1) {
+    throw new Error("استجابة غير صالحة: رقم الصفحة غير صالح.");
+  }
+
+  const limit = r.limit;
+  if (typeof limit !== "number" || !Number.isInteger(limit) || limit < 1) {
+    throw new Error("استجابة غير صالحة: حد الصفحة غير صالح.");
+  }
+
+  const total = r.total;
+  if (typeof total !== "number" || !Number.isInteger(total) || total < 0) {
+    throw new Error("استجابة غير صالحة: إجمالي العملاء غير صالح.");
+  }
+
+  if (typeof r.hasMore !== "boolean") {
+    throw new Error("استجابة غير صالحة: حالة متابعة التصفح (hasMore) مفقودة أو غير صالحة.");
+  }
+
+  const validatedItems: MerchantCustomer[] = r.items.map((item, idx) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`عنصر عميل مشوه عند الفهرس ${idx}.`);
+    }
+    const it = item as Record<string, unknown>;
+
+    if (typeof it.customer_ref !== "string" || !it.customer_ref.trim()) {
+      throw new Error(`مرجع العميل customer_ref غير صالح عند الفهرس ${idx}.`);
+    }
+
+    if (typeof it.phone_masked !== "string" || !it.phone_masked.trim()) {
+      throw new Error(`رقم الهاتف المقنع phone_masked غير صالح عند الفهرس ${idx}.`);
+    }
+
+    if (typeof it.orders !== "number" || !Number.isInteger(it.orders) || it.orders < 0) {
+      throw new Error(`عدد الطلبات orders غير صالح عند الفهرس ${idx}.`);
+    }
+
+    if (typeof it.spent !== "number" || !Number.isFinite(it.spent) || it.spent < 0) {
+      throw new Error(`إجمالي الإنفاق spent غير صالح عند الفهرس ${idx}.`);
+    }
+
+    if (typeof it.last_order_at !== "string" || !it.last_order_at.trim() || isNaN(Date.parse(it.last_order_at))) {
+      throw new Error(`تاريخ آخر طلب last_order_at غير صالح عند الفهرس ${idx}.`);
+    }
+
+    return {
+      customer_ref: it.customer_ref,
+      phone_masked: it.phone_masked,
+      orders: it.orders,
+      spent: it.spent,
+      last_order_at: it.last_order_at,
+    };
+  });
+
+  return {
+    merchant_id: r.merchant_id,
+    items: validatedItems,
+    page: r.page,
+    limit,
+    total,
+    hasMore: r.hasMore,
+  };
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function assertCustomersContractMerchantId(response: unknown, expectedMerchantId: string): void {
+  parseMerchantCustomersResponse(response, expectedMerchantId);
 }
 
 const PAGE_SIZE = 50;
@@ -26,7 +110,6 @@ const PAGE_SIZE = 50;
 type Props = {
   context: ScopedContext;
   title?: string;
-  liveMerchantIdRef?: React.RefObject<string | undefined>;
 };
 
 /** Merchant customer row from RPC (masked, no PII) */
@@ -56,7 +139,7 @@ type PaginatedResponse<T> = {
   hasMore: boolean;
 };
 
-export default function CustomersPage({ context, title = "العملاء", liveMerchantIdRef }: Props) {
+export default function CustomersPage({ context, title = "العملاء" }: Props) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
@@ -65,30 +148,33 @@ export default function CustomersPage({ context, title = "العملاء", liveM
     queryFn: async () => {
       const res = await getScopedCustomers(context, { search, page, limit: PAGE_SIZE });
       if (context.scope === "merchant") {
-        assertCustomersContractMerchantId(res, context.merchantId!);
+        return parseMerchantCustomersResponse(res, context.merchantId!);
       }
       return res;
     },
   });
 
-  // Separate data adapters: strict contract for merchant, backward-compat for platform
+  // Separate data adapters: strict typed contract for merchant, backward-compat for platform
   let paginated: PaginatedResponse<MerchantCustomer | PlatformCustomer>;
   if (context.scope === "merchant") {
-    const r = response as {
-      merchant_id?: string;
-      items?: MerchantCustomer[];
-      page?: number;
-      limit?: number;
-      total?: number;
-      hasMore?: boolean;
-    } | undefined;
-    paginated = {
-      items: r?.items ?? [],
-      page: r?.page ?? 1,
-      limit: r?.limit ?? PAGE_SIZE,
-      total: r?.total ?? 0,
-      hasMore: r?.hasMore ?? false,
-    };
+    const r = response as CanonicalMerchantCustomersResponse | undefined;
+    if (r) {
+      paginated = {
+        items: r.items,
+        page: r.page,
+        limit: r.limit,
+        total: r.total,
+        hasMore: r.hasMore,
+      };
+    } else {
+      paginated = {
+        items: [],
+        page: 1,
+        limit: PAGE_SIZE,
+        total: 0,
+        hasMore: false,
+      };
+    }
   } else {
     // Platform adapter (preserves legacy array or object support for admin)
     paginated = (Array.isArray(response)

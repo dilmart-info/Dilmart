@@ -9,9 +9,6 @@ const MerchantCustomers = () => {
   const merchantId = membership?.merchant_id;
   const role = membership?.role;
 
-  const liveMerchantIdRef = React.useRef(merchantId);
-  liveMerchantIdRef.current = merchantId;
-
   if (isLoading) {
     return (
       <div className="space-y-4 p-6 animate-pulse" data-testid="merchant-customers-loading">
@@ -42,23 +39,19 @@ const MerchantCustomers = () => {
     <MerchantCustomersWorkspace
       key={merchantId}
       merchantId={merchantId}
-      liveMerchantIdRef={liveMerchantIdRef}
     />
   );
 };
 
 function MerchantCustomersWorkspace({
   merchantId,
-  liveMerchantIdRef,
 }: {
   merchantId: string;
-  liveMerchantIdRef: React.RefObject<string | undefined>;
 }) {
   return (
     <CustomersPage
       context={merchantScope(merchantId)}
       title="عملاء متجري"
-      liveMerchantIdRef={liveMerchantIdRef}
     />
   );
 }

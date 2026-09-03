@@ -7,6 +7,7 @@ import {
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
   Validate,
   ValidateNested,
@@ -258,6 +259,7 @@ export class UpdateMerchantRegistrationDetailsDto {
 export class ListMerchantCustomersQueryDto {
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   search?: string;
 
   @IsOptional()
