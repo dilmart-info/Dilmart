@@ -9,6 +9,7 @@ import {
   ListMerchantCustomersQueryDto,
   MerchantFinanceStatementQueryDto,
   MerchantPayoutHistoryQueryDto,
+  PatchMerchantSettingsDto,
   UpdateMerchantDto,
   UpdateMerchantStatusDto,
   UpsertMerchantSettingsDto,
@@ -43,15 +44,54 @@ export class MerchantsController {
   }
 
   @Get("settings")
-  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @Roles("super_admin", "admin")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
   getSettings(@Query() query: GetMerchantSettingsQueryDto, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
     return this.merchantsService.getMerchantSettings(query.merchant_id, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
 
   @Post("settings")
-  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager")
+  @Roles("super_admin", "admin")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
   upsertSettings(@Body() payload: UpsertMerchantSettingsDto, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
     return this.merchantsService.upsertMerchantSettings(payload, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
+  }
+
+  @Get(":id/settings")
+  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
+  getSettingsExplicit(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    return this.merchantsService.getMerchantSettingsExplicit(id, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
+  }
+
+  @Patch(":id/settings")
+  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
+  patchSettingsExplicit(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Body() payload: PatchMerchantSettingsDto,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    return this.merchantsService.patchMerchantSettingsExplicit(id, payload, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
 
   @Get(":id")

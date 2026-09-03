@@ -99,36 +99,137 @@ export class GetMerchantSettingsQueryDto {
 }
 
 
+@ValidatorConstraint({ name: "isHttpOrHttpsUrl", async: false })
+export class IsHttpOrHttpsUrlConstraint implements ValidatorConstraintInterface {
+  validate(value: any) {
+    if (typeof value !== "string") return false;
+    const trimmed = value.trim();
+    if (trimmed === "") return true;
+    try {
+      const url = new URL(trimmed);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+
+  defaultMessage() {
+    return "logo_url must be an HTTP or HTTPS URL, or an empty string.";
+  }
+}
+
+@ValidatorConstraint({ name: "isOptionalEmailOrEmpty", async: false })
+export class IsOptionalEmailOrEmptyConstraint implements ValidatorConstraintInterface {
+  validate(value: any) {
+    if (typeof value !== "string") return false;
+    const trimmed = value.trim();
+    if (trimmed === "") return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+  }
+
+  defaultMessage() {
+    return "support_email must be a valid email address or empty.";
+  }
+}
+
+export class PatchMerchantSettingsDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  contact_phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(30)
+  whatsapp_phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  @Validate(IsOptionalEmailOrEmptyConstraint)
+  support_email?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  address?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  delivery_notes?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  @Validate(IsHttpOrHttpsUrlConstraint)
+  logo_url?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  push_enabled?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  sound_enabled?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(5)
+  @Max(120)
+  sound_repeat_interval_seconds?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(30)
+  @Max(1800)
+  sound_max_duration_seconds?: number;
+}
+
 export class UpsertMerchantSettingsDto {
   @IsUUID()
   merchant_id!: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   contact_phone?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(30)
   whatsapp_phone?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
+  @Validate(IsOptionalEmailOrEmptyConstraint)
   support_email?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   city?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   address?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   delivery_notes?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
+  @Validate(IsHttpOrHttpsUrlConstraint)
   logo_url?: string;
 
   @IsOptional()

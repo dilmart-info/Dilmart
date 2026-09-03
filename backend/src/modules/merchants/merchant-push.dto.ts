@@ -21,6 +21,30 @@ export class PushSubscriptionKeysDto {
   auth!: string;
 }
 
+export class ExplicitRegisterPushSubscriptionDto {
+  @IsString()
+  @MinLength(8)
+  endpoint!: string;
+
+  @ValidateNested()
+  @Type(() => PushSubscriptionKeysDto)
+  keys!: PushSubscriptionKeysDto;
+
+  @IsOptional()
+  @IsString()
+  device_label?: string;
+
+  @IsOptional()
+  @IsString()
+  user_agent?: string;
+}
+
+export class ExplicitTestPushSubscriptionDto {
+  @IsOptional()
+  @IsUUID()
+  subscription_id?: string;
+}
+
 export class RegisterPushSubscriptionDto {
   @IsUUID()
   merchant_id!: string;

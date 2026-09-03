@@ -51,7 +51,8 @@ export function MerchantNewOrderAlertBanner({ merchantId }: MerchantNewOrderAler
 
   useEffect(() => {
     if (!merchantId) return;
-    void merchantApi.getMerchantSettings(merchantId).then((settings) => {
+    void merchantApi.getMerchantSettings(merchantId).then((res) => {
+      const settings = res?.settings;
       if (!settings) return;
       const intervalSec = Number(settings.sound_repeat_interval_seconds);
       const maxSec = Number(settings.sound_max_duration_seconds);

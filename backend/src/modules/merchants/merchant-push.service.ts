@@ -11,6 +11,8 @@ import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { ScopeResolverService } from "../scope-resolver/scope-resolver.service";
 import { ActorContext } from "../../common/authz/actor-context.decorator";
 import {
+  ExplicitRegisterPushSubscriptionDto,
+  ExplicitTestPushSubscriptionDto,
   RegisterPushSubscriptionDto,
   TestPushSubscriptionDto,
 } from "./merchant-push.dto";
@@ -20,6 +22,39 @@ import {
   isTerminalPushDeliveryStatus,
   ProcessMerchantPushResult,
 } from "./merchant-push.helpers";
+
+export type SafePushDevice = {
+  id: string;
+  device_label: string | null;
+  user_agent: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  is_own: boolean;
+};
+
+export type SafePushDeviceListResponse = {
+  merchant_id: string;
+  scope: "store" | "own";
+  devices: SafePushDevice[];
+};
+
+export type SafePushRegisterResponse = {
+  merchant_id: string;
+  subscription: SafePushDevice;
+};
+
+export type SafePushDeleteResponse = {
+  merchant_id: string;
+  deleted_id: string;
+  success: boolean;
+};
+
+export type SafePushTestResponse = {
+  merchant_id: string;
+  scope: "store" | "own";
+  results: Array<{ id: string; ok: boolean; error?: string }>;
+};
 
 type WebPushModule = {
   setVapidDetails: (subject: string, publicKey: string, privateKey: string) => void;
@@ -92,7 +127,270 @@ export class MerchantPushService {
     return mod;
   }
 
+  private isPushPlatformRole(role?: string): boolean {
+    return role === "super_admin" || role === "admin";
+  }
+
+  async resolveMerchantPushScope(
+    merchantId: string,
+    actor: ActorContext,
+  ): Promise<{ resolvedMerchantId: string; isStaff: boolean }> {
+    if (!actor.actorRole || !actor.actorId) {
+      throw new ForbiddenException("Actor context is required.");
+    }
+
+    if (this.isPushPlatformRole(actor.actorRole)) {
+      const { data: merchant, error } = await this.supabaseAdmin.client
+        .from("merchants")
+        .select("id")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!merchant) throw new NotFoundException("Merchant not found.");
+      return { resolvedMerchantId: merchantId, isStaff: false };
+    }
+
+    const isMerchantRole =
+      actor.actorRole === "merchant_owner" ||
+      actor.actorRole === "merchant_manager" ||
+      actor.actorRole === "merchant_staff";
+
+    if (!isMerchantRole) {
+      throw new ForbiddenException("Push access is not permitted for this role.");
+    }
+
+    // Exact membership in merchant_users (no first-store fallback)
+    const { data: membership, error: memError } = await this.supabaseAdmin.client
+      .from("merchant_users")
+      .select("role")
+      .eq("user_id", actor.actorId)
+      .eq("merchant_id", merchantId)
+      .maybeSingle();
+
+    if (memError) throw memError;
+    if (!membership) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+
+    const normalizedRole = (membership.role ?? "").trim().toLowerCase();
+    const isStaff = normalizedRole === "staff" || actor.actorRole === "merchant_staff";
+
+    // Exact merchant status in merchants table must equal 'active'
+    const { data: merchant, error: merchError } = await this.supabaseAdmin.client
+      .from("merchants")
+      .select("id, status")
+      .eq("id", merchantId)
+      .maybeSingle();
+
+    if (merchError) throw merchError;
+    if (!merchant) throw new NotFoundException("Merchant not found.");
+    if (merchant.status !== "active") {
+      throw new ForbiddenException("Merchant is not active.");
+    }
+
+    return { resolvedMerchantId: merchantId, isStaff };
+  }
+
+  async listSubscriptionsExplicit(
+    merchantId: string,
+    actor: ActorContext,
+  ): Promise<SafePushDeviceListResponse> {
+    const { resolvedMerchantId, isStaff } = await this.resolveMerchantPushScope(merchantId, actor);
+
+    let query = this.supabaseAdmin.client
+      .from("merchant_push_subscriptions")
+      .select(
+        "id, merchant_id, user_id, device_label, user_agent, status, created_at, updated_at",
+      )
+      .eq("merchant_id", resolvedMerchantId);
+
+    if (isStaff) {
+      query = query.eq("user_id", actor.actorId);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
+
+    if (error) {
+      this.logger.error(`Failed to list push subscriptions: ${error.message}`);
+      throw error;
+    }
+
+    const devices: SafePushDevice[] = (data ?? []).map((row: any) => ({
+      id: row.id,
+      device_label: row.device_label ?? null,
+      user_agent: row.user_agent ?? null,
+      status: row.status,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      is_own: row.user_id === actor.actorId,
+    }));
+
+    return {
+      merchant_id: resolvedMerchantId,
+      scope: isStaff ? "own" : "store",
+      devices,
+    };
+  }
+
+  async registerSubscriptionExplicit(
+    merchantId: string,
+    payload: ExplicitRegisterPushSubscriptionDto,
+    actor: ActorContext,
+  ): Promise<SafePushRegisterResponse> {
+    if (!actor.actorId) {
+      throw new ForbiddenException("Actor context required");
+    }
+
+    const { resolvedMerchantId } = await this.resolveMerchantPushScope(merchantId, actor);
+
+    if (!payload.keys?.p256dh || !payload.keys?.auth) {
+      throw new BadRequestException("Subscription keys are required.");
+    }
+
+    const now = new Date().toISOString();
+    const row = {
+      merchant_id: resolvedMerchantId,
+      user_id: actor.actorId,
+      endpoint: payload.endpoint.trim(),
+      p256dh_key: payload.keys.p256dh,
+      auth_key: payload.keys.auth,
+      device_label: payload.device_label?.trim() || null,
+      user_agent: payload.user_agent?.trim() || null,
+      status: "active",
+      updated_at: now,
+    };
+
+    const { data, error } = await this.supabaseAdmin.client
+      .from("merchant_push_subscriptions")
+      .upsert(row as any, { onConflict: "merchant_id,endpoint" })
+      .select(
+        "id, merchant_id, user_id, device_label, user_agent, status, created_at, updated_at",
+      )
+      .single();
+
+    if (error) {
+      this.logger.error(`Failed to register push subscription: ${error.message}`);
+      throw error;
+    }
+
+    return {
+      merchant_id: resolvedMerchantId,
+      subscription: {
+        id: data.id,
+        device_label: data.device_label ?? null,
+        user_agent: data.user_agent ?? null,
+        status: data.status,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        is_own: true,
+      },
+    };
+  }
+
+  async deleteSubscriptionExplicit(
+    merchantId: string,
+    subscriptionId: string,
+    actor: ActorContext,
+  ): Promise<SafePushDeleteResponse> {
+    const { resolvedMerchantId, isStaff } = await this.resolveMerchantPushScope(merchantId, actor);
+
+    // Query subscription strictly bounded by merchant_id
+    const { data: existing, error: fetchError } = await this.supabaseAdmin.client
+      .from("merchant_push_subscriptions")
+      .select("id, merchant_id, user_id")
+      .eq("id", subscriptionId)
+      .eq("merchant_id", resolvedMerchantId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    // If not found in this merchant, return non-disclosing 404
+    if (!existing) {
+      throw new NotFoundException("Subscription not found.");
+    }
+
+    // If staff, verify ownership. If belongs to another user, return non-disclosing 404
+    if (isStaff && existing.user_id !== actor.actorId) {
+      throw new NotFoundException("Subscription not found.");
+    }
+
+    const { error } = await this.supabaseAdmin.client
+      .from("merchant_push_subscriptions")
+      .delete()
+      .eq("id", subscriptionId)
+      .eq("merchant_id", resolvedMerchantId);
+
+    if (error) throw error;
+
+    return {
+      merchant_id: resolvedMerchantId,
+      deleted_id: subscriptionId,
+      success: true,
+    };
+  }
+
+  async sendTestNotificationExplicit(
+    merchantId: string,
+    payload: ExplicitTestPushSubscriptionDto,
+    actor: ActorContext,
+  ): Promise<SafePushTestResponse> {
+    const { resolvedMerchantId, isStaff } = await this.resolveMerchantPushScope(merchantId, actor);
+
+    let query = this.supabaseAdmin.client
+      .from("merchant_push_subscriptions")
+      .select("id, endpoint, p256dh_key, auth_key, status, user_id")
+      .eq("merchant_id", resolvedMerchantId)
+      .eq("status", "active");
+
+    if (isStaff) {
+      query = query.eq("user_id", actor.actorId);
+      if (payload.subscription_id) {
+        query = query.eq("id", payload.subscription_id);
+      }
+    } else {
+      if (payload.subscription_id) {
+        query = query.eq("id", payload.subscription_id);
+      }
+    }
+
+    const { data: subscriptions, error } = await query;
+    if (error) throw error;
+
+    if (!subscriptions?.length) {
+      throw new NotFoundException(
+        isStaff
+          ? "No active push subscriptions found for this user."
+          : "No active push subscriptions found for this merchant.",
+      );
+    }
+
+    const body = JSON.stringify({
+      type: "merchant_push_test",
+      title: "تم تفعيل إشعارات ديلمارت ستور بنجاح",
+      body: "سيصلك تنبيه عند وصول طلب جديد.",
+      url: "/merchant",
+    });
+
+    const results: Array<{ id: string; ok: boolean; error?: string }> = [];
+    for (const sub of subscriptions) {
+      try {
+        await this.sendRawPush(sub as PushSubRow, body, "merchant-push-test");
+        results.push({ id: sub.id, ok: true });
+      } catch (err: any) {
+        results.push({ id: sub.id, ok: false, error: String(err?.message ?? err) });
+      }
+    }
+
+    return {
+      merchant_id: resolvedMerchantId,
+      scope: isStaff ? "own" : "store",
+      results,
+    };
+  }
+
   async listSubscriptions(merchantId: string, actor: ActorContext) {
+    if (!this.isPushPlatformRole(actor.actorRole)) {
+      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(
       merchantId,
       actor.actorRole,
@@ -119,6 +417,9 @@ export class MerchantPushService {
   }
 
   async registerSubscription(payload: RegisterPushSubscriptionDto, actor: ActorContext) {
+    if (!this.isPushPlatformRole(actor.actorRole)) {
+      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
+    }
     if (!actor.actorId) {
       throw new ForbiddenException("Actor context required");
     }
@@ -166,6 +467,9 @@ export class MerchantPushService {
   }
 
   async deleteSubscription(id: string, actor: ActorContext) {
+    if (!this.isPushPlatformRole(actor.actorRole)) {
+      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
+    }
     const { data: existing, error: fetchError } = await this.supabaseAdmin.client
       .from("merchant_push_subscriptions")
       .select("id, merchant_id")
@@ -195,6 +499,9 @@ export class MerchantPushService {
   }
 
   async sendTestNotification(payload: TestPushSubscriptionDto, actor: ActorContext) {
+    if (!this.isPushPlatformRole(actor.actorRole)) {
+      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(
       payload.merchant_id,
       actor.actorRole,

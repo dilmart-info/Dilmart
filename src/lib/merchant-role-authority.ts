@@ -73,3 +73,36 @@ export function canMerchantViewCustomers(role?: string | null): boolean {
     normalized === "merchant_staff"
   );
 }
+
+export function canMerchantManageSettings(role?: string | null): boolean {
+  if (!role || typeof role !== "string") return false;
+  const normalized = role.trim().toLowerCase();
+  return (
+    normalized === "owner" ||
+    normalized === "merchant_owner" ||
+    normalized === "manager" ||
+    normalized === "merchant_manager"
+  );
+}
+
+export function canMerchantManageGlobalPushPolicy(role?: string | null): boolean {
+  if (!role || typeof role !== "string") return false;
+  const normalized = role.trim().toLowerCase();
+  return (
+    normalized === "owner" ||
+    normalized === "merchant_owner" ||
+    normalized === "manager" ||
+    normalized === "merchant_manager"
+  );
+}
+
+export function canMerchantManageStoreDevices(role?: string | null): boolean {
+  if (!role || typeof role !== "string") return false;
+  const normalized = role.trim().toLowerCase();
+  return (
+    normalized === "owner" ||
+    normalized === "merchant_owner" ||
+    normalized === "manager" ||
+    normalized === "merchant_manager"
+  );
+}
