@@ -44,7 +44,7 @@ const mockCustomersA = {
   merchant_id: "m-123",
   items: [
     {
-      customer_ref: "عميل #A1",
+      customer_ref: "عميل #A1B2",
       phone_masked: "****1111",
       orders: 5,
       spent: 75000,
@@ -61,7 +61,7 @@ const mockCustomersB = {
   merchant_id: "m-456",
   items: [
     {
-      customer_ref: "عميل #B2",
+      customer_ref: "عميل #B2C3",
       phone_masked: "****2222",
       orders: 2,
       spent: 30000,
@@ -101,7 +101,7 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
   it("renders masked customer data for authorized merchant owner", async () => {
     renderCustomers();
 
-    expect(await screen.findByText("عميل #A1")).toBeTruthy();
+    expect(await screen.findByText("عميل #A1B2")).toBeTruthy();
     expect(screen.getByText("****1111")).toBeTruthy();
     expect(screen.getByText("5")).toBeTruthy();
   });
@@ -119,7 +119,7 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText("عميل #A1")).toBeTruthy();
+    expect(await screen.findByText("عميل #A1B2")).toBeTruthy();
 
     const searchInput = screen.getByPlaceholderText("بحث عن عميل...") as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: "بحث سابق" } });
@@ -140,8 +140,8 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText("عميل #B2")).toBeTruthy();
-    expect(screen.queryByText("عميل #A1")).toBeNull();
+    expect(await screen.findByText("عميل #B2C3")).toBeTruthy();
+    expect(screen.queryByText("عميل #A1B2")).toBeNull();
 
     // Keyed workspace resets input cleanly
     const newSearchInput = screen.getByPlaceholderText("بحث عن عميل...") as HTMLInputElement;
@@ -194,14 +194,14 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
     );
 
     // Store B resolves immediately and displays customers
-    expect(await screen.findByText("عميل #B2")).toBeTruthy();
+    expect(await screen.findByText("عميل #B2C3")).toBeTruthy();
 
     // Now reject Store A's deferred promise
     rejectStoreA(new Error("Store A connection failed"));
 
     // Verify Store B remains displayed without Store A's error leaking
     await waitFor(() => {
-      expect(screen.getByText("عميل #B2")).toBeTruthy();
+      expect(screen.getByText("عميل #B2C3")).toBeTruthy();
       expect(screen.queryByText("Store A connection failed")).toBeNull();
       expect(screen.queryByText("تعذر تحميل بيانات العملاء.")).toBeNull();
     });
@@ -214,7 +214,7 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
       merchant_id: "m-123",
       items: [
         {
-          customer_ref: `عميل #A-P${page}`,
+          customer_ref: `عميل #A00${page}`,
           phone_masked: "****1111",
           orders: 5,
           spent: 75000,
@@ -247,14 +247,14 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
     );
 
     // 1. Initial load on Store A should be page 1
-    expect(await screen.findByText("عميل #A-P1")).toBeTruthy();
+    expect(await screen.findByText("عميل #A001")).toBeTruthy();
     expect(recordedCalls[0]).toEqual({ merchantId: "m-123", page: 1 });
 
     // 2. Click "التالي" to navigate to page 2
     const nextBtn = screen.getByText("التالي");
     fireEvent.click(nextBtn);
 
-    expect(await screen.findByText("عميل #A-P2")).toBeTruthy();
+    expect(await screen.findByText("عميل #A002")).toBeTruthy();
     expect(recordedCalls.some((c) => c.merchantId === "m-123" && c.page === 2)).toBe(true);
 
     // 3. Switch to Store B
@@ -273,11 +273,11 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
     );
 
     // 4. Store B must load with page 1, NOT Store A's page 2
-    expect(await screen.findByText("عميل #B2")).toBeTruthy();
+    expect(await screen.findByText("عميل #B2C3")).toBeTruthy();
     const storeBCalls = recordedCalls.filter((c) => c.merchantId === "m-456");
     expect(storeBCalls.length).toBeGreaterThan(0);
     expect(storeBCalls[0].page).toBe(1);
-    expect(screen.queryByText("عميل #A-P2")).toBeNull();
+    expect(screen.queryByText("عميل #A002")).toBeNull();
   });
 
   it("TRUTHFUL NETWORK ERROR + RETRY: displays error state (not empty state) and retries current merchant", async () => {
@@ -305,7 +305,7 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
     fireEvent.click(retryBtn);
 
     // 3. Current merchant should succeed and display data
-    expect(await screen.findByText("عميل #A1")).toBeTruthy();
+    expect(await screen.findByText("عميل #A1B2")).toBeTruthy();
     expect(requestedMerchants.every((m) => m === "m-123")).toBe(true);
   });
 
@@ -318,7 +318,7 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
       };
 
       const { unmount } = renderCustomers();
-      expect(await screen.findByText("عميل #A1")).toBeTruthy();
+      expect(await screen.findByText("عميل #A1B2")).toBeTruthy();
       unmount();
     }
   });
@@ -369,12 +369,41 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
     expect(screen.queryByText("التالي")).toBeNull();
   });
 
+  it("PRIVACY: item containing extraneous full_name/email/phone drops them completely without rendering in UI", async () => {
+    vi.spyOn(scopedQueries, "getScopedCustomers").mockResolvedValueOnce({
+      merchant_id: "m-123",
+      items: [
+        {
+          customer_ref: "عميل #A1B2",
+          phone_masked: "****1111",
+          orders: 5,
+          spent: 75000,
+          last_order_at: "2026-06-01T10:00:00Z",
+          full_name: "أحمد كاظم",
+          email: "ahmed@example.com",
+          phone: "+9647701234567",
+        } as any,
+      ],
+      page: 1,
+      limit: 50,
+      total: 1,
+      hasMore: false,
+    } as any);
+
+    renderCustomers();
+    expect(await screen.findByText("عميل #A1B2")).toBeTruthy();
+    expect(screen.getByText("****1111")).toBeTruthy();
+    expect(screen.queryByText("أحمد كاظم")).toBeNull();
+    expect(screen.queryByText("ahmed@example.com")).toBeNull();
+    expect(screen.queryByText("+9647701234567")).toBeNull();
+  });
+
   // ── Strict Contract & Incomplete Payload Matrix (test.each) ──
   const validBase = {
     merchant_id: "m-123",
     items: [
       {
-        customer_ref: "عميل #A1",
+        customer_ref: "عميل #A1B2",
         phone_masked: "****1111",
         orders: 5,
         spent: 75000,
@@ -389,7 +418,7 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
 
   test.each([
     ["null response", null],
-    ["array response", [{ customer_ref: "A1" }]],
+    ["array response", [{ customer_ref: "عميل #A1B2" }]],
     ["missing merchant_id", { ...validBase, merchant_id: undefined }],
     ["mismatched merchant_id", { ...validBase, merchant_id: "m-attacker" }],
     ["missing items", { ...validBase, items: undefined }],
@@ -405,7 +434,12 @@ describe("MerchantCustomers — Multi-Store Authority & Privacy Contract", () =>
     ["missing hasMore", { ...validBase, hasMore: undefined }],
     ["string hasMore", { ...validBase, hasMore: "true" }],
     ["missing customer_ref", { ...validBase, items: [{ ...validBase.items[0], customer_ref: "" }] }],
+    ["malformed customer_ref format", { ...validBase, items: [{ ...validBase.items[0], customer_ref: "عميل #1" }] }],
+    ["personal Arabic name in customer_ref", { ...validBase, items: [{ ...validBase.items[0], customer_ref: "أحمد كاظم" }] }],
+    ["email address in customer_ref", { ...validBase, items: [{ ...validBase.items[0], customer_ref: "ahmed@example.com" }] }],
     ["missing phone_masked", { ...validBase, items: [{ ...validBase.items[0], phone_masked: "" }] }],
+    ["full phone with country code in phone_masked", { ...validBase, items: [{ ...validBase.items[0], phone_masked: "+9647701234567" }] }],
+    ["local full phone in phone_masked", { ...validBase, items: [{ ...validBase.items[0], phone_masked: "07701234567" }] }],
     ["negative orders", { ...validBase, items: [{ ...validBase.items[0], orders: -1 }] }],
     ["string orders", { ...validBase, items: [{ ...validBase.items[0], orders: "5" as any }] }],
     ["negative spent", { ...validBase, items: [{ ...validBase.items[0], spent: -100 }] }],

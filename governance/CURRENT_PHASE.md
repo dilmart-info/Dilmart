@@ -25,7 +25,9 @@ NO_DEPLOYMENT
   - Support for case-insensitive role aliases (`owner`/`merchant_owner`, `manager`/`merchant_manager`, `staff`/`merchant_staff`).
   - Structural RPC validation for `merchant_customer_summary` returning HTTP 503 `ServiceUnavailableException` on malformed payloads without converting to empty state.
   - Single camelCase pagination contract `{ merchant_id, items, page, limit, total, hasMore }`.
-  - Privacy assurance: zero raw PII (names, emails, unmasked phones) exposed.
+  - Strict privacy regex contracts: `phone_masked` (`/^\*{4}\d{4}$/`), `customer_ref` (`/^عميل #[A-F0-9]{4}$/`). Raw PII (unmasked phone, personal name, email) inside masked fields is strictly rejected with HTTP 503.
+  - Extraneous fields (`full_name`, `email`, `phone`) are dropped at both backend and frontend layers; only the 5 canonical fields are exposed.
+  - Unified limit cap: `ListMerchantCustomersQueryDto` `@Max(100)`, service limit clamped to 100 with default 50, HTTP boundary returns HTTP 400 for `limit > 100` before invoking RPC.
   - Keyed Workspace pattern (`key={merchantId}`) resetting search and pagination on store switch.
   - Client response validation via strict typed `parseMerchantCustomersResponse` checking response object, `merchant_id` match, `items` array, integer `page >= 1`, integer `limit >= 1`, integer `total >= 0`, boolean `hasMore`, and every customer item field before caching in React Query.
   - Complete removal of dead `liveMerchantIdRef` prop/ref.

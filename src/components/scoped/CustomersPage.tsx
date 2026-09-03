@@ -60,12 +60,14 @@ export function parseMerchantCustomersResponse(
       throw new Error(`عنصر عميل مشوه عند الفهرس ${idx}.`);
     }
     const it = item as Record<string, unknown>;
+    const MASKED_PHONE_REGEX = /^\*{4}\d{4}$/;
+    const MASKED_CUSTOMER_REF_REGEX = /^عميل #[A-F0-9]{4}$/;
 
-    if (typeof it.customer_ref !== "string" || !it.customer_ref.trim()) {
+    if (typeof it.customer_ref !== "string" || !MASKED_CUSTOMER_REF_REGEX.test(it.customer_ref)) {
       throw new Error(`مرجع العميل customer_ref غير صالح عند الفهرس ${idx}.`);
     }
 
-    if (typeof it.phone_masked !== "string" || !it.phone_masked.trim()) {
+    if (typeof it.phone_masked !== "string" || !MASKED_PHONE_REGEX.test(it.phone_masked)) {
       throw new Error(`رقم الهاتف المقنع phone_masked غير صالح عند الفهرس ${idx}.`);
     }
 

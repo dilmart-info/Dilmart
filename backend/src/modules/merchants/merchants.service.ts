@@ -1263,7 +1263,7 @@ export class MerchantsService {
   ) {
     const resolvedMerchantId = await this.resolveMerchantCustomerReadScope(merchantId, actor);
 
-    const rpcLimit = Math.min(Math.max(1, Math.floor(Number(query?.limit ?? 50))), 200);
+    const rpcLimit = Math.min(Math.max(1, Math.floor(Number(query?.limit ?? 50))), 100);
     const rpcPage = Math.max(1, Math.floor(Number(query?.page ?? 1)));
     const rpcOffset = (rpcPage - 1) * rpcLimit;
     const sanitizedSearch = sanitizeSearchTerm(query?.search) || null;
@@ -1306,17 +1306,20 @@ export class MerchantsService {
       throw new ServiceUnavailableException("Malformed customer summary pagination state received from database.");
     }
 
+    const MASKED_PHONE_REGEX = /^\*{4}\d{4}$/;
+    const MASKED_CUSTOMER_REF_REGEX = /^عميل #[A-F0-9]{4}$/;
+
     const validatedItems = raw.items.map((item, index) => {
       if (!item || typeof item !== "object" || Array.isArray(item)) {
         throw new ServiceUnavailableException(`Malformed customer item at index ${index}.`);
       }
       const it = item as Record<string, unknown>;
 
-      if (typeof it.customer_ref !== "string" || !it.customer_ref.trim()) {
+      if (typeof it.customer_ref !== "string" || !MASKED_CUSTOMER_REF_REGEX.test(it.customer_ref)) {
         throw new ServiceUnavailableException(`Invalid customer_ref at index ${index}.`);
       }
 
-      if (typeof it.phone_masked !== "string" || !it.phone_masked.trim()) {
+      if (typeof it.phone_masked !== "string" || !MASKED_PHONE_REGEX.test(it.phone_masked)) {
         throw new ServiceUnavailableException(`Invalid phone_masked at index ${index}.`);
       }
 
@@ -1334,6 +1337,7 @@ export class MerchantsService {
         throw new ServiceUnavailableException(`Invalid last_order_at timestamp at index ${index}.`);
       }
 
+      // Explicit whitelist of 5 fields only; any extraneous keys (e.g. full_name, email, phone) are dropped
       return {
         customer_ref: it.customer_ref,
         phone_masked: it.phone_masked,

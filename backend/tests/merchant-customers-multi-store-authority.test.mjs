@@ -214,6 +214,16 @@ test("1. DTO & Validation Authority — ListMerchantCustomersQueryDto validation
     (err) => err instanceof BadRequestException,
   );
 
+  // Rejects limit exceeding 100
+  await assert.rejects(
+    () =>
+      pipe.transform(
+        { limit: "101" },
+        { type: "query", metatype: ListMerchantCustomersQueryDto },
+      ),
+    (err) => err instanceof BadRequestException,
+  );
+
   // ParseUUIDPipe rejects malformed merchant UUID
   const uuidPipe = new ParseUUIDPipe({ version: "4" });
   await assert.rejects(
@@ -395,7 +405,7 @@ test("6. Structural RPC Validation — rejects malformed payload without convert
   // Case E: Item has invalid date
   state.rpcResponses["merchant_customer_summary"] = {
     data: {
-      items: [{ customer_ref: "عميل #1", phone_masked: "****1234", orders: 1, spent: 100, last_order_at: "not-a-date" }],
+      items: [{ customer_ref: "عميل #A1B2", phone_masked: "****1234", orders: 1, spent: 100, last_order_at: "not-a-date" }],
       total: 1,
       limit: 50,
       offset: 0,
@@ -416,7 +426,7 @@ test("6. Structural RPC Validation — rejects malformed payload without convert
 test("7. Privacy Contract & PII Exclusion — raw customer names, emails, and full phones never leak", async () => {
   const { merchantsService, state } = makeHarness();
 
-  // Inject a response and verify strictly
+  // 1. Inject a response with extraneous fields (full_name, email, phone) and verify they are dropped
   state.rpcResponses["merchant_customer_summary"] = {
     data: {
       items: [
@@ -426,6 +436,9 @@ test("7. Privacy Contract & PII Exclusion — raw customer names, emails, and fu
           orders: 2,
           spent: 25000,
           last_order_at: "2026-06-01T12:00:00Z",
+          full_name: "أحمد كاظم",
+          email: "ahmed@example.com",
+          phone: "+9647701234567",
         },
       ],
       total: 1,
@@ -443,23 +456,61 @@ test("7. Privacy Contract & PII Exclusion — raw customer names, emails, and fu
 
   const jsonString = JSON.stringify(res);
 
-  // 1. Verify exact returned camelCase keys
+  // Verify exact returned camelCase keys
   assert.equal(res.merchant_id, STORE_A);
   assert.equal(typeof res.hasMore, "boolean");
   assert.equal("has_more" in res, false, "HTTP layer must not expose has_more");
 
-  // 2. Structural PII keys check
+  // Structural PII keys check: extraneous fields must be completely dropped
   const item = res.items[0];
+  assert.deepEqual(
+    Object.keys(item).sort(),
+    ["customer_ref", "last_order_at", "orders", "phone_masked", "spent"].sort(),
+  );
   assert.equal("full_name" in item, false, "must not expose full_name");
   assert.equal("customer_name" in item, false, "must not expose customer_name");
   assert.equal("email" in item, false, "must not expose email");
   assert.equal("phone" in item, false, "must not expose raw phone");
   assert.equal("customer_phone" in item, false, "must not expose customer_phone");
 
-  // 3. Raw fixture values must never appear in the JSON string
+  // Raw fixture values must never appear in the JSON string
   assert.equal(jsonString.includes(RAW_FIXTURE_NAME), false);
   assert.equal(jsonString.includes(RAW_FIXTURE_EMAIL), false);
   assert.equal(jsonString.includes(RAW_FIXTURE_PHONE), false);
+  assert.equal(jsonString.includes("أحمد كاظم"), false);
+  assert.equal(jsonString.includes("ahmed@example.com"), false);
+  assert.equal(jsonString.includes("+9647701234567"), false);
+
+  // 2. Reject raw PII placed inside masked fields (Fail-Closed)
+  const piiCases = [
+    { label: "full phone with country code in phone_masked", item: { customer_ref: "عميل #ABCD", phone_masked: "+9647701234567", orders: 1, spent: 10, last_order_at: "2026-06-01T12:00:00Z" } },
+    { label: "local full phone in phone_masked", item: { customer_ref: "عميل #ABCD", phone_masked: "07701234567", orders: 1, spent: 10, last_order_at: "2026-06-01T12:00:00Z" } },
+    { label: "personal Arabic name in customer_ref", item: { customer_ref: "أحمد كاظم", phone_masked: "****1234", orders: 1, spent: 10, last_order_at: "2026-06-01T12:00:00Z" } },
+    { label: "email address in customer_ref", item: { customer_ref: "ahmed@example.com", phone_masked: "****1234", orders: 1, spent: 10, last_order_at: "2026-06-01T12:00:00Z" } },
+  ];
+
+  for (const { label, item: badItem } of piiCases) {
+    state.rpcResponses["merchant_customer_summary"] = {
+      data: {
+        items: [badItem],
+        total: 1,
+        limit: 50,
+        offset: 0,
+        has_more: false,
+      },
+      error: null,
+    };
+
+    await assert.rejects(
+      () =>
+        merchantsService.listMerchantCustomers(STORE_A, {
+          actor_role: "merchant_owner",
+          actor_id: USER_STORE_A_OWNER,
+        }),
+      (err) => err instanceof ServiceUnavailableException,
+      `Expected rejection for ${label}`,
+    );
+  }
 });
 
 // ── 8. Real NestJS HTTP Server Boundary ──
@@ -506,6 +557,13 @@ test("8. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, Validation
   }).compile();
 
   const app = moduleRef.createNestApplication();
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
 
   await app.listen(0);
   const port = app.getHttpServer().address().port;
@@ -555,6 +613,15 @@ test("8. REAL NESTJS HTTP SERVER BOUNDARY: app.listen(0), real fetch, Validation
     );
     assert.equal(resOverlongSearch.status, 400, "search > 100 chars must return HTTP 400");
     assert.equal(state.rpcCalls.length, rpcCallsBefore, "RPC must not be invoked when search > 100 chars");
+
+    // E3. Limit parameter exceeding 100 => HTTP 400 and RPC NOT called
+    const rpcCallsBeforeLimit = state.rpcCalls.length;
+    const resOverlongLimit = await fetch(
+      `${baseUrl}/merchants/${STORE_A}/customers?limit=101`,
+      { headers: authHeader("token-store-a-owner") },
+    );
+    assert.equal(resOverlongLimit.status, 400, "limit > 100 must return HTTP 400");
+    assert.equal(state.rpcCalls.length, rpcCallsBeforeLimit, "RPC must not be invoked when limit > 100");
 
     // F. Store A owner accesses Store A => HTTP 200
     const resOwnerA = await fetch(`${baseUrl}/merchants/${STORE_A}/customers?page=1&limit=20`, {
