@@ -3,31 +3,29 @@
 ## Status
 
 ```text
-PHASE_3E_IN_PROGRESS
+PHASE_3E_IMPLEMENTATION_COMPLETE
+LOCAL_GATES_PASS
+REMOTE_CI_PASS
+PR_20_DRAFT_AWAITING_REVIEW
 NO_DB_MIGRATION
-BRANCH_COMMERCIAL_RULES_PRESERVED
-SHARED_QUERY_CLIENT_PROTECTED
-MULTI_STORE_KEYED_WORKSPACE_ENFORCED
-TRUTHFUL_MERCHANT_STATES_ENFORCED
-ROLE_GATING_ENFORCED
-EDIT_IDOR_CLOSED
-COMMERCIAL_POLICY_AUTHORITY_ENFORCED
+NO_DEPLOYMENT
 ```
 
 ## Active Phase 3E Details
 
 - **Task:** `DILMART-PHASE-3E-MERCHANT-COUPONS-MULTI-STORE-AUTHORITY-001`
-- **Branch:** `feature/phase3e-merchant-coupons-multi-store-authority`
+- **Branch:** `frontend/dilmart-merchant-coupons-authority`
+- **Pull Request:** Draft PR [#20](https://github.com/dilmart-info/Dilmart/pull/20) (`https://github.com/dilmart-info/Dilmart/pull/20`)
 - **Scope:**
-  - Hardening Merchant Coupons across backend controller/service, frontend workspace, and shared commercial policy authority.
-  - Multi-store isolation with Keyed Workspace (`key={merchantId}`) resetting draft form state and queries cleanly on store switch.
+  - Hardening Merchant Coupons across backend controller/service, frontend workspace, and aligned commercial policy authority.
+  - Multi-store isolation with Keyed Workspace (`key={merchantId}`) resetting component-local state and active observers on store switch (cache isolation provided by merchant-scoped query keys).
   - Fail-closed response assertion (`assertCouponsContractMerchantId`) preventing cross-store query data leakage.
   - Edit IDOR closure preventing cross-store coupon mutations via `id` spoofing.
   - Authoritative deletion proving row removal and returning 404 for foreign or non-existent coupons.
   - Role authority gating: `merchant_staff` can view (GET) coupons in read-only mode, but is strictly blocked from upsert and delete operations.
   - Truthful states: dedicated loading skeleton, truthful error banner with retry action, distinct empty state.
-  - Server-side and client-side commercial policy enforcement (balanced / strict profiles), failing closed on table read failures.
-  - Race condition immunity: `isMountedRef` and `liveMerchantIdRef` protecting against late resolve/reject cross-store mutation toasts.
+  - Server-side and client-side commercial policy enforcement (balanced / strict profiles), failing closed on table read failures with `ServiceUnavailableException` (HTTP 503). Backend and frontend use aligned canonical profile definitions in separate backend/frontend modules.
+  - Race condition immunity: late list results are isolated by merchant-scoped query keys and keyed workspace remounting; `isMountedRef` and `liveMerchantIdRef` protect late mutation callbacks, toasts, form resets, and query invalidations.
 - **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
