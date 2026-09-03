@@ -388,9 +388,6 @@ export class MerchantPushService {
   }
 
   async listSubscriptions(merchantId: string, actor: ActorContext) {
-    if (!this.isPushPlatformRole(actor.actorRole)) {
-      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
-    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(
       merchantId,
       actor.actorRole,
@@ -417,9 +414,6 @@ export class MerchantPushService {
   }
 
   async registerSubscription(payload: RegisterPushSubscriptionDto, actor: ActorContext) {
-    if (!this.isPushPlatformRole(actor.actorRole)) {
-      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
-    }
     if (!actor.actorId) {
       throw new ForbiddenException("Actor context required");
     }
@@ -467,9 +461,6 @@ export class MerchantPushService {
   }
 
   async deleteSubscription(id: string, actor: ActorContext) {
-    if (!this.isPushPlatformRole(actor.actorRole)) {
-      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
-    }
     const { data: existing, error: fetchError } = await this.supabaseAdmin.client
       .from("merchant_push_subscriptions")
       .select("id, merchant_id")
@@ -499,9 +490,6 @@ export class MerchantPushService {
   }
 
   async sendTestNotification(payload: TestPushSubscriptionDto, actor: ActorContext) {
-    if (!this.isPushPlatformRole(actor.actorRole)) {
-      throw new ForbiddenException("Legacy push subscriptions endpoint is restricted to platform administrators.");
-    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(
       payload.merchant_id,
       actor.actorRole,
