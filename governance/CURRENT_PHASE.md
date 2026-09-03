@@ -5,7 +5,7 @@
 ```text
 PHASE_3F_IMPLEMENTATION_COMPLETE
 LOCAL_GATES_PASS
-PR_DRAFT_AWAITING_CREATION
+PR_22_DRAFT_AWAITING_REVIEW
 NO_DB_MIGRATION
 NO_DEPLOYMENT
 ```
@@ -15,7 +15,7 @@ NO_DEPLOYMENT
 - **Task:** `DILMART-PHASE-3F-MERCHANT-CUSTOMERS-PRIVACY-MULTI-STORE-AUTHORITY-001`
 - **Feature Branch:** `frontend/dilmart-merchant-customers-authority`
 - **Base Commit:** `1335c534230e97922da945062f778a98b1c7ed07`
-- **Pull Request:** Draft PR TBD (Awaiting Creation)
+- **Pull Request:** [Draft PR #22](https://github.com/dilmart-info/Dilmart/pull/22)
 - **Scope Delivered:**
   - Dedicated endpoint `GET /merchants/:id/customers` with strict UUID and query validation.
   - Endpoint separation: `/admin/customers` restricted to `super_admin, admin` only; merchant roles rejected with HTTP 403.

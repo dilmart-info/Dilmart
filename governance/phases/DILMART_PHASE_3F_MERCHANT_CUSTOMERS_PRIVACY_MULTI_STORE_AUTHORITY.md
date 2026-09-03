@@ -5,10 +5,11 @@
 - **Task Identifier:** `DILMART-PHASE-3F-MERCHANT-CUSTOMERS-PRIVACY-MULTI-STORE-AUTHORITY-001`
 - **Branch:** `frontend/dilmart-merchant-customers-authority`
 - **Base Commit:** `1335c534230e97922da945062f778a98b1c7ed07` (Phase 3E post-merge closure)
+- **Pull Request:** [Draft PR #22](https://github.com/dilmart-info/Dilmart/pull/22)
 - **Status:** `PHASE_3F_IMPLEMENTATION_COMPLETE`
 - **State Flags:**
   - `LOCAL_GATES_PASS`
-  - `PR_DRAFT_AWAITING_CREATION`
+  - `PR_22_DRAFT_AWAITING_REVIEW`
   - `NO_DB_MIGRATION`
   - `NO_DEPLOYMENT`
 
