@@ -106,19 +106,56 @@ export function parseCanonicalSettingsResponse(res: unknown, expectedMerchantId:
   }
   const s = r.settings as Record<string, unknown>;
 
-  const checkStrOrNull = (val: unknown, name: string): string | null => {
-    if (val === null || val === undefined) return null;
+  const requiredKeys = [
+    "contact_phone",
+    "whatsapp_phone",
+    "support_email",
+    "city",
+    "address",
+    "delivery_notes",
+    "logo_url",
+    "push_enabled",
+    "sound_enabled",
+    "sound_repeat_interval_seconds",
+    "sound_max_duration_seconds",
+  ];
+  for (const k of requiredKeys) {
+    if (!Object.prototype.hasOwnProperty.call(s, k)) {
+      throw new Error(`Settings object missing required canonical key: ${k}`);
+    }
+  }
+
+  const checkExplicitStrOrNull = (val: unknown, name: string): string | null => {
+    if (val === null) return null;
     if (typeof val === "string") return val;
     throw new Error(`Field ${name} must be a string or null, got ${typeof val}`);
   };
 
-  const contact_phone = checkStrOrNull(s.contact_phone, "contact_phone");
-  const whatsapp_phone = checkStrOrNull(s.whatsapp_phone, "whatsapp_phone");
-  const support_email = checkStrOrNull(s.support_email, "support_email");
-  const city = checkStrOrNull(s.city, "city");
-  const address = checkStrOrNull(s.address, "address");
-  const delivery_notes = checkStrOrNull(s.delivery_notes, "delivery_notes");
-  const logo_url = checkStrOrNull(s.logo_url, "logo_url");
+  const contact_phone = checkExplicitStrOrNull(s.contact_phone, "contact_phone");
+  const whatsapp_phone = checkExplicitStrOrNull(s.whatsapp_phone, "whatsapp_phone");
+  const support_email = checkExplicitStrOrNull(s.support_email, "support_email");
+  const city = checkExplicitStrOrNull(s.city, "city");
+  const address = checkExplicitStrOrNull(s.address, "address");
+  const delivery_notes = checkExplicitStrOrNull(s.delivery_notes, "delivery_notes");
+
+  let logo_url: string | null = null;
+  if (s.logo_url !== null) {
+    if (typeof s.logo_url !== "string") {
+      throw new Error(`Field logo_url must be a string or null, got ${typeof s.logo_url}`);
+    }
+    const trimmed = s.logo_url.trim();
+    if (trimmed) {
+      try {
+        const u = new URL(trimmed);
+        if (u.protocol !== "http:" && u.protocol !== "https:") {
+          throw new Error("Invalid protocol");
+        }
+        logo_url = trimmed;
+      } catch {
+        throw new Error(`Field logo_url is not a valid HTTP/HTTPS URL: "${trimmed}"`);
+      }
+    }
+  }
 
   if (typeof s.push_enabled !== "boolean") {
     throw new Error("Field push_enabled must be a boolean");
@@ -128,19 +165,19 @@ export function parseCanonicalSettingsResponse(res: unknown, expectedMerchantId:
   }
   if (
     typeof s.sound_repeat_interval_seconds !== "number" ||
-    !Number.isFinite(s.sound_repeat_interval_seconds) ||
+    !Number.isInteger(s.sound_repeat_interval_seconds) ||
     s.sound_repeat_interval_seconds < 5 ||
     s.sound_repeat_interval_seconds > 120
   ) {
-    throw new Error("Field sound_repeat_interval_seconds must be a number between 5 and 120");
+    throw new Error("Field sound_repeat_interval_seconds must be an integer between 5 and 120");
   }
   if (
     typeof s.sound_max_duration_seconds !== "number" ||
-    !Number.isFinite(s.sound_max_duration_seconds) ||
+    !Number.isInteger(s.sound_max_duration_seconds) ||
     s.sound_max_duration_seconds < 30 ||
     s.sound_max_duration_seconds > 1800
   ) {
-    throw new Error("Field sound_max_duration_seconds must be a number between 30 and 1800");
+    throw new Error("Field sound_max_duration_seconds must be an integer between 30 and 1800");
   }
 
   return {
@@ -249,19 +286,44 @@ export function parseCanonicalRegisterPushResponse(res: unknown, expectedMerchan
     throw new Error("Security violation: subscription object leaked sensitive fields.");
   }
 
-  if (typeof s.id !== "string" || typeof s.status !== "string" || typeof s.is_own !== "boolean") {
-    throw new Error("Register push subscription missing required attributes.");
+  const requiredSubKeys = ["id", "device_label", "user_agent", "status", "created_at", "updated_at", "is_own"];
+  for (const k of requiredSubKeys) {
+    if (!Object.prototype.hasOwnProperty.call(s, k)) {
+      throw new Error(`Register push subscription missing required key: ${k}`);
+    }
+  }
+
+  if (typeof s.id !== "string" || !s.id.trim()) {
+    throw new Error("Register push subscription missing valid id.");
+  }
+  if (s.device_label !== null && typeof s.device_label !== "string") {
+    throw new Error("Register push subscription device_label must be string or null.");
+  }
+  if (s.user_agent !== null && typeof s.user_agent !== "string") {
+    throw new Error("Register push subscription user_agent must be string or null.");
+  }
+  if (typeof s.status !== "string" || !s.status.trim()) {
+    throw new Error("Register push subscription missing valid status.");
+  }
+  if (typeof s.created_at !== "string" || Number.isNaN(Date.parse(s.created_at))) {
+    throw new Error("Register push subscription created_at must be a valid ISO date string.");
+  }
+  if (typeof s.updated_at !== "string" || Number.isNaN(Date.parse(s.updated_at))) {
+    throw new Error("Register push subscription updated_at must be a valid ISO date string.");
+  }
+  if (typeof s.is_own !== "boolean") {
+    throw new Error("Register push subscription is_own must be a boolean.");
   }
 
   return {
     merchant_id: expectedMerchantId,
     subscription: {
       id: s.id,
-      device_label: (s.device_label as string) ?? null,
-      user_agent: (s.user_agent as string) ?? null,
+      device_label: s.device_label,
+      user_agent: s.user_agent,
       status: s.status,
-      created_at: s.created_at as string,
-      updated_at: s.updated_at as string,
+      created_at: s.created_at,
+      updated_at: s.updated_at,
       is_own: s.is_own,
     },
   };
@@ -319,14 +381,58 @@ export function parseCanonicalTestPushResponse(res: unknown, expectedMerchantId:
       throw new Error("Test push response result item malformed.");
     }
     const it = item as Record<string, unknown>;
-    if (typeof it.id !== "string" || typeof it.ok !== "boolean") {
+    if (typeof it.id !== "string" || !it.id.trim() || typeof it.ok !== "boolean") {
       throw new Error("Test push response result item malformed.");
+    }
+    if ("error" in it && it.error !== undefined && it.error !== null && typeof it.error !== "string") {
+      throw new Error("Test push response error must be a string.");
     }
   }
   return {
     merchant_id: expectedMerchantId,
     scope: r.scope,
     results: r.results as Array<{ id: string; ok: boolean; error?: string }>,
+  };
+}
+
+export function parseCanonicalReadinessResponse(
+  res: unknown,
+  expectedMerchantId: string,
+): {
+  merchant_id: string;
+  is_ready: boolean;
+  score: number;
+  passed_checks: number;
+  total_checks: number;
+} {
+  if (!res || typeof res !== "object" || Array.isArray(res)) {
+    throw new Error("Readiness response must be a non-null object.");
+  }
+  const r = res as Record<string, unknown>;
+  if (typeof r.merchant_id !== "string" || r.merchant_id !== expectedMerchantId) {
+    throw new Error(`Readiness response merchant_id mismatch: expected "${expectedMerchantId}", got "${String(r.merchant_id)}"`);
+  }
+  if (typeof r.is_ready !== "boolean") {
+    throw new Error("Readiness response missing boolean is_ready flag.");
+  }
+  if (typeof r.score !== "number" || !Number.isInteger(r.score) || r.score < 0 || r.score > 100) {
+    throw new Error("Readiness response score must be an integer between 0 and 100.");
+  }
+  if (typeof r.passed_checks !== "number" || !Number.isInteger(r.passed_checks) || r.passed_checks < 0) {
+    throw new Error("Readiness response passed_checks must be a non-negative integer.");
+  }
+  if (typeof r.total_checks !== "number" || !Number.isInteger(r.total_checks) || r.total_checks < 0) {
+    throw new Error("Readiness response total_checks must be a non-negative integer.");
+  }
+  if (r.passed_checks > r.total_checks) {
+    throw new Error("Readiness response passed_checks cannot exceed total_checks.");
+  }
+  return {
+    merchant_id: expectedMerchantId,
+    is_ready: r.is_ready,
+    score: r.score,
+    passed_checks: r.passed_checks,
+    total_checks: r.total_checks,
   };
 }
 
@@ -440,10 +546,7 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
     enabled: !!merchantId,
     queryFn: async () => {
       const res = await apiClient.getMerchantReadiness(merchantId);
-      if (!res || typeof res !== "object" || res.merchant_id !== merchantId) {
-        throw new Error("Readiness response merchant_id mismatch");
-      }
-      return res;
+      return parseCanonicalReadinessResponse(res, merchantId);
     },
     retry: false,
   });
@@ -1239,6 +1342,7 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
                         variant="outline"
                         size="sm"
                         className="h-7 text-xs px-2"
+                        data-testid={`test-device-${device.id}`}
                         disabled={deviceActionBusy === `test-${device.id}`}
                         onClick={() => handleSendTest(device.id)}
                       >
@@ -1258,6 +1362,7 @@ export function MerchantSettingsWorkspace({ merchantId, role, storeName, storeSt
                           variant="ghost"
                           size="sm"
                           className="h-7 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          data-testid={`delete-device-${device.id}`}
                           disabled={deviceActionBusy === `delete-${device.id}`}
                           onClick={() => handleDeleteDevice(device.id)}
                         >
