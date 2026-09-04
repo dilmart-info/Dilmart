@@ -3,31 +3,56 @@
 ## Status
 
 ```text
-PHASE_3H_IMPLEMENTED
-BRANCH_FRONTEND_DILMART_MERCHANT_DASHBOARD_AUTHORITY
-READY_FOR_DRAFT_PR
+PHASE_3H_MERGED
+PR_26_CLOSED
+PR_26_SOURCE_HEAD_83A02B9
+PR_26_MERGE_SHA_5CF80A8
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
 NO_LIVE_DB_MUTATION
-NO_DEPLOYMENT
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
 ---
 
 ## Active Implementation Phase
 
-### Phase 3H: Merchant Dashboard Overview & Analytics Multi-Store Authority
-- **Task:** `DILMART-PHASE-3H-MERCHANT-DASHBOARD-OVERVIEW-MULTI-STORE-AUTHORITY-001`
-- **Branch:** `frontend/dilmart-merchant-dashboard-authority`
-- **Base Commit:** `9e78a3879d3d17a5df909240cb9360d1cbc5b78c` (origin/main)
-- **Status:** Implementation complete, all targeted tests passing, pending full verification suite and Draft PR.
-- **Detailed Record:** `governance/phases/DILMART_PHASE_3H_MERCHANT_DASHBOARD_OVERVIEW_MULTI_STORE_AUTHORITY.md`
-
----
-
+None. Phase 3H implementation merged and sealed. Ready for next development phase.
 
 ---
 
 ## Preceding Governance / Merged Phases
+
+### Phase 3H: Merchant Dashboard Overview & Analytics Multi-Store Authority
+- **Task:** `DILMART-PHASE-3H-MERCHANT-DASHBOARD-OVERVIEW-MULTI-STORE-AUTHORITY-001`
+- **PR:** [#26](https://github.com/dilmart-info/Dilmart/pull/26) (Merged & Closed)
+- **Source HEAD:** `83a02b907e2712c1c544cd965e448ce7a85823bd`
+- **Merge SHA:** `5cf80a80d9d20aa50e78f5f1a5ee057792e0bfbb`
+- **Post-Merge Governance Branch:** `governance/pr26-post-merge-phase3h-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33851843099` — SUCCESS (14m 17s)
+  - Native CI (`Native Foundation CI`): run `33851843164` — SUCCESS (8m 52s)
+  - Netlify Production Deploy Gate run: `33853000693` — SUCCESS (8s)
+  - Netlify publish: SKIPPED (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled, `should_deploy=false`)
+  - Render deployment state: UNVERIFIED (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations.
+- **Scope Delivered:**
+  - Explicit merchant dashboard endpoint (`GET /merchants/:id/dashboard`) with `ParseUUIDPipe({ version: "4" })` and role-based access control (`super_admin`, `admin`, `merchant_owner`, `merchant_manager`, `merchant_staff`).
+  - Hardened related merchant endpoints (`:id/dashboard-stats`, `:id/readiness`, `:id/performance-scorecard`) with `ParseUUIDPipe({ version: "4" })`.
+  - Legacy route lockdown: `GET /merchant/dashboard` restricted strictly to platform admins (`super_admin`, `admin`); merchant roles rejected with HTTP 403 Forbidden. The legacy route strictly requires `?merchant_id=` (UUID v4) via `ValidationPipe` and eliminates silent first-store fallback.
+  - Canonical response contract: `merchant_id` always injected into response and asserted on frontend to strictly match active store.
+  - Fail-closed canonical parser (`parseCanonicalDashboardResponse`): validates `merchant_id`, integer counts, non-negative numbers, ISO timestamps, and strictly rejects negative or NaN `top_products[].revenue` while allowing optional omitted revenue.
+  - Frontend runtime crash fix: replaced missing `apiClient.getMerchantDashboard` with official `merchantApi.getMerchantDashboard(merchantId)`.
+  - Frontend Keyed Workspace `<MerchantOverviewWorkspace key={merchantId} merchantId={merchantId} />` providing synchronous reset on store switch and eliminating deferred cross-store race conditions.
+  - Truthful UI states: dedicated `MerchantOverviewSkeleton` loading state and retryable error banner without displaying misleading zero metrics.
+- **Verification Suites:**
+  - `backend/tests/merchant-dashboard-multi-store-authority.test.mjs` (13 tests, all pass)
+  - `src/pages/merchant/Overview.test.tsx` (14 tests, all pass)
+- **Database Status:** 0 migrations applied, 0 live mutations.
 
 ### Phase 3G: Merchant Settings Multi-Store Mutation Authority & Push Device Isolation
 - **Task:** `DILMART-PHASE-3G-MERCHANT-SETTINGS-MULTI-STORE-MUTATION-AUTHORITY-001`
