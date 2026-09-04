@@ -1,11 +1,12 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, ServiceUnavailableException } from "@nestjs/common";
 import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { ScopeResolverService } from "../scope-resolver/scope-resolver.service";
-import { sanitizeSearchTerm } from "../../common/search-utils";
+import { sanitizeSearchTerm, buildSafeOrFilter } from "../../common/search-utils";
 import {
   AssignMerchantOwnerDto,
   CreateMerchantDto,
   ListMerchantCustomersQueryDto,
+  ListMerchantOrdersQueryDto,
   MerchantFinanceStatementQueryDto,
   MerchantPayoutHistoryQueryDto,
   PatchMerchantSettingsDto,
@@ -1400,6 +1401,10 @@ export class MerchantsService {
     return this.getMerchantById(id);
   }
 
+  private isMerchantRole(role?: string): boolean {
+    return this.isMerchantCustomerRole(role);
+  }
+
   private isMerchantCustomerRole(role?: string): boolean {
     if (!role || typeof role !== "string") return false;
     const normalized = role.trim().toLowerCase();
@@ -1572,5 +1577,135 @@ export class MerchantsService {
       total,
       hasMore: raw.has_more,
     };
+  }
+
+  async listMerchantOrders(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+    query?: ListMerchantOrdersQueryDto,
+  ) {
+    const resolvedMerchantId = await this.resolveMerchantOrdersReadScope(merchantId, actor);
+
+    const limit = Math.min(Math.max(1, Math.floor(Number(query?.limit ?? 50))), 100);
+    const offset = query?.offset !== undefined && query.offset !== null
+      ? Math.max(0, Math.floor(Number(query.offset)))
+      : (Math.max(1, Math.floor(Number(query?.page ?? 1))) - 1) * limit;
+
+    let req = this.supabaseAdmin.client
+      .from("orders")
+      .select(
+        "id, order_number, merchant_id, status, channel, created_at, updated_at, subtotal, discount, delivery_cost, total, payment_method, merchant_notes, merchant_decision_status, governorates(name)",
+        { count: "exact" },
+      )
+      .eq("merchant_id", resolvedMerchantId)
+      .order("created_at", { ascending: false });
+
+    if (query?.status && query.status !== "all") {
+      req = req.eq("status", query.status);
+    }
+    if (query?.merchant_decision_status && query.merchant_decision_status !== "all") {
+      req = req.eq("merchant_decision_status", query.merchant_decision_status);
+    }
+    if (query?.date_from) {
+      req = req.gte("created_at", query.date_from);
+    }
+    if (query?.date_to) {
+      req = req.lte("created_at", query.date_to);
+    }
+
+    const sanitizedSearch = sanitizeSearchTerm(query?.search);
+    if (sanitizedSearch) {
+      req = req.or(buildSafeOrFilter(sanitizedSearch, ["order_number"]));
+    }
+
+    req = req.range(offset, offset + limit - 1);
+    const { data, error, count } = await req;
+    if (error) throw error;
+
+    const total = count ?? 0;
+
+    // Guaranteed safe projection without ANY customer phone, street address, or PII
+    const sanitizedOrders = (data ?? []).map((row: any) => ({
+      id: String(row.id),
+      order_number: String(row.order_number),
+      merchant_id: String(row.merchant_id),
+      status: String(row.status),
+      channel: row.channel ? String(row.channel) : null,
+      created_at: String(row.created_at),
+      updated_at: String(row.updated_at),
+      subtotal: Number(row.subtotal ?? 0),
+      discount: Number(row.discount ?? 0),
+      delivery_cost: Number(row.delivery_cost ?? 0),
+      total: Number(row.total ?? 0),
+      payment_method: row.payment_method ? String(row.payment_method) : null,
+      merchant_notes: row.merchant_notes ? String(row.merchant_notes) : null,
+      merchant_decision_status: row.merchant_decision_status ? String(row.merchant_decision_status) : null,
+      governorate: row.governorates?.name ? String(row.governorates.name) : null,
+    }));
+
+    return {
+      merchant_id: resolvedMerchantId,
+      orders: sanitizedOrders,
+      total,
+      limit,
+      offset,
+      items: sanitizedOrders,
+      page: Math.floor(offset / limit) + 1,
+      hasMore: offset + limit < total,
+    };
+  }
+
+  private async resolveMerchantOrdersReadScope(
+    merchantId: string,
+    actor?: { actor_role?: string; actor_id?: string },
+  ): Promise<string> {
+    if (!merchantId || typeof merchantId !== "string" || !merchantId.trim()) {
+      throw new ForbiddenException("Merchant id is required.");
+    }
+    if (!actor?.actor_role || !actor?.actor_id || typeof actor.actor_id !== "string" || !actor.actor_id.trim()) {
+      throw new ForbiddenException("Actor identity and role are required.");
+    }
+
+    if (this.isPlatformCustomerRole(actor.actor_role)) {
+      const { data: merchant, error: merchantError } = await this.supabaseAdmin.client
+        .from("merchants")
+        .select("id")
+        .eq("id", merchantId)
+        .maybeSingle();
+      if (merchantError) throw merchantError;
+      if (!merchant?.id) {
+        throw new NotFoundException("Merchant not found.");
+      }
+      return merchantId;
+    }
+
+    if (!this.isMerchantRole(actor.actor_role)) {
+      throw new ForbiddenException("Orders read access is not permitted for this role.");
+    }
+
+    // Exact membership in merchant_users for target merchantId (no first membership fallback)
+    const { data: membership, error: membershipError } = await this.supabaseAdmin.client
+      .from("merchant_users")
+      .select("merchant_id")
+      .eq("user_id", actor.actor_id)
+      .eq("merchant_id", merchantId)
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!membership?.merchant_id) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+
+    // Exact merchant status in merchants table must equal 'active'
+    const { data: merchant, error: merchantError } = await this.supabaseAdmin.client
+      .from("merchants")
+      .select("status")
+      .eq("id", merchantId)
+      .maybeSingle();
+    if (merchantError) throw merchantError;
+    if (!merchant || merchant.status !== "active") {
+      throw new ForbiddenException("Merchant is not active.");
+    }
+
+    return merchantId;
   }
 }

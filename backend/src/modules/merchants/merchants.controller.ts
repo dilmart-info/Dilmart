@@ -7,6 +7,7 @@ import {
   CreateMerchantDto,
   GetMerchantSettingsQueryDto,
   ListMerchantCustomersQueryDto,
+  ListMerchantOrdersQueryDto,
   MerchantFinanceStatementQueryDto,
   MerchantPayoutHistoryQueryDto,
   PatchMerchantSettingsDto,
@@ -228,6 +229,25 @@ export class MerchantsController {
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
     return this.merchantsService.listMerchantCustomers(
+      id,
+      { actor_role: actor?.actorRole, actor_id: actor?.actorId },
+      query,
+    );
+  }
+
+  @Get(":id/orders")
+  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  @UsePipes(new ValidationPipe({
+    whitelist: true,
+    transform: true,
+    forbidNonWhitelisted: true,
+  }))
+  listOrders(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @Query() query: ListMerchantOrdersQueryDto,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    return this.merchantsService.listMerchantOrders(
       id,
       { actor_role: actor?.actorRole, actor_id: actor?.actorId },
       query,
