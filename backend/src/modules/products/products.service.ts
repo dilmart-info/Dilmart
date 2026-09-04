@@ -548,16 +548,39 @@ export class ProductsService {
   }
 
   async getProductById(id: string, query: ProductScopeQueryDto & { actor_role?: string; actor_id?: string }) {
+    const isMerchant = this.isMerchantRole(query.actor_role);
+    if (isMerchant && !query.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(query.merchant_id, query.actor_role, query.actor_id);
+    if (isMerchant && (!resolvedMerchantId || (query.merchant_id && resolvedMerchantId !== query.merchant_id))) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+    if (isMerchant && resolvedMerchantId) {
+      await this.ensureMerchantActiveForMerchantActor(resolvedMerchantId, query.actor_role);
+    }
     let req = this.supabaseAdmin.client.from("products").select("*").eq("id", id);
     if (resolvedMerchantId) req = req.eq("merchant_id", resolvedMerchantId);
-    const { data, error } = await req.single();
+    const { data, error } = await req.maybeSingle();
     if (error) throw error;
+    if (!data) {
+      throw new ForbiddenException("Product not found in actor scope.");
+    }
     return { ...data, readiness: this.buildProductReadiness(data) };
   }
 
   async createProduct(payload: UpsertProductDto, actor?: { actor_role?: string; actor_id?: string }) {
+    const isMerchant = this.isMerchantRole(actor?.actor_role);
+    if (actor?.actor_role === "merchant_staff") {
+      throw new ForbiddenException("Staff role has read-only access to catalog.");
+    }
+    if (isMerchant && !payload.merchant_id) {
+      throw new BadRequestException("merchant_id is required.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(payload.merchant_id, actor?.actor_role, actor?.actor_id);
+    if (isMerchant && (!resolvedMerchantId || (payload.merchant_id && resolvedMerchantId !== payload.merchant_id))) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
     const merchantId = resolvedMerchantId ?? payload.merchant_id;
     if (!merchantId) throw new BadRequestException("merchant_id is required.");
     await this.ensureMerchantActiveForMerchantActor(merchantId, actor?.actor_role);
@@ -595,12 +618,26 @@ export class ProductsService {
     };
     const { data, error } = await this.supabaseAdmin.client.from("products").insert(insertPayload as any).select("*").single();
     if (error) throw error;
-    return data;
+    return { ...data, merchant_id: data.merchant_id ?? merchantId };
   }
 
   async updateProduct(id: string, payload: UpsertProductDto, query: ProductScopeQueryDto & { actor_role?: string; actor_id?: string }) {
-    const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(query.merchant_id ?? payload.merchant_id, query.actor_role, query.actor_id);
-    const merchantId = resolvedMerchantId ?? payload.merchant_id;
+    const isMerchant = this.isMerchantRole(query.actor_role);
+    if (query.actor_role === "merchant_staff") {
+      throw new ForbiddenException("Staff role has read-only access to catalog.");
+    }
+    const targetMerchantId = query.merchant_id ?? payload.merchant_id;
+    if (isMerchant && !targetMerchantId) {
+      throw new BadRequestException("merchant_id is required.");
+    }
+    if (isMerchant && query.merchant_id && payload.merchant_id && query.merchant_id !== payload.merchant_id) {
+      throw new BadRequestException("merchant_id in query and payload must match.");
+    }
+    const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(targetMerchantId, query.actor_role, query.actor_id);
+    if (isMerchant && (!resolvedMerchantId || (targetMerchantId && resolvedMerchantId !== targetMerchantId))) {
+      throw new ForbiddenException("Merchant scope is not allowed for this actor.");
+    }
+    const merchantId = resolvedMerchantId ?? targetMerchantId;
     if (!merchantId) throw new BadRequestException("merchant_id is required.");
     await this.ensureMerchantActiveForMerchantActor(merchantId, query.actor_role);
     this.validateCatalogPayload(payload);
@@ -734,10 +771,20 @@ export class ProductsService {
     if (resolvedMerchantId) req = req.eq("merchant_id", resolvedMerchantId);
     const { error } = await req;
     if (error) throw error;
+    if (this.isMerchantRole(query.actor_role) && (resolvedMerchantId || targetMerchantId)) {
+      return {
+        ok: true,
+        merchant_id: resolvedMerchantId || targetMerchantId,
+        product_id: id,
+      };
+    }
     return { ok: true };
   }
 
   async updateProductStatus(id: string, payload: { is_active: boolean; merchant_id?: string; actor_role?: string; actor_id?: string }) {
+    if (payload.actor_role === "merchant_staff") {
+      throw new ForbiddenException("Staff role has read-only access to catalog.");
+    }
     if (this.isMerchantRole(payload.actor_role)) {
       if (!payload.merchant_id) {
         throw new BadRequestException("merchant_id is required.");
@@ -782,6 +829,13 @@ export class ProductsService {
     if (resolvedMerchantId) req = req.eq("merchant_id", resolvedMerchantId);
     const { error } = await req;
     if (error) throw error;
+    if (this.isMerchantRole(payload.actor_role) && resolvedMerchantId) {
+      return {
+        ok: true,
+        merchant_id: resolvedMerchantId,
+        product_id: id,
+      };
+    }
     return { ok: true };
   }
 }

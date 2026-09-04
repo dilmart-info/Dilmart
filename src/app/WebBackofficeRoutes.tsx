@@ -56,6 +56,7 @@ const MerchantOrderDetail = lazy(() => import("@/pages/merchant/OrderDetail"));
 const MerchantSettings = lazy(() => import("@/pages/merchant/Settings"));
 const MerchantCoupons = lazy(() => import("@/pages/merchant/Coupons"));
 const MerchantCustomers = lazy(() => import("@/pages/merchant/Customers"));
+const MerchantProductForm = lazy(() => import("@/pages/merchant/ProductForm"));
 
 /**
  * Admin / Merchant / Agent route elements for Web only.
@@ -107,8 +108,8 @@ export function getWebBackofficeRouteElements(): ReactElement[] {
     <Route key="merchant-slash" path="/merchant/" element={<RequireMerchantUser><MerchantLayout><MerchantOverview /></MerchantLayout></RequireMerchantUser>} />,
     <Route key="merchant-products" path="/merchant/products" element={<RequireMerchantUser><MerchantLayout><MerchantProducts /></MerchantLayout></RequireMerchantUser>} />,
     <Route key="merchant-products-import" path="/merchant/products/import" element={<RequireMerchantUser><MerchantLayout><MerchantProductImport /></MerchantLayout></RequireMerchantUser>} />,
-    <Route key="merchant-products-new" path="/merchant/products/new" element={<RequireMerchantUser><MerchantLayout><AdminProductForm /></MerchantLayout></RequireMerchantUser>} />,
-    <Route key="merchant-products-edit" path="/merchant/products/:id/edit" element={<RequireMerchantUser><MerchantLayout><AdminProductForm /></MerchantLayout></RequireMerchantUser>} />,
+    <Route key="merchant-products-new" path="/merchant/products/new" element={<RequireMerchantUser><MerchantLayout><MerchantProductForm /></MerchantLayout></RequireMerchantUser>} />,
+    <Route key="merchant-products-edit" path="/merchant/products/:id/edit" element={<RequireMerchantUser><MerchantLayout><MerchantProductForm /></MerchantLayout></RequireMerchantUser>} />,
     <Route key="merchant-orders" path="/merchant/orders" element={<RequireMerchantUser><MerchantLayout><MerchantOrders /></MerchantLayout></RequireMerchantUser>} />,
     <Route key="merchant-finance" path="/merchant/finance" element={<RequireMerchantUser><MerchantLayout><MerchantFinance /></MerchantLayout></RequireMerchantUser>} />,
     <Route key="merchant-order-detail" path="/merchant/orders/:id" element={<RequireMerchantUser><MerchantLayout><MerchantOrderDetail /></MerchantLayout></RequireMerchantUser>} />,

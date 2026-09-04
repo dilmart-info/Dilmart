@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Query } from "@nestjs/common";
 import { ProductsService } from "./products.service";
 import { ListProductsQueryDto, ProductScopeQueryDto, UpdateProductStatusDto, UpsertProductDto } from "./products.dto";
 import { Roles } from "../../common/authz/roles.decorator";
@@ -29,7 +29,7 @@ export class ProductsController {
   @Get(":id")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
   getById(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
     @Query() query: ProductScopeQueryDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
@@ -49,7 +49,7 @@ export class ProductsController {
   @Post(":id")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager")
   update(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
     @Body() payload: UpsertProductDto,
     @Query() query: ProductScopeQueryDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
@@ -60,7 +60,7 @@ export class ProductsController {
   @Post(":id/status")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager")
   updateStatus(
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
     @Body() payload: UpdateProductStatusDto,
     @CurrentActor() actor?: { actorRole?: string; actorId?: string },
   ) {
