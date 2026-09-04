@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -100,6 +100,12 @@ export default function AdminProductForm() {
     const canManageCatalog = !isMerchantUser || canMerchantManageCatalog(membership?.role);
     const hasValidScope = !isMerchantUser || !!merchantIdFromMembership;
     const scope = isMerchantUser && merchantIdFromMembership ? merchantScope(merchantIdFromMembership) : platformScope();
+
+    const activeMerchantRef = useRef(merchantIdFromMembership);
+    useEffect(() => {
+        activeMerchantRef.current = merchantIdFromMembership;
+    }, [merchantIdFromMembership]);
+
     const [images, setImages] = useState<string[]>([]);
     const [brandMode, setBrandMode] = useState<"known" | "custom">("known");
     const [form, setForm] = useState({
@@ -153,13 +159,19 @@ export default function AdminProductForm() {
         queryFn: () => apiClient.getActiveMerchants(),
     });
 
-    const { data: product } = useQuery({
-        queryKey: ["admin-product-edit", id],
+    const { data: product, isLoading: isProductLoading, isError: isProductError } = useQuery({
+        queryKey: isMerchantUser && merchantIdFromMembership
+            ? ["merchant-product-edit", id, merchantIdFromMembership]
+            : ["admin-product-edit", id],
         queryFn: async () => {
             if (!id) return null;
-            return apiClient.getProductById(id, {
+            const res = await apiClient.getProductById(id, {
                 merchant_id: scope.kind === "merchant" ? scope.merchantId : undefined,
             });
+            if (isMerchantUser && merchantIdFromMembership && res && res.merchant_id && res.merchant_id !== merchantIdFromMembership) {
+                throw new Error("UNAUTHORIZED_CROSS_STORE_PRODUCT");
+            }
+            return res;
         },
         enabled: isEdit && hasValidScope,
     });
@@ -289,8 +301,12 @@ export default function AdminProductForm() {
                 file_name: file.name,
                 content_type: file.type || "image/jpeg",
                 base64_data: base64Data,
-                ...(id ? { product_id: id } : { merchant_id: form.merchant_id || merchantIdFromMembership }),
+                ...(id ? { product_id: id } : { merchant_id: isMerchantUser ? merchantIdFromMembership : (form.merchant_id || merchantIdFromMembership) }),
             });
+
+            if (isMerchantUser && activeMerchantRef.current !== merchantIdFromMembership) {
+                return;
+            }
 
             setImages(prev => [...prev, uploaded.public_url]);
             toast.success("تم رفع الصورة بنجاح");
@@ -334,8 +350,12 @@ export default function AdminProductForm() {
                 file_name: file.name,
                 content_type: file.type || "image/jpeg",
                 base64_data: base64Data,
-                ...(id ? { product_id: id } : { merchant_id: form.merchant_id || merchantIdFromMembership }),
+                ...(id ? { product_id: id } : { merchant_id: isMerchantUser ? merchantIdFromMembership : (form.merchant_id || merchantIdFromMembership) }),
             });
+
+            if (isMerchantUser && activeMerchantRef.current !== merchantIdFromMembership) {
+                return;
+            }
 
             setForm((prev) => ({ ...prev, mobile_promo_image_url: uploaded.public_url }));
             toast.success("تم رفع صورة بلوك الموبايل بنجاح");
@@ -498,6 +518,17 @@ export default function AdminProductForm() {
             toast.error(`سياسة ${activePolicy.label}: الخصم الأقصى المسموح ${activePolicy.maxDiscountPercent}%`);
             return;
         }
+        if (isMerchantUser) {
+            if (!canManageCatalog) {
+                toast.error("حساب الموظف لا يملك صلاحية حفظ أو تعديل المنتجات.");
+                return;
+            }
+            if (!merchantIdFromMembership) {
+                toast.error("لا يمكن حفظ المنتج دون متجر نشط مرتبط.");
+                return;
+            }
+        }
+
         setLoading(true);
 
         const shortTrimmed = form.short_description.trim();
@@ -534,7 +565,7 @@ export default function AdminProductForm() {
             offer_ends_at: form.offer_ends_at ? `${form.offer_ends_at}T23:59:59` : null,
             images,
             loyalty_points_enabled: form.loyalty_points_enabled,
-            merchant_id: form.merchant_id || null,
+            merchant_id: isMerchantUser ? (merchantIdFromMembership || null) : (form.merchant_id || null),
             brand: form.brand.trim() || null,
             colors: form.colors.split(",").map((x) => x.trim()).filter(Boolean),
             sizes: form.sizes.split(",").map((x) => x.trim()).filter(Boolean),
@@ -553,6 +584,9 @@ export default function AdminProductForm() {
 
         try {
             const scopedPayload = attachScopeToPayload(payload, scope);
+            if (isMerchantUser && activeMerchantRef.current !== merchantIdFromMembership) {
+                return;
+            }
             if (isEdit) {
                 if (!id) throw new Error("Missing product id");
                 await apiClient.updateProduct(id, scopedPayload as Record<string, unknown>, {
@@ -560,6 +594,10 @@ export default function AdminProductForm() {
                 });
             } else {
                 await apiClient.createProduct(scopedPayload as Record<string, unknown>);
+            }
+
+            if (isMerchantUser && activeMerchantRef.current !== merchantIdFromMembership) {
+                return;
             }
 
             toast.success(isEdit ? "تم تحديث المنتج" : "تمت إضافة المنتج");
@@ -598,12 +636,54 @@ export default function AdminProductForm() {
         }
     };
 
-    return (
-        !hasValidScope ? (
+    if (!hasValidScope) {
+        return (
             <div className="rounded-xl border border-dashed border-border bg-card p-6 text-center text-muted-foreground">
                 لا يمكن تحديد نطاق التاجر لهذا المستخدم حالياً.
             </div>
-        ) : (
+        );
+    }
+
+    if (isEdit && isProductLoading) {
+        return (
+            <div className="space-y-6 max-w-5xl mx-auto p-4 animate-pulse">
+                <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-muted" />
+                    <div className="h-8 w-48 rounded bg-muted" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="md:col-span-2 space-y-6">
+                        <div className="h-64 rounded-xl bg-muted/60" />
+                        <div className="h-64 rounded-xl bg-muted/60" />
+                    </div>
+                    <div className="space-y-6">
+                        <div className="h-48 rounded-xl bg-muted/60" />
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (isEdit && isProductError) {
+        return (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center text-foreground max-w-2xl mx-auto mt-8">
+                <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-3" />
+                <p className="text-base font-semibold">تعذر تحميل بيانات المنتج أو ليس لديك صلاحية الوصول إليه.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                    تأكد من وجود المنتج وتبعيته للمتجر الحالي، أو عد إلى قائمة المنتجات.
+                </p>
+                <Button
+                    variant="outline"
+                    className="mt-4"
+                    onClick={() => navigate(isMerchantUser ? "/merchant/products" : "/admin/products")}
+                >
+                    العودة للمنتجات
+                </Button>
+            </div>
+        );
+    }
+
+    return (
         <form onSubmit={handleSubmit} className="space-y-6 max-w-5xl mx-auto">
             <div className="flex items-center gap-4">
                 <Button
@@ -644,6 +724,7 @@ export default function AdminProductForm() {
                 </div>
             ) : null}
 
+            <fieldset disabled={!canManageCatalog} className="contents">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="md:col-span-2 space-y-6">
                     <Card>
@@ -880,19 +961,21 @@ export default function AdminProductForm() {
                                                 </Button>
                                             ) : null}
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => removeImage(idx)}
-                                            className="absolute top-1 right-1 bg-destructive text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <X size={14} />
-                                        </button>
+                                        {canManageCatalog ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => removeImage(idx)}
+                                                className="absolute top-1 right-1 bg-destructive text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        ) : null}
                                     </div>
                                 ))}
-                                <label className="aspect-square border-2 border-dashed rounded flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-muted/50 transition-colors">
+                                <label className={`aspect-square border-2 border-dashed rounded flex flex-col items-center justify-center gap-2 ${canManageCatalog ? "cursor-pointer hover:bg-muted/50" : "cursor-not-allowed opacity-60"} transition-colors`}>
                                     <Upload className="text-muted-foreground" size={24} />
                                     <span className="text-xs text-muted-foreground">رفع صورة</span>
-                                    <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={loading} />
+                                    <input type="file" className="hidden" accept="image/*" onChange={handleUpload} disabled={loading || !canManageCatalog} />
                                 </label>
                             </div>
                             <p className="text-xs text-muted-foreground">ملاحظة: الصورة الأولى ستكون الصورة الرئيسية للمنتج</p>
@@ -1316,10 +1399,10 @@ export default function AdminProductForm() {
                                             placeholder="https://..."
                                             dir="ltr"
                                         />
-                                        <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs hover:bg-muted/40">
+                                        <label className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-xs ${canManageCatalog ? "cursor-pointer hover:bg-muted/40" : "cursor-not-allowed opacity-60"}`}>
                                             <Upload size={14} />
                                             رفع صورة خاصة
-                                            <input type="file" className="hidden" accept="image/*" onChange={handlePromoImageUpload} disabled={loading} />
+                                            <input type="file" className="hidden" accept="image/*" onChange={handlePromoImageUpload} disabled={loading || !canManageCatalog} />
                                         </label>
                                         <p className="text-[10px] text-muted-foreground">
                                             ملاحظة التصميم: استخدم صورة بنسبة تقريبية 7:3 — المقاس الموصى به 1400x600 بكسل.
@@ -1343,7 +1426,7 @@ export default function AdminProductForm() {
                     </Card>
                 </div>
             </div>
+            </fieldset>
         </form>
-        )
     );
 }
