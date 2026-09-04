@@ -3,17 +3,13 @@
 ## Status
 
 ```text
-PHASE_3J_MERGED
-PR_30_CLOSED
-PR_30_SOURCE_HEAD_520AF33
-PR_30_MERGE_SHA_0A55B36
-MAIN_CI_PASS
-NATIVE_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-RENDER_DEPLOYMENT_STATE_UNVERIFIED
+PHASE_3L_SMOKE_TEST_PASS
+STOREFRONT_PURCHASE_JOURNEY_VERIFIED
+TEST_ORDER_DUK_260904_0144_CREATED
+SINGLE_MERCHANT_AUTHORITY_VERIFIED
+NO_CODE_MUTATION
 NO_DB_MIGRATION
-NO_LIVE_DB_MUTATION
+NO_PATCH_REQUIRED
 READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
@@ -21,11 +17,30 @@ READY_FOR_NEXT_DEVELOPMENT_PHASE
 
 ## Active Implementation Phase
 
-- None (Phase 3J merged and closed; ready for next phase planning).
+- None (Phase 3L Storefront Purchase Journey Smoke Test completed and verified; ready for next phase planning).
 
 ---
 
 ## Preceding Governance / Merged Phases
+
+### Phase 3L: Customer Storefront Purchase Journey Smoke Test
+- **Task:** `DILMART-PHASE-3L-STOREFRONT-PURCHASE-JOURNEY-SMOKE-TEST-001`
+- **Reference Doc:** [`DILMART_PHASE_3L_STOREFRONT_PURCHASE_JOURNEY_SMOKE_TEST.md`](file:///d:/DilMart/governance/phases/DILMART_PHASE_3L_STOREFRONT_PURCHASE_JOURNEY_SMOKE_TEST.md)
+- **Target Environment:** `DilMart-Store` (`ztplxqlthuqkuktbznbo`)
+- **Target Merchant:** `46371607-ba4c-4fd2-bab4-8a6bd9371477` (`DilMart Store`)
+- **Test Order:** `DUK-260904-0144` (`id: b205c5fc-b07c-4479-b5d1-fbeedcdeba98`)
+- **Product Tested:** أداة جيب متعددة الوظائف قابلة للطي (11 في 1) (`SKU: DIL-LIFE-006`, Quantity: 2, Total: 35,000 IQD)
+- **Scope Verified:**
+  - Category discovery and image rendering across all 7 main categories.
+  - Catalog listing, product detail page, and stock availability.
+  - Dynamic cart quantity adjustment and price recalculation.
+  - Checkout form submission via Cash on Delivery with governorate delivery fee calculation.
+  - Automatic inventory decrement (50 -> 48).
+  - Merchant notification generation (`[new_order]` for merchant `46371607-ba4c-4fd2-bab4-8a6bd9371477`).
+  - Scoped visibility in Merchant Portal (`/merchant/orders`) and Admin Portal (`/admin/orders`).
+- **Patch Required:** None (`NO_PATCH_REQUIRED`).
+- **Database Status:** 0 migrations, order persisted for audit.
+
 
 ### Phase 3J: Merchant Product Create/Edit Form Multi-Store Mutation Authority
 - **Task:** `DILMART-PHASE-3J-MERCHANT-PRODUCT-FORM-MULTI-STORE-AUTHORITY-001`
