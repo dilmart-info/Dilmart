@@ -29,8 +29,8 @@ Phase 3J resolves these vulnerabilities through:
    - In `products.service.ts`:
      - `getProductById`: For merchant roles, requires explicit `merchant_id`, verifies actor membership and active store status, scopes product lookup to `merchant_id`, and returns HTTP 403 Forbidden if not found in scope.
      - `createProduct`: Strictly rejects `merchant_staff` (HTTP 403 Forbidden), requires explicit `merchant_id` in payload, verifies actor membership and active store status, and injects authoritative `merchant_id`.
-     - `updateProduct`: Strictly rejects `merchant_staff` (HTTP 403 Forbidden), requires explicit `merchant_id`, verifies actor membership and active store status, verifies product belongs to merchant (IDOR protection, returning HTTP 403 Forbidden if mismatched), and preserves backward compatibility returning `{ ok: true }`.
-     - `updateProductStatus`: Strictly rejects `merchant_staff` (HTTP 403 Forbidden) and asserts active store authority.
+     - `updateProduct`: Strictly rejects `merchant_staff` (HTTP 403 Forbidden), requires explicit `merchant_id`, verifies actor membership and active store status, verifies product belongs to merchant (IDOR protection, returning HTTP 403 Forbidden if mismatched), and returns canonical `{ ok: true, merchant_id, product_id }` for merchant actor while keeping `{ ok: true }` backward-compatible for platform admin.
+     - `updateProductStatus`: Strictly rejects `merchant_staff` (HTTP 403 Forbidden), asserts active store authority, and returns canonical `{ ok: true, merchant_id, product_id }` for merchant actor.
 2. **Frontend Keyed Workspace Wrapper:**
    - Introduces `src/pages/merchant/ProductForm.tsx` wrapping `AdminProductForm` with `key={`${merchantId}-${id || "new"}`}`.
    - Store switching triggers an instantaneous full component remount, completely resetting dirty form state and preventing cross-store state bleed.
@@ -39,6 +39,7 @@ Phase 3J resolves these vulnerabilities through:
    - In `src/pages/admin/ProductForm.tsx`:
      - Hardens product query with queryKey scoped by `merchantIdFromMembership`.
      - Asserts canonical response ownership: throws `UNAUTHORIZED_CROSS_STORE_PRODUCT` and displays fail-closed error card if product belongs to another store.
+     - Asserts canonical save response: verifies `saveResponse.merchant_id === merchantIdFromMembership` and `saveResponse.product_id === id`. On mismatch or missing response, fails closed without toast, without navigation, and without invalidating cache for wrong store.
      - Disables inputs, buttons, and image uploaders via `<fieldset disabled={!canManageCatalog}>` for `merchant_staff`.
      - Guards async image uploads and submissions against race conditions using `activeMerchantRef`.
 4. **Zero Out-of-Scope Alterations:**
@@ -63,24 +64,26 @@ Phase 3J resolves these vulnerabilities through:
 - `backend/src/modules/products/products.controller.ts`
   - Added `ParseUUIDPipe({ version: "4" })` on `:id` parameter for `@Get(":id")`, `@Post(":id")`, and `@Post(":id/status")`.
 - `backend/src/modules/products/products.service.ts`
-  - Implemented multi-store checks in `getProductById`, `createProduct`, `updateProduct`, and `updateProductStatus`.
+  - Implemented multi-store checks in `getProductById`, `createProduct`, `updateProduct`, and `updateProductStatus` returning canonical `{ ok: true, merchant_id, product_id }` for merchant.
 - `backend/tests/merchant-product-form-multi-store-authority.test.mjs`
-  - 19 discrete tests covering unit + real NestJS HTTP boundary with `ParseUUIDPipe` and roles guard.
+  - 20 discrete tests covering unit + real NestJS HTTP boundary with `ParseUUIDPipe`, canonical responses, and roles guard.
 
 ### Frontend
+- `src/lib/api/products.ts`
+  - Updated `updateProduct` and `updateProductStatus` return signatures.
 - `src/pages/merchant/ProductForm.tsx`
   - Keyed workspace wrapper with loading skeleton and unauthorized empty banner.
 - `src/app/WebBackofficeRoutes.tsx`
   - Switched `/merchant/products/new` and `/merchant/products/:id/edit` to use `MerchantProductForm`.
 - `src/pages/admin/ProductForm.tsx`
-  - Scoped queryKey, canonical ownership assertion, staff read-only fieldset, async race guards.
+  - Scoped queryKey, canonical ownership assertion, canonical save assertion, staff read-only fieldset, async race guards.
 - `src/pages/merchant/ProductForm.test.tsx`
-  - 6 unit tests validating skeleton, empty state, staff read-only, IDOR fail-closed, and edit loading.
+  - 8 unit tests validating skeleton, empty state, staff read-only, IDOR fail-closed, edit loading, and canonical response mismatch fail-closed.
 
 ---
 
 ## 4. Verification Suites
 
-- `node backend/tests/merchant-product-form-multi-store-authority.test.mjs` (19/19 passed)
+- `node backend/tests/merchant-product-form-multi-store-authority.test.mjs` (20/20 passed)
 - `npm --prefix backend test` (292/292 passed)
-- `npx vitest run src/pages/merchant/ProductForm.test.tsx` (6/6 passed)
+- `npx vitest run src/pages/merchant/ProductForm.test.tsx` (8/8 passed)

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -587,17 +588,30 @@ export default function AdminProductForm() {
             if (isMerchantUser && activeMerchantRef.current !== merchantIdFromMembership) {
                 return;
             }
+            let saveResponse: { ok?: boolean; merchant_id?: string; product_id?: string; id?: string } | null = null;
             if (isEdit) {
                 if (!id) throw new Error("Missing product id");
-                await apiClient.updateProduct(id, scopedPayload as Record<string, unknown>, {
+                saveResponse = await apiClient.updateProduct(id, scopedPayload as Record<string, unknown>, {
                     merchant_id: scope.kind === "merchant" ? scope.merchantId : undefined,
                 });
             } else {
-                await apiClient.createProduct(scopedPayload as Record<string, unknown>);
+                saveResponse = await apiClient.createProduct(scopedPayload as Record<string, unknown>);
             }
 
             if (isMerchantUser && activeMerchantRef.current !== merchantIdFromMembership) {
                 return;
+            }
+
+            // Fail-closed canonical assertion for merchant actor
+            if (isMerchantUser) {
+                const resMerchantId = saveResponse?.merchant_id;
+                const resProductId = saveResponse?.product_id ?? saveResponse?.id;
+                if (!resMerchantId || resMerchantId !== merchantIdFromMembership) {
+                    throw new Error("CANONICAL_MERCHANT_ID_MISMATCH");
+                }
+                if (isEdit && resProductId && resProductId !== id) {
+                    throw new Error("CANONICAL_PRODUCT_ID_MISMATCH");
+                }
             }
 
             toast.success(isEdit ? "تم تحديث المنتج" : "تمت إضافة المنتج");
@@ -614,7 +628,9 @@ export default function AdminProductForm() {
             }
         } catch (error: any) {
             const message = String(error?.message ?? "");
-            if (message.includes("PRODUCT_NOT_READY")) {
+            if (message.includes("CANONICAL_MERCHANT_ID_MISMATCH") || message.includes("CANONICAL_PRODUCT_ID_MISMATCH")) {
+                toast.error("فشل تأكيد استجابة المتجر المعتمدة. تم إيقاف العملية للحفاظ على عزل البيانات.");
+            } else if (message.includes("PRODUCT_NOT_READY")) {
                 toast.error("لا يمكن حفظ المنتج كمنتج نشط قبل استكمال الجاهزية.");
             } else if (message.includes("PRODUCT_SLUG_EXISTS")) {
                 toast.error("الرابط (slug) مستخدم مسبقًا لهذا التاجر.");

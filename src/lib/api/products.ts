@@ -31,7 +31,7 @@ export const productsApi = {
     const params = new URLSearchParams();
     if (scope?.merchant_id) params.set("merchant_id", scope.merchant_id);
     const suffix = params.size > 0 ? `?${params.toString()}` : "";
-    return request<{ ok: boolean }>(`/products/${id}${suffix}`, "POST", payload);
+    return request<{ ok: boolean; merchant_id?: string; product_id?: string }>(`/products/${id}${suffix}`, "POST", payload);
   },
 
   listScopedProducts(payload?: {
@@ -54,7 +54,7 @@ export const productsApi = {
   },
 
   updateProductStatus(id: string, payload: { is_active: boolean; merchant_id?: string }) {
-    return request<{ ok: boolean }>(`/products/${id}/status`, "POST", payload);
+    return request<{ ok: boolean; merchant_id?: string; product_id?: string }>(`/products/${id}/status`, "POST", payload);
   },
 
   getCategoriesAdminList() {

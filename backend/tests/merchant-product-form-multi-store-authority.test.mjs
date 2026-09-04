@@ -330,7 +330,7 @@ test("10. Cross-Store create IDOR: Store A Owner cannot create product for Store
   );
 });
 
-test("11. Store A Owner updates product with canonical response", async () => {
+test("11. Store A Owner updates product with canonical response containing merchant_id and product_id", async () => {
   const { productsService } = makeHarness();
   const res = await productsService.updateProduct(
     PROD_A_1,
@@ -341,7 +341,7 @@ test("11. Store A Owner updates product with canonical response", async () => {
       actor_id: USER_STORE_A_OWNER,
     }
   );
-  assert.deepEqual(res, { ok: true });
+  assert.deepEqual(res, { ok: true, merchant_id: STORE_A, product_id: PROD_A_1 });
 });
 
 test("12. Store A Staff cannot update products (403 Forbidden)", async () => {
@@ -390,6 +390,17 @@ test("14. updateProductStatus rejects merchant staff with 403", async () => {
       }),
     (err) => err instanceof ForbiddenException && err.message.includes("Staff role has read-only access to catalog")
   );
+});
+
+test("14b. Store A Owner updates product status with canonical response containing merchant_id and product_id", async () => {
+  const { productsService } = makeHarness();
+  const res = await productsService.updateProductStatus(PROD_A_1, {
+    is_active: true,
+    merchant_id: STORE_A,
+    actor_role: "merchant_owner",
+    actor_id: USER_STORE_A_OWNER,
+  });
+  assert.deepEqual(res, { ok: true, merchant_id: STORE_A, product_id: PROD_A_1 });
 });
 
 // ─── Real NestJS HTTP Boundary / Pipe Tests ─────────────────────────────────────

@@ -771,6 +771,13 @@ export class ProductsService {
     if (resolvedMerchantId) req = req.eq("merchant_id", resolvedMerchantId);
     const { error } = await req;
     if (error) throw error;
+    if (this.isMerchantRole(query.actor_role) && (resolvedMerchantId || targetMerchantId)) {
+      return {
+        ok: true,
+        merchant_id: resolvedMerchantId || targetMerchantId,
+        product_id: id,
+      };
+    }
     return { ok: true };
   }
 
@@ -822,6 +829,13 @@ export class ProductsService {
     if (resolvedMerchantId) req = req.eq("merchant_id", resolvedMerchantId);
     const { error } = await req;
     if (error) throw error;
+    if (this.isMerchantRole(payload.actor_role) && resolvedMerchantId) {
+      return {
+        ok: true,
+        merchant_id: resolvedMerchantId,
+        product_id: id,
+      };
+    }
     return { ok: true };
   }
 }

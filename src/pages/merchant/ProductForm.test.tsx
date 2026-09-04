@@ -5,13 +5,13 @@ import { MemoryRouter, Routes, Route } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import MerchantProductForm from "./ProductForm";
 
-const { mockCurrentMerchant, mockAuth, mockGetProductById, mockGetCategoriesAdminList, mockGetActiveMerchants } = vi.hoisted(() => ({
+const { mockCurrentMerchant, mockAuth, mockGetProductById, mockGetCategoriesAdminList, mockGetActiveMerchants, mockCreateProduct, mockUpdateProduct, mockToast } = vi.hoisted(() => ({
   mockCurrentMerchant: {
     data: {
       merchant_id: "m-store-1",
       role: "merchant_owner",
       merchants: { id: "m-store-1", display_name: "متجر الفرات", status: "active" },
-    } as any,
+    } as { merchant_id: string; role: string; merchants: { id: string; display_name: string; status: string } } | null,
     isLoading: false,
   },
   mockAuth: {
@@ -22,6 +22,12 @@ const { mockCurrentMerchant, mockAuth, mockGetProductById, mockGetCategoriesAdmi
   mockGetProductById: vi.fn(),
   mockGetCategoriesAdminList: vi.fn(),
   mockGetActiveMerchants: vi.fn(),
+  mockCreateProduct: vi.fn(),
+  mockUpdateProduct: vi.fn(),
+  mockToast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
 }));
 
 if (typeof global.ResizeObserver === "undefined") {
@@ -31,6 +37,10 @@ if (typeof global.ResizeObserver === "undefined") {
     disconnect() {}
   };
 }
+
+vi.mock("sonner", () => ({
+  toast: mockToast,
+}));
 
 vi.mock("@/hooks/use-current-merchant", () => ({
   useCurrentMerchant: () => mockCurrentMerchant,
@@ -49,8 +59,8 @@ vi.mock("@/lib/api-client", async (importOriginal) => {
       getProductById: (...args: unknown[]) => mockGetProductById(...args),
       getCategoriesAdminList: (...args: unknown[]) => mockGetCategoriesAdminList(...args),
       getActiveMerchants: (...args: unknown[]) => mockGetActiveMerchants(...args),
-      createProduct: vi.fn().mockResolvedValue({ id: "prod-new", merchant_id: "m-store-1" }),
-      updateProduct: vi.fn().mockResolvedValue({ ok: true }),
+      createProduct: (...args: unknown[]) => mockCreateProduct(...args),
+      updateProduct: (...args: unknown[]) => mockUpdateProduct(...args),
     },
   };
 });
@@ -86,6 +96,10 @@ describe("MerchantProductForm Multi-Store Authority", () => {
       { id: "cat-1", name: "ماكينات حلاقة", is_active: true },
     ]);
     mockGetActiveMerchants.mockResolvedValue([]);
+    mockCreateProduct.mockResolvedValue({ id: "prod-new", merchant_id: "m-store-1" });
+    mockUpdateProduct.mockResolvedValue({ ok: true, merchant_id: "m-store-1", product_id: "prod-my" });
+    mockToast.success.mockReset();
+    mockToast.error.mockReset();
   });
 
   it("renders loading skeleton when membership is loading", () => {
@@ -167,5 +181,81 @@ describe("MerchantProductForm Multi-Store Authority", () => {
     expect(mockGetProductById).toHaveBeenCalledWith("prod-my", {
       merchant_id: "m-store-1",
     });
+  });
+
+  it("fails closed when update response merchant_id mismatches current active merchant", async () => {
+    mockGetProductById.mockResolvedValue({
+      id: "prod-my",
+      name: "ماكينة ديلكاست الاحترافية",
+      slug: "delcast-pro",
+      price: 45000,
+      stock: 10,
+      category_id: "cat-1",
+      merchant_id: "m-store-1",
+      is_active: false,
+      description: "ماكينة ممتازة ومجربة لأكثر من عام",
+    });
+    mockUpdateProduct.mockResolvedValue({
+      ok: true,
+      merchant_id: "m-foreign-store",
+      product_id: "prod-my",
+    });
+
+    renderForm("/merchant/products/prod-my/edit");
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "تعديل المنتج" })).toBeInTheDocument();
+    });
+
+    const formElement = screen.getByRole("heading", { name: "تعديل المنتج" }).closest("form");
+    if (!formElement) throw new Error("Form not found");
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.submit(formElement);
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(
+        expect.stringContaining("فشل تأكيد استجابة المتجر المعتمدة")
+      );
+    });
+
+    expect(mockToast.success).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when update response product_id mismatches current editing product", async () => {
+    mockGetProductById.mockResolvedValue({
+      id: "prod-my",
+      name: "ماكينة ديلكاست الاحترافية",
+      slug: "delcast-pro",
+      price: 45000,
+      stock: 10,
+      category_id: "cat-1",
+      merchant_id: "m-store-1",
+      is_active: false,
+      description: "ماكينة ممتازة ومجربة لأكثر من عام",
+    });
+    mockUpdateProduct.mockResolvedValue({
+      ok: true,
+      merchant_id: "m-store-1",
+      product_id: "prod-different",
+    });
+
+    renderForm("/merchant/products/prod-my/edit");
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: "تعديل المنتج" })).toBeInTheDocument();
+    });
+
+    const formElement = screen.getByRole("heading", { name: "تعديل المنتج" }).closest("form");
+    if (!formElement) throw new Error("Form not found");
+    const { fireEvent } = await import("@testing-library/react");
+    fireEvent.submit(formElement);
+
+    await waitFor(() => {
+      expect(mockToast.error).toHaveBeenCalledWith(
+        expect.stringContaining("فشل تأكيد استجابة المتجر المعتمدة")
+      );
+    });
+
+    expect(mockToast.success).not.toHaveBeenCalled();
   });
 });
