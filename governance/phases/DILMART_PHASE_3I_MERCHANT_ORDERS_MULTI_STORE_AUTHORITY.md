@@ -6,8 +6,25 @@
 Phase Name: DILMART-PHASE-3I-MERCHANT-ORDERS-MULTI-STORE-AUTHORITY-001
 Branch: frontend/dilmart-merchant-orders-authority
 Base SHA: 0c2ca589390c57412982ecd71f3c1302a7724075
-Status: IMPLEMENTATION_COMPLETE_DRAFT_PR
+Source HEAD: 9d561b04eb1f32b8b1cd187b18090fa27fc922cb
+Merge SHA: df7789eb899c23f636ddbcfd94edf53b11aa8e60
+PR: #28 (Merged & Closed)
+Status: MERGED_AND_CLOSED
+Post-Merge Governance Branch: governance/pr28-post-merge-phase3i-closure
 ```
+
+---
+
+## Post-Merge Verification Evidence
+
+- **Implementation PR:** [#28](https://github.com/dilmart-info/Dilmart/pull/28) (Merged & Closed via standard squash merge without `--admin`)
+- **Resulting Main SHA:** `df7789eb899c23f636ddbcfd94edf53b11aa8e60`
+- **Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`):** run `33864534387` — SUCCESS (14m 4s)
+- **Native CI (`Native Foundation CI`):** run `33864534384` — SUCCESS (10m 4s; Android 4m 19s, iOS 10m 0s)
+- **Netlify Production Deploy Gate:** runs `33865323259` and `33865631431` — SUCCESS (7s-12s)
+- **Netlify Publish:** SKIPPED (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled, `should_deploy=false`)
+- **Render Backend Deployment:** UNVERIFIED (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no official provider telemetry proving deployed commit)
+- **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
 
@@ -22,9 +39,9 @@ Phase 3I resolves these vulnerabilities through:
 2. **Canonical Envelope Contract:** Strictly packages the orders response in `{ merchant_id, orders, total, limit, offset }`, guaranteeing the caller always receives verified store association and pagination metadata.
 3. **Fail-Closed Store Membership Authority:** Strictly validates caller membership against the specified merchant. Any cross-store IDOR attempt, unauthenticated access, inactive store access, or customer role access is immediately rejected with HTTP 403 Forbidden.
 4. **No First-Store Fallback:** Enforces explicit `merchant_id` requirement in the backend orders service (`OrdersService.listOrdersForMerchant`), throwing `ForbiddenException("Merchant id is required.")` if absent.
-5. **Strict Customer PII Projection:** Proactively sanitizes the merchant orders list. Sensitive customer phone numbers and full street addresses are omitted from the list projection, returning only operational fields (order number, status, governorate, totals, items count, decision status).
+5. **Strict Customer PII Projection:** Proactively sanitizes the merchant orders list. Sensitive customer phone numbers, full street addresses, and `merchant_notes` are completely omitted from the list projection, returning only operational fields (order number, status, governorate, totals, items count, decision status).
 6. **Frontend Keyed Workspace:** Refactors `src/pages/merchant/Orders.tsx` into `<MerchantOrdersWorkspace key={merchantId} merchantId={merchantId} />`, ensuring complete state unmount, instant filter reset, and zero cross-store data leakage upon switching active stores.
-7. **Strict Fail-Closed Frontend Parser:** Validates `merchant_id` consistency, non-negative amounts and integers, and actively throws security violations if any forbidden customer PII is detected in the response.
+7. **Strict Fail-Closed Frontend Parser:** Validates `merchant_id` consistency, non-negative amounts and integers, and actively throws security violations if any forbidden customer PII or `merchant_notes` are detected in the response.
 8. **Truthful UI States:** Introduces dedicated loading skeleton, retryable error banner with exact failure message, and clean empty states.
 
 ---
@@ -34,7 +51,6 @@ Phase 3I resolves these vulnerabilities through:
 - **No DB Migrations:** Zero schema alterations.
 - **No Live DB Mutations:** All operations use existing database schema and mock/testing boundaries.
 - **No Deployments:** Deferral of production deployment until governance sign-off.
-- **Draft PR Only:** PR opened in draft status without merging.
 - **Order Details Out of Scope:** Order item mutation and deep order details (`/merchant/orders/:id`) remain sealed from Phase 3B.
 
 ---
