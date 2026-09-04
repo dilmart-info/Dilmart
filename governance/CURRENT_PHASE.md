@@ -3,47 +3,60 @@
 ## Status
 
 ```text
-PHASE_3G_FINAL_CORRECTION
-TASK_ID_DILMART_PHASE_3G_MERCHANT_SETTINGS_MULTI_STORE_MUTATION_AUTHORITY_001
-PR_24_DRAFT_OPEN
-ALL_BACKEND_TESTS_PASS (292/292)
-ALL_FRONTEND_TESTS_PASS (1023/1023)
-CI_GUARDS_PASS (99/99)
-GRANULAR_BACKEND_SUITE_PASS (33/33)
-EXTENDED_FRONTEND_SWITCH_PASS (37/37)
-REAL_HTTP_BOUNDARY_TEST_PASS
+PHASE_3G_MERGED
+PR_24_CLOSED
+PR_24_SOURCE_HEAD_F8524B0
+PR_24_MERGE_SHA_3BAD5F9
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
 NETLIFY_PUBLISH_SKIPPED
 RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
 NO_LIVE_DB_MUTATION
-DRAFT_PR_ONLY
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
 ---
 
 ## Active Implementation Phase
 
+### Repository Status: Ready for Next Development Phase
+- **Latest Sealed Phase:** Phase 3G (Merchant Settings Multi-Store Mutation Authority & Push Device Isolation)
+- **Implementation PR:** [#24](https://github.com/dilmart-info/Dilmart/pull/24) (Merged & Closed)
+- **Approved Source HEAD:** `f8524b071e856a5b710a5fa03829e11d1d5b2c3f`
+- **Merge SHA:** `3bad5f94295c75e1837071f0935c49b83e50385e`
+- **Post-Merge Verification:** All CI runs passed on `main`, Netlify publish skipped, Render unverified, zero live database mutations.
+
+---
+
+## Preceding Governance / Merged Phases
+
 ### Phase 3G: Merchant Settings Multi-Store Mutation Authority & Push Device Isolation
 - **Task:** `DILMART-PHASE-3G-MERCHANT-SETTINGS-MULTI-STORE-MUTATION-AUTHORITY-001`
-- **Feature Branch:** `frontend/dilmart-merchant-settings-authority`
-- **Base SHA:** `ae81a2a1dc8fd3da21636627493979cb50b1bbdc`
-- **Final Targeted Correction Scope Delivered:**
-  - Hardened `parseCanonicalSettingsResponse`: enforces presence of all canonical keys, rejects undefined as null, validates integer sound bounds and logo_url protocol. When settings_exists is false, strictly requires hasOwnProperty and explicit literal null settings.
-  - Hardened `parseCanonicalRegisterPushResponse`: enforces explicit device_label and user_agent types, validates strict ISO-8601 timestamp format, rejects general non-ISO dates, and rejects sensitive field leakage.
-  - Hardened `parseCanonicalTestPushResponse`: strictly asserts id, ok, and string error type when error property is present (rejects null, undefined, numbers, objects).
-  - Added strict `parseCanonicalReadinessResponse`: validates merchant_id, is_ready boolean, non-negative integer scores, passed_checks <= total_checks, and integrated into Settings queryFn.
-  - Added discrete deferred race tests covering late readiness success, late readiness rejection, late registration success, late registration rejection, late delete success, late delete rejection, late test success, and late test rejection.
-  - Decoupled push device registration from store global settings patch (device registration NEVER mutates global store settings).
-  - Unified `isCurrentOperation(targetMerchantId, generation)` race guards across all async await boundaries (settings, save, logo upload, push registration, test, delete).
-  - Explicit settings endpoints (`GET /merchants/:id/settings` and `PATCH /merchants/:id/settings`).
-  - Strict UUID and DTO validation with bounds.
-  - Non-existent row treated as valid state (`settings_exists: false, settings: null`).
-  - Canonical contract `{ merchant_id, settings_exists, settings }` on read and mutation.
-  - Legacy routes locked to platform admins only; merchant roles rejected with HTTP 403.
-  - Explicit push endpoints (`GET`, `POST`, `POST /test`, `DELETE` on `/merchants/:id/push-subscriptions`).
-  - Safe push device projections omitting secret keys and internal user IDs.
-  - Staff device isolation and non-disclosing 404 for foreign device access.
-  - Product image upload shared endpoint preserved; logo upload hidden from staff in Settings UI.
+- **PR:** [#24](https://github.com/dilmart-info/Dilmart/pull/24) (Merged & Closed)
+- **Source HEAD:** `f8524b071e856a5b710a5fa03829e11d1d5b2c3f`
+- **Merge SHA:** `3bad5f94295c75e1837071f0935c49b83e50385e`
+- **Post-Merge Governance Branch:** `governance/pr24-post-merge-phase3g-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33810907067` — SUCCESS (6m 13s)
+  - Native CI (`Native Foundation CI`): run `33810907084` — SUCCESS (5m 39s)
+  - Netlify Production Deploy Gate runs: `33811394027` and `33811444347` — SUCCESS
+  - Netlify publish: SKIPPED (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled, `should_deploy=false`)
+  - Render deployment state: UNVERIFIED (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations.
+- **Scope Delivered:**
+  - Explicit settings endpoints (`GET /merchants/:id/settings` and `PATCH /merchants/:id/settings`) with strict UUID and DTO bounds.
+  - Canonical settings contract `{ merchant_id, settings_exists, settings }` on read and mutation. When `settings_exists: false`, strictly requires `hasOwnProperty` and explicit literal `null` settings.
+  - Legacy settings lockdown: `GET /merchants/settings` and `POST /merchants/settings` restricted to admin/super_admin only; merchant roles rejected with HTTP 403.
+  - Explicit push endpoints (`GET`, `POST`, `POST /test`, `DELETE` on `/merchants/:id/push-subscriptions`) with safe projections (no secrets or user_id leaks).
+  - Strict ISO-8601 timestamps: `created_at` and `updated_at` must adhere to ISO-8601 format; general parsable non-ISO strings are rejected.
+  - Typed push error assertion: when `error` property is present in test push response, strictly asserts non-null, non-undefined string type.
+  - Staff device authority: Staff can only register, view, test, and delete their own device; foreign device access returns non-disclosing 404.
+  - Decoupled push registration: device registration never mutates global store settings.
+  - Fail-closed canonical parsers: strict validation on settings, push devices, registration, delete, test, and readiness payloads.
+  - Unified race guards (`isCurrentOperation`): protects all async await boundaries against cross-store data/toast leakage.
+  - Preserved shared product image upload; logo upload UI hidden from Staff in Settings.
   - Frontend Keyed Workspace `<MerchantSettingsWorkspace key={merchantId} ... />` with synchronous reset and dirty form protection.
   - Truthful independent loading/error/empty UI states.
 - **Verification Suites:**
@@ -54,10 +67,6 @@ DRAFT_PR_ONLY
   - Full backend suite: 292 tests passed.
   - CI guards: 3 files, 99 tests passed, 0 violations.
 - **Database Status:** 0 migrations applied, 0 live mutations.
-
----
-
-## Preceding Governance / Merged Phases
 
 ### Phase 3F: Merchant Customers Privacy & Multi-Store Authority
 - **Task:** `DILMART-PHASE-3F-MERCHANT-CUSTOMERS-PRIVACY-MULTI-STORE-AUTHORITY-001`
