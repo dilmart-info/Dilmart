@@ -441,4 +441,19 @@ describe("parseCanonicalOrdersResponse — Contract Assertion & Fail-Closed Guar
       /Invalid order total amount at index 0/
     );
   });
+
+  it("fails closed if any order contains merchant_notes as free-text PII risk", () => {
+    const leakNotesPayload = {
+      ...mockOrdersDataA,
+      orders: [
+        {
+          ...mockOrdersDataA.orders[0],
+          merchant_notes: "ملاحظة خاصة بالعميل",
+        },
+      ],
+    };
+    expect(() => parseCanonicalOrdersResponse(leakNotesPayload, "m-123")).toThrow(
+      /Security violation: merchant_notes detected in merchant order summary/
+    );
+  });
 });

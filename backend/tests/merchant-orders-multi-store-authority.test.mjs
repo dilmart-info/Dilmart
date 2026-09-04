@@ -386,6 +386,28 @@ test("8. Strict PII stripping: returned orders never contain customer phone or a
     assert.equal("customer_name" in o, false);
     assert.equal("address" in o, false);
     assert.equal("area" in o, false);
+    assert.equal("merchant_notes" in o, false);
+  }
+});
+
+test("8b. merchant_notes is completely stripped from order summaries even if present in database row", async () => {
+  const { merchantsService } = makeHarness();
+
+  const res = await merchantsService.listMerchantOrders(
+    STORE_A,
+    { actor_role: "merchant_owner", actor_id: USER_STORE_A_OWNER },
+    {},
+  );
+
+  // ord-a-2 has merchant_notes: "تجهيز سريع" in the raw database mock
+  const ordWithNote = res.orders.find((o) => o.id === "ord-a-2");
+  assert.ok(ordWithNote);
+  assert.equal("merchant_notes" in ordWithNote, false);
+  assert.equal(ordWithNote.merchant_notes, undefined);
+
+  for (const o of res.orders) {
+    assert.equal("merchant_notes" in o, false);
+    assert.equal(o.merchant_notes, undefined);
   }
 });
 

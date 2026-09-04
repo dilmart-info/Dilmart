@@ -159,6 +159,9 @@ export function parseCanonicalOrdersResponse(
     if (("shipping_address" in o && o.shipping_address) || ("address" in o && o.address) || ("phone" in o && o.phone)) {
       throw new Error(`Security violation: address or phone PII detected in merchant order summary.`);
     }
+    if ("merchant_notes" in o && o.merchant_notes !== undefined) {
+      throw new Error(`Security violation: merchant_notes detected in merchant order summary.`);
+    }
 
     return {
       id: o.id,
@@ -173,7 +176,6 @@ export function parseCanonicalOrdersResponse(
       delivery_cost: deliveryCost,
       total: totalAmount,
       payment_method: typeof o.payment_method === "string" ? o.payment_method : null,
-      merchant_notes: typeof o.merchant_notes === "string" ? o.merchant_notes : null,
       merchant_decision_status:
         typeof o.merchant_decision_status === "string" ? o.merchant_decision_status : null,
       governorate: typeof o.governorate === "string" ? o.governorate : null,

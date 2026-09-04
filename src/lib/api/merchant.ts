@@ -49,7 +49,6 @@ export interface CanonicalMerchantOrderSummary {
   delivery_cost: number;
   total: number;
   payment_method: string | null;
-  merchant_notes: string | null;
   merchant_decision_status: string | null;
   governorate: string | null;
 }

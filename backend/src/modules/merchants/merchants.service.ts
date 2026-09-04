@@ -1594,7 +1594,7 @@ export class MerchantsService {
     let req = this.supabaseAdmin.client
       .from("orders")
       .select(
-        "id, order_number, merchant_id, status, channel, created_at, updated_at, subtotal, discount, delivery_cost, total, payment_method, merchant_notes, merchant_decision_status, governorates(name)",
+        "id, order_number, merchant_id, status, channel, created_at, updated_at, subtotal, discount, delivery_cost, total, payment_method, merchant_decision_status, governorates(name)",
         { count: "exact" },
       )
       .eq("merchant_id", resolvedMerchantId)
@@ -1638,7 +1638,6 @@ export class MerchantsService {
       delivery_cost: Number(row.delivery_cost ?? 0),
       total: Number(row.total ?? 0),
       payment_method: row.payment_method ? String(row.payment_method) : null,
-      merchant_notes: row.merchant_notes ? String(row.merchant_notes) : null,
       merchant_decision_status: row.merchant_decision_status ? String(row.merchant_decision_status) : null,
       governorate: row.governorates?.name ? String(row.governorates.name) : null,
     }));

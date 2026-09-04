@@ -6,8 +6,8 @@
 PHASE_3I_IMPLEMENTATION_DRAFT_PR
 BRANCH_FRONTEND_DILMART_MERCHANT_ORDERS_AUTHORITY
 BASE_MAIN_SHA_0C2CA589390C57412982ECD71F3C1302A7724075
-BACKEND_TESTS_PASS_16_OF_16
-FRONTEND_TESTS_PASS_16_OF_16
+BACKEND_TESTS_PASS_17_OF_17
+FRONTEND_TESTS_PASS_17_OF_17
 CI_GUARDS_PASS_99_OF_99
 ARCH_GUARD_PASS_0_VIOLATIONS
 NO_DB_MIGRATION
@@ -31,13 +31,13 @@ DRAFT_PR_ONLY
   - Canonical Envelope: Always returns `{ merchant_id, orders, total, limit, offset }`.
   - Strict Authorization: Fail-closed verification of caller membership (`merchant_owner`, `merchant_manager`, `merchant_staff`) against target store; cross-store IDOR returns HTTP 403 Forbidden.
   - Legacy Fallback Elimination: `listOrdersForMerchant` requires explicit `merchant_id`; silent fallback to first store completely eliminated.
-  - PII Protection: Sensitive customer phone number and street address omitted from merchant orders list projection.
+  - PII Protection: Sensitive customer phone number, street address, and merchant_notes omitted from merchant orders list projection.
   - Frontend Keyed Workspace: `<MerchantOrdersWorkspace key={merchantId} merchantId={merchantId} />` unmounts and isolates state on store switch.
-  - Strict Fail-Closed Parser: `parseCanonicalOrdersResponse` asserts store ID match, non-negative amounts/counts, and rejects forbidden customer PII.
+  - Strict Fail-Closed Parser: `parseCanonicalOrdersResponse` asserts store ID match, non-negative amounts/counts, and rejects forbidden customer PII including merchant_notes.
   - Truthful UI States: Dedicated loading skeleton, retryable error banner, and truthful empty states.
 - **Verification Suites:**
-  - `backend/tests/merchant-orders-multi-store-authority.test.mjs`: 16/16 tests passing (including real HTTP boundary).
-  - `src/pages/merchant/Orders.test.tsx`: 16/16 tests passing.
+  - `backend/tests/merchant-orders-multi-store-authority.test.mjs`: 17/17 tests passing (including real HTTP boundary).
+  - `src/pages/merchant/Orders.test.tsx`: 17/17 tests passing.
   - `scripts/ci`: 99/99 guard tests passing.
   - Architecture Guard: 0 violations.
 - **Database Status:** 0 migrations applied, 0 live mutations.

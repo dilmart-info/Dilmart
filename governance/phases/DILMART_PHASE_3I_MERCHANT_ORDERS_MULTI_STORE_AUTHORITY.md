@@ -72,10 +72,10 @@ Phase 3I resolves these vulnerabilities through:
 ### Backend Test Suite
 ```text
 node backend/tests/merchant-orders-multi-store-authority.test.mjs
-# tests 16
-# pass 16
+# tests 17
+# pass 17
 # fail 0
-# duration_ms: ~326ms
+# duration_ms: ~320ms
 ```
 - Subtest 1: Store A Owner retrieves Store A orders with canonical envelope
 - Subtest 2: Store A Manager and Staff can read Store A orders
@@ -85,6 +85,7 @@ node backend/tests/merchant-orders-multi-store-authority.test.mjs
 - Subtest 6: Customer role cannot access merchant orders
 - Subtest 7: Platform admin can read any merchant orders
 - Subtest 8: Strict PII stripping: returned orders never contain customer phone or address
+- Subtest 8b: merchant_notes is completely stripped from order summaries even if present in database row
 - Subtest 9: Filter by status works correctly
 - Subtest 10: Search by order number works correctly
 - Subtest 11: Legacy listOrdersForMerchant rejects missing merchant_id (no silent fallback)
@@ -97,8 +98,8 @@ node backend/tests/merchant-orders-multi-store-authority.test.mjs
 ### Frontend Test Suite
 ```text
 npx vitest run src/pages/merchant/Orders.test.tsx
-# tests 16
-# pass 16
+# tests 17
+# pass 17
 # fail 0
 ```
 - API Runtime contract: `merchantApi.listMerchantOrders` exposed
@@ -117,6 +118,7 @@ npx vitest run src/pages/merchant/Orders.test.tsx
 - Fail-closed: invalid total, limit, offset rejection
 - Fail-closed: forbidden customer PII detection rejection
 - Fail-closed: invalid/negative amounts rejection
+- Fail-closed: rejection of merchant_notes as free-text PII risk
 
 ### Lint & Guards
 - `npx eslint src/pages/merchant/Orders.tsx src/pages/merchant/Orders.test.tsx src/lib/api/merchant.ts` (0 errors)
