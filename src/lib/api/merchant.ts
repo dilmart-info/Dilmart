@@ -1,7 +1,43 @@
 import { authSessionManager } from "@/lib/auth/auth-session-manager";
 import { request, API_BASE_URL } from "@/lib/api-core";
 
+export interface CanonicalMerchantDashboardResponse {
+  merchant_id: string;
+  products: {
+    total: number;
+    active: number;
+    inactive: number;
+    low_stock: number;
+  };
+  orders: {
+    today: number;
+    completed_7d: number;
+    average_order_value_7d: number;
+    revenue_7d: number;
+  };
+  top_products: Array<{
+    product_id: string;
+    name: string;
+    units_sold: number;
+    revenue?: number;
+  }>;
+  low_stock_products: Array<{
+    product_id: string;
+    name: string;
+    stock: number;
+    threshold: number;
+  }>;
+  recent_orders: Array<{
+    id: string;
+    order_number: string;
+    status: string;
+    total: number;
+    created_at: string;
+  }>;
+}
+
 export const merchantApi = {
+
   registerMerchantApplication(payload: {
     email: string;
     password: string;
@@ -203,6 +239,14 @@ export const merchantApi = {
   getMerchantDashboardStats(merchantId: string) {
     return request<{ productsCount: number; ordersCount: number; deliveredRevenue: number }>(`/merchants/${merchantId}/dashboard-stats`, "GET");
   },
+
+  getMerchantDashboard(merchantId: string) {
+    return request<CanonicalMerchantDashboardResponse>(
+      `/merchants/${encodeURIComponent(merchantId)}/dashboard`,
+      "GET",
+    );
+  },
+
 
   getMerchantReadiness(merchantId: string) {
     return request<{

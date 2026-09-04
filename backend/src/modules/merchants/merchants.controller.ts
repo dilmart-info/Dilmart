@@ -124,23 +124,48 @@ export class MerchantsController {
     return this.merchantsService.assignMerchantOwner(id, payload);
   }
 
+  @Get(":id/dashboard")
+  @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
+  getDashboard(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
+    return this.merchantsService.getMyMerchantDashboard(
+      {
+        actor_role: actor?.actorRole,
+        actor_id: actor?.actorId,
+      },
+      id,
+    );
+  }
+
   @Get(":id/dashboard-stats")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
-  getDashboardStats(@Param("id") id: string, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
+  getDashboardStats(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
     return this.merchantsService.getMerchantDashboardStats(id, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
 
   @Get(":id/readiness")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
-  getReadiness(@Param("id") id: string, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
+  getReadiness(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
     return this.merchantsService.getMerchantReadiness(id, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
 
   @Get(":id/performance-scorecard")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
-  getPerformanceScorecard(@Param("id") id: string, @CurrentActor() actor?: { actorRole?: string; actorId?: string }) {
+  getPerformanceScorecard(
+    @Param("id", new ParseUUIDPipe({ version: "4" })) id: string,
+    @CurrentActor() actor?: { actorRole?: string; actorId?: string },
+  ) {
     return this.merchantsService.getMerchantPerformanceScorecard(id, { actor_role: actor?.actorRole, actor_id: actor?.actorId });
   }
+
 
   @Get(":id/finance/summary")
   @Roles("super_admin", "admin", "merchant_owner", "merchant_manager", "merchant_staff")
