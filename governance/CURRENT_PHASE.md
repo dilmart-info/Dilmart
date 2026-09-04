@@ -3,27 +3,58 @@
 ## Status
 
 ```text
-PHASE_3J_ACTIVE_DEVELOPMENT
-BRANCH_FRONTEND_DILMART_MERCHANT_PRODUCT_FORM_AUTHORITY
-BASE_SHA_E8C5152
-TESTS_PASS
-READY_FOR_DRAFT_PULL_REQUEST
+PHASE_3J_MERGED
+PR_30_CLOSED
+PR_30_SOURCE_HEAD_520AF33
+PR_30_MERGE_SHA_0A55B36
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
 NO_LIVE_DB_MUTATION
-NO_DEPLOYMENT
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
 ---
 
 ## Active Implementation Phase
 
+- None (Phase 3J merged and closed; ready for next phase planning).
+
+---
+
+## Preceding Governance / Merged Phases
+
 ### Phase 3J: Merchant Product Create/Edit Form Multi-Store Mutation Authority
-- **Task ID:** `DILMART-PHASE-3J-MERCHANT-PRODUCT-FORM-MULTI-STORE-AUTHORITY-001`
-- **Branch:** `frontend/dilmart-merchant-product-form-authority`
-- **Base SHA:** `e8c5152118a21aebcdad8fbb4d49e2ed23611c05`
-- **Phase Specification:** `governance/phases/DILMART_PHASE_3J_MERCHANT_PRODUCT_FORM_MULTI_STORE_AUTHORITY.md`
+- **Task:** `DILMART-PHASE-3J-MERCHANT-PRODUCT-FORM-MULTI-STORE-AUTHORITY-001`
+- **PR:** [#30](https://github.com/dilmart-info/Dilmart/pull/30) (Merged & Closed)
+- **Source HEAD:** `520af33385567a8a388163732730e195528312f2`
+- **Merge SHA:** `0a55b36aad10477d116cf5cb1e3ddde0c4894b39`
+- **Post-Merge Governance Branch:** `governance/pr30-post-merge-phase3j-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33873413565` — SUCCESS (5m 37s)
+  - Native CI (`Native Foundation CI`): run `33873413586` — SUCCESS (Android 4m 18s, iOS 4m 54s)
+  - Netlify Production Deploy Gate run: `33873899428` — SUCCESS
+  - Netlify publish: SKIPPED (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled, `should_deploy=false`)
+  - Render deployment state: UNVERIFIED (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations.
+- **Scope Delivered:**
+  - Explicit backend route validation with `ParseUUIDPipe({ version: "4" })` on all product ID parameters.
+  - Multi-store fail-closed authority in `products.service.ts`: `getProductById` requires explicit `merchant_id` for merchant roles, validates store membership and active status, scopes product lookup to `merchant_id`, and returns HTTP 403 Forbidden on mismatch.
+  - Role separation: `createProduct`, `updateProduct`, and `updateProductStatus` strictly reject `merchant_staff` with HTTP 403 Forbidden.
+  - Cross-store IDOR rejection: `updateProduct` verifies that the target product belongs to the caller's store before applying modifications, returning HTTP 403 Forbidden on cross-store attempts.
+  - Canonical response contract: `updateProduct` and `updateProductStatus` return canonical `{ ok: true, merchant_id, product_id }` for merchant actors while preserving backward-compatible `{ ok: true }` for admin callers.
+  - Frontend Keyed Workspace `<MerchantProductForm key={`${merchantId}-${id || "new"}`} />` guaranteeing instantaneous remount and state wipe when switching stores.
+  - Frontend fail-closed verification in `AdminProductForm`: asserts returned `merchant_id` matches active merchant, and in edit mode asserts returned `product_id` matches current product ID. Rejects with error toast and aborts navigation/invalidation on mismatch.
+  - Catalog management permissions: disabled inputs, selects, switches, and uploaders via `<fieldset disabled={!canManageCatalog}>` for `merchant_staff`.
+- **Verification Suites:**
+  - `backend/tests/merchant-product-form-multi-store-authority.test.mjs` (20 tests, all pass)
+  - `src/pages/merchant/ProductForm.test.tsx` (8 tests, all pass)
+  - `npm --prefix backend test` (292 tests, all pass)
+  - CI guards: 3 files, 99 tests passed, 0 violations.
 - **Database Status:** 0 migrations applied, 0 live mutations.
-- **Deployment Status:** NOT DEPLOYED.
 
 
 ---
