@@ -381,3 +381,47 @@ export class LegacyMerchantDashboardQueryDto {
   @IsUUID("4")
   merchant_id!: string;
 }
+
+export class ListMerchantOrdersQueryDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  search?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  status?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  merchant_decision_status?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  offset?: number;
+
+  @IsOptional()
+  @IsString()
+  date_from?: string;
+
+  @IsOptional()
+  @IsString()
+  date_to?: string;
+}

@@ -52,6 +52,9 @@ export class OrdersService {
 
   /** Merchant-scoped list — strips all customer contact fields. Paginated + DB search. */
   private async listOrdersForMerchant(params: ListOrdersParams) {
+    if (!params.merchant_id || typeof params.merchant_id !== "string" || !params.merchant_id.trim()) {
+      throw new ForbiddenException("Merchant id is required.");
+    }
     const resolvedMerchantId = await this.scopeResolver.resolveMerchantScope(params.merchant_id, params.actor_role, params.actor_id);
 
     const page = Math.max(1, Math.floor(Number(params.page ?? 1)));

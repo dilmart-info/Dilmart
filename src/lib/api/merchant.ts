@@ -36,6 +36,34 @@ export interface CanonicalMerchantDashboardResponse {
   }>;
 }
 
+export interface CanonicalMerchantOrderSummary {
+  id: string;
+  order_number: string;
+  merchant_id: string;
+  status: string;
+  channel: string | null;
+  created_at: string;
+  updated_at: string;
+  subtotal: number;
+  discount: number;
+  delivery_cost: number;
+  total: number;
+  payment_method: string | null;
+  merchant_decision_status: string | null;
+  governorate: string | null;
+}
+
+export interface CanonicalMerchantOrdersResponse {
+  merchant_id: string;
+  orders: CanonicalMerchantOrderSummary[];
+  total: number;
+  limit: number;
+  offset: number;
+  items?: CanonicalMerchantOrderSummary[];
+  page?: number;
+  hasMore?: boolean;
+}
+
 export const merchantApi = {
 
   registerMerchantApplication(payload: {
@@ -485,5 +513,37 @@ export const merchantApi = {
       total: number;
       hasMore: boolean;
     }>(`/merchants/${encodeURIComponent(merchantId)}/customers${suffix}`, "GET");
+  },
+
+  listMerchantOrders(
+    merchantId: string,
+    payload?: {
+      search?: string;
+      status?: string;
+      merchant_decision_status?: string;
+      page?: number;
+      limit?: number;
+      offset?: number;
+      date_from?: string;
+      date_to?: string;
+    },
+  ) {
+    const params = new URLSearchParams();
+    if (payload?.search) params.set("search", payload.search);
+    if (payload?.status && payload.status !== "all") params.set("status", payload.status);
+    if (payload?.merchant_decision_status && payload.merchant_decision_status !== "all") {
+      params.set("merchant_decision_status", payload.merchant_decision_status);
+    }
+    if (payload?.page) params.set("page", String(payload.page));
+    if (payload?.limit) params.set("limit", String(payload.limit));
+    if (payload?.offset !== undefined) params.set("offset", String(payload.offset));
+    if (payload?.date_from) params.set("date_from", payload.date_from);
+    if (payload?.date_to) params.set("date_to", payload.date_to);
+
+    const suffix = params.size > 0 ? `?${params.toString()}` : "";
+    return request<CanonicalMerchantOrdersResponse>(
+      `/merchants/${encodeURIComponent(merchantId)}/orders${suffix}`,
+      "GET",
+    );
   },
 };

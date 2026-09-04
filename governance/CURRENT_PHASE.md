@@ -3,25 +3,44 @@
 ## Status
 
 ```text
-PHASE_3H_MERGED
-PR_26_CLOSED
-PR_26_SOURCE_HEAD_83A02B9
-PR_26_MERGE_SHA_5CF80A8
-MAIN_CI_PASS
-NATIVE_CI_PASS
-NETLIFY_GATE_PASS
-NETLIFY_PUBLISH_SKIPPED
-RENDER_DEPLOYMENT_STATE_UNVERIFIED
+PHASE_3I_IMPLEMENTATION_DRAFT_PR
+BRANCH_FRONTEND_DILMART_MERCHANT_ORDERS_AUTHORITY
+BASE_MAIN_SHA_0C2CA589390C57412982ECD71F3C1302A7724075
+BACKEND_TESTS_PASS_17_OF_17
+FRONTEND_TESTS_PASS_17_OF_17
+CI_GUARDS_PASS_99_OF_99
+ARCH_GUARD_PASS_0_VIOLATIONS
 NO_DB_MIGRATION
 NO_LIVE_DB_MUTATION
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+NO_DEPLOY
+DRAFT_PR_ONLY
 ```
 
 ---
 
 ## Active Implementation Phase
 
-None. Phase 3H implementation merged and sealed. Ready for next development phase.
+### Phase 3I: Merchant Orders List & Operational Multi-Store Authority
+- **Task:** `DILMART-PHASE-3I-MERCHANT-ORDERS-MULTI-STORE-AUTHORITY-001`
+- **Branch:** `frontend/dilmart-merchant-orders-authority`
+- **Base SHA:** `0c2ca589390c57412982ecd71f3c1302a7724075`
+- **Status:** Implementation Complete / Draft PR Ready
+- **Specification Document:** [`governance/phases/DILMART_PHASE_3I_MERCHANT_ORDERS_MULTI_STORE_AUTHORITY.md`](phases/DILMART_PHASE_3I_MERCHANT_ORDERS_MULTI_STORE_AUTHORITY.md)
+- **Scope Delivered:**
+  - Explicit Backend Route: `GET /merchants/:id/orders` with `ParseUUIDPipe({ version: "4" })` and whitelisted `ListMerchantOrdersQueryDto`.
+  - Canonical Envelope: Always returns `{ merchant_id, orders, total, limit, offset }`.
+  - Strict Authorization: Fail-closed verification of caller membership (`merchant_owner`, `merchant_manager`, `merchant_staff`) against target store; cross-store IDOR returns HTTP 403 Forbidden.
+  - Legacy Fallback Elimination: `listOrdersForMerchant` requires explicit `merchant_id`; silent fallback to first store completely eliminated.
+  - PII Protection: Sensitive customer phone number, street address, and merchant_notes omitted from merchant orders list projection.
+  - Frontend Keyed Workspace: `<MerchantOrdersWorkspace key={merchantId} merchantId={merchantId} />` unmounts and isolates state on store switch.
+  - Strict Fail-Closed Parser: `parseCanonicalOrdersResponse` asserts store ID match, non-negative amounts/counts, and rejects forbidden customer PII including merchant_notes.
+  - Truthful UI States: Dedicated loading skeleton, retryable error banner, and truthful empty states.
+- **Verification Suites:**
+  - `backend/tests/merchant-orders-multi-store-authority.test.mjs`: 17/17 tests passing (including real HTTP boundary).
+  - `src/pages/merchant/Orders.test.tsx`: 17/17 tests passing.
+  - `scripts/ci`: 99/99 guard tests passing.
+  - Architecture Guard: 0 violations.
+- **Database Status:** 0 migrations applied, 0 live mutations.
 
 ---
 
