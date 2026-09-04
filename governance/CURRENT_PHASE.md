@@ -3,48 +3,57 @@
 ## Status
 
 ```text
-PHASE_3I_IMPLEMENTATION_DRAFT_PR
-BRANCH_FRONTEND_DILMART_MERCHANT_ORDERS_AUTHORITY
-BASE_MAIN_SHA_0C2CA589390C57412982ECD71F3C1302A7724075
-BACKEND_TESTS_PASS_17_OF_17
-FRONTEND_TESTS_PASS_17_OF_17
-CI_GUARDS_PASS_99_OF_99
-ARCH_GUARD_PASS_0_VIOLATIONS
+PHASE_3I_MERGED
+PR_28_CLOSED
+PR_28_SOURCE_HEAD_9D561B0
+PR_28_MERGE_SHA_DF7789E
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
 NO_DB_MIGRATION
 NO_LIVE_DB_MUTATION
-NO_DEPLOY
-DRAFT_PR_ONLY
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
 ---
 
 ## Active Implementation Phase
 
-### Phase 3I: Merchant Orders List & Operational Multi-Store Authority
-- **Task:** `DILMART-PHASE-3I-MERCHANT-ORDERS-MULTI-STORE-AUTHORITY-001`
-- **Branch:** `frontend/dilmart-merchant-orders-authority`
-- **Base SHA:** `0c2ca589390c57412982ecd71f3c1302a7724075`
-- **Status:** Implementation Complete / Draft PR Ready
-- **Specification Document:** [`governance/phases/DILMART_PHASE_3I_MERCHANT_ORDERS_MULTI_STORE_AUTHORITY.md`](phases/DILMART_PHASE_3I_MERCHANT_ORDERS_MULTI_STORE_AUTHORITY.md)
-- **Scope Delivered:**
-  - Explicit Backend Route: `GET /merchants/:id/orders` with `ParseUUIDPipe({ version: "4" })` and whitelisted `ListMerchantOrdersQueryDto`.
-  - Canonical Envelope: Always returns `{ merchant_id, orders, total, limit, offset }`.
-  - Strict Authorization: Fail-closed verification of caller membership (`merchant_owner`, `merchant_manager`, `merchant_staff`) against target store; cross-store IDOR returns HTTP 403 Forbidden.
-  - Legacy Fallback Elimination: `listOrdersForMerchant` requires explicit `merchant_id`; silent fallback to first store completely eliminated.
-  - PII Protection: Sensitive customer phone number, street address, and merchant_notes omitted from merchant orders list projection.
-  - Frontend Keyed Workspace: `<MerchantOrdersWorkspace key={merchantId} merchantId={merchantId} />` unmounts and isolates state on store switch.
-  - Strict Fail-Closed Parser: `parseCanonicalOrdersResponse` asserts store ID match, non-negative amounts/counts, and rejects forbidden customer PII including merchant_notes.
-  - Truthful UI States: Dedicated loading skeleton, retryable error banner, and truthful empty states.
-- **Verification Suites:**
-  - `backend/tests/merchant-orders-multi-store-authority.test.mjs`: 17/17 tests passing (including real HTTP boundary).
-  - `src/pages/merchant/Orders.test.tsx`: 17/17 tests passing.
-  - `scripts/ci`: 99/99 guard tests passing.
-  - Architecture Guard: 0 violations.
-- **Database Status:** 0 migrations applied, 0 live mutations.
+None. Phase 3I implementation merged and sealed. Ready for next development phase.
 
 ---
 
 ## Preceding Governance / Merged Phases
+
+### Phase 3I: Merchant Orders List & Operational Multi-Store Authority
+- **Task:** `DILMART-PHASE-3I-MERCHANT-ORDERS-MULTI-STORE-AUTHORITY-001`
+- **PR:** [#28](https://github.com/dilmart-info/Dilmart/pull/28) (Merged & Closed)
+- **Source HEAD:** `9d561b04eb1f32b8b1cd187b18090fa27fc922cb`
+- **Merge SHA:** `df7789eb899c23f636ddbcfd94edf53b11aa8e60`
+- **Post-Merge Governance Branch:** `governance/pr28-post-merge-phase3i-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33864534387` — SUCCESS (14m 4s)
+  - Native CI (`Native Foundation CI`): run `33864534384` — SUCCESS (10m 4s; Android 4m 19s, iOS 10m 0s)
+  - Netlify Production Deploy Gate runs: `33865323259` and `33865631431` — SUCCESS (7s-12s)
+  - Netlify publish: SKIPPED (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled, `should_deploy=false`)
+  - Render deployment state: UNVERIFIED (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations.
+- **Scope Delivered:**
+  - Explicit backend endpoint (`GET /merchants/:id/orders`) with `ParseUUIDPipe({ version: "4" })` and whitelisted query validation (`ListMerchantOrdersQueryDto`).
+  - Canonical envelope contract strictly returning `{ merchant_id, orders, total, limit, offset }`.
+  - Multi-store fail-closed authority: exact merchant membership check for caller (`merchant_owner`, `merchant_manager`, `merchant_staff`); cross-store IDOR or customer role rejected with HTTP 403 Forbidden.
+  - Legacy route lockdown: `OrdersService.listOrdersForMerchant` requires explicit `merchant_id`; silent fallback to first store completely eliminated.
+  - Customer PII safe projection: customer phone number, full street address, and `merchant_notes` completely excluded from merchant orders list projection.
+  - Frontend Keyed Workspace `<MerchantOrdersWorkspace key={merchantId} merchantId={merchantId} />` with instantaneous filter/pagination reset and zero cross-store data leakage.
+  - Strict fail-closed parser `parseCanonicalOrdersResponse`: validates store ID, non-negative totals and amounts, and actively throws security violations if any customer phone, street address, or `merchant_notes` are leaked.
+  - Truthful UI states: dedicated `MerchantOrdersSkeleton`, retryable error banner, and empty state.
+- **Verification Suites:**
+  - `backend/tests/merchant-orders-multi-store-authority.test.mjs` (17 tests, all pass)
+  - `src/pages/merchant/Orders.test.tsx` (17 tests, all pass)
+  - CI guards: 3 files, 99 tests passed, 0 violations.
+- **Database Status:** 0 migrations applied, 0 live mutations.
 
 ### Phase 3H: Merchant Dashboard Overview & Analytics Multi-Store Authority
 - **Task:** `DILMART-PHASE-3H-MERCHANT-DASHBOARD-OVERVIEW-MULTI-STORE-AUTHORITY-001`
