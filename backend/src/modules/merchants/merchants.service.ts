@@ -854,6 +854,9 @@ export class MerchantsService {
   }
 
   async getMyMerchantDashboard(actor?: { actor_role?: string; actor_id?: string }, requestedMerchantId?: string) {
+    if (!requestedMerchantId) {
+      throw new ForbiddenException("Merchant id is required.");
+    }
     const merchantId = await this.scopeResolver.resolveMerchantScope(requestedMerchantId, actor?.actor_role, actor?.actor_id);
     if (!merchantId) throw new ForbiddenException("Merchant scope is not allowed for this actor.");
     const merchantStatusRes = await this.supabaseAdmin.client.from("merchants").select("status").eq("id", merchantId).maybeSingle();
@@ -950,6 +953,7 @@ export class MerchantsService {
       .slice(0, 8);
 
     return {
+      merchant_id: merchantId,
       products: {
         total: products.length,
         active: products.filter((p: any) => !!p.is_active).length,

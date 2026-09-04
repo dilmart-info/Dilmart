@@ -376,3 +376,8 @@ export class ListMerchantCustomersQueryDto {
   @Max(100)
   limit?: number;
 }
+
+export class LegacyMerchantDashboardQueryDto {
+  @IsUUID("4")
+  merchant_id!: string;
+}

@@ -19,18 +19,190 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/format";
-import { apiClient } from "@/lib/api-client";
+import { merchantApi, CanonicalMerchantDashboardResponse } from "@/lib/api/merchant";
 import { useCurrentMerchant } from "@/hooks/use-current-merchant";
 import { getMerchantOrderStatusLabel } from "@/lib/merchant-order-status";
 
-const MerchantOverview = () => {
-  const { data: membership } = useCurrentMerchant();
-  const merchantId = membership?.merchant_id ?? "";
+/**
+ * Validates and parses raw backend response against the canonical merchant dashboard contract.
+ * Fails closed if merchant_id is missing/mismatched or numbers are corrupted/negative.
+ */
+export function parseCanonicalDashboardResponse(
+  raw: unknown,
+  expectedMerchantId: string
+): CanonicalMerchantDashboardResponse {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: البنية ليست كائناً");
+  }
 
-  useEffect(() => {
-    document.title = "لوحة التاجر | DILMART";
-  }, []);
+  const obj = raw as Record<string, unknown>;
 
+  // Strict merchant_id check
+  if (typeof obj.merchant_id !== "string" || !obj.merchant_id.trim()) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: حقل merchant_id مفقود أو غير نصي");
+  }
+
+  if (obj.merchant_id !== expectedMerchantId) {
+    throw new Error(
+      `تعارض أمان المتجر: معرف المتجر في الاستجابة (${obj.merchant_id}) لا يطابق المتجر النشط (${expectedMerchantId})`
+    );
+  }
+
+  const requireNonNegativeInteger = (val: unknown, fieldName: string): number => {
+    if (typeof val !== "number" || !Number.isFinite(val) || !Number.isInteger(val) || val < 0) {
+      throw new Error(`استجابة خادم لوحة التاجر غير صالحة: ${fieldName} يجب أن يكون عدداً صحيحاً غير سالب`);
+    }
+    return val;
+  };
+
+  const requireNonNegativeNumber = (val: unknown, fieldName: string): number => {
+    if (typeof val !== "number" || !Number.isFinite(val) || Number.isNaN(val) || val < 0) {
+      throw new Error(`استجابة خادم لوحة التاجر غير صالحة: ${fieldName} يجب أن يكون رقماً مالياً غير سالب`);
+    }
+    return val;
+  };
+
+  // Products block validation
+  if (!obj.products || typeof obj.products !== "object" || Array.isArray(obj.products)) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: قسم products مفقود");
+  }
+  const rawProducts = obj.products as Record<string, unknown>;
+  const products = {
+    total: requireNonNegativeInteger(rawProducts.total, "products.total"),
+    active: requireNonNegativeInteger(rawProducts.active, "products.active"),
+    inactive: requireNonNegativeInteger(rawProducts.inactive, "products.inactive"),
+    low_stock: requireNonNegativeInteger(rawProducts.low_stock, "products.low_stock"),
+  };
+
+  // Orders block validation
+  if (!obj.orders || typeof obj.orders !== "object" || Array.isArray(obj.orders)) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: قسم orders مفقود");
+  }
+  const rawOrders = obj.orders as Record<string, unknown>;
+  const orders = {
+    today: requireNonNegativeInteger(rawOrders.today, "orders.today"),
+    completed_7d: requireNonNegativeInteger(rawOrders.completed_7d, "orders.completed_7d"),
+    average_order_value_7d: requireNonNegativeNumber(rawOrders.average_order_value_7d, "orders.average_order_value_7d"),
+    revenue_7d: requireNonNegativeNumber(rawOrders.revenue_7d, "orders.revenue_7d"),
+  };
+
+  // Top products array validation
+  if (!Array.isArray(obj.top_products)) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: top_products يجب أن تكون مصفوفة");
+  }
+  const top_products = obj.top_products.map((item, idx) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`استجابة غير صالحة: top_products[${idx}] ليس كائناً`);
+    }
+    const itemObj = item as Record<string, unknown>;
+    if (typeof itemObj.product_id !== "string" || !itemObj.product_id) {
+      throw new Error(`استجابة غير صالحة: top_products[${idx}].product_id مفقود`);
+    }
+    return {
+      product_id: itemObj.product_id,
+      name: typeof itemObj.name === "string" ? itemObj.name : "منتج",
+      units_sold: requireNonNegativeInteger(itemObj.units_sold, `top_products[${idx}].units_sold`),
+      revenue: typeof itemObj.revenue === "number" && Number.isFinite(itemObj.revenue) ? itemObj.revenue : undefined,
+    };
+  });
+
+  // Low stock products array validation
+  if (!Array.isArray(obj.low_stock_products)) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: low_stock_products يجب أن تكون مصفوفة");
+  }
+  const low_stock_products = obj.low_stock_products.map((item, idx) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`استجابة غير صالحة: low_stock_products[${idx}] ليس كائناً`);
+    }
+    const itemObj = item as Record<string, unknown>;
+    if (typeof itemObj.product_id !== "string" || !itemObj.product_id) {
+      throw new Error(`استجابة غير صالحة: low_stock_products[${idx}].product_id مفقود`);
+    }
+    return {
+      product_id: itemObj.product_id,
+      name: typeof itemObj.name === "string" ? itemObj.name : "منتج",
+      stock: requireNonNegativeInteger(itemObj.stock, `low_stock_products[${idx}].stock`),
+      threshold: requireNonNegativeInteger(itemObj.threshold, `low_stock_products[${idx}].threshold`),
+    };
+  });
+
+  // Recent orders array validation
+  if (!Array.isArray(obj.recent_orders)) {
+    throw new Error("استجابة خادم لوحة التاجر غير صالحة: recent_orders يجب أن تكون مصفوفة");
+  }
+  const recent_orders = obj.recent_orders.map((item, idx) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`استجابة غير صالحة: recent_orders[${idx}] ليس كائناً`);
+    }
+    const itemObj = item as Record<string, unknown>;
+    if (typeof itemObj.id !== "string" || !itemObj.id) {
+      throw new Error(`استجابة غير صالحة: recent_orders[${idx}].id مفقود`);
+    }
+    if (typeof itemObj.order_number !== "string" || !itemObj.order_number) {
+      throw new Error(`استجابة غير صالحة: recent_orders[${idx}].order_number مفقود`);
+    }
+    if (typeof itemObj.status !== "string") {
+      throw new Error(`استجابة غير صالحة: recent_orders[${idx}].status مفقود`);
+    }
+    const total = requireNonNegativeNumber(itemObj.total, `recent_orders[${idx}].total`);
+    if (typeof itemObj.created_at !== "string" || Number.isNaN(Date.parse(itemObj.created_at))) {
+      throw new Error(`استجابة غير صالحة: recent_orders[${idx}].created_at ليس تاريخاً صالحاً`);
+    }
+    return {
+      id: itemObj.id,
+      order_number: itemObj.order_number,
+      status: itemObj.status,
+      total,
+      created_at: itemObj.created_at,
+    };
+  });
+
+  return {
+    merchant_id: obj.merchant_id,
+    products,
+    orders,
+    top_products,
+    low_stock_products,
+    recent_orders,
+  };
+}
+
+export const MerchantOverviewSkeleton: React.FC = () => (
+  <div className="space-y-6 animate-pulse" data-testid="overview-loading">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="space-y-2">
+        <div className="h-7 w-48 bg-muted rounded-lg" />
+        <div className="h-4 w-72 bg-muted rounded-md" />
+      </div>
+      <div className="flex gap-2">
+        <div className="h-9 w-28 bg-muted rounded-lg" />
+        <div className="h-9 w-28 bg-muted rounded-lg" />
+      </div>
+    </div>
+
+    {/* Top metrics skeleton */}
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-28 rounded-xl border bg-card p-4 space-y-3">
+          <div className="h-4 w-24 bg-muted rounded" />
+          <div className="h-8 w-32 bg-muted rounded" />
+        </div>
+      ))}
+    </div>
+
+    {/* Secondary metrics skeleton */}
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {[1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-20 rounded-xl border bg-card p-3 space-y-2">
+          <div className="h-3 w-20 bg-muted rounded" />
+          <div className="h-6 w-16 bg-muted rounded" />
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+export const MerchantOverviewWorkspace: React.FC<{ merchantId: string }> = ({ merchantId }) => {
   const {
     data,
     isLoading,
@@ -39,50 +211,18 @@ const MerchantOverview = () => {
     refetch,
     isFetching,
   } = useQuery({
-    queryKey: ["merchant-dashboard-v2", merchantId],
-    enabled: Boolean(merchantId),
-    queryFn: () => apiClient.getMerchantDashboard(merchantId),
+    queryKey: ["merchant-dashboard-canonical", merchantId],
+    queryFn: async () => {
+      const raw = await merchantApi.getMerchantDashboard(merchantId);
+      return parseCanonicalDashboardResponse(raw, merchantId);
+    },
+    staleTime: 30_000,
   });
 
-  // State 1: Loading Skeleton
   if (isLoading) {
-    return (
-      <div className="space-y-6 animate-pulse" data-testid="overview-loading">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="space-y-2">
-            <div className="h-7 w-48 bg-muted rounded-lg" />
-            <div className="h-4 w-72 bg-muted rounded-md" />
-          </div>
-          <div className="flex gap-2">
-            <div className="h-9 w-28 bg-muted rounded-lg" />
-            <div className="h-9 w-28 bg-muted rounded-lg" />
-          </div>
-        </div>
-
-        {/* Top metrics skeleton */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 rounded-xl border bg-card p-4 space-y-3">
-              <div className="h-4 w-24 bg-muted rounded" />
-              <div className="h-8 w-32 bg-muted rounded" />
-            </div>
-          ))}
-        </div>
-
-        {/* Secondary metrics skeleton */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-20 rounded-xl border bg-card p-3 space-y-2">
-              <div className="h-3 w-20 bg-muted rounded" />
-              <div className="h-6 w-16 bg-muted rounded" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <MerchantOverviewSkeleton />;
   }
 
-  // State 2: Retryable API Error State
   if (isError || !data) {
     return (
       <div
@@ -404,6 +544,26 @@ const MerchantOverview = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const MerchantOverview: React.FC = () => {
+  const { data: membership, isLoading: isMembershipLoading } = useCurrentMerchant();
+  const merchantId = membership?.merchant_id ?? "";
+
+  useEffect(() => {
+    document.title = "لوحة التاجر | DILMART";
+  }, []);
+
+  if (isMembershipLoading || !merchantId) {
+    return <MerchantOverviewSkeleton />;
+  }
+
+  return (
+    <MerchantOverviewWorkspace
+      key={merchantId}
+      merchantId={merchantId}
+    />
   );
 };
 
