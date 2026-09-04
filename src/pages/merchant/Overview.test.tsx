@@ -280,8 +280,8 @@ describe("MerchantOverview — States, Metrics, Neutral Semantics & Data Isolati
   it("DEFERRED RACE CONDITION ISOLATION: late resolved response from Store A does not overwrite Store B", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
-    let resolveStoreA: (val: any) => void = () => {};
-    const storeAPromise = new Promise((resolve) => {
+    let resolveStoreA: (val: unknown) => void = () => {};
+    const storeAPromise = new Promise<unknown>((resolve) => {
       resolveStoreA = resolve;
     });
 
@@ -430,5 +430,49 @@ describe("parseCanonicalDashboardResponse — Contract Assertion & Fail-Closed G
         "m-123"
       )
     ).toThrow(/recent_orders\[0\]\.created_at ليس تاريخاً صالحاً/);
+  });
+
+  it("fails closed if top_products revenue is negative or NaN, but permits omitted revenue", () => {
+    // Negative revenue throws
+    expect(() =>
+      parseCanonicalDashboardResponse(
+        {
+          ...mockDashboardDataA,
+          top_products: [{ product_id: "p-1", name: "عطر", units_sold: 5, revenue: -1 }],
+        },
+        "m-123"
+      )
+    ).toThrow(/top_products\[0\]\.revenue يجب أن يكون رقماً مالياً غير سالب/);
+
+    // NaN revenue throws
+    expect(() =>
+      parseCanonicalDashboardResponse(
+        {
+          ...mockDashboardDataA,
+          top_products: [{ product_id: "p-1", name: "عطر", units_sold: 5, revenue: NaN }],
+        },
+        "m-123"
+      )
+    ).toThrow(/top_products\[0\]\.revenue يجب أن يكون رقماً مالياً غير سالب/);
+
+    // Omitted (undefined) revenue is permitted
+    const parsedWithOmitted = parseCanonicalDashboardResponse(
+      {
+        ...mockDashboardDataA,
+        top_products: [{ product_id: "p-1", name: "عطر", units_sold: 5 }],
+      },
+      "m-123"
+    );
+    expect(parsedWithOmitted.top_products[0].revenue).toBeUndefined();
+
+    // Valid positive revenue is parsed
+    const parsedWithValid = parseCanonicalDashboardResponse(
+      {
+        ...mockDashboardDataA,
+        top_products: [{ product_id: "p-1", name: "عطر", units_sold: 5, revenue: 25000 }],
+      },
+      "m-123"
+    );
+    expect(parsedWithValid.top_products[0].revenue).toBe(25000);
   });
 });

@@ -98,13 +98,19 @@ export function parseCanonicalDashboardResponse(
     if (typeof itemObj.product_id !== "string" || !itemObj.product_id) {
       throw new Error(`استجابة غير صالحة: top_products[${idx}].product_id مفقود`);
     }
+    let revenue: number | undefined;
+    if (itemObj.revenue !== undefined) {
+      revenue = requireNonNegativeNumber(itemObj.revenue, `top_products[${idx}].revenue`);
+    }
+
     return {
       product_id: itemObj.product_id,
       name: typeof itemObj.name === "string" ? itemObj.name : "منتج",
       units_sold: requireNonNegativeInteger(itemObj.units_sold, `top_products[${idx}].units_sold`),
-      revenue: typeof itemObj.revenue === "number" && Number.isFinite(itemObj.revenue) ? itemObj.revenue : undefined,
+      revenue,
     };
   });
+
 
   // Low stock products array validation
   if (!Array.isArray(obj.low_stock_products)) {
