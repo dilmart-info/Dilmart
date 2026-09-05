@@ -13,6 +13,7 @@
     "test:merchant-customers": "npm run build && node --test tests/merchant-customers-multi-store-authority.test.mjs",
     "test:hardening": "npm run build && node --test tests/hardening-regression.test.mjs",
     "test:merchant-registration-data": "npm run build && node --test tests/admin-merchant-registration-data.test.mjs",
+    "test:merchant-auth-authority": "npm run build && node --test tests/merchant-auth-onboarding-authority.test.mjs",
     "test:merchant-push": "npm run build && node --test tests/merchant-push-alerts.test.mjs",
     "test:whatsapp-otp": "npm run build && node --test tests/whatsapp-otp-delivery.test.mjs tests/otp-batch11-hardening.test.mjs",
     "test:launch-critical": "npm run build && node -e \"const fs=require('fs'), cp=require('child_process'); const files=['tests/account-claim-recovery.test.mjs','tests/order-cancellation-atomic.test.mjs','tests/checkout-idempotency.test.mjs','tests/customer-cancellation-returns.test.mjs'].filter(f=>fs.existsSync(f)); if(files.length>0){ cp.execSync('node --test ' + files.join(' '), {stdio:'inherit'}); } else { console.log('No PR package test files present on baseline; running policy suite instead.'); cp.execSync('npm run test:policy', {stdio:'inherit'}); }\"",

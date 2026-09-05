@@ -59,6 +59,7 @@ export function RequireMerchantUser({ children }: GuardProps) {
   } = useAuth();
   const merchantStatus = context?.merchant?.status ?? null;
   const allMemberships = context?.merchant_memberships ?? [];
+  const hasActiveMerchant = merchantStatus === "active" || allMemberships.some((m) => m.status === "active");
 
   if (authStatus === "storage_error") {
     return <AuthStorageErrorScreen onRetry={retryStorageBootstrap} />;
@@ -72,24 +73,25 @@ export function RequireMerchantUser({ children }: GuardProps) {
     return <Navigate to="/merchant/login" replace />;
   }
 
+  // Active merchant: allow access immediately (breaks the pending redirect loop)
+  if (hasActiveMerchant) {
+    return <>{children}</>;
+  }
+
   if (!isMerchantUser && !isMerchantApplicant) {
     return <Navigate to="/merchant/register" replace />;
   }
 
-  if (isMerchantApplicant) {
-    return <Navigate to="/merchant/pending" replace />;
+  // Suspended merchant state
+  const isSuspended =
+    merchantStatus === "suspended" ||
+    (allMemberships.length > 0 && allMemberships.every((m) => m.status === "suspended"));
+  if (isSuspended) {
+    return <Navigate to="/merchant/pending?status=suspended" replace />;
   }
 
-  if (allMemberships.length > 0) {
-    const hasActiveMerchant = allMemberships.some((m) => m.status === "active");
-    if (!hasActiveMerchant && merchantStatus !== "active") {
-      return <Navigate to="/merchant/pending" replace />;
-    }
-  } else if (merchantStatus && merchantStatus !== "active") {
-    return <Navigate to="/merchant/pending" replace />;
-  }
-
-  return <>{children}</>;
+  // Pending review, rejected, or general applicant
+  return <Navigate to="/merchant/pending" replace />;
 }
 
 export function RequireAgent({ children }: GuardProps) {
