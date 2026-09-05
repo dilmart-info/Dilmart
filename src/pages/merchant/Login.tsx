@@ -41,8 +41,29 @@ export default function MerchantLogin() {
       const role = authContext?.activeRole;
       const isMerchantRole = role === "merchant_owner" || role === "merchant_manager" || role === "merchant_staff";
       const merchantStatus = authContext?.merchant?.status ?? null;
+      const allMemberships = authContext?.merchant_memberships ?? [];
+      const hasActiveMerchant = merchantStatus === "active" || allMemberships.some((m) => m.status === "active");
 
-      if (role === "merchant_applicant") {
+      if (hasActiveMerchant) {
+        if (passwordSecurityWarning) toast.warning(WEAK_PASSWORD_SIGN_IN_WARNING_AR);
+        toast.success("تم تسجيل دخول التاجر بنجاح");
+        navigate("/merchant", { replace: true });
+        return;
+      }
+
+      if (merchantStatus === "suspended" || (allMemberships.length > 0 && allMemberships.every((m) => m.status === "suspended"))) {
+        toast.error("تم تعليق نشاط هذا المتجر من قبل إدارة المنصة.");
+        navigate("/merchant/pending?status=suspended", { replace: true });
+        return;
+      }
+
+      if (merchantStatus === "rejected") {
+        toast.error("تم رفض طلب تسجيل المتجر.");
+        navigate("/merchant/pending", { replace: true });
+        return;
+      }
+
+      if (role === "merchant_applicant" || merchantStatus === "pending_review") {
         toast.info("طلبك قيد المراجعة.");
         navigate("/merchant/pending", { replace: true });
         return;
@@ -51,16 +72,6 @@ export default function MerchantLogin() {
       if (!isMerchantRole) {
         toast.info("لا يوجد متجر مرتبط بهذا الحساب. قدّم طلب تسجيل تاجر.");
         navigate("/merchant/register", { replace: true });
-        return;
-      }
-
-      // Only past this point has the account actually cleared merchant authorization. Warning
-      // earlier would tell an unauthorized account something about its access that is not true.
-      if (passwordSecurityWarning) toast.warning(WEAK_PASSWORD_SIGN_IN_WARNING_AR);
-
-      if (merchantStatus === "active") {
-        toast.success("تم تسجيل دخول التاجر بنجاح");
-        navigate("/merchant", { replace: true });
         return;
       }
 

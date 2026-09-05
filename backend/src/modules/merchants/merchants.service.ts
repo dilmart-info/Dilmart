@@ -776,6 +776,24 @@ export class MerchantsService {
         code: "MERCHANT_STATUS_CONFLICT",
       });
     }
+
+    if (payload.status === "active") {
+      const { data: owners } = await this.supabaseAdmin.client
+        .from("merchant_users")
+        .select("user_id")
+        .eq("merchant_id", id)
+        .eq("role", "owner");
+
+      const ownerUserIds = (owners ?? []).map((o: any) => o.user_id).filter(Boolean);
+      if (ownerUserIds.length > 0) {
+        await this.supabaseAdmin.client
+          .from("profiles")
+          .update({ role: "merchant_owner" } as any)
+          .in("id", ownerUserIds)
+          .in("role", ["merchant_applicant", "customer"]);
+      }
+    }
+
     return { ok: true };
   }
 

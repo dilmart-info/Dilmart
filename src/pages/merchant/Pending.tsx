@@ -1,10 +1,12 @@
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiClient } from "@/lib/api-client";
 import { useAuth } from "@/hooks/use-auth";
 
 const MerchantPending = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { logoutCurrentDevice } = useAuth();
 
   const { data, isLoading } = useQuery({
@@ -18,6 +20,16 @@ const MerchantPending = () => {
     navigate("/merchant/login", { replace: true });
   };
 
+  const merchant = data?.merchant;
+  const rawStatus = merchant?.status ?? "pending_review";
+  const status = searchParams.get("status") === "suspended" || rawStatus === "suspended" ? "suspended" : rawStatus;
+
+  useEffect(() => {
+    if (status === "active") {
+      navigate("/merchant", { replace: true });
+    }
+  }, [status, navigate]);
+
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
@@ -29,16 +41,13 @@ const MerchantPending = () => {
     );
   }
 
-  const merchant = data?.merchant;
-  const status = merchant?.status ?? "pending_review";
-
-  // إذا تمت الموافقة — حوّل مباشرة للوحة التحكم
+  // إذا تمت الموافقة — انتظر التوجيه
   if (status === "active") {
-    navigate("/merchant", { replace: true });
     return null;
   }
 
   const isRejected = status === "rejected";
+  const isSuspended = status === "suspended";
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
@@ -46,11 +55,15 @@ const MerchantPending = () => {
         <div className="rounded-2xl border bg-card p-8 shadow-sm text-center space-y-5">
           {/* الأيقونة */}
           <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${
-            isRejected ? "bg-destructive/10" : "bg-amber-100 dark:bg-amber-900/20"
+            isRejected || isSuspended ? "bg-destructive/10" : "bg-amber-100 dark:bg-amber-900/20"
           }`}>
             {isRejected ? (
               <svg className="h-8 w-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : isSuspended ? (
+              <svg className="h-8 w-8 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             ) : (
               <svg className="h-8 w-8 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -87,6 +100,31 @@ const MerchantPending = () => {
                 >
                   تقديم طلب جديد
                 </button>
+                <button
+                  onClick={handleSignOut}
+                  className="w-full rounded-lg border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
+                >
+                  تسجيل الخروج
+                </button>
+              </div>
+            </>
+          ) : isSuspended ? (
+            <>
+              <div>
+                <h1 className="text-xl font-bold text-amber-600 dark:text-amber-400">تم تعليق حساب المتجر</h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  تم تعليق نشاط هذا المتجر مؤقتاً من قبل إدارة المنصة. لمعرفة التفاصيل أو إعادة التنشيط يرجى مراجعة الدعم الفني.
+                </p>
+              </div>
+
+              {merchant?.display_name && (
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-xs text-muted-foreground mb-1">المتجر المعلق</p>
+                  <p className="font-semibold">{merchant.display_name}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
                 <button
                   onClick={handleSignOut}
                   className="w-full rounded-lg border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"

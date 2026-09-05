@@ -157,15 +157,13 @@ export class AuthService {
           }
         : null;
 
-    const activeRole = profile ? profile.role : null;
-    const roles = activeRole ? [activeRole] : [];
-
+    let resolvedRole = profile ? profile.role : null;
     let merchant: AuthContextMerchant | null = null;
     let merchantMemberships: AuthContextMerchant[] = [];
     if (
-      activeRole &&
-      !isPlatformRole(activeRole) &&
-      (activeRole === "merchant_applicant" || activeRole === "merchant_owner" || activeRole === "merchant_manager" || activeRole === "merchant_staff")
+      resolvedRole &&
+      !isPlatformRole(resolvedRole) &&
+      (resolvedRole === "merchant_applicant" || resolvedRole === "merchant_owner" || resolvedRole === "merchant_manager" || resolvedRole === "merchant_staff")
     ) {
       const { data: membershipsData, error: membershipsError } = await this.supabaseAdmin.client
         .from("merchant_users")
@@ -175,7 +173,16 @@ export class AuthService {
       if (membershipsError) throw membershipsError;
       merchant = this.resolveMerchantCandidate((membershipsData ?? []) as RawMembershipRow[]);
       merchantMemberships = this.resolveMerchantMemberships((membershipsData ?? []) as RawMembershipRow[]);
+
+      // Defensive authority: If profile role is lingering as merchant_applicant,
+      // but the resolved merchant candidate is active and user is owner, elevate activeRole to merchant_owner.
+      // /auth/context remains strictly read-only with zero database mutation side effects.
+      if (resolvedRole === "merchant_applicant" && merchant?.status === "active" && merchant?.role === "owner") {
+        resolvedRole = "merchant_owner";
+      }
     }
+
+    const roles = resolvedRole ? [resolvedRole] : [];
 
     return {
       user: {
@@ -183,9 +190,9 @@ export class AuthService {
         email: actor.actorEmail ?? profile?.email ?? null,
         phone: actor.actorPhone ?? profile?.phone ?? null,
       },
-      profile,
+      profile: profile && resolvedRole ? { ...profile, role: resolvedRole } : profile,
       roles,
-      activeRole,
+      activeRole: resolvedRole,
       merchant,
       merchant_memberships: merchantMemberships,
       account_type: accountType,
@@ -193,7 +200,7 @@ export class AuthService {
       claim_required: claimRequired,
       verified_phone: verifiedPhone,
       authSource: actor.authSource ?? "supabase",
-      capabilities: capabilitiesFor(actor.authSource ?? "supabase", activeRole),
+      capabilities: capabilitiesFor(actor.authSource ?? "supabase", resolvedRole),
     };
   }
 

@@ -64,7 +64,12 @@ export default function MerchantRegister() {
       setForm(initialForm);
       navigate("/merchant/login", { replace: true });
     } catch (error: any) {
-      toast.error(error.message || "تعذر إرسال طلب التسجيل");
+      const message = error.message || "تعذر إرسال طلب التسجيل";
+      toast.error(message);
+      const code = error?.code || error?.response?.data?.code;
+      if (code === "EXISTING_MERCHANT" || code === "EXISTING_APPLICATION" || code === "ACCOUNT_EXISTS") {
+        setTimeout(() => navigate("/merchant/login"), 2500);
+      }
     } finally {
       setLoading(false);
     }

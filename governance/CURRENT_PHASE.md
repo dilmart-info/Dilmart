@@ -3,21 +3,42 @@
 ## Status
 
 ```text
-PHASE_3L_SMOKE_TEST_PASS
-STOREFRONT_PURCHASE_JOURNEY_VERIFIED
-TEST_ORDER_DUK_260904_0144_CREATED
-SINGLE_MERCHANT_AUTHORITY_VERIFIED
-NO_CODE_MUTATION
-NO_DB_MIGRATION
-NO_PATCH_REQUIRED
-READY_FOR_NEXT_DEVELOPMENT_PHASE
+PHASE_3M_IMPLEMENTATION_COMPLETE
+MERCHANT_AUTH_ONBOARDING_AUTHORITY_VERIFIED
+REDIRECT_LOOP_PREVENTED
+MISSING_RPCS_ELIMINATED
+ROLE_SYNCHRONIZATION_ENFORCED
+DUPLICATE_REGISTRATION_PREVENTED
+ALL_UNIT_TESTS_PASS
+READY_FOR_DRAFT_PR_REVIEW
 ```
 
 ---
 
 ## Active Implementation Phase
 
-- None (Phase 3L Storefront Purchase Journey Smoke Test completed and verified; ready for next phase planning).
+### Phase 3M: Merchant Auth & Onboarding Flow Authority
+- **Task:** `DILMART-PHASE-3M-MERCHANT-AUTH-ONBOARDING-AUTHORITY-001`
+- **Branch:** `frontend/dilmart-merchant-auth-onboarding-authority`
+- **Reference Doc:** [`DILMART_PHASE_3M_MERCHANT_AUTH_ONBOARDING_FLOW_AUTHORITY.md`](file:///d:/DilMart/governance/phases/DILMART_PHASE_3M_MERCHANT_AUTH_ONBOARDING_FLOW_AUTHORITY.md)
+- **Target Environments:**
+  - `DilMart Main staging Supabase`: `zlmdwhuphuxppxznsgso`
+  - `DilMart Main production`: `yssjhxeybitiycdviyrc`
+  - `DilMart-Store live/target`: `ztplxqlthuqkuktbznbo`
+- **Target Merchant (Preserved Invariant):** `46371607-ba4c-4fd2-bab4-8a6bd9371477` (`DilMart Store`) owned by `roichain7@gmail.com` (`2a72d375-9bab-44d5-83ca-a35a274171c2`).
+- **Scope Delivered:**
+  - `MerchantsService.updateMerchantStatus`: Promotes owner profile from `merchant_applicant` to `merchant_owner` upon status update to `active`.
+  - `MerchantApplicationsService`: Replaced calls to non-existent `approve_merchant_atomic` and `reject_merchant_atomic` RPCs with safe direct queries; added duplicate email and slug conflict validation (`SLUG_EXISTS`, `EXISTING_MERCHANT`, `EXISTING_APPLICATION`, `ACCOUNT_EXISTS`).
+  - `AuthService.getContext`: Defensive in-memory elevation of lingering `merchant_applicant` to `merchant_owner` when candidate store is `active`. Strictly read-only with zero database mutations; role promotions to `merchant_owner` are strictly confined to administrative decision routes.
+  - `RequireMerchantUser`: Granted access to active merchants directly, eliminating the `/merchant/pending` infinite bounce loop.
+  - `MerchantLogin`, `MerchantPending`, `MerchantRegister`: Improved distinct status routing and UI handling for `pending_review`, `active`, `suspended`, and `rejected`.
+- **Database Status:** 0 migrations created or applied, 0 live mutations.
+- **Verification:**
+  - `backend/tests/merchant-auth-onboarding-authority.test.mjs` (8 tests, all pass)
+  - `backend/tests/admin-merchant-registration-data.test.mjs` (14 tests, all pass)
+  - `src/components/guards/RequireMerchantUser.authority.test.tsx` (5 tests, all pass)
+  - `src/pages/merchant/Pending.authority.test.tsx` (4 tests, all pass)
+  - Frontend production build: SUCCESS (0 errors).
 
 ---
 
