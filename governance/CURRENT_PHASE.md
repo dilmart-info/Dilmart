@@ -3,23 +3,43 @@
 ## Status
 
 ```text
-PHASE_3M_IMPLEMENTATION_COMPLETE
-MERCHANT_AUTH_ONBOARDING_AUTHORITY_VERIFIED
-REDIRECT_LOOP_PREVENTED
-MISSING_RPCS_ELIMINATED
-ROLE_SYNCHRONIZATION_ENFORCED
-DUPLICATE_REGISTRATION_PREVENTED
-ALL_UNIT_TESTS_PASS
-READY_FOR_DRAFT_PR_REVIEW
+PHASE_3M_MERGED
+PR_33_CLOSED
+PR_33_SOURCE_HEAD_900C4D4
+PR_33_MERGE_SHA_1824037
+MAIN_CI_PASS
+NATIVE_CI_PASS
+NETLIFY_GATE_PASS
+NETLIFY_PUBLISH_SKIPPED
+RENDER_DEPLOYMENT_STATE_UNVERIFIED
+NO_DB_MIGRATION
+NO_LIVE_DB_MUTATION
+READY_FOR_NEXT_DEVELOPMENT_PHASE
 ```
 
 ---
 
 ## Active Implementation Phase
 
+None. Awaiting next phase assignment.
+
+---
+
+## Preceding Governance / Merged Phases
+
 ### Phase 3M: Merchant Auth & Onboarding Flow Authority
 - **Task:** `DILMART-PHASE-3M-MERCHANT-AUTH-ONBOARDING-AUTHORITY-001`
-- **Branch:** `frontend/dilmart-merchant-auth-onboarding-authority`
+- **PR:** [#33](https://github.com/dilmart-info/Dilmart/pull/33) (Merged & Closed)
+- **Source HEAD:** `900c4d4a7e74dc4489ca61b3ad07d3b68fc09bed`
+- **Merge SHA:** `182403715c61c5e20a7601e7156f24b6ba2faf9a`
+- **Post-Merge Governance Branch:** `governance/pr33-post-merge-phase3m-closure`
+- **Post-Merge Verification Evidence:**
+  - Critical CI (`DilMart Store Launch Critical PR Quality & Security CI`): run `33955405956` — SUCCESS (5m 37s)
+  - Native CI (`Native Foundation CI`): run `33955406045` — SUCCESS (4m 42s)
+  - Netlify Production Deploy Gate runs: `33955670917` and `33955627344` — SUCCESS (10s)
+  - Netlify publish: SKIPPED (`NETLIFY_PUBLISH_SKIPPED` — `NETLIFY_PRODUCTION_DEPLOY_ENABLED` not enabled, `should_deploy=false`)
+  - Render deployment state: UNVERIFIED (`RENDER_DEPLOYMENT_STATE_UNVERIFIED` — no provider telemetry proving deployed commit)
+  - Database status: 0 migrations applied, 0 live mutations (`NO_DB_MIGRATION`, `NO_LIVE_DB_MUTATION`).
 - **Reference Doc:** [`DILMART_PHASE_3M_MERCHANT_AUTH_ONBOARDING_FLOW_AUTHORITY.md`](file:///d:/DilMart/governance/phases/DILMART_PHASE_3M_MERCHANT_AUTH_ONBOARDING_FLOW_AUTHORITY.md)
 - **Target Environments:**
   - `DilMart Main staging Supabase`: `zlmdwhuphuxppxznsgso`
