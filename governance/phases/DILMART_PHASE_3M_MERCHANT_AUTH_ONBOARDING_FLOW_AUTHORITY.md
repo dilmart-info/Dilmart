@@ -46,8 +46,10 @@ Prior to Phase 3M, four core vulnerabilities existed:
   - Catches `createUserError` cleanly for existing auth users and returns structured conflict exceptions.
 - **`MerchantApplicationsService.getMyApplicationStatus`**:
   - Prioritizes active store memberships over pending or rejected ones so that existing active merchants are never obscured.
-- **`AuthService.getContext` Self-Healing Defensive Guard**:
-  - If a user's candidate merchant is `status === 'active'` and role is `owner`, but their profile role lingered as `merchant_applicant`, `/auth/context` elevates `activeRole` to `merchant_owner` and triggers background profile role synchronization.
+- **`AuthService.getContext` Defensive Authority**:
+  - If a user's candidate merchant is `status === 'active'` and role is `owner`, but their profile role lingered as `merchant_applicant`, `/auth/context` elevates `activeRole` to `merchant_owner` in-memory to prevent redirect loops.
+  - Strictly read-only: zero database mutation side effects on `profiles` or any table from within `/auth/context`.
+  - Profile role promotion to `merchant_owner` in the database is strictly confined to administrative decision routes (`updateMerchantStatus` to active, and `approveMerchant`).
 
 ### 2. Frontend Route Guard & Workspace Protection
 - **`RequireMerchantUser` (`BackofficeRouteGuards.tsx`)**:
@@ -70,7 +72,7 @@ Prior to Phase 3M, four core vulnerabilities existed:
 ### 1. Backend Test Suite
 - Test script: `npm --prefix backend run test:merchant-auth-authority`
 - Test file: `backend/tests/merchant-auth-onboarding-authority.test.mjs`
-- Results: **7 passed out of 7 tests (100% pass)**:
+- Results: **8 passed out of 8 tests (100% pass)**:
   1. `registerApplication - rejects duplicate slug with SLUG_EXISTS conflict code` (PASS)
   2. `registerApplication - rejects existing email with active store with EXISTING_MERCHANT code` (PASS)
   3. `registerApplication - rejects existing email with pending application with EXISTING_APPLICATION code` (PASS)
@@ -78,6 +80,7 @@ Prior to Phase 3M, four core vulnerabilities existed:
   5. `rejectMerchant - updates status to rejected with reason without calling RPC` (PASS)
   6. `getMyApplicationStatus - prioritizes active merchant membership over pending or rejected` (PASS)
   7. `updateMerchantStatus - promotes owner profile from merchant_applicant to merchant_owner upon activation` (PASS)
+  8. `AuthService.getContext - strictly read-only: elevates activeRole to merchant_owner without updating profiles in DB` (PASS)
 
 ### 2. Frontend Test Suite
 - Test files:

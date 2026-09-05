@@ -174,16 +174,11 @@ export class AuthService {
       merchant = this.resolveMerchantCandidate((membershipsData ?? []) as RawMembershipRow[]);
       merchantMemberships = this.resolveMerchantMemberships((membershipsData ?? []) as RawMembershipRow[]);
 
-      // Self-healing / defensive authority: If profile role is lingering as merchant_applicant,
-      // but the resolved merchant candidate is active and user is owner, elevate activeRole to merchant_owner
+      // Defensive authority: If profile role is lingering as merchant_applicant,
+      // but the resolved merchant candidate is active and user is owner, elevate activeRole to merchant_owner.
+      // /auth/context remains strictly read-only with zero database mutation side effects.
       if (resolvedRole === "merchant_applicant" && merchant?.status === "active" && merchant?.role === "owner") {
         resolvedRole = "merchant_owner";
-        void Promise.resolve(
-          this.supabaseAdmin.client
-            .from("profiles")
-            .update({ role: "merchant_owner" })
-            .eq("id", actorId)
-        ).catch(() => {});
       }
     }
 

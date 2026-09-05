@@ -29,12 +29,12 @@ READY_FOR_DRAFT_PR_REVIEW
 - **Scope Delivered:**
   - `MerchantsService.updateMerchantStatus`: Promotes owner profile from `merchant_applicant` to `merchant_owner` upon status update to `active`.
   - `MerchantApplicationsService`: Replaced calls to non-existent `approve_merchant_atomic` and `reject_merchant_atomic` RPCs with safe direct queries; added duplicate email and slug conflict validation (`SLUG_EXISTS`, `EXISTING_MERCHANT`, `EXISTING_APPLICATION`, `ACCOUNT_EXISTS`).
-  - `AuthService.getContext`: Defensive self-healing elevating lingering `merchant_applicant` to `merchant_owner` when candidate store is `active`.
+  - `AuthService.getContext`: Defensive in-memory elevation of lingering `merchant_applicant` to `merchant_owner` when candidate store is `active`. Strictly read-only with zero database mutations; role promotions to `merchant_owner` are strictly confined to administrative decision routes.
   - `RequireMerchantUser`: Granted access to active merchants directly, eliminating the `/merchant/pending` infinite bounce loop.
   - `MerchantLogin`, `MerchantPending`, `MerchantRegister`: Improved distinct status routing and UI handling for `pending_review`, `active`, `suspended`, and `rejected`.
 - **Database Status:** 0 migrations created or applied, 0 live mutations.
 - **Verification:**
-  - `backend/tests/merchant-auth-onboarding-authority.test.mjs` (7 tests, all pass)
+  - `backend/tests/merchant-auth-onboarding-authority.test.mjs` (8 tests, all pass)
   - `backend/tests/admin-merchant-registration-data.test.mjs` (14 tests, all pass)
   - `src/components/guards/RequireMerchantUser.authority.test.tsx` (5 tests, all pass)
   - `src/pages/merchant/Pending.authority.test.tsx` (4 tests, all pass)

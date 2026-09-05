@@ -7,6 +7,9 @@ const { MerchantApplicationsService } = await import(
 const { MerchantsService } = await import(
   "../dist/modules/merchants/merchants.service.js"
 );
+const { AuthService } = await import(
+  "../dist/modules/auth/auth.service.js"
+);
 
 function makeMockSupabase() {
   const calls = [];
@@ -15,6 +18,7 @@ function makeMockSupabase() {
     merchant_users: [],
     profiles: [],
     merchant_settings: [],
+    customer_phone_identities: [],
   };
   const mockErrors = {};
 
@@ -310,4 +314,51 @@ test("updateMerchantStatus - promotes owner profile from merchant_applicant to m
 
   const profile = mockData.profiles.find(p => p.id === "owner-456");
   assert.equal(profile.role, "merchant_owner", "Owner profile must be upgraded to merchant_owner on status=active");
+});
+
+test("AuthService.getContext - strictly read-only: elevates activeRole to merchant_owner without updating profiles in DB", async () => {
+  const { supabaseAdmin, mockData, calls } = makeMockSupabase();
+  mockData.profiles.push({
+    id: "user-applicant-owner",
+    role: "merchant_applicant",
+    email: "owner@dilmart.com",
+    full_name: "Owner Name",
+  });
+  mockData.merchants.push({
+    id: "m-active-1",
+    status: "active",
+    display_name: "Active DilMart Store",
+    slug: "dilmart-store",
+  });
+  mockData.merchant_users.push({
+    merchant_id: "m-active-1",
+    user_id: "user-applicant-owner",
+    role: "owner",
+    merchants: {
+      id: "m-active-1",
+      status: "active",
+      display_name: "Active DilMart Store",
+      slug: "dilmart-store",
+    },
+  });
+
+  const authService = new AuthService(supabaseAdmin);
+  const context = await authService.getContext({
+    actorId: "user-applicant-owner",
+    authSource: "supabase",
+  });
+
+  // 1. Correct active role is synthesized to prevent redirect loop
+  assert.equal(context.activeRole, "merchant_owner");
+  assert.equal(context.profile?.role, "merchant_owner");
+  assert.equal(context.merchant?.id, "m-active-1");
+  assert.equal(context.merchant?.status, "active");
+
+  // 2. Proves zero mutation side effects: NO update/insert/upsert calls on profiles or any table
+  const mutationCalls = calls.filter((c) => c.op === "update" || c.op === "insert" || c.op === "upsert");
+  assert.equal(mutationCalls.length, 0, "getContext must be strictly read-only with zero mutations");
+
+  // 3. Profiles table in database was NOT altered
+  const storedProfile = mockData.profiles.find((p) => p.id === "user-applicant-owner");
+  assert.equal(storedProfile.role, "merchant_applicant", "Profiles DB row must remain untouched by getContext");
 });
