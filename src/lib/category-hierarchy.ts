@@ -78,4 +78,3 @@ export const CANONICAL_ROOT_CATEGORY_SLUGS = [
 ] as const;
 
 export type CanonicalRootCategorySlug = (typeof CANONICAL_ROOT_CATEGORY_SLUGS)[number];
-

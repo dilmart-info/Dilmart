@@ -114,4 +114,3 @@ describe("DesktopQuickLinksBar — API authority & unchanged href rendering (Bou
     expect(link).toHaveAttribute("href", "/products?category=beauty-personal-care");
   });
 });
-
