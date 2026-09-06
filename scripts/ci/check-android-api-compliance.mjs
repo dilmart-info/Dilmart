@@ -243,17 +243,17 @@ export function inspectApkSigning(apkPath, customApksigner = null) {
     throw new Error(`APK signing verification failed for ${apkPath}: no valid signing scheme detected in apksigner output`);
   }
 
-  const dnMatch = out.match(/(?:Signer #\d+|V\d+ Signer):?\s*certificate DN:\s*([^\r\n]+)/i);
-  const sha256Match = out.match(/(?:Signer #\d+|V\d+ Signer):?\s*certificate SHA-256 digest:\s*([^\r\n]+)/i);
+  const dnMatch = out.match(/(?:Signer #\d+|V\d+ Signer):?[ \t]*certificate DN:[ \t]*([^\r\n]*)/i);
+  const sha256Match = out.match(/(?:Signer #\d+|V\d+ Signer):?[ \t]*certificate SHA-256 digest:[ \t]*([^\r\n]*)/i);
 
   const dn = dnMatch ? dnMatch[1].trim() : null;
   const certSha256 = sha256Match ? sha256Match[1].trim() : null;
 
-  if (!dn) {
-    throw new Error(`APK signing verification failed for ${apkPath}: signer certificate DN could not be parsed`);
+  if (!dn || dn.trim().length === 0) {
+    throw new Error(`APK signing verification failed for ${apkPath}: signer certificate DN is empty or could not be parsed`);
   }
-  if (!certSha256) {
-    throw new Error(`APK signing verification failed for ${apkPath}: signer certificate SHA-256 digest could not be parsed`);
+  if (!certSha256 || !/^[a-f0-9]{64}$/i.test(certSha256)) {
+    throw new Error(`APK signing verification failed for ${apkPath}: signer certificate SHA-256 digest is invalid or could not be parsed (expected 64 hex characters, got '${certSha256}')`);
   }
 
   return {
@@ -368,16 +368,16 @@ export function inspectElf16KbAlignment(buffer, libraryName) {
   }
 
   const unaligned = ptLoads.filter((seg) => !seg.isAligned16Kb);
-  if (is64 && unaligned.length > 0) {
+  if (unaligned.length > 0) {
     throw new Error(
       `'${libraryName}' failed 16 KB ELF alignment: ${unaligned.length}/${ptLoads.length} PT_LOAD segments not aligned to 16 KB (min p_align: ${Math.min(...ptLoads.map((p) => p.pAlign))})`,
     );
   }
 
-  return { is64, ptLoads, isCompliant: unaligned.length === 0 };
+  return { is64, ptLoads, isCompliant: true };
 }
 
-export function inspectNativeLibraries(entries, getBufferForEntry = null) {
+export function inspectNativeLibraries(entries) {
   const soEntries = entries.filter((e) => e.endsWith(".so"));
 
   if (soEntries.length === 0) {
@@ -391,62 +391,9 @@ export function inspectNativeLibraries(entries, getBufferForEntry = null) {
     };
   }
 
-  // Parse ABI and library name
-  const libMap = new Map(); // libName -> Set(abis)
-  const abiLibs = [];
-
-  for (const soPath of soEntries) {
-    // Expected patterns: lib/<abi>/<filename> or base/lib/<abi>/<filename>
-    const match = soPath.match(/(?:^|\/)lib\/([^/]+)\/(.+)$/);
-    if (!match) {
-      throw new Error(`Invalid native library path in archive: ${soPath}`);
-    }
-    const abi = match[1];
-    const filename = match[2];
-    abiLibs.push({ soPath, abi, filename });
-
-    if (!libMap.has(filename)) {
-      libMap.set(filename, new Set());
-    }
-    libMap.get(filename).add(abi);
-  }
-
-  // Check 64-bit counterpart coverage:
-  // armeabi-v7a requires arm64-v8a; x86 requires x86_64
-  for (const [filename, abis] of libMap.entries()) {
-    if (abis.has("armeabi-v7a") && !abis.has("arm64-v8a")) {
-      throw new Error(`64-bit requirement violation: '${filename}' has 32-bit armeabi-v7a but missing arm64-v8a`);
-    }
-    if (abis.has("x86") && !abis.has("x86_64")) {
-      throw new Error(`64-bit requirement violation: '${filename}' has 32-bit x86 but missing x86_64`);
-    }
-  }
-
-  // Authoritative 16 KB ELF alignment verification
-  if (!getBufferForEntry) {
-    throw new Error(
-      `Native .so libraries detected (${soEntries.length}), but authoritative ELF buffer reader was not provided to verify 16 KB alignment. Cannot mark compliant.`,
-    );
-  }
-
-  const alignmentResults = [];
-  for (const lib of abiLibs) {
-    const buf = getBufferForEntry(lib.soPath);
-    if (!buf || buf.length === 0) {
-      throw new Error(`Failed to read buffer for native library: ${lib.soPath}`);
-    }
-    const elfResult = inspectElf16KbAlignment(buf, lib.soPath);
-    alignmentResults.push({ ...lib, elfResult });
-  }
-
-  return {
-    hasNativeLibs: true,
-    nativeLibrariesCount: soEntries.length,
-    nativeLibraries: soEntries,
-    requirement64Bit: "VERIFIED",
-    requirement16Kb: "VERIFIED",
-    details: alignmentResults,
-  };
+  throw new Error(
+    "Native libraries detected. Full authoritative ABI, ELF and ZIP/page-alignment verification is required before compliance can be asserted.",
+  );
 }
 
 export function inspectApkBinary(apkPath, customAapt2 = null, customApksigner = null) {
@@ -455,9 +402,7 @@ export function inspectApkBinary(apkPath, customAapt2 = null, customApksigner = 
   }
 
   const entries = parseZipEntries(apkPath);
-  const nativeLibReport = inspectNativeLibraries(entries, (entryName) => {
-    return extractZipEntryBuffer(apkPath, entryName);
-  });
+  const nativeLibReport = inspectNativeLibraries(entries);
 
   const aapt2 = customAapt2 || findAapt2();
   if (!aapt2) {
@@ -614,9 +559,7 @@ export function inspectAabWithBundletool(
 
   // 3. Inspect archive entries and native libraries
   const entries = parseZipEntries(aabPath);
-  const nativeLibReport = inspectNativeLibraries(entries, (entryName) => {
-    return extractZipEntryBuffer(aabPath, entryName);
-  });
+  const nativeLibReport = inspectNativeLibraries(entries);
 
   const stat = fs.statSync(aabPath);
   const sha256 = computeSha256(aabPath);
@@ -738,6 +681,11 @@ export function runPostBuildMode() {
 
   console.log("\n=================================================");
   console.log("STATUS: POST-BUILD COMPLIANCE VERIFIED (PASS)");
+  console.log("=================================================");
+  console.log("API 36 Compliance: PASS");
+  console.log("AAB Structural Validation: PASS");
+  console.log("AAB Signing State: UNSIGNED");
+  console.log("Google Play Upload: BLOCKED — authorized upload-key signing is not configured");
   console.log("=================================================");
 }
 
