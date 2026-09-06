@@ -24,6 +24,11 @@ import {
   checkVariablesGradle,
   checkAppBuildGradle,
   findAapt2,
+  findApksigner,
+  findJarsigner,
+  inspectApkSigning,
+  inspectAabSigning,
+  inspectGradleSigningConfig,
   inspectElf16KbAlignment,
   inspectNativeLibraries,
   parseZipEntries,
@@ -303,6 +308,53 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
     });
   });
 
+  describe("Dynamic Signing Authority and Inspection", () => {
+    it("dynamically verifies Gradle release signing configuration is absent/omitted", () => {
+      const config = inspectGradleSigningConfig(appBuildPath);
+      expect(config.hasSigningConfigsBlock).toBe(false);
+      expect(config.hasReleaseSigningConfig).toBe(false);
+      expect(config.summary).toContain("not configured");
+      expect(config.summary).toContain("signingConfigs block absent");
+    });
+
+    it("detects configured release signing in Gradle if present", () => {
+      const tempPath = path.join(rootDir, "node_modules/.temp-build-signing.gradle");
+      fs.writeFileSync(
+        tempPath,
+        `android {
+          signingConfigs { release { storeFile file("keystore.jks") } }
+          buildTypes { release { signingConfig signingConfigs.release } }
+        }`,
+        "utf8",
+      );
+      try {
+        const config = inspectGradleSigningConfig(tempPath);
+        expect(config.hasSigningConfigsBlock).toBe(true);
+        expect(config.hasReleaseSigningConfig).toBe(true);
+        expect(config.summary).toContain("configured");
+      } finally {
+        if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
+      }
+    });
+
+    it.runIf(fs.existsSync(debugApkPath))("authoritatively verifies Debug APK signing via apksigner", () => {
+      const signing = inspectApkSigning(debugApkPath);
+      expect(signing.verified).toBe(true);
+      expect(signing.schemes).toContain("v2 (APK Signature Scheme v2)");
+      expect(signing.signerDn).toContain("CN=Android Debug");
+      expect(signing.certSha256).toBe("8400c8daa3996d830f95a220c1c7114dc6945fbc8f10e4c81f39787c1d386939");
+      expect(signing.signingSummary).toContain("verified (v2 (APK Signature Scheme v2)");
+    });
+
+    it.runIf(fs.existsSync(releaseAabPath))("authoritatively verifies Release AAB unsigned status via jarsigner", () => {
+      const signing = inspectAabSigning(releaseAabPath);
+      expect(signing.isSigned).toBe(false);
+      expect(signing.signatureFiles).toHaveLength(0);
+      expect(signing.jarsignerStatus).toBe("jar is unsigned");
+      expect(signing.signingSummary).toContain("unsigned (verified via jarsigner: 'jar is unsigned'");
+    });
+  });
+
   describe("Real Artifact Verification (Integration)", () => {
     it("locates authoritative aapt2 binary", () => {
       const aapt2 = findAapt2();
@@ -321,7 +373,9 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
       expect(report.nativeLibrariesCount).toBe(0);
       expect(report.requirement64Bit).toBe("NOT APPLICABLE");
       expect(report.requirement16Kb).toBe("NOT APPLICABLE");
-      expect(report.signingState).toContain("debug-signed");
+      expect(report.signingState).toContain("verified (v2 (APK Signature Scheme v2)");
+      expect(report.signerDn).toContain("CN=Android Debug");
+      expect(report.signerCertSha256).toBe("8400c8daa3996d830f95a220c1c7114dc6945fbc8f10e4c81f39787c1d386939");
       expect(report.sha256).toHaveLength(64);
       expect(report.sizeBytes).toBeGreaterThan(0);
     });
@@ -338,8 +392,9 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
       expect(report.requirement64Bit).toBe("NOT APPLICABLE");
       expect(report.requirement16Kb).toBe("NOT APPLICABLE");
       expect(report.bundletoolValidation).toContain("VALIDATED");
-      expect(report.signingState).toContain("unsigned");
-      expect(report.productionPlaySigning).toBe("not configured");
+      expect(report.signingState).toContain("unsigned (verified via jarsigner: 'jar is unsigned'");
+      expect(report.productionPlaySigning).toContain("not configured");
+      expect(report.productionPlaySigning).toContain("buildTypes.release.signingConfig omitted");
       expect(report.sha256).toHaveLength(64);
       expect(report.sizeBytes).toBeGreaterThan(0);
     });

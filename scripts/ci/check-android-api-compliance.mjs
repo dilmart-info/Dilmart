@@ -193,6 +193,109 @@ export function findAapt2() {
   return null;
 }
 
+export function findApksigner() {
+  const aapt2 = findAapt2();
+  if (aapt2) {
+    const dir = path.dirname(aapt2);
+    const bat = path.join(dir, "apksigner.bat");
+    const bin = path.join(dir, "apksigner");
+    if (process.platform === "win32" && fs.existsSync(bat)) return bat;
+    if (fs.existsSync(bin)) return bin;
+  }
+  return null;
+}
+
+export function findJarsigner() {
+  if (process.env.JAVA_HOME) {
+    const exe = process.platform === "win32" ? "jarsigner.exe" : "jarsigner";
+    const p = path.join(process.env.JAVA_HOME, "bin", exe);
+    if (fs.existsSync(p)) return p;
+  }
+  return "jarsigner";
+}
+
+export function inspectApkSigning(apkPath, customApksigner = null) {
+  const apksigner = customApksigner || findApksigner();
+  if (!apksigner) {
+    throw new Error("apksigner executable not found. Cannot inspect APK signing.");
+  }
+  const out = execFileSync(apksigner, ["verify", "--verbose", "--print-certs", apkPath], {
+    encoding: "utf8",
+    shell: process.platform === "win32",
+  });
+  const verified = out.includes("Verifies");
+  const schemes = [];
+  if (/Verified using v1 scheme [^:]+: true/i.test(out)) schemes.push("v1 (JAR signing)");
+  if (/Verified using v2 scheme [^:]+: true/i.test(out)) schemes.push("v2 (APK Signature Scheme v2)");
+  if (/Verified using v3(?:\.1|\.2)? scheme [^:]+: true/i.test(out)) schemes.push("v3 (APK Signature Scheme v3)");
+  if (/Verified using v4 scheme [^:]+: true/i.test(out)) schemes.push("v4 (APK Signature Scheme v4)");
+
+  const dnMatch = out.match(/(?:Signer #\d+|V\d+ Signer):?\s*certificate DN:\s*([^\r\n]+)/i);
+  const sha256Match = out.match(/(?:Signer #\d+|V\d+ Signer):?\s*certificate SHA-256 digest:\s*([^\r\n]+)/i);
+
+  const dn = dnMatch ? dnMatch[1].trim() : null;
+  const certSha256 = sha256Match ? sha256Match[1].trim() : null;
+
+  return {
+    verified,
+    schemes,
+    signerDn: dn,
+    certSha256,
+    signingSummary: verified
+      ? `verified (${schemes.join(", ")}; DN: ${dn || "unknown"}; Cert SHA-256: ${certSha256 || "unknown"})`
+      : "unverified / unsigned",
+  };
+}
+
+export function inspectAabSigning(aabPath, customJarsigner = null) {
+  const jarsigner = customJarsigner || findJarsigner();
+  let out = "";
+  try {
+    out = execFileSync(jarsigner, ["-verify", "-verbose", "-certs", aabPath], {
+      encoding: "utf8",
+    });
+  } catch (err) {
+    out = err.stdout || err.message;
+  }
+
+  const entries = parseZipEntries(aabPath);
+  const sigFiles = entries.filter((e) => /(?:^|\/)META-INF\/.*\.(?:RSA|DSA|EC|SF)$/i.test(e));
+  const isUnsigned = out.includes("jar is unsigned") || sigFiles.length === 0;
+  const jarsignerStatus = out.includes("jar is unsigned")
+    ? "jar is unsigned"
+    : out.includes("jar verified")
+      ? "jar verified"
+      : "signature not verified";
+
+  return {
+    isSigned: !isUnsigned,
+    signatureFiles: sigFiles,
+    jarsignerStatus,
+    signingSummary: isUnsigned
+      ? `unsigned (verified via jarsigner: '${jarsignerStatus}'; 0 signature block files in META-INF)`
+      : `signed (${sigFiles.join(", ")})`,
+  };
+}
+
+export function inspectGradleSigningConfig(filePath) {
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`build.gradle not found: ${filePath}`);
+  }
+  const content = fs.readFileSync(filePath, "utf8");
+  const hasSigningConfigsBlock = /signingConfigs\s*\{/.test(content);
+  const releaseBlockMatch = content.match(/buildTypes\s*\{[\s\S]*?release\s*\{([^}]+)\}/);
+  const releaseBlockContent = releaseBlockMatch ? releaseBlockMatch[1] : "";
+  const hasReleaseSigningConfig = /signingConfig\s+/.test(releaseBlockContent);
+
+  return {
+    hasSigningConfigsBlock,
+    hasReleaseSigningConfig,
+    summary: hasReleaseSigningConfig
+      ? "configured (buildTypes.release has signingConfig)"
+      : "not configured (signingConfigs block absent and buildTypes.release.signingConfig omitted in android/app/build.gradle; unsigned bundle prepared for Google Play App Signing)",
+  };
+}
+
 export function inspectElf16KbAlignment(buffer, libraryName) {
   if (buffer.length < 52 || buffer.toString("ascii", 0, 4) !== "\x7fELF") {
     throw new Error(`'${libraryName}' is not a valid ELF binary`);
@@ -312,7 +415,7 @@ export function inspectNativeLibraries(entries, getBufferForEntry = null) {
   };
 }
 
-export function inspectApkBinary(apkPath, customAapt2 = null) {
+export function inspectApkBinary(apkPath, customAapt2 = null, customApksigner = null) {
   if (!fs.existsSync(apkPath)) {
     throw new Error(`APK not found: ${apkPath}`);
   }
@@ -372,6 +475,19 @@ export function inspectApkBinary(apkPath, customAapt2 = null) {
   const stat = fs.statSync(apkPath);
   const sha256 = computeSha256(apkPath);
 
+  let apkSigning = null;
+  try {
+    apkSigning = inspectApkSigning(apkPath, customApksigner);
+  } catch (err) {
+    apkSigning = {
+      verified: false,
+      schemes: [],
+      signerDn: null,
+      certSha256: null,
+      signingSummary: `inspection failed: ${err.message}`,
+    };
+  }
+
   return {
     filename: path.basename(apkPath),
     path: apkPath,
@@ -388,11 +504,19 @@ export function inspectApkBinary(apkPath, customAapt2 = null) {
     requirement64Bit: nativeLibReport.requirement64Bit,
     requirement16Kb: nativeLibReport.requirement16Kb,
     totalEntries: entries.length,
-    signingState: "debug-signed (APK Signature Scheme v2; installable for internal testing)",
+    signingState: apkSigning.signingSummary,
+    signerDn: apkSigning.signerDn,
+    signerCertSha256: apkSigning.certSha256,
+    signingSchemes: apkSigning.schemes,
   };
 }
 
-export function inspectAabWithBundletool(aabPath, customBundletoolJar = null) {
+export function inspectAabWithBundletool(
+  aabPath,
+  customBundletoolJar = null,
+  customJarsigner = null,
+  customBuildGradle = null,
+) {
   if (!fs.existsSync(aabPath)) {
     throw new Error(`AAB not found: ${aabPath}`);
   }
@@ -474,6 +598,27 @@ export function inspectAabWithBundletool(aabPath, customBundletoolJar = null) {
   const stat = fs.statSync(aabPath);
   const sha256 = computeSha256(aabPath);
 
+  let aabSigning = null;
+  try {
+    aabSigning = inspectAabSigning(aabPath, customJarsigner);
+  } catch (err) {
+    aabSigning = {
+      isSigned: false,
+      signatureFiles: [],
+      jarsignerStatus: `error: ${err.message}`,
+      signingSummary: `inspection failed: ${err.message}`,
+    };
+  }
+
+  const rootDir = path.resolve(import.meta.dirname, "../..");
+  const gradlePath = customBuildGradle || path.join(rootDir, "android/app/build.gradle");
+  let gradleSigning = null;
+  if (fs.existsSync(gradlePath)) {
+    gradleSigning = inspectGradleSigningConfig(gradlePath);
+  } else {
+    gradleSigning = { summary: "not configured (build.gradle not found)" };
+  }
+
   return {
     filename: path.basename(aabPath),
     path: aabPath,
@@ -491,8 +636,9 @@ export function inspectAabWithBundletool(aabPath, customBundletoolJar = null) {
     nativeLibraries: nativeLibReport.nativeLibraries,
     requirement64Bit: nativeLibReport.requirement64Bit,
     requirement16Kb: nativeLibReport.requirement16Kb,
-    signingState: "unsigned (release signing not configured locally; ready for Play App Signing)",
-    productionPlaySigning: "not configured",
+    signingState: aabSigning.signingSummary,
+    productionPlaySigning: gradleSigning.summary,
+    signatureFilesCount: aabSigning.signatureFiles.length,
   };
 }
 
