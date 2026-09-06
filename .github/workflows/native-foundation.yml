@@ -66,11 +66,20 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Install Android 36 SDK Platform & Build-Tools
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Install frontend deps
         run: npm ci
 
       - name: Frontend unit tests
         run: npm test
+
+      - name: CI guards & API 36 authority tests
+        run: npm run test:ci-guards
 
       - name: Auth lifecycle guard
         run: npm run auth:guard
@@ -144,6 +153,9 @@ jobs:
           ./gradlew clean --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
           ./gradlew assembleDebug --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
           ./gradlew bundleRelease --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
+
+      - name: Android API 36 post-build binary compliance guard
+        run: npm run android:api:guard
 
       - name: Upload Android Debug APK
         uses: actions/upload-artifact@v4
