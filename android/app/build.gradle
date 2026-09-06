@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.DilMart.store"
+    namespace = "com.dilmart.store"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId = "com.DilMart.store"
+        applicationId = "com.dilmart.store"
         minSdkVersion = rootProject.ext.minSdkVersion
         targetSdkVersion = rootProject.ext.targetSdkVersion
         versionCode = 1

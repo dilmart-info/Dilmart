@@ -146,7 +146,7 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
 
     it("verifies applicationId, positive integer versionCode, non-empty versionName, and wiring", () => {
       const config = checkAppBuildGradle(appBuildPath);
-      expect(config.applicationId).toBe("com.DilMart.store");
+      expect(config.applicationId).toBe("com.dilmart.store");
       expect(Number.isInteger(config.versionCode)).toBe(true);
       expect(config.versionCode).toBeGreaterThan(0);
       expect(config.versionName.length).toBeGreaterThan(0);
@@ -161,7 +161,7 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
         `android {
           compileSdk = rootProject.ext.compileSdkVersion
           defaultConfig {
-            applicationId = "com.DilMart.store"
+            applicationId = "com.dilmart.store"
             minSdkVersion = rootProject.ext.minSdkVersion
             targetSdkVersion = rootProject.ext.targetSdkVersion
             versionCode = 42
@@ -186,7 +186,7 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
         `android {
           compileSdk = rootProject.ext.compileSdkVersion
           defaultConfig {
-            applicationId = "com.DilMart.store"
+            applicationId = "com.dilmart.store"
             minSdkVersion = rootProject.ext.minSdkVersion
             targetSdkVersion = rootProject.ext.targetSdkVersion
             versionCode = 0
@@ -209,7 +209,7 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
         `android {
           compileSdk = rootProject.ext.compileSdkVersion
           defaultConfig {
-            applicationId = "com.DilMart.store"
+            applicationId = "com.dilmart.store"
             minSdkVersion = rootProject.ext.minSdkVersion
             targetSdkVersion = rootProject.ext.targetSdkVersion
             versionCode = 1
@@ -242,7 +242,7 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
         "utf8",
       );
       try {
-        expect(() => checkAppBuildGradle(tempPath)).toThrow(/applicationId must be 'com.DilMart.store'/);
+        expect(() => checkAppBuildGradle(tempPath)).toThrow(/applicationId must be 'com.dilmart.store'/);
       } finally {
         if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath);
       }

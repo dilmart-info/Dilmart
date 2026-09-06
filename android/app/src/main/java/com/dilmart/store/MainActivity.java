@@ -1,4 +1,4 @@
-package com.DilMart.store;
+package com.dilmart.store;
 
 import com.getcapacitor.BridgeActivity;
 
