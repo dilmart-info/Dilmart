@@ -87,6 +87,9 @@ jobs:
       - name: Native brand asset guard
         run: npm run native:assets:check
 
+      - name: Android API 36 compliance pre-build guard
+        run: npm run android:api:guard:pre
+
       - name: Upload auth storage boundary report
         if: always()
         uses: actions/upload-artifact@v4
@@ -154,8 +157,11 @@ jobs:
           ./gradlew assembleDebug --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
           ./gradlew bundleRelease --no-daemon -Dorg.gradle.internal.instrumentation.agent=false
 
+      - name: Provision pinned bundletool
+        run: npm run bundletool:provision
+
       - name: Android API 36 post-build binary compliance guard
-        run: npm run android:api:guard
+        run: npm run android:api:guard:post
 
       - name: Upload Android Debug APK
         uses: actions/upload-artifact@v4
