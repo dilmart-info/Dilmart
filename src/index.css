@@ -98,10 +98,19 @@
     --safe-area-inset-top,
     env(safe-area-inset-top, 0px)
   );
+  --mobile-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --mobile-bottom-nav-content-height: 4rem; /* 64px touch-friendly bar */
+  --mobile-bottom-nav-total: calc(var(--mobile-bottom-nav-content-height) + var(--mobile-safe-bottom));
+  --mobile-pdp-purchase-height: 4.25rem; /* ~68px sticky purchase bar */
+  --mobile-pdp-total-bottom: calc(var(--mobile-bottom-nav-total) + var(--mobile-pdp-purchase-height));
 }
 
 .mobile-safe-area-top {
   padding-top: var(--app-safe-area-top);
+}
+
+.mobile-safe-area-bottom {
+  padding-bottom: var(--mobile-safe-bottom);
 }
 
 @layer utilities {

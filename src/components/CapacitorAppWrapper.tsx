@@ -80,10 +80,18 @@ const CapacitorAppWrapper = ({ children }: Props) => {
     const setupBack = async () => {
       const { App } = await import("@capacitor/app");
       handle = await App.addListener("backButton", () => {
-        if (location.pathname === "/" || !document.referrer) {
-          App.exitApp();
-        } else {
+        if (location.pathname === "/") {
+          void App.exitApp();
+          return;
+        }
+
+        const historyIdx = (window.history.state as { idx?: number } | null)?.idx;
+        if (typeof historyIdx === "number" && historyIdx > 0) {
           navigate(-1);
+        } else if (location.pathname.startsWith("/product/")) {
+          navigate("/products");
+        } else {
+          navigate("/");
         }
       });
     };

@@ -36,6 +36,7 @@ import { MARKETPLACE_EMPTY_SUGGESTED, type MarketplacePublicProduct } from "@/li
 import { addRecentlyViewedItem, trackGrowthHookEvent } from "@/lib/growth-hooks";
 import { startTrackedWhatsAppIntent } from "@/lib/whatsapp-assisted";
 import { toast } from "sonner";
+import PostAddToCartConfirmation from "@/components/product/PostAddToCartConfirmation";
 
 const PLACEHOLDER_IMG = "/placeholder.svg";
 
@@ -169,6 +170,8 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   const [selectedImage, setSelectedImage] = useState(0);
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
   const [quantity, setQuantity] = useState(1);
+  const [postAddOpen, setPostAddOpen] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const addToCartBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const displaySrc = useCallback(
@@ -212,6 +215,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
     setFailedUrls({});
     setSelectedImage(0);
     setQuantity(1);
+    setPostAddOpen(false);
   }, [product.id]);
 
   useEffect(() => {
@@ -253,18 +257,25 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   };
 
   const handleAddToCart = (targetEl?: HTMLElement | null) => {
-    if (isOutOfStock || isAllStockInCart) return;
+    if (isOutOfStock || isAllStockInCart || isAddingToCart) return;
+    setIsAddingToCart(true);
     const trigger = targetEl ?? addToCartBtnRef.current;
-    const directAdded = attemptAdd(
-      product,
-      trigger,
-      () => {
-        toast.success(`تمت إضافة ${quantity > 1 ? `${quantity} قطع` : "المنتج"} إلى السلة`);
-      },
-      quantity,
-    );
-    if (directAdded && trigger) {
-      triggerCartAnimation(trigger);
+    try {
+      const directAdded = attemptAdd(
+        product,
+        trigger,
+        () => {
+          setPostAddOpen(true);
+        },
+        quantity,
+      );
+      if (directAdded && trigger) {
+        triggerCartAnimation(trigger);
+      }
+    } finally {
+      setTimeout(() => {
+        setIsAddingToCart(false);
+      }, 400);
     }
   };
 
@@ -343,7 +354,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
       {dialogNode}
       <Header />
 
-      <main className="flex-1 pb-24 md:pb-16">
+      <main className="flex-1 pb-[calc(var(--mobile-pdp-total-bottom)+2rem)] md:pb-16">
         {/* 1. Breadcrumbs Nav */}
         <div className="border-b border-border/70 bg-white shadow-xs">
           <div className="container py-3 md:py-4">
@@ -738,10 +749,11 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
         </div>
       </main>
 
-      {/* 5. Mobile Sticky Purchase Bar (with safe-area-inset-bottom support) */}
+      {/* 5. Mobile Sticky Purchase Bar */}
       <div
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-border/80 p-3 shadow-lg"
-        style={{ paddingBottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        data-testid="pdp-sticky-purchase-bar"
+        className="md:hidden fixed left-0 right-0 bottom-[var(--mobile-bottom-nav-total)] z-40 bg-white/95 backdrop-blur-md border-t border-border/80 p-3 shadow-lg"
+        style={{ bottom: "var(--mobile-bottom-nav-total)" }}
         dir="rtl"
       >
         <div className="container flex items-center justify-between gap-3">
@@ -755,14 +767,21 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
           <Button
             type="button"
             onClick={() => handleAddToCart()}
-            disabled={isAddBlocked}
+            disabled={isAddBlocked || isAddingToCart}
             className="h-11 flex-1 max-w-[220px] rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white gap-2 shadow-xs disabled:opacity-50"
           >
             <ShoppingBag size={16} strokeWidth={2} />
-            <span>{buttonLabel}</span>
+            <span>{isAddingToCart ? "جاري الإضافة..." : buttonLabel}</span>
           </Button>
         </div>
       </div>
+
+      <PostAddToCartConfirmation
+        open={postAddOpen}
+        productName={product.name}
+        quantity={quantity}
+        onDismiss={() => setPostAddOpen(false)}
+      />
 
       <Footer />
     </div>
