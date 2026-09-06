@@ -173,6 +173,15 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   const [postAddOpen, setPostAddOpen] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const addToCartBtnRef = useRef<HTMLButtonElement | null>(null);
+  const addDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (addDebounceTimeoutRef.current) {
+        clearTimeout(addDebounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const displaySrc = useCallback(
     (url: string) => (failedUrls[url] ? PLACEHOLDER_IMG : url),
@@ -273,7 +282,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
         triggerCartAnimation(trigger);
       }
     } finally {
-      setTimeout(() => {
+      addDebounceTimeoutRef.current = setTimeout(() => {
         setIsAddingToCart(false);
       }, 400);
     }
@@ -752,14 +761,14 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
       {/* 5. Mobile Sticky Purchase Bar */}
       <div
         data-testid="pdp-sticky-purchase-bar"
-        className="md:hidden fixed left-0 right-0 bottom-[var(--mobile-bottom-nav-total)] z-40 bg-white/95 backdrop-blur-md border-t border-border/80 p-3 shadow-lg"
+        className="md:hidden fixed left-0 right-0 bottom-[var(--mobile-bottom-nav-total)] z-40 bg-white/95 backdrop-blur-md border-t border-border/80 px-3 py-2 min-h-[4.25rem] flex items-center shadow-lg"
         style={{ bottom: "var(--mobile-bottom-nav-total)" }}
         dir="rtl"
       >
-        <div className="container flex items-center justify-between gap-3">
-          <div>
-            <span className="text-[10px] text-muted-foreground font-medium block">السعر</span>
-            <span className="font-tajawal text-lg font-black text-navy">
+        <div className="container flex items-center justify-between gap-3 min-w-0">
+          <div className="shrink-0 whitespace-nowrap">
+            <span className="text-[10px] text-muted-foreground font-medium block leading-none mb-0.5">السعر</span>
+            <span className="font-tajawal text-base sm:text-lg font-black text-navy leading-tight">
               {formatPrice(hasDiscount ? product.discount_price! : product.price)}
             </span>
           </div>
@@ -768,10 +777,10 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
             type="button"
             onClick={() => handleAddToCart()}
             disabled={isAddBlocked || isAddingToCart}
-            className="h-11 flex-1 max-w-[220px] rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white gap-2 shadow-xs disabled:opacity-50"
+            className="h-11 min-h-[44px] flex-1 max-w-[220px] shrink-0 rounded-xl bg-primary hover:bg-primary-hover font-bold text-xs text-white gap-2 shadow-xs disabled:opacity-50 whitespace-nowrap"
           >
-            <ShoppingBag size={16} strokeWidth={2} />
-            <span>{isAddingToCart ? "جاري الإضافة..." : buttonLabel}</span>
+            <ShoppingBag size={16} strokeWidth={2} className="shrink-0" />
+            <span className="truncate">{isAddingToCart ? "جاري الإضافة..." : buttonLabel}</span>
           </Button>
         </div>
       </div>

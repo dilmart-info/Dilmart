@@ -6,19 +6,24 @@ import DesktopHeader from "@/components/header/DesktopHeader";
 import MobileTopPromoBlock from "@/components/header/MobileTopPromoBlock";
 import MobileInnerHeader from "@/components/header/MobileInnerHeader";
 import MobileCheckoutHeader from "@/components/header/MobileCheckoutHeader";
+import { classifyHeaderRoute } from "@/components/header/header-route-boundary";
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isHomePage = location.pathname === "/";
-  const isCheckoutPage = location.pathname.startsWith("/checkout");
+  const routeType = classifyHeaderRoute(location.pathname);
 
   const { data: categories } = useQuery({
     queryKey: ["marketplace-categories"],
     queryFn: () => apiClient.getMarketplaceCategories(),
+    enabled: routeType !== "excluded",
   });
+
+  if (routeType === "excluded") {
+    return null;
+  }
 
   const categoryTree =
     categories
@@ -38,9 +43,9 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50">
       <DesktopHeader categories={categoryTree} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} />
-      {isHomePage ? (
+      {routeType === "home" ? (
         <MobileTopPromoBlock searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} />
-      ) : isCheckoutPage ? (
+      ) : routeType === "checkout" ? (
         <MobileCheckoutHeader />
       ) : (
         <MobileInnerHeader />

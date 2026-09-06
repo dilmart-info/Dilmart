@@ -127,4 +127,36 @@ describe("Header — Route-Aware Mobile Header System", () => {
     fireEvent.click(backBtn);
     expect(navigateMock).toHaveBeenCalledWith("/products");
   });
+
+  describe("Header Ownership Boundary — Non-Customer Routes Exclusion", () => {
+    const excludedRoutes = [
+      "/auth",
+      "/forgot-password",
+      "/claim-account",
+      "/admin",
+      "/admin/products",
+      "/admin/orders",
+      "/merchant",
+      "/merchant/products",
+      "/merchant/orders",
+      "/agent",
+      "/agent/orders",
+      "/thank-you",
+      "/thank-you?order=ORD-12345",
+    ];
+
+    excludedRoutes.forEach((route) => {
+      it(`strictly excludes Header on route: ${route}`, () => {
+        const { container } = render(
+          <MemoryRouter initialEntries={[route]}>
+            <Header />
+          </MemoryRouter>,
+        );
+        expect(container.firstChild).toBeNull();
+        expect(screen.queryByTestId("mobile-inner-header")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("mobile-top-promo-block")).not.toBeInTheDocument();
+        expect(screen.queryByTestId("mobile-checkout-header")).not.toBeInTheDocument();
+      });
+    });
+  });
 });

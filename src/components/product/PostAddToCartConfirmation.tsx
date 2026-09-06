@@ -10,7 +10,7 @@ interface PostAddToCartConfirmationProps {
   onDismiss: () => void;
 }
 
-const AUTO_DISMISS_MS = 7000;
+export const AUTO_DISMISS_MS = 7000;
 
 export default function PostAddToCartConfirmation({
   open,
@@ -22,44 +22,83 @@ export default function PostAddToCartConfirmation({
   const [isPaused, setIsPaused] = useState(false);
   const remainingMsRef = useRef(AUTO_DISMISS_MS);
   const startTimeRef = useRef<number | null>(null);
+  const timerIdRef = useRef<NodeJS.Timeout | null>(null);
+  const isPausedRef = useRef(false);
+  const onDismissRef = useRef(onDismiss);
+  onDismissRef.current = onDismiss;
+
+  // Track the unique addition key to know when a new product is added while already open
+  const additionKey = `${productName}:${quantity}`;
+  const lastKeyRef = useRef(additionKey);
 
   useEffect(() => {
     if (!open) {
-      setIsPaused(false);
+      if (timerIdRef.current) {
+        clearTimeout(timerIdRef.current);
+        timerIdRef.current = null;
+      }
       remainingMsRef.current = AUTO_DISMISS_MS;
       startTimeRef.current = null;
+      isPausedRef.current = false;
+      setIsPaused(false);
       return;
     }
 
+    // When opening or when a new addition occurs while already open
+    const isNewAddition = lastKeyRef.current !== additionKey;
+    lastKeyRef.current = additionKey;
+
+    if (timerIdRef.current) {
+      clearTimeout(timerIdRef.current);
+      timerIdRef.current = null;
+    }
+
     remainingMsRef.current = AUTO_DISMISS_MS;
+    isPausedRef.current = false;
+    setIsPaused(false);
     startTimeRef.current = Date.now();
 
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    if (!isPaused) {
-      timeoutId = setTimeout(() => {
-        onDismiss();
-      }, remainingMsRef.current);
-    }
+    timerIdRef.current = setTimeout(() => {
+      onDismissRef.current();
+    }, AUTO_DISMISS_MS);
 
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timerIdRef.current) {
+        clearTimeout(timerIdRef.current);
+        timerIdRef.current = null;
+      }
     };
-  }, [open, isPaused, onDismiss]);
+  }, [open, additionKey]);
 
-  const handleMouseEnter = () => {
-    if (!isPaused && startTimeRef.current) {
-      const elapsed = Date.now() - startTimeRef.current;
-      remainingMsRef.current = Math.max(1000, remainingMsRef.current - elapsed);
-      setIsPaused(true);
+  const pause = () => {
+    if (isPausedRef.current || !timerIdRef.current || startTimeRef.current === null) {
+      return;
     }
+    const elapsed = Date.now() - startTimeRef.current;
+    remainingMsRef.current = Math.max(0, remainingMsRef.current - elapsed);
+    clearTimeout(timerIdRef.current);
+    timerIdRef.current = null;
+    startTimeRef.current = null;
+    isPausedRef.current = true;
+    setIsPaused(true);
   };
 
-  const handleMouseLeave = () => {
-    if (isPaused) {
-      startTimeRef.current = Date.now();
-      setIsPaused(false);
+  const resume = () => {
+    if (!isPausedRef.current) {
+      return;
     }
+    isPausedRef.current = false;
+    setIsPaused(false);
+
+    if (remainingMsRef.current <= 0) {
+      onDismissRef.current();
+      return;
+    }
+
+    startTimeRef.current = Date.now();
+    timerIdRef.current = setTimeout(() => {
+      onDismissRef.current();
+    }, remainingMsRef.current);
   };
 
   if (!open) return null;
@@ -70,12 +109,13 @@ export default function PostAddToCartConfirmation({
       aria-live="polite"
       aria-label="تأكيد إضافة المنتج إلى السلة"
       data-testid="post-add-to-cart-confirmation"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleMouseEnter}
-      onTouchEnd={handleMouseLeave}
-      onFocus={handleMouseEnter}
-      onBlur={handleMouseLeave}
+      data-paused={isPaused}
+      onMouseEnter={pause}
+      onMouseLeave={resume}
+      onTouchStart={pause}
+      onTouchEnd={resume}
+      onFocus={pause}
+      onBlur={resume}
       className="fixed left-3 right-3 sm:left-auto sm:right-6 sm:max-w-md z-[55] bg-white border border-slate-200/90 rounded-2xl shadow-xl p-3.5 animate-in slide-in-from-bottom-3 fade-in duration-200"
       style={{
         bottom: "calc(var(--mobile-pdp-total-bottom) + 0.75rem)",

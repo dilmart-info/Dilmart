@@ -36,9 +36,9 @@ function isItemActive(itemPath: string, pathname: string): boolean {
 
 const BottomNav = () => {
   const location = useLocation();
-  const { getItemCount } = useCartStore();
+  const rawItemCount = useCartStore((state) => (typeof state?.getItemCount === "function" ? state.getItemCount() : 0));
+  const itemCount = typeof rawItemCount === "number" ? rawItemCount : (typeof (rawItemCount as any)?.getItemCount === "function" ? (rawItemCount as any).getItemCount() : 0);
   const { isMerchantUser } = useAuth();
-  const itemCount = getItemCount();
   const native = isNative();
 
   const isExcluded = EXCLUDED_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
