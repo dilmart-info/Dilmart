@@ -12,30 +12,41 @@
  * - Missing NATIVE_APP_ORIGINS defaults to an empty list.
  */
 
-function cleanOriginList(raw: string | undefined): string[] {
+export function parseExactOrigins(variableName: string, raw: string | undefined): string[] {
   if (!raw) return [];
-  return raw
+  const origins = raw
     .split(",")
     .map((origin) => origin.trim())
-    .filter((origin) => origin.length > 0 && origin !== "*");
+    .filter((origin) => origin.length > 0);
+
+  if (origins.some((origin) => origin === "*" || origin.includes("*"))) {
+    throw new Error(`${variableName} must not contain wildcard origins`);
+  }
+
+  return origins;
 }
 
 /**
  * Reads trusted web frontend origins from FRONTEND_ORIGINS (fallback: FRONTEND_ORIGIN or http://localhost:8080).
- * Wildcards ('*') and empty entries are strictly excluded.
+ * Wildcards ('*') are strictly forbidden and cause a startup/configuration error.
  */
 export function parseFrontendOrigins(env: NodeJS.ProcessEnv = process.env): string[] {
+  const variableName = env.FRONTEND_ORIGINS !== undefined
+    ? "FRONTEND_ORIGINS"
+    : env.FRONTEND_ORIGIN !== undefined
+    ? "FRONTEND_ORIGIN"
+    : "FRONTEND_ORIGINS";
   const raw = env.FRONTEND_ORIGINS ?? env.FRONTEND_ORIGIN ?? "http://localhost:8080";
-  return cleanOriginList(raw);
+  return parseExactOrigins(variableName, raw);
 }
 
 /**
  * Reads trusted native application origins from NATIVE_APP_ORIGINS (e.g. https://localhost, capacitor://localhost).
- * Defaults to an empty list when unset. Wildcards ('*') and empty entries are strictly excluded.
+ * Defaults to an empty list when unset. Wildcards ('*') are strictly forbidden and cause a startup error.
  */
 export function parseNativeAppOrigins(env: NodeJS.ProcessEnv = process.env): string[] {
   const raw = env.NATIVE_APP_ORIGINS ?? "";
-  return cleanOriginList(raw);
+  return parseExactOrigins("NATIVE_APP_ORIGINS", raw);
 }
 
 /**

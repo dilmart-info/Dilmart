@@ -4,6 +4,7 @@ import http from "node:http";
 import express from "express";
 import cors from "cors";
 import {
+  parseExactOrigins,
   parseFrontendOrigins,
   parseNativeAppOrigins,
   parseAllowedOrigins,
@@ -83,19 +84,87 @@ test("DILMART-ANDROID-PRODUCTION-API-CONNECTIVITY-002: CORS Authority Separation
     assert.equal(isAllowedOrigin("", env), false);
   });
 
-  await t.test("6. Wildcard origin (*) is explicitly rejected from both variables", () => {
-    const env = {
-      FRONTEND_ORIGINS: "*, https://dilmart.store",
-      NATIVE_APP_ORIGINS: "*, https://localhost",
-    };
-    const frontend = parseFrontendOrigins(env);
-    const native = parseNativeAppOrigins(env);
-    const allowed = parseAllowedOrigins(env);
+  await t.test("6. Wildcard origin (*) is strictly prohibited, rejected, and fails closed with explicit error", () => {
+    // 6a. FRONTEND_ORIGINS=* throws
+    assert.throws(
+      () => parseFrontendOrigins({ FRONTEND_ORIGINS: "*" }),
+      {
+        name: "Error",
+        message: "FRONTEND_ORIGINS must not contain wildcard origins",
+      }
+    );
 
-    assert.equal(frontend.includes("*"), false);
-    assert.equal(native.includes("*"), false);
-    assert.equal(allowed.includes("*"), false);
-    assert.equal(isAllowedOrigin("*", env), false);
+    // 6b. FRONTEND_ORIGINS=*,https://dilmart.store throws
+    assert.throws(
+      () => parseFrontendOrigins({ FRONTEND_ORIGINS: "*,https://dilmart.store" }),
+      {
+        name: "Error",
+        message: "FRONTEND_ORIGINS must not contain wildcard origins",
+      }
+    );
+
+    // 6c. NATIVE_APP_ORIGINS=* throws
+    assert.throws(
+      () => parseNativeAppOrigins({ NATIVE_APP_ORIGINS: "*" }),
+      {
+        name: "Error",
+        message: "NATIVE_APP_ORIGINS must not contain wildcard origins",
+      }
+    );
+
+    // 6d. NATIVE_APP_ORIGINS=https://localhost,* throws
+    assert.throws(
+      () => parseNativeAppOrigins({ NATIVE_APP_ORIGINS: "https://localhost,*" }),
+      {
+        name: "Error",
+        message: "NATIVE_APP_ORIGINS must not contain wildcard origins",
+      }
+    );
+
+    // 6e. Backend CORS initialization cannot continue with a wildcard configuration
+    assert.throws(
+      () => {
+        const allowed = parseAllowedOrigins({
+          FRONTEND_ORIGINS: "*,https://dilmart.store",
+          NATIVE_APP_ORIGINS: "https://localhost",
+        });
+        cors({ origin: allowed, credentials: true });
+      },
+      {
+        name: "Error",
+        message: "FRONTEND_ORIGINS must not contain wildcard origins",
+      }
+    );
+
+    assert.throws(
+      () => {
+        const allowed = parseAllowedOrigins({
+          FRONTEND_ORIGINS: "https://dilmart.store",
+          NATIVE_APP_ORIGINS: "https://localhost,*",
+        });
+        cors({ origin: allowed, credentials: true });
+      },
+      {
+        name: "Error",
+        message: "NATIVE_APP_ORIGINS must not contain wildcard origins",
+      }
+    );
+
+    // Direct contract test for parseExactOrigins
+    assert.throws(
+      () => parseExactOrigins("TEST_VAR", "https://valid.com, *"),
+      {
+        name: "Error",
+        message: "TEST_VAR must not contain wildcard origins",
+      }
+    );
+
+    // Direct origin check: wildcard origin string is rejected
+    const validEnv = {
+      FRONTEND_ORIGINS: "https://dilmart.store",
+      NATIVE_APP_ORIGINS: "https://localhost",
+    };
+    assert.equal(isAllowedOrigin("*", validEnv), false);
   });
 
   await t.test("7. Missing or empty NATIVE_APP_ORIGINS defaults safely to empty array", () => {
