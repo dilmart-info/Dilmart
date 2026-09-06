@@ -88,3 +88,30 @@ describe("DesktopQuickLinksBar — never blindly routes an unsafe href (internal
     expect(container.firstChild).toBeNull();
   });
 });
+
+describe("DesktopQuickLinksBar — API authority & unchanged href rendering (Boundary A)", () => {
+  it("renders valid API-provided internal href unchanged without client-side rewriting", async () => {
+    listDesktopQuickLinks.mockResolvedValue([
+      { id: "1", label: "العناية الرجالية", href: "/products?search=%D8%AD%D9%84%D8%A7%D9%82%D8%A9", sort_order: 1 },
+      { id: "2", label: "أدوات الصالونات النسائية", href: "/products?search=%D8%B5%D8%A7%D9%84%D9%88%D9%86%D8%A7%D8%AA%20%D9%86%D8%B3%D8%A7%D8%A6%D9%8A%D8%A9", sort_order: 2 },
+    ]);
+    renderBar();
+
+    const link1 = await screen.findByRole("link", { name: "العناية الرجالية" });
+    expect(link1).toHaveAttribute("href", "/products?search=%D8%AD%D9%84%D8%A7%D9%82%D8%A9");
+
+    const link2 = await screen.findByRole("link", { name: "أدوات الصالونات النسائية" });
+    expect(link2).toHaveAttribute("href", "/products?search=%D8%B5%D8%A7%D9%84%D9%88%D9%86%D8%A7%D8%AA%20%D9%86%D8%B3%D8%A7%D8%A6%D9%8A%D8%A9");
+  });
+
+  it("does not alter the destination href when the Arabic label is modified", async () => {
+    listDesktopQuickLinks.mockResolvedValue([
+      { id: "1", label: "تسمية معدلة من الأدمن", href: "/products?category=beauty-personal-care", sort_order: 1 },
+    ]);
+    renderBar();
+
+    const link = await screen.findByRole("link", { name: "تسمية معدلة من الأدمن" });
+    expect(link).toHaveAttribute("href", "/products?category=beauty-personal-care");
+  });
+});
+
