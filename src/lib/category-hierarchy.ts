@@ -61,3 +61,20 @@ export function resolveCategoryImageUrl(
 export function productsCategoryHref(slug: string): string {
   return `/products?category=${encodeURIComponent(slug)}`;
 }
+
+/**
+ * Compile-time launch root-category contract mirror.
+ * Used for static homepage CTA verification and regression tests against known launch root slugs.
+ * NOTE: The authoritative taxonomy remains Supabase/Postgres -> Backend API -> Frontend rendering.
+ */
+export const CANONICAL_ROOT_CATEGORY_SLUGS = [
+  "fashion-clothing",
+  "home-kitchen",
+  "electronics-accessories",
+  "beauty-personal-care",
+  "kids-toys",
+  "sports-fitness",
+  "daily-essentials",
+] as const;
+
+export type CanonicalRootCategorySlug = (typeof CANONICAL_ROOT_CATEGORY_SLUGS)[number];
