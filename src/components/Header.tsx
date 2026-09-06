@@ -1,18 +1,29 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import DesktopHeader from "@/components/header/DesktopHeader";
 import MobileTopPromoBlock from "@/components/header/MobileTopPromoBlock";
+import MobileInnerHeader from "@/components/header/MobileInnerHeader";
+import MobileCheckoutHeader from "@/components/header/MobileCheckoutHeader";
+import { classifyHeaderRoute } from "@/components/header/header-route-boundary";
 
 const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const routeType = classifyHeaderRoute(location.pathname);
 
   const { data: categories } = useQuery({
     queryKey: ["marketplace-categories"],
     queryFn: () => apiClient.getMarketplaceCategories(),
+    enabled: routeType !== "excluded",
   });
+
+  if (routeType === "excluded") {
+    return null;
+  }
 
   const categoryTree =
     categories
@@ -32,7 +43,13 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50">
       <DesktopHeader categories={categoryTree} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} />
-      <MobileTopPromoBlock searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} />
+      {routeType === "home" ? (
+        <MobileTopPromoBlock searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} />
+      ) : routeType === "checkout" ? (
+        <MobileCheckoutHeader />
+      ) : (
+        <MobileInnerHeader />
+      )}
     </header>
   );
 };
