@@ -71,9 +71,9 @@ async function bootstrap() {
   // dedicated follow-up PR after full QA.
   app.use(helmet({ contentSecurityPolicy: false }));
 
-  // STORE-PR5 §Phase E — one allowlist shared with the federated cookie-CSRF gate (see
-  // common/http/allowed-origins.ts). `credentials: true` is paired ONLY with this exact-match list,
-  // never with a wildcard, so web cookie mode (fetch credentials: "include") works safely.
+  // DILMART-ANDROID-PRODUCTION-API-CONNECTIVITY-002 — allowlist combines trusted web frontend origins
+  // (FRONTEND_ORIGINS) and native Capacitor origins (NATIVE_APP_ORIGINS). `credentials: true` is paired
+  // ONLY with this exact-match list, never with a wildcard.
   const allowedOrigins = parseAllowedOrigins();
 
   app.enableCors({

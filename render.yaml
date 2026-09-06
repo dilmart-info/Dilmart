@@ -23,6 +23,10 @@ services:
       # https://DilMart-store-frontend.onrender.com,https://your-custom-domain.com
       - key: FRONTEND_ORIGINS
         sync: false
+      # Comma-separated allowed native app CORS origins, e.g.:
+      # https://localhost,capacitor://localhost
+      - key: NATIVE_APP_ORIGINS
+        sync: false
 
       # ── Optional — outbound alert webhooks ───────────────────────────────────
       - key: OUTBOUND_ALERT_WEBHOOK_URL
