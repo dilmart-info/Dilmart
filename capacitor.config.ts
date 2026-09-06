@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.DilMart.store',
+  appId: 'com.dilmart.store',
   appName: 'DilMart Store',
   webDir: 'dist-mobile',
   server: {

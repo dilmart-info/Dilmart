@@ -15,6 +15,8 @@ import zlib from "node:zlib";
 import { execFileSync } from "node:child_process";
 import { getOrProvisionBundletool } from "./provision-bundletool.mjs";
 
+export const CANONICAL_ANDROID_PACKAGE_ID = "com.dilmart.store";
+
 export function computeSha256(filePath) {
   const buf = fs.readFileSync(filePath);
   return crypto.createHash("sha256").update(buf).digest("hex").toLowerCase();
@@ -133,8 +135,8 @@ export function checkAppBuildGradle(filePath) {
   const versionName = vnMatch[1].trim();
 
   const errors = [];
-  if (applicationId !== "com.DilMart.store") {
-    errors.push(`applicationId must be 'com.DilMart.store', got '${applicationId}'`);
+  if (applicationId !== CANONICAL_ANDROID_PACKAGE_ID) {
+    errors.push(`applicationId must be '${CANONICAL_ANDROID_PACKAGE_ID}', got '${applicationId}'`);
   }
   if (!Number.isInteger(versionCode) || versionCode <= 0) {
     errors.push(`versionCode must be a positive integer, got ${versionCode}`);
@@ -428,8 +430,8 @@ export function inspectApkBinary(apkPath, customAapt2 = null, customApksigner = 
   const targetSdkVersion = parseInt(targetSdkMatch[1], 10);
 
   const errors = [];
-  if (packageName !== "com.DilMart.store") {
-    errors.push(`Packaged package name must be 'com.DilMart.store', got '${packageName}'`);
+  if (packageName !== CANONICAL_ANDROID_PACKAGE_ID) {
+    errors.push(`Packaged package name must be '${CANONICAL_ANDROID_PACKAGE_ID}', got '${packageName}'`);
   }
   if (!Number.isInteger(versionCode) || versionCode <= 0) {
     errors.push(`Packaged versionCode must be a positive integer, got ${versionCode}`);
@@ -534,8 +536,8 @@ export function inspectAabWithBundletool(
   const targetSdkVersion = parseInt(targetSdkMatch[1], 10);
 
   const errors = [];
-  if (packageName !== "com.DilMart.store") {
-    errors.push(`AAB manifest package must be 'com.DilMart.store', got '${packageName}'`);
+  if (packageName !== CANONICAL_ANDROID_PACKAGE_ID) {
+    errors.push(`AAB manifest package must be '${CANONICAL_ANDROID_PACKAGE_ID}', got '${packageName}'`);
   }
   if (!Number.isInteger(versionCode) || versionCode <= 0) {
     errors.push(`AAB manifest versionCode must be a positive integer, got ${versionCode}`);

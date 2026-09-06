@@ -13,6 +13,12 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import {
+  validateAndroidPackageId,
+  validateIosBundleId,
+  DEFAULT_ANDROID_PACKAGE_ID,
+  DEFAULT_IOS_BUNDLE_ID,
+} from "./generate-app-link-associations.mjs";
 
 const fp = String(process.env.STORE_ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS || "").trim();
 const team = String(process.env.STORE_IOS_TEAM_ID || "").trim();
@@ -43,6 +49,19 @@ if (!hasAndroid && !hasApple) {
 
 if (hasAndroid !== hasApple) {
   console.error("[app-links:prepare] FAIL CLOSED: exactly one of STORE_ANDROID_APP_LINK_SHA256_CERT_FINGERPRINTS / STORE_IOS_TEAM_ID is set. Both are required to deploy App Links.");
+  process.exit(1);
+}
+
+const androidPkg = process.env.STORE_ANDROID_PACKAGE_ID || DEFAULT_ANDROID_PACKAGE_ID;
+const iosBundle = process.env.STORE_IOS_BUNDLE_ID || DEFAULT_IOS_BUNDLE_ID;
+
+if (!validateAndroidPackageId(androidPkg)) {
+  console.error(`[app-links:prepare] FAIL CLOSED: STORE_ANDROID_PACKAGE_ID is invalid: '${androidPkg}' (expected lowercase reverse-domain format, e.g. com.dilmart.store)`);
+  process.exit(1);
+}
+
+if (!validateIosBundleId(iosBundle)) {
+  console.error(`[app-links:prepare] FAIL CLOSED: STORE_IOS_BUNDLE_ID is invalid: '${iosBundle}' (expected bundle ID format, e.g. com.DilMart.store)`);
   process.exit(1);
 }
 
