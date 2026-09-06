@@ -219,16 +219,29 @@ export function inspectApkSigning(apkPath, customApksigner = null) {
   if (!apksigner) {
     throw new Error("apksigner executable not found. Cannot inspect APK signing.");
   }
-  const out = execFileSync(apksigner, ["verify", "--verbose", "--print-certs", apkPath], {
-    encoding: "utf8",
-    shell: process.platform === "win32",
-  });
-  const verified = out.includes("Verifies");
+  let out = "";
+  try {
+    out = execFileSync(apksigner, ["verify", "--verbose", "--print-certs", apkPath], {
+      encoding: "utf8",
+      shell: process.platform === "win32",
+    });
+  } catch (err) {
+    throw new Error(`apksigner execution failed for ${apkPath}: ${err.message}`);
+  }
+
+  if (!out.includes("Verifies")) {
+    throw new Error(`APK signing verification failed for ${apkPath}: output does not confirm 'Verifies'`);
+  }
+
   const schemes = [];
   if (/Verified using v1 scheme [^:]+: true/i.test(out)) schemes.push("v1 (JAR signing)");
   if (/Verified using v2 scheme [^:]+: true/i.test(out)) schemes.push("v2 (APK Signature Scheme v2)");
   if (/Verified using v3(?:\.1|\.2)? scheme [^:]+: true/i.test(out)) schemes.push("v3 (APK Signature Scheme v3)");
   if (/Verified using v4 scheme [^:]+: true/i.test(out)) schemes.push("v4 (APK Signature Scheme v4)");
+
+  if (schemes.length === 0) {
+    throw new Error(`APK signing verification failed for ${apkPath}: no valid signing scheme detected in apksigner output`);
+  }
 
   const dnMatch = out.match(/(?:Signer #\d+|V\d+ Signer):?\s*certificate DN:\s*([^\r\n]+)/i);
   const sha256Match = out.match(/(?:Signer #\d+|V\d+ Signer):?\s*certificate SHA-256 digest:\s*([^\r\n]+)/i);
@@ -236,45 +249,66 @@ export function inspectApkSigning(apkPath, customApksigner = null) {
   const dn = dnMatch ? dnMatch[1].trim() : null;
   const certSha256 = sha256Match ? sha256Match[1].trim() : null;
 
+  if (!dn) {
+    throw new Error(`APK signing verification failed for ${apkPath}: signer certificate DN could not be parsed`);
+  }
+  if (!certSha256) {
+    throw new Error(`APK signing verification failed for ${apkPath}: signer certificate SHA-256 digest could not be parsed`);
+  }
+
   return {
-    verified,
+    verified: true,
     schemes,
     signerDn: dn,
     certSha256,
-    signingSummary: verified
-      ? `verified (${schemes.join(", ")}; DN: ${dn || "unknown"}; Cert SHA-256: ${certSha256 || "unknown"})`
-      : "unverified / unsigned",
+    signingSummary: `verified (${schemes.join(", ")}; DN: ${dn}; Cert SHA-256: ${certSha256})`,
   };
 }
 
 export function inspectAabSigning(aabPath, customJarsigner = null) {
   const jarsigner = customJarsigner || findJarsigner();
+  const isCmdOrBat = typeof jarsigner === "string" && /\.(cmd|bat)$/i.test(jarsigner);
   let out = "";
   try {
     out = execFileSync(jarsigner, ["-verify", "-verbose", "-certs", aabPath], {
       encoding: "utf8",
+      shell: isCmdOrBat,
     });
   } catch (err) {
-    out = err.stdout || err.message;
+    throw new Error(`jarsigner execution failed for ${aabPath}: ${err.message}`);
   }
 
   const entries = parseZipEntries(aabPath);
   const sigFiles = entries.filter((e) => /(?:^|\/)META-INF\/.*\.(?:RSA|DSA|EC|SF)$/i.test(e));
-  const isUnsigned = out.includes("jar is unsigned") || sigFiles.length === 0;
-  const jarsignerStatus = out.includes("jar is unsigned")
-    ? "jar is unsigned"
-    : out.includes("jar verified")
-      ? "jar verified"
-      : "signature not verified";
+  const isJarsignerVerified = /jar verified/i.test(out);
+  const isJarsignerUnsigned = /jar is unsigned/i.test(out);
+  const hasSignatureFiles = sigFiles.length > 0;
 
-  return {
-    isSigned: !isUnsigned,
-    signatureFiles: sigFiles,
-    jarsignerStatus,
-    signingSummary: isUnsigned
-      ? `unsigned (verified via jarsigner: '${jarsignerStatus}'; 0 signature block files in META-INF)`
-      : `signed (${sigFiles.join(", ")})`,
-  };
+  if (isJarsignerVerified && hasSignatureFiles) {
+    return {
+      state: "SIGNED_VALID",
+      isSigned: true,
+      signatureFiles: sigFiles,
+      jarsignerStatus: "jar verified",
+      signingSummary: `SIGNED_VALID (verified via jarsigner; signature files: ${sigFiles.join(", ")})`,
+    };
+  }
+
+  if (isJarsignerUnsigned && !hasSignatureFiles) {
+    return {
+      state: "UNSIGNED",
+      isSigned: false,
+      signatureFiles: [],
+      jarsignerStatus: "jar is unsigned",
+      signingSummary: "UNSIGNED (verified via jarsigner: 'jar is unsigned'; 0 signature block files in META-INF)",
+    };
+  }
+
+  throw new Error(
+    `AAB signing verification failed (INVALID_SIGNATURE): contradictory or invalid signing state for ${aabPath}. ` +
+    `jarsigner reports verified: ${isJarsignerVerified}, jarsigner reports unsigned: ${isJarsignerUnsigned}, ` +
+    `META-INF signature files count: ${sigFiles.length} (${sigFiles.join(", ") || "none"}).`,
+  );
 }
 
 export function inspectGradleSigningConfig(filePath) {
@@ -292,7 +326,7 @@ export function inspectGradleSigningConfig(filePath) {
     hasReleaseSigningConfig,
     summary: hasReleaseSigningConfig
       ? "configured (buildTypes.release has signingConfig)"
-      : "not configured (signingConfigs block absent and buildTypes.release.signingConfig omitted in android/app/build.gradle; unsigned bundle prepared for Google Play App Signing)",
+      : "not configured (signingConfigs block absent and buildTypes.release.signingConfig omitted in android/app/build.gradle)",
   };
 }
 
@@ -475,18 +509,7 @@ export function inspectApkBinary(apkPath, customAapt2 = null, customApksigner = 
   const stat = fs.statSync(apkPath);
   const sha256 = computeSha256(apkPath);
 
-  let apkSigning = null;
-  try {
-    apkSigning = inspectApkSigning(apkPath, customApksigner);
-  } catch (err) {
-    apkSigning = {
-      verified: false,
-      schemes: [],
-      signerDn: null,
-      certSha256: null,
-      signingSummary: `inspection failed: ${err.message}`,
-    };
-  }
+  const apkSigning = inspectApkSigning(apkPath, customApksigner);
 
   return {
     filename: path.basename(apkPath),
@@ -598,17 +621,7 @@ export function inspectAabWithBundletool(
   const stat = fs.statSync(aabPath);
   const sha256 = computeSha256(aabPath);
 
-  let aabSigning = null;
-  try {
-    aabSigning = inspectAabSigning(aabPath, customJarsigner);
-  } catch (err) {
-    aabSigning = {
-      isSigned: false,
-      signatureFiles: [],
-      jarsignerStatus: `error: ${err.message}`,
-      signingSummary: `inspection failed: ${err.message}`,
-    };
-  }
+  const aabSigning = inspectAabSigning(aabPath, customJarsigner);
 
   const rootDir = path.resolve(import.meta.dirname, "../..");
   const gradlePath = customBuildGradle || path.join(rootDir, "android/app/build.gradle");

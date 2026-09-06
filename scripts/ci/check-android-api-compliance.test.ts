@@ -62,6 +62,33 @@ function makeMockElf64(align: number): Buffer {
   return buf;
 }
 
+function makeMockZip(filenames: string[]): Buffer {
+  const chunks: Buffer[] = [];
+  for (const fn of filenames) {
+    const fnBuf = Buffer.from(fn, "utf8");
+    const rec = Buffer.alloc(46 + fnBuf.length);
+    rec.writeUInt32LE(0x02014b50, 0);
+    rec.writeUInt16LE(fnBuf.length, 28);
+    fnBuf.copy(rec, 46);
+    chunks.push(rec);
+  }
+  return Buffer.concat(chunks);
+}
+
+function createMockCli(name: string, jsCode: string): string {
+  const isWin = process.platform === "win32";
+  const ext = isWin ? ".cmd" : ".sh";
+  const target = path.join(rootDir, "node_modules", `.temp-mock-${name}${ext}`);
+  const escaped = jsCode.replace(/"/g, '\\"');
+  if (isWin) {
+    fs.writeFileSync(target, `@echo off\r\nnode -e "${escaped}" -- %*\r\n`, "utf8");
+  } else {
+    fs.writeFileSync(target, `#!/bin/sh\nnode -e "${escaped}" -- "$@"\n`, "utf8");
+    fs.chmodSync(target, 0o755);
+  }
+  return target;
+}
+
 describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
   describe("Pre-build: android/variables.gradle authority", () => {
     it("exists on disk", () => {
@@ -315,6 +342,7 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
       expect(config.hasReleaseSigningConfig).toBe(false);
       expect(config.summary).toContain("not configured");
       expect(config.summary).toContain("signingConfigs block absent");
+      expect(config.summary).not.toContain("prepared for Google Play App Signing");
     });
 
     it("detects configured release signing in Gradle if present", () => {
@@ -337,6 +365,128 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
       }
     });
 
+    it("inspectApkSigning: fails closed if apksigner output does not confirm Verifies", () => {
+      const mockApk = path.join(rootDir, "node_modules/.temp-mock.apk");
+      fs.writeFileSync(mockApk, "DUMMY APK");
+      const mockCli = createMockCli("apk-noverifies", "console.log('DOES NOT VERIFY'); process.exit(0);");
+      try {
+        expect(() => inspectApkSigning(mockApk, mockCli)).toThrow(/output does not confirm 'Verifies'/);
+      } finally {
+        if (fs.existsSync(mockApk)) fs.unlinkSync(mockApk);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectApkSigning: fails closed if no valid signing scheme detected", () => {
+      const mockApk = path.join(rootDir, "node_modules/.temp-mock.apk");
+      fs.writeFileSync(mockApk, "DUMMY APK");
+      const mockCli = createMockCli(
+        "apk-noschemes",
+        "console.log('Verifies\\nVerified using v1 scheme: false\\nVerified using v2 scheme: false'); process.exit(0);",
+      );
+      try {
+        expect(() => inspectApkSigning(mockApk, mockCli)).toThrow(/no valid signing scheme detected/);
+      } finally {
+        if (fs.existsSync(mockApk)) fs.unlinkSync(mockApk);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectApkSigning: fails closed if signer DN or cert SHA-256 cannot be parsed", () => {
+      const mockApk = path.join(rootDir, "node_modules/.temp-mock.apk");
+      fs.writeFileSync(mockApk, "DUMMY APK");
+      const mockCli = createMockCli(
+        "apk-nodn",
+        "console.log('Verifies\\nVerified using v2 scheme (APK Signature Scheme v2): true'); process.exit(0);",
+      );
+      try {
+        expect(() => inspectApkSigning(mockApk, mockCli)).toThrow(/signer certificate DN could not be parsed/);
+      } finally {
+        if (fs.existsSync(mockApk)) fs.unlinkSync(mockApk);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectApkSigning: fails closed if apksigner execution fails", () => {
+      const mockApk = path.join(rootDir, "node_modules/.temp-mock.apk");
+      fs.writeFileSync(mockApk, "DUMMY APK");
+      const mockCli = createMockCli("apk-fail", "process.stderr.write('Fatal tool failure'); process.exit(1);");
+      try {
+        expect(() => inspectApkSigning(mockApk, mockCli)).toThrow(/apksigner execution failed/);
+      } finally {
+        if (fs.existsSync(mockApk)) fs.unlinkSync(mockApk);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectAabSigning: returns SIGNED_VALID when jarsigner verified and signature files present", () => {
+      const mockAab = path.join(rootDir, "node_modules/.temp-mock-signed.aab");
+      fs.writeFileSync(mockAab, makeMockZip(["META-INF/CERT.RSA", "base/manifest/AndroidManifest.xml"]));
+      const mockCli = createMockCli("aab-valid", "console.log('s = signature was verified\\njar verified.'); process.exit(0);");
+      try {
+        const res = inspectAabSigning(mockAab, mockCli);
+        expect(res.state).toBe("SIGNED_VALID");
+        expect(res.isSigned).toBe(true);
+        expect(res.signatureFiles).toContain("META-INF/CERT.RSA");
+        expect(res.signingSummary).toContain("SIGNED_VALID");
+      } finally {
+        if (fs.existsSync(mockAab)) fs.unlinkSync(mockAab);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectAabSigning: returns UNSIGNED when jarsigner reports unsigned and 0 signature files exist", () => {
+      const mockAab = path.join(rootDir, "node_modules/.temp-mock-unsigned.aab");
+      fs.writeFileSync(mockAab, makeMockZip(["base/manifest/AndroidManifest.xml"]));
+      const mockCli = createMockCli("aab-unsigned", "console.log('no manifest.\\njar is unsigned.'); process.exit(0);");
+      try {
+        const res = inspectAabSigning(mockAab, mockCli);
+        expect(res.state).toBe("UNSIGNED");
+        expect(res.isSigned).toBe(false);
+        expect(res.signatureFiles).toHaveLength(0);
+        expect(res.signingSummary).toContain("UNSIGNED");
+      } finally {
+        if (fs.existsSync(mockAab)) fs.unlinkSync(mockAab);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectAabSigning: throws INVALID_SIGNATURE when signature files exist but jarsigner reports unsigned", () => {
+      const mockAab = path.join(rootDir, "node_modules/.temp-mock-contradictory.aab");
+      fs.writeFileSync(mockAab, makeMockZip(["META-INF/CERT.RSA"]));
+      const mockCli = createMockCli("aab-contra1", "console.log('no manifest.\\njar is unsigned.'); process.exit(0);");
+      try {
+        expect(() => inspectAabSigning(mockAab, mockCli)).toThrow(/INVALID_SIGNATURE/);
+      } finally {
+        if (fs.existsSync(mockAab)) fs.unlinkSync(mockAab);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectAabSigning: throws INVALID_SIGNATURE when jarsigner reports verified but 0 signature files exist", () => {
+      const mockAab = path.join(rootDir, "node_modules/.temp-mock-contra2.aab");
+      fs.writeFileSync(mockAab, makeMockZip(["base/manifest/AndroidManifest.xml"]));
+      const mockCli = createMockCli("aab-contra2", "console.log('jar verified.'); process.exit(0);");
+      try {
+        expect(() => inspectAabSigning(mockAab, mockCli)).toThrow(/INVALID_SIGNATURE/);
+      } finally {
+        if (fs.existsSync(mockAab)) fs.unlinkSync(mockAab);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
+    it("inspectAabSigning: fails closed if jarsigner execution fails", () => {
+      const mockAab = path.join(rootDir, "node_modules/.temp-mock-fail.aab");
+      fs.writeFileSync(mockAab, makeMockZip(["base/manifest/AndroidManifest.xml"]));
+      const mockCli = createMockCli("aab-fail", "process.stderr.write('Jarsigner crash'); process.exit(1);");
+      try {
+        expect(() => inspectAabSigning(mockAab, mockCli)).toThrow(/jarsigner execution failed/);
+      } finally {
+        if (fs.existsSync(mockAab)) fs.unlinkSync(mockAab);
+        if (fs.existsSync(mockCli)) fs.unlinkSync(mockCli);
+      }
+    });
+
     it.runIf(fs.existsSync(debugApkPath))("authoritatively verifies Debug APK signing via apksigner", () => {
       const signing = inspectApkSigning(debugApkPath);
       expect(signing.verified).toBe(true);
@@ -348,10 +498,11 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
 
     it.runIf(fs.existsSync(releaseAabPath))("authoritatively verifies Release AAB unsigned status via jarsigner", () => {
       const signing = inspectAabSigning(releaseAabPath);
+      expect(signing.state).toBe("UNSIGNED");
       expect(signing.isSigned).toBe(false);
       expect(signing.signatureFiles).toHaveLength(0);
       expect(signing.jarsignerStatus).toBe("jar is unsigned");
-      expect(signing.signingSummary).toContain("unsigned (verified via jarsigner: 'jar is unsigned'");
+      expect(signing.signingSummary).toContain("UNSIGNED (verified via jarsigner: 'jar is unsigned'");
     });
   });
 
@@ -392,8 +543,9 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
       expect(report.requirement64Bit).toBe("NOT APPLICABLE");
       expect(report.requirement16Kb).toBe("NOT APPLICABLE");
       expect(report.bundletoolValidation).toContain("VALIDATED");
-      expect(report.signingState).toContain("unsigned (verified via jarsigner: 'jar is unsigned'");
+      expect(report.signingState).toContain("UNSIGNED (verified via jarsigner: 'jar is unsigned'");
       expect(report.productionPlaySigning).toContain("not configured");
+      expect(report.productionPlaySigning).not.toContain("prepared for Google Play");
       expect(report.productionPlaySigning).toContain("buildTypes.release.signingConfig omitted");
       expect(report.sha256).toHaveLength(64);
       expect(report.sizeBytes).toBeGreaterThan(0);
