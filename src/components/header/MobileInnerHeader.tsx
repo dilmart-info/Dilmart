@@ -31,8 +31,7 @@ function resolveTitle(pathname: string, search: string): string {
 export default function MobileInnerHeader() {
   const location = useLocation();
   const navigate = useNavigate();
-  const rawItemCount = useCartStore((state) => (typeof state?.getItemCount === "function" ? state.getItemCount() : 0));
-  const itemCount = typeof rawItemCount === "number" ? rawItemCount : (typeof (rawItemCount as any)?.getItemCount === "function" ? (rawItemCount as any).getItemCount() : 0);
+  const itemCount = useCartStore((state) => state.getItemCount());
 
   const title = resolveTitle(location.pathname, location.search);
 

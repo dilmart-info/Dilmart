@@ -22,9 +22,12 @@ vi.mock("@/hooks/use-auth", () => ({
 }));
 
 vi.mock("@/lib/cart-store", () => ({
-  useCartStore: () => ({
-    getItemCount: () => mockItemCount,
-  }),
+  useCartStore: (selector?: (state: { getItemCount: () => number }) => number) => {
+    const state = {
+      getItemCount: () => mockItemCount,
+    };
+    return typeof selector === "function" ? selector(state) : state;
+  },
 }));
 
 describe("BottomNav — Persistent Storefront Navigation Contract", () => {

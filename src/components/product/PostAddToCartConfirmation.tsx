@@ -7,6 +7,7 @@ interface PostAddToCartConfirmationProps {
   open: boolean;
   productName: string;
   quantity?: number;
+  additionSequence?: number;
   onDismiss: () => void;
 }
 
@@ -16,6 +17,7 @@ export default function PostAddToCartConfirmation({
   open,
   productName,
   quantity = 1,
+  additionSequence = 0,
   onDismiss,
 }: PostAddToCartConfirmationProps) {
   const navigate = useNavigate();
@@ -26,10 +28,6 @@ export default function PostAddToCartConfirmation({
   const isPausedRef = useRef(false);
   const onDismissRef = useRef(onDismiss);
   onDismissRef.current = onDismiss;
-
-  // Track the unique addition key to know when a new product is added while already open
-  const additionKey = `${productName}:${quantity}`;
-  const lastKeyRef = useRef(additionKey);
 
   useEffect(() => {
     if (!open) {
@@ -44,10 +42,7 @@ export default function PostAddToCartConfirmation({
       return;
     }
 
-    // When opening or when a new addition occurs while already open
-    const isNewAddition = lastKeyRef.current !== additionKey;
-    lastKeyRef.current = additionKey;
-
+    // When opening or when a new addition sequence arrives while already open, start a fresh 7-second timer
     if (timerIdRef.current) {
       clearTimeout(timerIdRef.current);
       timerIdRef.current = null;
@@ -68,7 +63,7 @@ export default function PostAddToCartConfirmation({
         timerIdRef.current = null;
       }
     };
-  }, [open, additionKey]);
+  }, [open, additionSequence]);
 
   const pause = () => {
     if (isPausedRef.current || !timerIdRef.current || startTimeRef.current === null) {

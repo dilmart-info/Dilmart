@@ -166,47 +166,51 @@ describe("PostAddToCartConfirmation — Precise Pause & Resume Lifecycle", () =>
     expect(onDismiss).not.toHaveBeenCalled();
   });
 
-  it("5. a new successful addition starts a fresh 7000ms timer", () => {
+  it("5. repeated addition of the same product and quantity resets the 7000ms timer via additionSequence", () => {
     const onDismiss = vi.fn();
     const { rerender } = render(
       <MemoryRouter>
         <PostAddToCartConfirmation
           open={true}
-          productName="منتج أول"
+          productName="Product A"
           quantity={1}
+          additionSequence={1}
           onDismiss={onDismiss}
         />
       </MemoryRouter>
     );
 
-    // Advance 5000ms (only 2000ms left for product 1)
+    // 1. Advance 5000ms (5 seconds elapsed, 2000ms remaining on original addition)
     act(() => {
       vi.advanceTimersByTime(5000);
     });
     expect(onDismiss).not.toHaveBeenCalled();
 
-    // User adds a second product while the first is still open
+    // 2. User adds the exact same Product A x1 again while confirmation is still open
+    // Name and quantity are identical; monotonic additionSequence increments
     rerender(
       <MemoryRouter>
         <PostAddToCartConfirmation
           open={true}
-          productName="منتج ثانٍ"
-          quantity={2}
+          productName="Product A"
+          quantity={1}
+          additionSequence={2}
           onDismiss={onDismiss}
         />
       </MemoryRouter>
     );
 
-    // If it did not reset, 2001ms would dismiss it.
+    // 3. Advance 2100ms (2.1 seconds after second addition)
+    // If timer did not reset, it would have dismissed at 2000ms.
+    // Because it restarted to 7000ms, confirmation remains!
     act(() => {
-      vi.advanceTimersByTime(2500);
+      vi.advanceTimersByTime(2100);
     });
-    // Should NOT have dismissed because the timer was reset to a fresh 7000ms!
     expect(onDismiss).not.toHaveBeenCalled();
 
-    // Now advance remaining 4501ms (total 7001ms since second addition)
+    // 4. Advance remaining time to 7000ms after second add (4900ms more)
     act(() => {
-      vi.advanceTimersByTime(4501);
+      vi.advanceTimersByTime(4900);
     });
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });

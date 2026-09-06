@@ -24,15 +24,26 @@ vi.mock("@tanstack/react-query", async () => {
   };
 });
 
+interface MockCartState {
+  items: unknown[];
+  getItemCount: () => number;
+  getTotal: () => number;
+  removeItem: () => void;
+  updateQuantity: () => void;
+}
+
 let mockItemCount = 0;
 vi.mock("@/lib/cart-store", () => ({
-  useCartStore: () => ({
-    items: [],
-    getItemCount: () => mockItemCount,
-    getTotal: () => 0,
-    removeItem: vi.fn(),
-    updateQuantity: vi.fn(),
-  }),
+  useCartStore: <T,>(selector?: (state: MockCartState) => T): T | MockCartState => {
+    const state: MockCartState = {
+      items: [],
+      getItemCount: () => mockItemCount,
+      getTotal: () => 0,
+      removeItem: vi.fn(),
+      updateQuantity: vi.fn(),
+    };
+    return typeof selector === "function" ? selector(state) : state;
+  },
 }));
 
 describe("Header — Route-Aware Mobile Header System", () => {

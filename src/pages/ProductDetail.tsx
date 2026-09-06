@@ -94,13 +94,13 @@ const ProductDetail = () => {
   }
 
   if (isError || !product) {
-    const errAny = error as any;
+    const errObj = error as { status?: number; statusCode?: number; message?: string } | null;
     const isNotFound =
-      errAny?.status === 404 ||
-      errAny?.statusCode === 404 ||
-      errAny?.message?.includes("404") ||
-      errAny?.message?.toLowerCase()?.includes("not found") ||
-      errAny?.message?.includes("NOT_FOUND") ||
+      errObj?.status === 404 ||
+      errObj?.statusCode === 404 ||
+      errObj?.message?.includes("404") ||
+      errObj?.message?.toLowerCase()?.includes("not found") ||
+      errObj?.message?.includes("NOT_FOUND") ||
       (!isError && !product);
 
     if (isNotFound) {
@@ -171,6 +171,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
   const [failedUrls, setFailedUrls] = useState<Record<string, boolean>>({});
   const [quantity, setQuantity] = useState(1);
   const [postAddOpen, setPostAddOpen] = useState(false);
+  const [additionSequence, setAdditionSequence] = useState(0);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const addToCartBtnRef = useRef<HTMLButtonElement | null>(null);
   const addDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -225,6 +226,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
     setSelectedImage(0);
     setQuantity(1);
     setPostAddOpen(false);
+    setAdditionSequence(0);
   }, [product.id]);
 
   useEffect(() => {
@@ -274,6 +276,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
         product,
         trigger,
         () => {
+          setAdditionSequence((seq) => seq + 1);
           setPostAddOpen(true);
         },
         quantity,
@@ -321,8 +324,9 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
         product: { id: product.id, name: product.name },
         completionLink: productUrl,
       });
-    } catch (error: any) {
-      toast.error(error?.message || "تعذّر فتح واتساب حالياً");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "تعذّر فتح واتساب حالياً";
+      toast.error(message);
     }
   };
 
@@ -789,6 +793,7 @@ function ProductDetailLoaded({ product }: { product: MarketplacePublicProduct })
         open={postAddOpen}
         productName={product.name}
         quantity={quantity}
+        additionSequence={additionSequence}
         onDismiss={() => setPostAddOpen(false)}
       />
 
