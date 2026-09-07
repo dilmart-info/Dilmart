@@ -126,8 +126,8 @@ test("WhatsApp Daily Dispatch — PostgreSQL Concurrency & Privilege Integration
     const { data: countData, error: countErr } = await supabase.rpc("get_whatsapp_daily_dispatch_count", {
       p_timezone: testTz,
     });
-    assert.ifError(countErr);
-    assert.equal(countData, 5, "get_whatsapp_daily_dispatch_count must report 5");
+    const reportedCount = countData?.[0]?.current_count ?? (typeof countData === "number" ? countData : countData?.current_count);
+    assert.equal(reportedCount, 5, "get_whatsapp_daily_dispatch_count must report 5");
 
     // 5 additional sequential calls must all be denied and count must NEVER exceed 5
     for (let i = 0; i < 5; i++) {
