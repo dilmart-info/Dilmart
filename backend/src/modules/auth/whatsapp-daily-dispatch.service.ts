@@ -17,6 +17,21 @@ export interface DailyDispatchClaimResult {
 
 const DEFAULT_TIMEZONE = "Asia/Baghdad";
 
+/**
+ * WhatsAppDailyDispatchService
+ *
+ * Enforces a durable global daily dispatch cap for Meta WhatsApp OTP.
+ *
+ * Operational & Governance Contract:
+ * 1. OTP_WHATSAPP_DAILY_GLOBAL_LIMIT is mandatory in sandbox mode.
+ *    Recommended controlled-canary value: 200.
+ *    There is NO implicit default. Missing or non-positive value fails closed.
+ * 2. In live mode, the limit is optional (null allows dispatch without cap).
+ * 3. Meaning of Counter: The slot is claimed and reserved in the database immediately
+ *    BEFORE calling Meta. It tracks `reserved WhatsApp dispatch attempts`, not confirmed
+ *    deliveries. If the subsequent Meta request fails, errors, or times out, the slot
+ *    is NOT refunded. This behavior is deliberate and cost-defensive.
+ */
 @Injectable()
 export class WhatsAppDailyDispatchService {
   private readonly logger = new Logger(WhatsAppDailyDispatchService.name);

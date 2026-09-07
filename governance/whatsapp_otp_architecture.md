@@ -38,10 +38,17 @@ DilMart customer authentication is architected to be **phone-first via WhatsApp 
 | `OTP_WHATSAPP_TEMPLATE_LANGUAGE` | Backend | unset | Runtime | Approved template language code (e.g. `ar` or `en_US`) |
 | `OTP_WHATSAPP_TEMPLATE_TYPE` | Backend | dynamic | Runtime | `AUTH_COPY_CODE`, `AUTH_ONE_TAP`, `TEXT_CUSTOM`, etc. |
 | `OTP_WHATSAPP_PHONE_NUMBER_ID` | Backend | unset | Runtime | Meta Graph API Phone Number ID |
-| `OTP_WHATSAPP_ACCESS_TOKEN` | Backend | unset | Runtime | Meta System User permanent token |
-| `OTP_WHATSAPP_DAILY_GLOBAL_LIMIT` | Backend | `200` | Runtime | Global daily dispatch cap (sandbox requires positive integer) |
+| `OTP_WHATSAPP_DAILY_GLOBAL_LIMIT` | Backend | Mandatory in `sandbox` | Runtime | Global daily dispatch cap. Recommended canary value: `200`. No implicit default. |
 | `OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE` | Backend | `Asia/Baghdad` | Runtime | Timezone for daily dispatch bucket reset |
 | `SUPABASE_AUTH_HOOK_SECRET` | Backend | unset | Runtime | HMAC-SHA256 signature secret from Supabase Hook |
+
+> [!IMPORTANT]
+> **Daily Cap Contract & Counter Semantics:**
+> - `OTP_WHATSAPP_DAILY_GLOBAL_LIMIT` is mandatory in `sandbox` mode. Missing, zero, or negative limits strictly fail closed before calling Meta.
+> - Recommended controlled-canary value: `200`. There is no implicit default.
+> - The daily limit counter reserves slots immediately BEFORE calling Meta. It tracks `reserved WhatsApp dispatch attempts`, not successful deliveries.
+> - If Meta fails, errors, or times out after the slot is claimed, the reservation is **not** refunded. This behavior is intentional, defensive, and prevents unbounded retry cost spikes.
+
 
 ---
 

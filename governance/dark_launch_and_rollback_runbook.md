@@ -31,10 +31,11 @@ graph TD
    OTP_WHATSAPP_TEMPLATE_NAME=<approved_template_name>
    OTP_WHATSAPP_TEMPLATE_TYPE=<matching_template_type>
    OTP_WHATSAPP_TEMPLATE_LANGUAGE=<matching_language_code>
-   OTP_WHATSAPP_DAILY_GLOBAL_LIMIT=200
+   OTP_WHATSAPP_DAILY_GLOBAL_LIMIT=200 # Mandatory in sandbox; recommended 200 (no implicit default)
    OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE=Asia/Baghdad
    SUPABASE_AUTH_HOOK_SECRET=<secret_key>
    ```
+   > **Note on Counter Semantics:** Slots are reserved immediately prior to calling Meta. The counter tracks reserved dispatch attempts (not confirmed deliveries) and does not refund slots if Meta fails or times out.
 2. Deploy backend service and verify `/api/health`.
 
 ### Step 2: Supabase Hook Configuration
