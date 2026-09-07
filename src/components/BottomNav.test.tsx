@@ -42,16 +42,29 @@ describe("BottomNav — Persistent Storefront Navigation Contract", () => {
       "/",
       "/products",
       "/products?category=electronics",
+      "/category/electronics-accessories",
       "/product/sample-slug-123",
       "/cart",
       "/wishlist",
       "/profile",
+      "/profile/security/phone",
       "/my-account/orders",
       "/my-account/addresses",
+      "/auth",
+      "/auth?mode=register",
+      "/forgot-password",
+      "/claim-account",
       "/stores",
+      "/store/sample-merchant",
       "/brands",
       "/offers",
       "/track-order",
+      "/about",
+      "/contact",
+      "/terms",
+      "/returns",
+      "/privacy",
+      "/support",
     ];
 
     visibleRoutes.forEach((route) => {
@@ -71,14 +84,13 @@ describe("BottomNav — Persistent Storefront Navigation Contract", () => {
       "/checkout/payment",
       "/thank-you",
       "/thank-you?order=123",
-      "/auth",
-      "/forgot-password",
-      "/claim-account",
+      "/thank-you/success",
       "/admin",
       "/admin/products",
       "/merchant",
       "/merchant/dashboard",
       "/agent",
+      "/agent/orders",
     ];
 
     hiddenRoutes.forEach((route) => {
@@ -177,6 +189,21 @@ describe("BottomNav — Persistent Storefront Navigation Contract", () => {
       const links = screen.getAllByRole("link");
       links.forEach((l) => {
         expect(l).not.toHaveAttribute("aria-current");
+      });
+    });
+
+    const noActiveItemRoutes = ["/auth", "/auth?mode=register", "/forgot-password", "/claim-account"];
+    noActiveItemRoutes.forEach((route) => {
+      it(`does NOT highlight any item on authentication route: ${route}`, () => {
+        render(
+          <MemoryRouter initialEntries={[route]}>
+            <BottomNav />
+          </MemoryRouter>,
+        );
+        const links = screen.getAllByRole("link");
+        links.forEach((l) => {
+          expect(l).not.toHaveAttribute("aria-current");
+        });
       });
     });
   });

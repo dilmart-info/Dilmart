@@ -7,6 +7,7 @@ import FlyingCartAnimation from "@/components/FlyingCartAnimation";
 import { NotificationHub } from "@/components/NotificationHub";
 import CapacitorAppWrapper from "@/components/CapacitorAppWrapper";
 import ReentryTrackingHub from "@/components/ReentryTrackingHub";
+import RouteScrollCoordinator from "@/components/navigation/RouteScrollCoordinator";
 import BottomNav from "@/components/BottomNav";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth/AuthProvider";
@@ -26,6 +27,7 @@ export function AppProviders({ children, withCapacitorChrome = true }: AppProvid
     <>
       <NotificationHub />
       <ReentryTrackingHub />
+      <RouteScrollCoordinator />
       <Suspense fallback={<div className="min-h-[30vh] p-6 text-center text-sm text-muted-foreground">Loading...</div>}>
         {children}
       </Suspense>

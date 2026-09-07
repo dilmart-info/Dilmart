@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, act } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { MemoryRouter, Route, Routes, Link } from "react-router-dom";
 import ProductDetail from "@/pages/ProductDetail";
 import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
@@ -13,7 +13,13 @@ vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
   return {
     ...actual,
-    useNavigate: () => navigateMock,
+    useNavigate: () => {
+      const realNavigate = actual.useNavigate();
+      return (...args: Parameters<typeof realNavigate>) => {
+        navigateMock(...args);
+        return realNavigate(...args);
+      };
+    },
   };
 });
 
@@ -45,8 +51,14 @@ vi.mock("@tanstack/react-query", async () => {
     ...actual,
     useQuery: (options: { queryKey: readonly unknown[] }) => {
       if (options.queryKey[0] === "marketplace-product") {
+        const slug = (options.queryKey[1] as string) || "nav-test-product";
         return {
-          data: mockProduct,
+          data: {
+            ...mockProduct,
+            id: `prod-${slug}`,
+            slug,
+            name: `منتج ${slug}`,
+          },
           isLoading: false,
           isError: false,
         };
@@ -261,5 +273,97 @@ describe("ProductDetail Navigation, Reactivity & UX Suite", () => {
     // 5. Reactively updates Header badge to 3 and BottomNav badge to 3
     expect(screen.getByTestId("header-cart-badge")).toHaveTextContent("3");
     expect(screen.getByTestId("bottom-nav-cart-badge")).toHaveTextContent("3");
+  });
+
+  describe("Product Detail Scroll Reset Contract", () => {
+    it("resets scroll position to (0, 0) with behavior: 'auto' exactly ONCE upon opening PDP", () => {
+      const scrollToSpy = vi.fn();
+      window.scrollTo = scrollToSpy;
+
+      render(
+        <MemoryRouter initialEntries={["/product/nav-test-product"]}>
+          <Routes>
+            <Route path="/product/:slug" element={<ProductDetail />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+      expect(scrollToSpy).toHaveBeenCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+    });
+
+    it("resets scroll position again when navigating to a different product slug", () => {
+      const scrollToSpy = vi.fn();
+      window.scrollTo = scrollToSpy;
+
+      render(
+        <MemoryRouter initialEntries={["/product/product-alpha"]}>
+          <Routes>
+            <Route
+              path="/product/:slug"
+              element={
+                <>
+                  <ProductDetail />
+                  <Link to="/product/product-beta">Go to Beta</Link>
+                </>
+              }
+            />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+      expect(scrollToSpy).toHaveBeenLastCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+
+      // Navigate to another product slug via link inside router
+      const betaLink = screen.getByRole("link", { name: "Go to Beta" });
+      act(() => {
+        fireEvent.click(betaLink);
+      });
+
+      expect(scrollToSpy).toHaveBeenCalledTimes(2);
+      expect(scrollToSpy).toHaveBeenLastCalledWith({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+    });
+
+    it("does NOT repeat scrollTo when state updates, items add, or rerenders happen on the same product", () => {
+      const scrollToSpy = vi.fn();
+      window.scrollTo = scrollToSpy;
+
+      render(
+        <MemoryRouter initialEntries={["/product/nav-test-product"]}>
+          <Routes>
+            <Route path="/product/:slug" element={<ProductDetail />} />
+          </Routes>
+        </MemoryRouter>,
+      );
+
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+
+      // Trigger add to cart on same product
+      const addBtn = screen.getAllByRole("button", { name: /أضف إلى السلة/i })[0];
+      act(() => {
+        fireEvent.click(addBtn);
+      });
+
+      // Cart store change
+      act(() => {
+        useCartStore.getState().addItem(mockProduct, 1);
+      });
+
+      // Must remain exactly 1 — no unwanted scroll jumps
+      expect(scrollToSpy).toHaveBeenCalledTimes(1);
+    });
   });
 });

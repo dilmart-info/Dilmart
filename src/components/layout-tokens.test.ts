@@ -29,4 +29,12 @@ describe("Mobile Layout Tokens & Sticky Stacking Architecture", () => {
     expect(cssContent).toContain(".mobile-safe-area-bottom");
     expect(cssContent).toContain("padding-bottom: var(--mobile-safe-bottom);");
   });
+
+  it("ensures AuthPageShell accommodates mobile bottom navigation clearance", () => {
+    const authShellContent = readFileSync(
+      resolve(__dirname, "./auth/AuthPageShell.tsx"),
+      "utf-8",
+    );
+    expect(authShellContent).toContain("var(--mobile-bottom-nav-total)");
+  });
 });
