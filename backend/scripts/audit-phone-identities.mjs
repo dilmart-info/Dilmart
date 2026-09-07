@@ -5,39 +5,19 @@
  * answers: if an existing customer signs in with a phone code, does Supabase find their
  * account, or does it create a second one?
  *
- * Existing customers were created by email/password or as provisional checkout users.
- * If auth.users.phone is empty for them while profiles.phone holds the number, then
- * `shouldCreateUser: false` will not find them, and `true` would mint a duplicate.
+ * Distinguishes confirmed phone identities (phone_confirmed_at) from unconfirmed phones
+ * and raw profile text.
  *
  * Never runs automatically, never in CI. Requires credentials supplied from outside:
  *
- *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... node scripts/audit-phone-identities.mjs
- *
- * Do not run against production without explicit authorization.
+ *   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... ALLOW_PHONE_IDENTITY_AUDIT=true node scripts/audit-phone-identities.mjs
  *
  * Output is counts only. No phone number, email, name or metadata is ever printed.
  */
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.SUPABASE_URL?.trim();
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-
-if (!url || !serviceRoleKey) {
-  console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required and must be supplied externally.");
-  console.error("This script is read only, but it still needs service-role access to read auth.users.");
-  process.exit(1);
-}
-
-if (process.env.ALLOW_PHONE_IDENTITY_AUDIT !== "true") {
-  console.error("Refusing to run without ALLOW_PHONE_IDENTITY_AUDIT=true.");
-  console.error("Set it deliberately, and only against an environment you are authorized to read.");
-  process.exit(1);
-}
-
-const supabase = createClient(url, serviceRoleKey, { auth: { persistSession: false } });
-
 /** Local Iraqi form, matching normalizeIraqiPhone. Used only to compare, never printed. */
-function normalize(phone) {
+export function normalize(phone) {
   if (typeof phone !== "string") return null;
   const digits = phone.replace(/\D/g, "");
   if (/^9647\d{9}$/.test(digits)) return `0${digits.slice(3)}`;
@@ -46,10 +26,123 @@ function normalize(phone) {
   return null;
 }
 
-async function listAllAuthUsers() {
+/**
+ * Pure, deterministic classification function for identity audit.
+ * Accepts arrays of authUsers, profiles, and identities. Returns counts and risk assessment.
+ */
+export function classifyPhoneIdentities({ authUsers = [], profiles = [], identities = [] }) {
+  const authPhoneByUser = new Map();
+  const confirmedAuthPhoneByUser = new Map();
+  let authWithPhone = 0;
+  let authWithConfirmedPhone = 0;
+  let authWithUnconfirmedPhone = 0;
+
+  for (const user of authUsers) {
+    const normalized = normalize(user.phone ?? "");
+    if (normalized) {
+      authWithPhone += 1;
+      authPhoneByUser.set(user.id, normalized);
+      const isConfirmed = Boolean(user.phone_confirmed_at && String(user.phone_confirmed_at).trim());
+      if (isConfirmed) {
+        authWithConfirmedPhone += 1;
+        confirmedAuthPhoneByUser.set(user.id, normalized);
+      } else {
+        authWithUnconfirmedPhone += 1;
+      }
+    }
+  }
+
+  const profilePhones = new Map();
+  let profilesWithPhone = 0;
+  let provisionalWithPhone = 0;
+  let profilePhoneWithoutAuthPhone = 0;
+  let authPhoneVsProfileMismatch = 0;
+
+  for (const profile of profiles) {
+    const normalized = normalize(profile.phone ?? "");
+    if (!normalized) continue;
+    profilesWithPhone += 1;
+    profilePhones.set(profile.id, normalized);
+    if (profile.account_type === "provisional_customer") provisionalWithPhone += 1;
+
+    const authPhone = authPhoneByUser.get(profile.id);
+    if (!authPhone) {
+      profilePhoneWithoutAuthPhone += 1;
+    } else if (authPhone !== normalized) {
+      authPhoneVsProfileMismatch += 1;
+    }
+  }
+
+  // Duplicate normalized phones across distinct users in profiles
+  const usersByProfilePhone = new Map();
+  for (const [userId, phone] of profilePhones) {
+    if (!usersByProfilePhone.has(phone)) usersByProfilePhone.set(phone, new Set());
+    usersByProfilePhone.get(phone).add(userId);
+  }
+  const duplicatePhoneClusters = [...usersByProfilePhone.values()].filter((set) => set.size > 1).length;
+
+  // customer_phone_identities analysis
+  const identityByUserId = new Map();
+  const identityUsersByPhone = new Map();
+  for (const row of identities) {
+    const phone = normalize(row.phone_normalized ?? "");
+    if (!phone) continue;
+    if (!identityUsersByPhone.has(phone)) identityUsersByPhone.set(phone, new Set());
+    identityUsersByPhone.get(phone).add(row.user_id);
+    identityByUserId.set(row.user_id, phone);
+  }
+  const identitiesLinkedToMultipleUsers = [...identityUsersByPhone.values()].filter((s) => s.size > 1).length;
+
+  // auth phone vs canonical customer_phone_identities mismatch
+  let authVsIdentityMismatch = 0;
+  for (const [userId, confirmedPhone] of confirmedAuthPhoneByUser) {
+    const canonicalPhone = identityByUserId.get(userId);
+    if (!canonicalPhone || canonicalPhone !== confirmedPhone) {
+      authVsIdentityMismatch += 1;
+    }
+  }
+
+  // Accounts safe for linking: user has no auth phone, has profile phone that is unique across all users
+  let accountsSafeForLinking = 0;
+  let accountsRequiringManualResolution = 0;
+
+  for (const [userId, phone] of profilePhones) {
+    const authPhone = authPhoneByUser.get(userId);
+    const cluster = usersByProfilePhone.get(phone);
+    const hasCollision = (cluster && cluster.size > 1) || (identityUsersByPhone.get(phone)?.size ?? 0) > 1;
+
+    if (hasCollision || authPhoneVsProfileMismatch > 0) {
+      accountsRequiringManualResolution += 1;
+    } else if (!authPhone) {
+      accountsSafeForLinking += 1;
+    }
+  }
+
+  // If phone registration were turned on with shouldCreateUser: true, any profile phone without auth.phone creates a duplicate!
+  const accountsDuplicatedIfRegistrationOn = profilePhoneWithoutAuthPhone;
+
+  return {
+    authUsersTotal: authUsers.length,
+    authWithPhone,
+    authWithConfirmedPhone,
+    authWithUnconfirmedPhone,
+    profilesWithPhone,
+    customerPhoneIdentitiesRows: identities.length,
+    profilesPhoneWithoutAuthPhone: profilePhoneWithoutAuthPhone,
+    authPhoneVsProfileMismatch,
+    authVsIdentityMismatch,
+    duplicatePhoneClusters,
+    identitiesLinkedToMultipleUsers,
+    provisionalWithPhone,
+    accountsSafeForLinking,
+    accountsRequiringManualResolution,
+    accountsDuplicatedIfRegistrationOn,
+  };
+}
+
+async function listAllAuthUsers(supabase) {
   const users = [];
   let page = 1;
-  // 1000 is the service-role page cap.
   for (;;) {
     const { data, error } = await supabase.auth.admin.listUsers({ page, perPage: 1000 });
     if (error) throw new Error(`listUsers failed: ${error.message}`);
@@ -60,8 +153,24 @@ async function listAllAuthUsers() {
   return users;
 }
 
-async function main() {
-  const authUsers = await listAllAuthUsers();
+async function runAudit() {
+  const url = process.env.SUPABASE_URL?.trim();
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+
+  if (!url || !serviceRoleKey) {
+    console.error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required and must be supplied externally.");
+    console.error("This script is read only, but it still needs service-role access to read auth.users.");
+    process.exit(1);
+  }
+
+  if (process.env.ALLOW_PHONE_IDENTITY_AUDIT !== "true") {
+    console.error("Refusing to run without ALLOW_PHONE_IDENTITY_AUDIT=true.");
+    console.error("Set it deliberately, and only against an environment you are authorized to read.");
+    process.exit(1);
+  }
+
+  const supabase = createClient(url, serviceRoleKey, { auth: { persistSession: false } });
+  const authUsers = await listAllAuthUsers(supabase);
 
   const { data: profiles, error: profilesError } = await supabase
     .from("profiles")
@@ -73,84 +182,45 @@ async function main() {
     .select("user_id, phone_normalized");
   if (identitiesError) throw new Error(`customer_phone_identities read failed: ${identitiesError.message}`);
 
-  const authPhoneByUser = new Map();
-  let authWithPhone = 0;
-  for (const user of authUsers) {
-    const normalized = normalize(user.phone ?? "");
-    if (normalized) {
-      authWithPhone += 1;
-      authPhoneByUser.set(user.id, normalized);
-    }
-  }
-
-  const profilePhones = new Map();
-  let profilesWithPhone = 0;
-  let provisionalWithPhone = 0;
-  let profilePhoneWithoutAuthPhone = 0;
-
-  for (const profile of profiles ?? []) {
-    const normalized = normalize(profile.phone ?? "");
-    if (!normalized) continue;
-    profilesWithPhone += 1;
-    profilePhones.set(profile.id, normalized);
-    if (profile.account_type === "provisional_customer") provisionalWithPhone += 1;
-    if (authPhoneByUser.get(profile.id) !== normalized) profilePhoneWithoutAuthPhone += 1;
-  }
-
-  // Duplicate normalized phones across distinct users — each cluster is a potential
-  // account collision once phone becomes a login identifier.
-  const usersByPhone = new Map();
-  for (const [userId, phone] of profilePhones) {
-    if (!usersByPhone.has(phone)) usersByPhone.set(phone, new Set());
-    usersByPhone.get(phone).add(userId);
-  }
-  const duplicatePhoneClusters = [...usersByPhone.values()].filter((set) => set.size > 1).length;
-
-  const identityUsersByPhone = new Map();
-  for (const row of identities ?? []) {
-    const phone = normalize(row.phone_normalized ?? "");
-    if (!phone) continue;
-    if (!identityUsersByPhone.has(phone)) identityUsersByPhone.set(phone, new Set());
-    identityUsersByPhone.get(phone).add(row.user_id);
-  }
-  const identitiesLinkedToMultipleUsers = [...identityUsersByPhone.values()].filter((s) => s.size > 1).length;
+  const result = classifyPhoneIdentities({ authUsers, profiles, identities });
 
   const report = [
-    ["auth.users total", authUsers.length],
-    ["auth.users with a usable phone", authWithPhone],
-    ["profiles with a usable phone", profilesWithPhone],
-    ["customer_phone_identities rows", identities?.length ?? 0],
-    ["profiles phone with no matching auth.users.phone", profilePhoneWithoutAuthPhone],
-    ["duplicate normalized phones across users", duplicatePhoneClusters],
-    ["phone identities linked to more than one user", identitiesLinkedToMultipleUsers],
-    ["provisional users holding a phone", provisionalWithPhone],
+    ["auth.users total", result.authUsersTotal],
+    ["auth.users with a phone value", result.authWithPhone],
+    ["auth.users with CONFIRMED phone", result.authWithConfirmedPhone],
+    ["auth.users with UNCONFIRMED phone", result.authWithUnconfirmedPhone],
+    ["profiles with a usable phone", result.profilesWithPhone],
+    ["customer_phone_identities rows", result.customerPhoneIdentitiesRows],
+    ["profiles phone with no matching auth.users.phone", result.profilesPhoneWithoutAuthPhone],
+    ["auth phone vs profile phone mismatches", result.authPhoneVsProfileMismatch],
+    ["auth phone vs customer_phone_identities mismatches", result.authVsIdentityMismatch],
+    ["duplicate normalized phones across users", result.duplicatePhoneClusters],
+    ["phone identities linked to more than one user", result.identitiesLinkedToMultipleUsers],
+    ["provisional users holding a phone", result.provisionalWithPhone],
+    ["candidate accounts safe for linking", result.accountsSafeForLinking],
+    ["accounts requiring manual resolution", result.accountsRequiringManualResolution],
+    ["accounts that would duplicate if registration active", result.accountsDuplicatedIfRegistrationOn],
   ];
 
   console.log("Phone identity audit — counts only, no personal data\n");
   for (const [label, value] of report) {
-    console.log(`  ${label.padEnd(52)} ${value}`);
+    console.log(`  ${label.padEnd(54)} ${value}`);
   }
 
   console.log("\n## Duplicate-account risk\n");
-  if (profilePhoneWithoutAuthPhone === 0) {
-    console.log("  LOW — every profile phone is mirrored on the auth user, so phone OTP login");
-    console.log("  should resolve to the existing account.");
+  if (result.profilesPhoneWithoutAuthPhone === 0 && result.duplicatePhoneClusters === 0) {
+    console.log("  LOW — all profile phones correspond to confirmed auth users without collisions.");
   } else {
-    console.log(`  ELEVATED — ${profilePhoneWithoutAuthPhone} profile(s) hold a phone that auth.users`);
-    console.log("  does not. With shouldCreateUser=false those users cannot log in by phone; with");
-    console.log("  true they would get a second account. A backfill of auth.users.phone, or an");
-    console.log("  explicit account-linking step, is required before enabling phone registration.");
+    console.log(`  ELEVATED — ${result.profilesPhoneWithoutAuthPhone} profile(s) have phones unlinked in auth.users.`);
+    console.log("  With shouldCreateUser: true, these would create duplicate accounts.");
+    console.log("  Phone registration must remain BLOCKED until account linking completes.");
   }
-  if (duplicatePhoneClusters > 0 || identitiesLinkedToMultipleUsers > 0) {
-    console.log("\n  Additionally, the same number maps to more than one user in the data above.");
-    console.log("  Phone cannot become a unique login identifier until that is resolved.");
-  }
-  console.log("\n  This audit does not authorize enabling VITE_AUTH_PHONE_REGISTRATION_ENABLED.");
-  console.log("");
 }
 
-main().catch((err) => {
-  // Message only — never dump a row or a payload.
-  console.error(`Audit failed: ${err.message}`);
-  process.exit(1);
-});
+// Only auto-run if executed as main CLI script
+if (process.argv[1] && process.argv[1].endsWith("audit-phone-identities.mjs")) {
+  runAudit().catch((err) => {
+    console.error(`Audit failed: ${err.message}`);
+    process.exit(1);
+  });
+}

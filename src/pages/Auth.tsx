@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, Link, Navigate } from "react-router-dom";
+import { useLocation, useNavigate, Navigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -14,15 +14,23 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AuthPageShell from "@/components/auth/AuthPageShell";
 import AuthStorageErrorScreen from "@/components/auth/AuthStorageErrorScreen";
 import OtpCodeInput from "@/components/auth/OtpCodeInput";
-import { useOtpFlow, type OtpChannel } from "@/components/auth/useOtpFlow";
-import { isValidEmail, looksLikeEmail, toIraqiE164 } from "@/lib/auth/identifier";
+import { useOtpFlow, type OtpChannel, type OtpVerificationCompletion } from "@/components/auth/useOtpFlow";
+import {
+  isValidEmail,
+  looksLikeEmail,
+  toIraqiE164,
+  maskIraqiPhoneForDisplay,
+  maskIdentifierForLogs,
+} from "@/lib/auth/identifier";
 import {
   emailOtpEnabled,
   phoneOtpEnabled,
   phoneRegistrationEnabled,
 } from "@/lib/auth/auth-feature-flags";
+import { sanitizeCustomerDestination } from "@/lib/auth/safe-redirect";
+import { apiClient } from "@/lib/api-client";
 import type { PasswordCredentials, SignInResult } from "@/lib/auth/auth-actions";
-import { Eye, EyeOff, Lock, Mail, Phone, User, ShieldCheck, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, Phone, User, ShieldCheck, KeyRound, RefreshCw, AlertCircle } from "lucide-react";
 
 type Mode = "login" | "register";
 type Method = "otp" | "password";
@@ -43,13 +51,21 @@ export default function Auth() {
     verifyPhoneOtp,
   } = useAuth();
 
-  const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname || "/profile";
+  const rawFrom = (location.state as { from?: { pathname?: string; search?: string; hash?: string } } | null)?.from;
+  const from = rawFrom
+    ? `${rawFrom.pathname ?? "/profile"}${rawFrom.search ?? ""}${rawFrom.hash ?? ""}`
+    : "/profile";
 
   const [mode, setMode] = useState<Mode>("login");
   const registering = mode === "register";
 
-  // Phone registration is gated separately from phone login
-  const phoneChannelAllowed = registering ? phoneOtpEnabled && phoneRegistrationEnabled : phoneOtpEnabled;
+  // Unified phone continuation is active when phone registration is enabled alongside phone OTP
+  const unifiedPhoneActive = phoneOtpEnabled && phoneRegistrationEnabled;
+
+  // Phone channel is allowed if phone OTP is on, but registration is gated
+  const phoneChannelAllowed = registering
+    ? phoneOtpEnabled && phoneRegistrationEnabled
+    : phoneOtpEnabled;
 
   const availableChannels = useMemo<OtpChannel[]>(() => {
     const channels: OtpChannel[] = [];
@@ -61,16 +77,19 @@ export default function Auth() {
   const otpAvailable = availableChannels.length > 0;
   const [method, setMethod] = useState<Method>(otpAvailable ? "otp" : "password");
 
-  // Synchronously compute the effective method to prevent blank screen edge cases when switching tabs
-  const effectiveMethod: Method = (otpAvailable && method === "otp") ? "otp" : "password";
+  // Synchronously compute the effective method
+  const effectiveMethod: Method = otpAvailable && method === "otp" ? "otp" : "password";
 
   // Document Title
   useEffect(() => {
-    document.title = registering ? "إنشاء حساب | DILMART" : "تسجيل الدخول | DILMART";
-  }, [registering]);
+    if (unifiedPhoneActive) {
+      document.title = "تسجيل الدخول أو إنشاء حساب | DILMART";
+    } else {
+      document.title = registering ? "إنشاء حساب | DILMART" : "تسجيل الدخول | DILMART";
+    }
+  }, [registering, unifiedPhoneActive]);
 
   // Form State
-  const [fullName, setFullName] = useState("");
   const [passwordIdentifier, setPasswordIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -79,13 +98,26 @@ export default function Auth() {
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
   const [noAccountHint, setNoAccountHint] = useState(false);
 
+  const [fullName, setFullName] = useState("");
+  const [onboardingSession, setOnboardingSession] = useState<SignInResult | null>(null);
+  const [onboardingName, setOnboardingName] = useState("");
+  const [onboardingBusy, setOnboardingBusy] = useState(false);
+  const [onboardingError, setOnboardingError] = useState<string | null>(null);
+
   // OTP flow configuration
   const requestCode = useCallback(
     async (identifier: string, channel: OtpChannel) => {
+      // In unified phone mode, createUser is true for phone so both existing and new accounts continue.
+      // For email or when phone registration is disabled, createUser follows registering state.
+      const shouldCreateUser = (channel === "phone" && unifiedPhoneActive) ? true : registering;
       const options = {
-        createUser: registering,
-        metadata: registering ? { full_name: fullName.trim() } : undefined,
+        createUser: shouldCreateUser,
+        metadata:
+          registering && !unifiedPhoneActive && fullName.trim()
+            ? { full_name: fullName.trim() }
+            : undefined,
       };
+
       if (channel === "email") {
         if (!isValidEmail(identifier)) throw new Error("البريد الإلكتروني غير صالح.");
         await requestEmailOtp(identifier.trim(), options);
@@ -93,7 +125,7 @@ export default function Auth() {
         await requestPhoneOtp(toIraqiE164(identifier), options);
       }
     },
-    [fullName, registering, requestEmailOtp, requestPhoneOtp]
+    [fullName, registering, requestEmailOtp, requestPhoneOtp, unifiedPhoneActive]
   );
 
   const verifyCode = useCallback(
@@ -105,10 +137,22 @@ export default function Auth() {
     [verifyEmailOtp, verifyPhoneOtp]
   );
 
-  const onVerified = useCallback(async () => {
-    toast.success(registering ? "تم إنشاء حسابك بنجاح" : "تم تسجيل الدخول بنجاح");
-    navigate(from, { replace: true });
-  }, [from, navigate, registering]);
+  const onVerified = useCallback(
+    async (completion: OtpVerificationCompletion) => {
+      const profileFullName = completion.authContext.profile?.full_name?.trim();
+
+      // If user profile is missing or full_name is blank, transition to lightweight onboarding
+      if (!profileFullName) {
+        setOnboardingSession(completion.signInResult);
+        setOnboardingName("");
+        return;
+      }
+
+      toast.success(registering ? "تم إنشاء حسابك بنجاح" : "تم تسجيل الدخول بنجاح");
+      navigate(sanitizeCustomerDestination(from), { replace: true });
+    },
+    [from, navigate, registering]
+  );
 
   const otp = useOtpFlow({
     requestCode,
@@ -131,8 +175,14 @@ export default function Auth() {
         );
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : "تعذر إرسال رمز التحقق";
-      if (!registering) setNoAccountHint(true);
+      // Generic error message without exposing account existence
+      const message =
+        error instanceof Error
+          ? error.message
+          : "تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً.";
+      if (!unifiedPhoneActive && !registering) {
+        setNoAccountHint(true);
+      }
       toast.error(message);
     }
   };
@@ -148,20 +198,47 @@ export default function Auth() {
     }
   };
 
-  // Handle OTP Resend with explicit try/catch and boolean check
-  const handleResendOtp = async () => {
+  // Handle Onboarding Name Submit
+  const handleOnboardingSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = onboardingName.trim();
+    if (!trimmed || onboardingBusy || !onboardingSession) return;
+
+    setOnboardingBusy(true);
+    setOnboardingError(null);
     try {
-      const sent = await otp.resend();
-      if (sent) {
-        toast.success(
-          otp.channel === "phone"
-            ? "أعدنا إرسال رمز التحقق إلى واتساب"
-            : "أعدنا إرسال رمز التحقق إلى بريدك الإلكتروني"
-        );
+      // 1. Save customer profile name through backend API
+      await apiClient.updateCustomerProfile({ full_name: trimmed });
+
+      // 2. Fetch canonical auth context exactly once to verify
+      queryClient.removeQueries({ queryKey: ["auth-context"] });
+      let updatedContext: AuthContextResponse;
+      try {
+        updatedContext = await queryClient.fetchQuery({
+          queryKey: ["auth-context", onboardingSession.session.user.id],
+          queryFn: () => apiClient.getAuthContext(onboardingSession.session.access_token),
+          staleTime: 0,
+        });
+        await queryClient.invalidateQueries({ queryKey: ["auth-context"] });
+      } catch {
+        setOnboardingError("تم حفظ الاسم بنجاح، لكن تعذر تحديث الجلسة. يرجى الضغط على زر المتابعة للمحاولة مجدداً.");
+        return;
       }
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "تعذر إعادة إرسال الرمز";
-      toast.error(message);
+
+      // 3. Verify returned profile contains non-blank name
+      if (!updatedContext.profile?.full_name?.trim()) {
+        setOnboardingError("تعذر تأكيد حفظ البيانات الشخصية، يرجى إعادة المحاولة.");
+        return;
+      }
+
+      toast.success("تم إعداد حسابك بنجاح");
+      navigate(sanitizeCustomerDestination(from), { replace: true });
+    } catch (error: any) {
+      const msg = error?.message || "حدث خطأ أثناء حفظ الاسم";
+      setOnboardingError(msg);
+      toast.error(msg);
+    } finally {
+      setOnboardingBusy(false);
     }
   };
 
@@ -205,7 +282,7 @@ export default function Auth() {
       await queryClient?.invalidateQueries?.({ queryKey: ["auth-context"] });
       toast.success(registering ? "تم إنشاء حسابك بنجاح" : "تم تسجيل الدخول بنجاح");
       if (passwordSecurityWarning) toast.warning(WEAK_PASSWORD_SIGN_IN_WARNING_AR);
-      navigate(from, { replace: true });
+      navigate(sanitizeCustomerDestination(from), { replace: true });
     } catch (error) {
       const message = error instanceof Error ? error.message : "حدث خطأ أثناء العملية";
       toast.error(message);
@@ -242,10 +319,110 @@ export default function Auth() {
 
   // 3. Authenticated Ready or Authenticated Offline with existing session -> Synchronously redirect
   if ((authStatus === "authenticated_ready" || authStatus === "authenticated_offline") && appSession) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={sanitizeCustomerDestination(from)} replace />;
   }
 
-  // 4. Persistent Unconfirmed Email State
+  // 4. Lightweight Customer Onboarding Screen (After OTP verification when full_name is missing)
+  if (onboardingSession) {
+    return (
+      <AuthPageShell>
+        <div className="space-y-6" data-testid="onboarding-screen">
+          <div className="text-center space-y-1">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <User className="h-6 w-6" />
+            </div>
+            <h1 className="font-display text-2xl font-black tracking-tight text-foreground">
+              إكمال بيانات الحساب
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              يرجى كتابة اسمك لتخصيص حسابك في ديلمارت واستكمال الطلبات
+            </p>
+          </div>
+
+          <form onSubmit={handleOnboardingSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="onboardingName">الاسم الكامل</Label>
+              <div className="relative">
+                <Input
+                  id="onboardingName"
+                  data-testid="onboarding-full-name"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="الاسم الكامل"
+                  value={onboardingName}
+                  onChange={(e) => setOnboardingName(e.target.value)}
+                  className="pr-10 rounded-xl"
+                  required
+                  autoFocus
+                />
+                <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
+
+            {onboardingError && (
+              <p data-testid="onboarding-error" className="text-xs text-destructive text-center">
+                {onboardingError}
+              </p>
+            )}
+
+            <Button
+              type="submit"
+              data-testid="onboarding-submit"
+              className="w-full h-11 rounded-xl font-bold"
+              disabled={onboardingBusy || !onboardingName.trim()}
+            >
+              {onboardingBusy ? "جارٍ الحفظ..." : "إكمال ومتابعة"}
+            </Button>
+          </form>
+        </div>
+      </AuthPageShell>
+    );
+  }
+
+  // 5. Auth Context Loading Error Recovery (Session is valid, but context loading failed)
+  if (otp.contextError) {
+    return (
+      <AuthPageShell>
+        <div className="space-y-6 text-center" data-testid="context-error-screen">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+            <AlertCircle className="h-7 w-7" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-display text-xl font-bold text-foreground">
+              تم التحقق من رقمك بنجاح
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              تعذر تحميل بيانات حسابك في الوقت الحالي. يرجى الضغط أدناه لإعادة المحاولة دون الحاجة لطلب رمز جديد.
+            </p>
+          </div>
+
+          <div className="pt-2 space-y-3">
+            <Button
+              type="button"
+              data-testid="retry-context-fetch"
+              onClick={otp.retryContextFetch}
+              disabled={otp.pending}
+              className="w-full h-11 rounded-xl font-bold gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${otp.pending ? "animate-spin" : ""}`} />
+              <span>{otp.pending ? "جارٍ المحاولة..." : "إعادة المحاولة"}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="change-number-after-error"
+              onClick={otp.changeIdentifier}
+              className="w-full h-11 rounded-xl font-medium text-xs"
+            >
+              استخدام رقم آخر
+            </Button>
+          </div>
+        </div>
+      </AuthPageShell>
+    );
+  }
+
+  // 6. Persistent Unconfirmed Email State
   if (unconfirmedEmail) {
     return (
       <AuthPageShell>
@@ -287,37 +464,45 @@ export default function Auth() {
         {/* Header Title */}
         <div className="text-center space-y-1">
           <h1 className="font-display text-2xl font-black tracking-tight text-foreground md:text-3xl">
-            {registering ? "إنشاء حساب جديد" : "تسجيل الدخول"}
+            {unifiedPhoneActive && effectiveMethod === "otp"
+              ? "أهلاً بك في ديلمارت"
+              : registering
+              ? "إنشاء حساب جديد"
+              : "تسجيل الدخول"}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            {registering
+            {unifiedPhoneActive && effectiveMethod === "otp"
+              ? "أدخل رقم هاتفك للمتابعة عبر واتساب"
+              : registering
               ? "انضم إلى ديلمارت واستمتع بتجربة تسوق متكاملة"
               : "مرحباً بك مجدداً في ديلمارت"}
           </p>
         </div>
 
-        {/* Mode Switcher (Login vs Register) */}
-        <Tabs value={mode} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/60 p-1">
-            <TabsTrigger
-              value="login"
-              data-testid="tab-login"
-              className="rounded-lg font-bold"
-            >
-              تسجيل الدخول
-            </TabsTrigger>
-            <TabsTrigger
-              value="register"
-              data-testid="tab-register"
-              className="rounded-lg font-bold"
-            >
-              إنشاء حساب
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Mode Switcher (Login vs Register) only when unified phone mode is NOT active */}
+        {!unifiedPhoneActive && (
+          <Tabs value={mode} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 rounded-xl bg-muted/60 p-1">
+              <TabsTrigger
+                value="login"
+                data-testid="tab-login"
+                className="rounded-lg font-bold"
+              >
+                تسجيل الدخول
+              </TabsTrigger>
+              <TabsTrigger
+                value="register"
+                data-testid="tab-register"
+                className="rounded-lg font-bold"
+              >
+                إنشاء حساب
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
 
-        {/* Method Selector (OTP vs Password) when OTP is available */}
-        {otpAvailable ? (
+        {/* Method Selector (OTP vs Password) when both are available and not in unified phone mode */}
+        {otpAvailable && !unifiedPhoneActive ? (
           <div className="flex rounded-xl bg-muted/40 p-1 border border-border">
             <button
               type="button"
@@ -361,27 +546,6 @@ export default function Auth() {
                 onSubmit={handleOtpIdentifierSubmit}
                 className="space-y-4"
               >
-                {/* Full name when registering via OTP */}
-                {registering ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">الاسم الكامل</Label>
-                    <div className="relative">
-                      <Input
-                        id="fullName"
-                        data-testid="full-name"
-                        type="text"
-                        autoComplete="name"
-                        placeholder="الاسم الثلاثي"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pr-10 rounded-xl"
-                        required
-                      />
-                      <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                    </div>
-                  </div>
-                ) : null}
-
                 {/* Channel Selector if both phone and email allowed */}
                 {availableChannels.length > 1 ? (
                   <div className="space-y-2">
@@ -409,6 +573,27 @@ export default function Auth() {
                         <Mail className="h-3.5 w-3.5" />
                         <span>البريد الإلكتروني</span>
                       </Button>
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Full name when registering via OTP and not in unified phone mode */}
+                {registering && !unifiedPhoneActive ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">الاسم الكامل</Label>
+                    <div className="relative">
+                      <Input
+                        id="fullName"
+                        data-testid="full-name"
+                        type="text"
+                        autoComplete="name"
+                        placeholder="الاسم الثلاثي"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="pr-10 rounded-xl"
+                        required
+                      />
+                      <User className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                     </div>
                   </div>
                 ) : null}
@@ -442,14 +627,15 @@ export default function Auth() {
 
                 <Button
                   type="submit"
+                  data-testid="submit-otp-identifier"
                   className="w-full h-11 rounded-xl font-bold"
                   disabled={otp.pending || !otp.identifier.trim()}
                 >
                   {otp.pending
                     ? "جارٍ إرسال الرمز..."
-                    : registering
-                    ? "متابعة وإنشاء الحساب"
-                    : "إرسال رمز الدخول"}
+                    : otp.channel === "phone"
+                    ? "المتابعة عبر واتساب"
+                    : "إرسال رمز التحقق"}
                 </Button>
 
                 {noAccountHint ? (
@@ -476,9 +662,15 @@ export default function Auth() {
                 className="space-y-4"
               >
                 <div className="text-center space-y-1">
-                  <p className="text-xs text-muted-foreground">أدخل رمز التحقق المرسل إلى:</p>
-                  <p className="font-mono font-bold text-sm text-foreground" dir="ltr">
-                    {otp.identifier}
+                  <p className="text-xs text-muted-foreground">
+                    {otp.channel === "phone"
+                      ? "أدخل رمز التحقق المرسل عبر واتساب إلى:"
+                      : "أدخل رمز التحقق المرسل إلى:"}
+                  </p>
+                  <p className="font-mono font-bold text-sm text-foreground" dir="ltr" data-testid="masked-identifier">
+                    {otp.channel === "phone"
+                      ? maskIraqiPhoneForDisplay(otp.identifier)
+                      : maskIdentifierForLogs(otp.identifier)}
                   </p>
                 </div>
 
@@ -495,10 +687,11 @@ export default function Auth() {
 
                 <Button
                   type="submit"
+                  data-testid="submit-otp-code"
                   className="w-full h-11 rounded-xl font-bold"
                   disabled={otp.pending || otp.code.length < 6}
                 >
-                  {otp.pending ? "جارٍ التحقق..." : "تأكيد الدخول"}
+                  {otp.pending ? "جارٍ التحقق..." : "تأكيد الرمز والدخول"}
                 </Button>
 
                 <div className="flex items-center justify-between pt-2 text-xs">
@@ -509,12 +702,25 @@ export default function Auth() {
                     disabled={otp.pending}
                     className="text-muted-foreground hover:text-foreground font-medium"
                   >
-                    تغيير الرقم / البريد
+                    تغيير الرقم
                   </button>
                   <button
                     type="button"
                     data-testid="resend"
-                    onClick={handleResendOtp}
+                    onClick={async () => {
+                      try {
+                        const sent = await otp.resend();
+                        if (sent) {
+                          toast.success(
+                            otp.channel === "phone"
+                              ? "أعدنا إرسال رمز التحقق إلى واتساب"
+                              : "أعدنا إرسال رمز التحقق إلى بريدك الإلكتروني"
+                          );
+                        }
+                      } catch (error) {
+                        toast.error("تعذر إعادة إرسال الرمز");
+                      }
+                    }}
                     disabled={otp.resendIn > 0 || otp.pending}
                     className="text-primary font-bold hover:underline disabled:text-muted-foreground disabled:no-underline"
                   >
@@ -642,7 +848,7 @@ export default function Auth() {
                 setNoAccountHint(false);
               }}
             >
-              {effectiveMethod === "otp" ? "الدخول بكلمة المرور" : "الدخول برمز التحقق"}
+              {effectiveMethod === "otp" ? "الدخول بكلمة المرور" : "الدخول عبر واتساب"}
             </button>
           </div>
         )}
