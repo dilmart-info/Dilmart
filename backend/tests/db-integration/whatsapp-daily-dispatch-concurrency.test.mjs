@@ -41,7 +41,7 @@ test("WhatsApp Daily Dispatch — Migration Contract & Static SQL Assertions", a
     assert.ok(sql.includes("security definer"), "RPC must be security definer");
     assert.ok(sql.includes("set search_path = public, pg_temp"), "Search path must be pinned to public, pg_temp");
     assert.ok(sql.includes("on conflict (bucket_date) do update"), "Must use atomic on conflict do update");
-    assert.ok(sql.includes("where public.whatsapp_otp_daily_dispatches.dispatch_count < p_max_limit"), "Must gate update strictly below max limit");
+    assert.ok(sql.includes("where d.dispatch_count < p_max_limit"), "Must gate update strictly below max limit");
   });
 
   await t.test("3. Explicit Privilege Revocation and Service Role Lockdown", () => {

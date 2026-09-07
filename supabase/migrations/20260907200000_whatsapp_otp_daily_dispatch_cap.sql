@@ -49,6 +49,7 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
+#variable_conflict use_column
 declare
   v_bucket_date date;
   v_count integer;
@@ -69,22 +70,22 @@ begin
   end;
 
   -- 3. Atomic upsert: increment count ONLY if strictly below max limit
-  insert into public.whatsapp_otp_daily_dispatches (bucket_date, dispatch_count, updated_at)
+  insert into public.whatsapp_otp_daily_dispatches as d (bucket_date, dispatch_count, updated_at)
   values (v_bucket_date, 1, now())
   on conflict (bucket_date) do update
-    set dispatch_count = public.whatsapp_otp_daily_dispatches.dispatch_count + 1,
+    set dispatch_count = d.dispatch_count + 1,
         updated_at = now()
-    where public.whatsapp_otp_daily_dispatches.dispatch_count < p_max_limit
-  returning public.whatsapp_otp_daily_dispatches.dispatch_count into v_count;
+    where d.dispatch_count < p_max_limit
+  returning d.dispatch_count into v_count;
 
   if v_count is not null then
     -- Reserved a dispatch slot
     return query select true, v_count, v_bucket_date;
   else
     -- Limit already reached or exceeded: query count without modifying
-    select dispatch_count into v_count
-    from public.whatsapp_otp_daily_dispatches
-    where public.whatsapp_otp_daily_dispatches.bucket_date = v_bucket_date;
+    select d.dispatch_count into v_count
+    from public.whatsapp_otp_daily_dispatches as d
+    where d.bucket_date = v_bucket_date;
 
     return query select false, coalesce(v_count, p_max_limit), v_bucket_date;
   end if;
@@ -107,6 +108,7 @@ language plpgsql
 security definer
 set search_path = public, pg_temp
 as $$
+#variable_conflict use_column
 declare
   v_bucket_date date;
   v_count integer;
@@ -119,9 +121,9 @@ begin
     v_bucket_date := (now() at time zone 'Asia/Baghdad')::date;
   end;
 
-  select dispatch_count into v_count
-  from public.whatsapp_otp_daily_dispatches
-  where public.whatsapp_otp_daily_dispatches.bucket_date = v_bucket_date;
+  select d.dispatch_count into v_count
+  from public.whatsapp_otp_daily_dispatches as d
+  where d.bucket_date = v_bucket_date;
 
   return query select coalesce(v_count, 0), v_bucket_date;
 end;
