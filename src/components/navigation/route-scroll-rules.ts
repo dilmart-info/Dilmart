@@ -46,6 +46,7 @@ export function isScrollRestorationEligible(pathname: string): boolean {
   if (cleanPath.startsWith("/category/")) return true;
   if (cleanPath === "/wishlist" || cleanPath.startsWith("/wishlist/")) return true;
   if (cleanPath === "/stores" || cleanPath.startsWith("/stores/")) return true;
+  if (cleanPath === "/store" || cleanPath.startsWith("/store/")) return true;
   if (cleanPath === "/brands" || cleanPath.startsWith("/brands/")) return true;
   if (cleanPath === "/offers" || cleanPath.startsWith("/offers/")) return true;
 

@@ -133,12 +133,14 @@ describe("RouteScrollCoordinator & PDP Scroll Integration", () => {
   });
 
   describe("isScrollRestorationEligible", () => {
-    it("approves only customer listing, search, and category browsing routes", () => {
+    it("approves only customer listing, search, category, and store browsing routes", () => {
       expect(isScrollRestorationEligible("/")).toBe(true);
       expect(isScrollRestorationEligible("/products")).toBe(true);
       expect(isScrollRestorationEligible("/products/shoes")).toBe(true);
       expect(isScrollRestorationEligible("/category/electronics")).toBe(true);
       expect(isScrollRestorationEligible("/wishlist")).toBe(true);
+      expect(isScrollRestorationEligible("/store")).toBe(true);
+      expect(isScrollRestorationEligible("/store/vendor-a")).toBe(true);
       expect(isScrollRestorationEligible("/stores")).toBe(true);
       expect(isScrollRestorationEligible("/stores/supermarket")).toBe(true);
       expect(isScrollRestorationEligible("/brands")).toBe(true);
@@ -146,9 +148,11 @@ describe("RouteScrollCoordinator & PDP Scroll Integration", () => {
       expect(isScrollRestorationEligible("/offers")).toBe(true);
     });
 
-    it("strictly forbids scroll restoration on PDP, auth, recovery, checkout, and backoffices", () => {
+    it("strictly forbids scroll restoration on PDP, auth, recovery, checkout, backoffices, and non-store prefixes", () => {
       expect(isScrollRestorationEligible("/product")).toBe(false);
       expect(isScrollRestorationEligible("/product/my-slug")).toBe(false);
+      expect(isScrollRestorationEligible("/storefront-example")).toBe(false);
+      expect(isScrollRestorationEligible("/store-extra")).toBe(false);
       expect(isScrollRestorationEligible("/auth")).toBe(false);
       expect(isScrollRestorationEligible("/auth/login")).toBe(false);
       expect(isScrollRestorationEligible("/forgot-password")).toBe(false);
@@ -456,6 +460,61 @@ describe("RouteScrollCoordinator & PDP Scroll Integration", () => {
     // Restores shoes position (450)
     expect(scrollToSpy).toHaveBeenCalledWith({
       top: 450,
+      left: 0,
+      behavior: "auto",
+    });
+  });
+
+  // Mandatory Test 9: /store/:slug restores scroll position on back navigation from PDP
+  it("Test 9: Back (POP) navigation from product to a single store page (/store/vendor-a) restores scroll position 850", async () => {
+    function StoreVendorPage() {
+      return (
+        <div style={{ height: "3000px" }}>
+          <h1>Store: Vendor A</h1>
+          <Link to="/product/item-a" data-testid="goto-item-a">
+            Go to Item A
+          </Link>
+        </div>
+      );
+    }
+
+    render(
+      <MemoryRouter initialEntries={["/store/vendor-a"]}>
+        <RouteScrollCoordinator />
+        <Routes>
+          <Route path="/store/:slug" element={<StoreVendorPage />} />
+          <Route path="/product/:slug" element={<MockProductDetail slug="item-a" />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    // Customer scrolls down 850px on store page
+    Object.defineProperty(window, "scrollY", { value: 850, writable: true });
+    fireEvent.scroll(window);
+
+    // Navigate to product (PUSH)
+    act(() => {
+      fireEvent.click(screen.getByTestId("goto-item-a"));
+    });
+
+    expect(screen.getByText("Product Detail: item-a")).toBeInTheDocument();
+    scrollToSpy.mockClear();
+
+    // Customer navigates back to store page (POP)
+    act(() => {
+      fireEvent.click(screen.getByTestId("pdp-back-button"));
+    });
+
+    expect(screen.getByText("Store: Vendor A")).toBeInTheDocument();
+
+    // Wait for rAF
+    await act(async () => {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    // Coordinator restores exactly 850px
+    expect(scrollToSpy).toHaveBeenCalledWith({
+      top: 850,
       left: 0,
       behavior: "auto",
     });
