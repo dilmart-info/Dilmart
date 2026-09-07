@@ -10,6 +10,7 @@ import { WhatsAppOtpProvider } from "./whatsapp-otp.provider";
 import { SupabaseAuthHookController } from "./supabase-auth-hook.controller";
 import { SupabaseAuthHookService } from "./supabase-auth-hook.service";
 import { AuthHookIdempotencyService } from "./auth-hook-idempotency.service";
+import { WhatsAppDailyDispatchService } from "./whatsapp-daily-dispatch.service";
 import { PhoneIdentityService } from "./phone-identity.service";
 import { AuditModule } from "../audit/audit.module";
 
@@ -18,6 +19,7 @@ import { AuditModule } from "../audit/audit.module";
   controllers: [AuthController, SupabaseAuthHookController],
   providers: [
     AuthService,
+    WhatsAppDailyDispatchService,
     WhatsAppOtpProvider,
     OtpDeliveryService,
     OtpChallengeService,
@@ -29,6 +31,7 @@ import { AuditModule } from "../audit/audit.module";
   ],
   exports: [
     AuthService,
+    WhatsAppDailyDispatchService,
     WhatsAppOtpProvider,
     OtpDeliveryService,
     OtpChallengeService,

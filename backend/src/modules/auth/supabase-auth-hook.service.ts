@@ -380,7 +380,7 @@ export class SupabaseAuthHookService {
       `[AUTH_HOOK] Dispatching correlationId=${correlationId} phone=${masked} timeoutMs=${timeoutMs}`,
     );
 
-    const result = await this.whatsAppOtp.sendOtp(destination, otp, { timeoutMs });
+    const result = await this.whatsAppOtp.sendOtp(destination, otp, { timeoutMs, correlationId });
 
     if (!result.success) {
       this.logger.error(
@@ -398,6 +398,15 @@ export class SupabaseAuthHookService {
   }
 
   private deliveryFailure(result: WhatsAppOtpSendResult): ServiceUnavailableException {
+    if (
+      result.errorCode === "OTP_DAILY_LIMIT_EXCEEDED" ||
+      result.errorCode === "OTP_DAILY_LIMIT_INVALID_CONFIG"
+    ) {
+      return new ServiceUnavailableException({
+        code: "OTP_DAILY_LIMIT_EXCEEDED",
+        message: "تعذر إرسال رمز التحقق حالياً. حاول مرة أخرى لاحقاً",
+      });
+    }
     return new ServiceUnavailableException({
       code: result.errorCode || "OTP_DELIVERY_FAILED",
       message: "تعذر إرسال رمز التحقق عبر واتساب",

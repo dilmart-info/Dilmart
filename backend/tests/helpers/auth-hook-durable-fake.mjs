@@ -13,14 +13,15 @@
 
 /** Shared store — hand the same instance to two services to simulate two backend pods. */
 export function createDeliveryTable() {
-  return { rows: new Map(), clock: { now: Date.now() } };
+  return { rows: new Map(), dailyDispatches: new Map(), clock: { now: Date.now() } };
 }
 
 const nowOf = (table) => table.clock.now;
 
 /**
  * Builds a fake Supabase client exposing exactly the surface
- * AuthHookIdempotencyService uses: .rpc(name, args) and .from(...).select(...).eq(...).maybeSingle().
+ * AuthHookIdempotencyService and WhatsAppDailyDispatchService use:
+ * .rpc(name, args) and .from(...).select(...).eq(...).maybeSingle().
  */
 export function createFakeSupabaseClient(table, options = {}) {
   const { failRpc = null } = options;
@@ -41,6 +42,10 @@ export function createFakeSupabaseClient(table, options = {}) {
         return { data: transition(table, args, "UNCERTAIN"), error: null };
       case "cleanup_expired_auth_hook_deliveries":
         return { data: [cleanup(table, args)], error: null };
+      case "claim_whatsapp_daily_dispatch":
+        return { data: [claimDailyDispatch(table, args)], error: null };
+      case "get_whatsapp_daily_dispatch_count":
+        return { data: [getDailyDispatchCount(table, args)], error: null };
       default:
         return { data: null, error: { code: "PGRST202", message: `unknown rpc ${name}` } };
     }
@@ -197,6 +202,43 @@ function cleanup(table, args) {
   for (const row of table.rows.values()) if (row.state === "UNCERTAIN") kept += 1;
 
   return { leases_retired: retired, rows_deleted: deleted, uncertain_kept: kept };
+}
+
+function claimDailyDispatch(table, args) {
+  const { p_max_limit: limit, p_timezone: tz = "Asia/Baghdad" } = args;
+  if (!limit || limit <= 0) {
+    return { allowed: false, current_count: 0, bucket_date: "1970-01-01" };
+  }
+  const now = nowOf(table);
+  let bucketDate;
+  try {
+    bucketDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(now));
+  } catch {
+    bucketDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Baghdad" }).format(new Date(now));
+  }
+  if (!table.dailyDispatches) table.dailyDispatches = new Map();
+  const current = table.dailyDispatches.get(bucketDate) ?? 0;
+  if (current < limit) {
+    const next = current + 1;
+    table.dailyDispatches.set(bucketDate, next);
+    return { allowed: true, current_count: next, bucket_date: bucketDate };
+  } else {
+    return { allowed: false, current_count: current, bucket_date: bucketDate };
+  }
+}
+
+function getDailyDispatchCount(table, args) {
+  const { p_timezone: tz = "Asia/Baghdad" } = args || {};
+  const now = nowOf(table);
+  let bucketDate;
+  try {
+    bucketDate = new Intl.DateTimeFormat("en-CA", { timeZone: tz }).format(new Date(now));
+  } catch {
+    bucketDate = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Baghdad" }).format(new Date(now));
+  }
+  if (!table.dailyDispatches) table.dailyDispatches = new Map();
+  const current = table.dailyDispatches.get(bucketDate) ?? 0;
+  return { current_count: current, bucket_date: bucketDate };
 }
 
 /** Minimal SupabaseAdminService substitute. */

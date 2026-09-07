@@ -25,18 +25,21 @@ graph TD
 ### Step 1: Backend Deployment
 1. Set Render environment variables:
    ```env
-   OTP_WHATSAPP_MODE=live
-   OTP_WHATSAPP_PHONE_NUMBER_ID=<official_meta_phone_id>
-   OTP_WHATSAPP_ACCESS_TOKEN=<official_system_user_token>
-   OTP_WHATSAPP_TEMPLATE_NAME=dilmart_auth_otp
-   OTP_WHATSAPP_TEMPLATE_TYPE=AUTH_COPY_CODE
-   OTP_WHATSAPP_LANGUAGE_CODE=ar
+   OTP_WHATSAPP_MODE=sandbox
+   OTP_WHATSAPP_PHONE_NUMBER_ID=<meta_phone_number_id>
+   OTP_WHATSAPP_ACCESS_TOKEN=<system_user_token>
+   OTP_WHATSAPP_TEMPLATE_NAME=<approved_template_name>
+   OTP_WHATSAPP_TEMPLATE_TYPE=<matching_template_type>
+   OTP_WHATSAPP_TEMPLATE_LANGUAGE=<matching_language_code>
+   OTP_WHATSAPP_DAILY_GLOBAL_LIMIT=200
+   OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE=Asia/Baghdad
    SUPABASE_AUTH_HOOK_SECRET=<secret_key>
    ```
 2. Deploy backend service and verify `/api/health`.
 
 ### Step 2: Supabase Hook Configuration
-1. In Supabase Dashboard (`ztplxqlthuqkuktbznbo`), enable Send SMS Hook pointing to backend `/api/auth/hook`.
+1. In Supabase Dashboard (`ztplxqlthuqkuktbznbo`), enable Send SMS Hook pointing to backend:
+   `https://dilmart-store-backend.onrender.com/api/auth/hooks/supabase/send-sms`
 
 ### Step 3: Canary Test
 1. Using an internal test phone (`07XXXXXXXXX`), request OTP.

@@ -6,7 +6,7 @@
 
 ## 1. Overview
 By default, Supabase sends SMS via Twilio or MessageBird. Configuring the **Send SMS Hook** delegates phone OTP dispatch directly to the DilMart backend over HTTPS:
-- Endpoint: `https://api.dilmart.me/api/auth/hook` (or active Render service URL)
+- Endpoint: `https://dilmart-store-backend.onrender.com/api/auth/hooks/supabase/send-sms`
 - Request Method: `POST`
 - Security: Secret token + HMAC-SHA256 signature (`X-Supabase-Signature`)
 
@@ -29,10 +29,10 @@ Save this value securely:
 3. Enable **Send SMS (SMS Auth)** hook.
 4. Hook settings:
    - **Type**: `HTTP Webhook`
-   - **URL**: `https://<backend_hostname>/api/auth/hook`
+   - **URL**: `https://dilmart-store-backend.onrender.com/api/auth/hooks/supabase/send-sms`
    - **HTTP Method**: `POST`
    - **Secret**: `<generated_secret>` (matches `SUPABASE_AUTH_HOOK_SECRET`)
-   - **Timeout**: `5000ms` (Supabase hook default timeout)
+   - **Timeout**: `4000ms` (within Supabase hook deadline)
 5. Save changes.
 
 ---
@@ -40,11 +40,11 @@ Save this value securely:
 ## 4. Verification & Health Check
 1. Ensure the DilMart backend service is running and healthy:
    ```bash
-   curl -I https://<backend_hostname>/api/health
+   curl -I https://dilmart-store-backend.onrender.com/api/health
    ```
 2. Send a probe request without signature to verify fail-closed security:
    ```bash
-   curl -X POST https://<backend_hostname>/api/auth/hook \
+   curl -X POST https://dilmart-store-backend.onrender.com/api/auth/hooks/supabase/send-sms \
      -H "Content-Type: application/json" \
      -d '{"sms":{"otp":"123456"},"user":{"phone":"+9647701112233"}}'
    ```

@@ -1,6 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { maskPhoneForLogs } from "./otp-phone.util";
+import { WhatsAppDailyDispatchService } from "./whatsapp-daily-dispatch.service";
 
 /**
  * Meta WhatsApp Cloud API authentication template styles.
@@ -21,6 +22,7 @@ export type WhatsAppMode = "disabled" | "sandbox" | "live";
 /** Per-call overrides. Only narrowing is honoured — never widening past the channel cap. */
 export interface WhatsAppSendOptions {
   timeoutMs?: number;
+  correlationId?: string;
 }
 
 export interface WhatsAppOtpSendResult {
@@ -46,7 +48,10 @@ export class WhatsAppOtpProvider {
   /** Injectable for unit tests — defaults to global fetch. */
   fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly dailyDispatch?: WhatsAppDailyDispatchService,
+  ) {}
 
   getMode(): WhatsAppMode {
     const raw = (this.config.get<string>("OTP_WHATSAPP_MODE") || "").trim().toLowerCase();
@@ -76,9 +81,36 @@ export class WhatsAppOtpProvider {
       return this.configError(configValidation.reason!);
     }
 
+    const startTime = Date.now();
+    const correlationId = options?.correlationId || "unknown";
+
+    // Canary protection: global daily dispatch cap
+    if (this.dailyDispatch) {
+      const claim = await this.dailyDispatch.claimDispatch({ correlationId, mode });
+      if (!claim.allowed) {
+        return {
+          success: false,
+          errorCode: claim.errorCode || "OTP_DAILY_LIMIT_EXCEEDED",
+          errorMessage: "Daily WhatsApp dispatch limit reached or unconfigured in sandbox",
+          failureClass: "PROVIDER_REJECTED",
+          latencyMs: Date.now() - startTime,
+        };
+      }
+    } else if (mode === "sandbox") {
+      this.logger.error(
+        `[WHATSAPP][DAILY_LIMIT] Sandbox mode requires daily dispatch protection correlationId=${correlationId}`,
+      );
+      return {
+        success: false,
+        errorCode: "OTP_DAILY_LIMIT_INVALID_CONFIG",
+        errorMessage: "Daily WhatsApp dispatch service required in sandbox",
+        failureClass: "PROVIDER_REJECTED",
+        latencyMs: Date.now() - startTime,
+      };
+    }
+
     const cfg = this.getConfig();
     const maskedPhone = maskPhoneForLogs(destinationE164);
-    const startTime = Date.now();
     const logPrefix = mode === "sandbox" ? "[WHATSAPP][SANDBOX]" : "[WHATSAPP]";
 
     try {

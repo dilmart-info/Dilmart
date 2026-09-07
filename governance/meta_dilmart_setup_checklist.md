@@ -74,23 +74,26 @@
 ---
 
 ## Phase 4: Recording Dynamic Template Metadata
-Inspect the approved template in Meta Manager and record:
-- `Template Name`: e.g. `dilmart_auth_otp`
-- `Language Code`: `ar`
-- `Template Type`: `AUTH_COPY_CODE`
+Inspect the approved template in Meta Manager and record the exact parameters.
+For the temporary StylAi pre-launch canary, these values must match the template actually approved in StylAi Meta Business Manager (do NOT assume hardcoded DilMart names):
+- `Template Name`: exact approved template name
+- `Language Code`: exact approved language code (e.g. `ar` or `en_US`)
+- `Template Type`: matching supported payload type (`AUTH_COPY_CODE`, `AUTH_ONE_TAP`, `AUTH_GENERIC`, etc.)
 - `Button Subtype`: `url` / `quick_reply` / `copy_code`
 
 Configure in backend environment:
 ```env
-OTP_WHATSAPP_TEMPLATE_NAME="dilmart_auth_otp"
-OTP_WHATSAPP_TEMPLATE_TYPE="AUTH_COPY_CODE"
-OTP_WHATSAPP_LANGUAGE_CODE="ar"
+OTP_WHATSAPP_TEMPLATE_NAME="<approved_template_name>"
+OTP_WHATSAPP_TEMPLATE_TYPE="<matching_template_type>"
+OTP_WHATSAPP_TEMPLATE_LANGUAGE="<matching_language_code>"
+OTP_WHATSAPP_DAILY_GLOBAL_LIMIT=200
+OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE=Asia/Baghdad
 ```
 
 ---
 
 ## Phase 5: Verification & Pre-Activation Smoke Test
-1. Set `OTP_WHATSAPP_MODE=live` on a staging / internal backend instance.
+1. Set `OTP_WHATSAPP_MODE=sandbox` on backend instance.
 2. Trigger an OTP request to an authorized internal test device.
-3. Confirm message delivery in WhatsApp with official DilMart badge and "نسخ الرمز" action.
+3. Confirm message delivery in WhatsApp with valid OTP code and action button.
 4. Verify HTTP 200 response and correct correlation ID logging in NestJS logs.
