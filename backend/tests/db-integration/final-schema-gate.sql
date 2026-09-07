@@ -891,7 +891,7 @@ BEGIN
     RAISE EXCEPTION 'WhatsApp Daily Cap Gate: table public.whatsapp_otp_daily_dispatches is missing';
   END IF;
 
-  SELECT rowsecurity INTO v_rls_enabled
+  SELECT relrowsecurity INTO v_rls_enabled
   FROM pg_class
   WHERE relnamespace = 'public'::regnamespace
     AND relname = 'whatsapp_otp_daily_dispatches';
@@ -910,24 +910,16 @@ BEGIN
   END IF;
 
   -- 3. Assert privileges: anon and authenticated must NOT have execute on claim RPC
-  SELECT count(*) INTO v_anon_claim_priv
-  FROM information_schema.routine_privileges
-  WHERE routine_schema = 'public'
-    AND routine_name = 'claim_whatsapp_daily_dispatch'
-    AND grantee = 'anon';
-
-  IF v_anon_claim_priv <> 0 THEN
+  IF has_function_privilege('anon', 'public.claim_whatsapp_daily_dispatch(integer,text)', 'EXECUTE') THEN
     RAISE EXCEPTION 'WhatsApp Daily Cap Gate: anon role has execute privilege on claim_whatsapp_daily_dispatch';
   END IF;
 
-  SELECT count(*) INTO v_auth_claim_priv
-  FROM information_schema.routine_privileges
-  WHERE routine_schema = 'public'
-    AND routine_name = 'claim_whatsapp_daily_dispatch'
-    AND grantee = 'authenticated';
-
-  IF v_auth_claim_priv <> 0 THEN
+  IF has_function_privilege('authenticated', 'public.claim_whatsapp_daily_dispatch(integer,text)', 'EXECUTE') THEN
     RAISE EXCEPTION 'WhatsApp Daily Cap Gate: authenticated role has execute privilege on claim_whatsapp_daily_dispatch';
+  END IF;
+
+  IF NOT has_function_privilege('service_role', 'public.claim_whatsapp_daily_dispatch(integer,text)', 'EXECUTE') THEN
+    RAISE EXCEPTION 'WhatsApp Daily Cap Gate: service_role missing execute privilege on claim_whatsapp_daily_dispatch';
   END IF;
 END;
 $whatsapp_daily_cap_gate$;
