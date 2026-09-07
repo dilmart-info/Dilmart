@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { PackageSearch, Truck } from "lucide-react";
-import { BrandMark } from "@/components/BrandMark";
+import { PackageSearch } from "lucide-react";
+import { DILMART_APP_ICON } from "@/components/BrandMark";
+import { storeConfig } from "@/config/store";
 import SearchBar from "@/components/SearchBar";
 
 type MobileTopPromoBlockProps = {
@@ -58,28 +59,51 @@ export default function MobileTopPromoBlock({
       <div className="container py-2" dir="rtl">
         <div
           className={`overflow-hidden transition-all duration-300 ease-out ${
-            compact ? "max-h-0 opacity-0 pointer-events-none mb-0" : "max-h-12 opacity-100 mb-2"
+            compact ? "max-h-0 opacity-0 pointer-events-none mb-0" : "max-h-20 opacity-100 mb-2"
           }`}
         >
-          <div className="flex h-9 items-center justify-between">
-            {/* Delivery Guarantee Pill */}
-            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-200 bg-white/10 px-2.5 py-1 rounded-full">
-              <Truck size={13} className="text-accent" />
-              <span>توصيل سريع وموثوق</span>
+          <div className="grid grid-cols-[1fr_auto_1fr] min-h-9 items-center gap-2">
+            {/* Right: DilMart Blue App Logo */}
+            <div className="flex items-center justify-start">
+              <Link
+                to="/"
+                className="inline-flex items-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
+                aria-label="الرئيسية"
+              >
+                <img
+                  src={DILMART_APP_ICON}
+                  alt="ديلمارت"
+                  className="h-8 w-8 rounded-lg shadow-sm object-contain"
+                  loading="eager"
+                />
+              </Link>
             </div>
 
-            {/* Brand Logo */}
-            <BrandMark variant="mobile" asHomeLink theme="navy" />
-
-            {/* Track Order Shortcut */}
+            {/* Center: Brand Wordmark */}
             <Link
-              to="/track-order"
-              className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-blue-200 hover:text-white bg-white/10"
-              aria-label="تتبع طلبك"
+              to="/"
+              className="flex flex-col items-center justify-center text-center select-none rounded-lg px-1.5 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
+              aria-label={`${storeConfig.brand.ar} ${storeConfig.brand.en}`}
             >
-              <PackageSearch size={14} className="text-accent" />
-              <span>تتبع</span>
+              <span className="font-tajawal text-lg font-black text-white tracking-tight leading-none">
+                {storeConfig.brand.ar}
+              </span>
+              <span className="font-manrope text-[9px] font-extrabold uppercase tracking-[0.2em] text-blue-200 leading-none mt-0.5">
+                {storeConfig.brand.en}
+              </span>
             </Link>
+
+            {/* Left: Track Order Shortcut */}
+            <div className="flex items-center justify-end">
+              <Link
+                to="/track-order"
+                className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-bold text-blue-200 hover:text-white bg-white/10 shrink-0"
+                aria-label="تتبع طلبك"
+              >
+                <PackageSearch size={14} className="text-accent" />
+                <span>تتبع</span>
+              </Link>
+            </div>
           </div>
         </div>
 
