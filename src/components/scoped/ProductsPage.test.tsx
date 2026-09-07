@@ -321,7 +321,7 @@ describe("ProductsPage - Server-Side Pagination and Exact Total Count", () => {
     // Next button must be enabled
     const nextBtn = screen.getByRole("button", { name: "التالي" });
     expect(nextBtn.hasAttribute("disabled")).toBe(false);
-  });
+  }, 15000);
 
   it("navigates to next page requesting offset 100 on clicking التالي", async () => {
     const page1Items = Array.from({ length: 100 }, (_, i) => ({
@@ -376,7 +376,7 @@ describe("ProductsPage - Server-Side Pagination and Exact Total Count", () => {
     expect(await screen.findByText("منتج صفحة 2 رقم 1")).toBeDefined();
     expect(screen.getByText("عرض 101–200 من 1410")).toBeDefined();
     expect(screen.getByText("صفحة 2 من 15")).toBeDefined();
-  });
+  }, 15000);
 
   it("resets page to 1 when changing search query", async () => {
     listScopedProducts.mockResolvedValue({

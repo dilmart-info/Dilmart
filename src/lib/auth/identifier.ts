@@ -96,6 +96,17 @@ export function toIraqiLocalDisplay(phone: string): string {
 }
 
 /**
+ * Authoritative display masker for normalized Iraqi mobile numbers.
+ * Masks carrier and middle digits to prevent disclosure while allowing user verification.
+ * Format: +964 7XX *** 1234
+ * Throws InvalidIraqiMobileError on invalid input and never renders unmasked fallback.
+ */
+export function maskIraqiPhoneForDisplay(phone: string): string {
+  const e164 = toIraqiE164(phone);
+  return `+964 7XX *** ${e164.slice(-4)}`;
+}
+
+/**
  * Returns a customer-facing email string, or null if the email is an internal provisional identity
  * (e.g. @provisional.dilmart.com, @provisional.dilmart.org, @provisional.local).
  */

@@ -14,7 +14,7 @@ vi.mock("react-router-dom", async () => {
 vi.mock("@/lib/auth/auth-feature-flags", () => ({
   emailOtpEnabled: true,
   phoneOtpEnabled: true,
-  phoneRegistrationEnabled: true,
+  phoneRegistrationEnabled: false,
   passwordLoginEnabled: true,
   anyOtpEnabled: true,
 }));
@@ -83,7 +83,18 @@ beforeEach(() => {
   requestPhoneOtp.mockResolvedValue(undefined);
   verifyEmailOtp.mockResolvedValue({ session: SESSION, user: SESSION.user });
   verifyPhoneOtp.mockResolvedValue({ session: SESSION, user: SESSION.user });
-  getAuthContext.mockResolvedValue({ role: "customer" });
+  getAuthContext.mockResolvedValue({
+    role: "customer",
+    profile: {
+      id: "user-1",
+      role: "customer",
+      full_name: "مستخدم تجريبي",
+      email: "test@example.com",
+      phone: "+9647501234567",
+      address: null,
+      points: 0,
+    },
+  });
 });
 
 describe("login by OTP", () => {
@@ -127,15 +138,19 @@ describe("login by OTP", () => {
     expect(getAuthContext).toHaveBeenCalledWith("token");
   });
 
-  it("offers the register path when a login request fails, without confirming the account exists", async () => {
+  it("shows unified error when a login request fails, without confirming the account exists or leaking hint", async () => {
     requestEmailOtp.mockRejectedValue(new Error("Signups not allowed for otp"));
     renderAuth();
     fireEvent.click(screen.getByTestId("channel-email"));
     fireEvent.change(screen.getByTestId("identifier"), { target: { value: "ghost@example.com" } });
     fireEvent.submit(screen.getByTestId("otp-identifier-form"));
 
-    await screen.findByTestId("no-account-hint");
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً.")
+    );
     expect(toastSuccess).not.toHaveBeenCalled();
+    // No account hint leaked
+    expect(screen.queryByTestId("no-account-hint")).toBeNull();
     // Still on the identifier step — no code screen for a request that never went out.
     expect(screen.queryByTestId("otp-code-form")).toBeNull();
   });
@@ -171,11 +186,11 @@ describe("registration by OTP", () => {
     renderAuth();
     switchTab("tab-register");
     fireEvent.change(screen.getByTestId("full-name"), { target: { value: "زينب" } });
-    fireEvent.change(screen.getByTestId("identifier"), { target: { value: "07501234567" } });
+    fireEvent.change(screen.getByTestId("identifier"), { target: { value: "zainab@example.com" } });
     fireEvent.submit(screen.getByTestId("otp-identifier-form"));
 
-    await waitFor(() => expect(requestPhoneOtp).toHaveBeenCalled());
-    expect(requestPhoneOtp).toHaveBeenCalledWith("+9647501234567", {
+    await waitFor(() => expect(requestEmailOtp).toHaveBeenCalled());
+    expect(requestEmailOtp).toHaveBeenCalledWith("zainab@example.com", {
       createUser: true,
       metadata: { full_name: "زينب" },
     });

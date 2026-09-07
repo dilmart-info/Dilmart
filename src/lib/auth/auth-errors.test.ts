@@ -5,6 +5,7 @@ import {
   isAuthStorageError,
   isDefinitiveAuthFailure,
   isTransientAuthFailure,
+  classifyOtpError,
 } from "./auth-errors";
 
 describe("auth error classification", () => {
@@ -48,3 +49,66 @@ describe("auth error classification", () => {
     expect(isTransientAuthFailure(undefined)).toBe(false);
   });
 });
+
+describe("classifyOtpError", () => {
+  it("classifies HTTP 429 and rate limit messages as rate_limit", () => {
+    expect(classifyOtpError({ status: 429, message: "Too Many Requests" })).toBe("rate_limit");
+    expect(classifyOtpError(new Error("Too many requests, please wait before retrying"))).toBe("rate_limit");
+    expect(classifyOtpError({ message: "rate_limit_exceeded" })).toBe("rate_limit");
+    expect(classifyOtpError({ status: 429 })).toBe("rate_limit");
+  });
+
+  it("classifies connectivity and timeout failures as network", () => {
+    expect(classifyOtpError(new Error("Request timeout after 15000ms"))).toBe("network");
+    expect(classifyOtpError(new TypeError("Failed to fetch"))).toBe("network");
+    expect(classifyOtpError(new Error("network error"))).toBe("network");
+    expect(classifyOtpError({ message: "econnreset" })).toBe("network");
+  });
+
+  it("classifies 5xx and server errors as provider_error", () => {
+    expect(classifyOtpError({ status: 500, message: "Internal Server Error" })).toBe("provider_error");
+    expect(classifyOtpError({ status: 502, message: "Bad Gateway" })).toBe("provider_error");
+    expect(classifyOtpError(new Error("Meta provider upstream failure"))).toBe("provider_error");
+  });
+
+  it("classifies 401 and 403 as unauthorized", () => {
+    expect(classifyOtpError({ status: 401, message: "Unauthorized" })).toBe("unauthorized");
+    expect(classifyOtpError({ status: 403, message: "Forbidden" })).toBe("unauthorized");
+    expect(classifyOtpError(new Error("unauthorized request"))).toBe("unauthorized");
+  });
+
+  it("classifies bad or expired OTP code as invalid_code", () => {
+    expect(classifyOtpError(new Error("Token has expired or is invalid"))).toBe("invalid_code");
+    expect(classifyOtpError(new Error("otp_expired"))).toBe("invalid_code");
+    expect(classifyOtpError(new Error("رمز التحقق غير صحيح"))).toBe("invalid_code");
+    expect(classifyOtpError(new Error("bad_code"))).toBe("invalid_code");
+  });
+
+  it("classifies invalid phone format as invalid_identifier", () => {
+    expect(classifyOtpError(new Error("Invalid phone format"))).toBe("invalid_identifier");
+    expect(classifyOtpError(new Error("البريد الإلكتروني غير صالح"))).toBe("invalid_identifier");
+  });
+
+  it("returns only the safe category literal and never leaks raw error text, tokens, or phone numbers", () => {
+    const rawLeak = "Bearer secret-token-xyz-12345 phone:07701234567";
+    const sensitiveError = new Error(`429 ${rawLeak}`);
+    const category = classifyOtpError(sensitiveError);
+
+    expect(category).toBe("rate_limit");
+    expect(category).not.toContain("secret-token");
+    expect(category).not.toContain("07701234567");
+    expect(category).not.toContain("Bearer");
+
+    const allowedCategories = [
+      "rate_limit",
+      "network",
+      "invalid_code",
+      "invalid_identifier",
+      "provider_error",
+      "unauthorized",
+      "unknown",
+    ];
+    expect(allowedCategories).toContain(category);
+  });
+});
+

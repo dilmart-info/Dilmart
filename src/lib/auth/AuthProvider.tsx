@@ -27,6 +27,7 @@ import {
 } from "./auth-actions";
 import { AUTH_REFRESH_OUTCOMES, AUTH_REFRESH_REASONS, USER_SCOPED_QUERY_KEYS, type AuthRefreshReason } from "./auth-events";
 import { isAuthStorageError } from "./auth-errors";
+import { fetchAndCacheAuthContext } from "@/lib/auth/auth-context-fetcher";
 
 /**
  * UI-only safety valve. If secure bootstrap is slow we show a delayed hint,
@@ -279,13 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // the previous render's session, so letting useQuery run first can cache
         // a guest context and race admin/merchant login.
         if (nextSession?.access_token && nextSession.user?.id) {
-          queryClient
-            .fetchQuery({
-              // Source-aware key — SIGNED_IN is always a direct Supabase identity.
-              queryKey: ["auth-context", "supabase", nextSession.user.id],
-              queryFn: () => apiClient.getAuthContext(nextSession.access_token),
-              staleTime: 0,
-            })
+          fetchAndCacheAuthContext(queryClient, nextSession.user.id, nextSession.access_token)
             .catch(() => {
               // The useQuery below owns retries and error surfacing.
             });
@@ -431,16 +426,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const authContextQuery = useQuery<AuthContextResponse | null>({
     // §Phase J — source-aware identity key so a Supabase user A cache can never cross-contaminate a
     // federated user B cache (or vice-versa).
-    queryKey: [
-      "auth-context",
-      appSession?.authSource ?? null,
-      appSession?.user?.id ?? null,
-      // §9.3 — the epoch belongs in the key for EVERY federated session, not only unresolved ones. A
-      // new redeem can keep the same customer id AND resolve immediately while still replacing the
-      // identity context; keying only on the user id would let the previous context's cached answer
-      // stay authoritative for the new session. Supabase keys are unchanged.
-      isFederated ? `epoch:${identityResolution.epoch}` : null,
-    ],
+    queryKey: isFederated
+      ? [
+          "auth-context",
+          appSession?.authSource ?? null,
+          appSession?.user?.id ?? null,
+          // §9.3 — the epoch belongs in the key for EVERY federated session, not only unresolved ones.
+          `epoch:${identityResolution.epoch}`,
+        ]
+      : [
+          "auth-context",
+          appSession?.authSource ?? null,
+          appSession?.user?.id ?? null,
+        ],
     // §9.3 — source-aware. A federated session whose identity is still pending deliberately projects
     // NO token (see FederatedSessionAdapter.getSession), so gating on appSession.accessToken would
     // disable the very query that resolves it and leave the session pending forever. Federated
@@ -451,7 +449,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       !sessionBootstrapping &&
       !storageError &&
       !isOffline,
-    staleTime: 0,
+    staleTime: 10_000,
     gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: true,
     retry: 1,
