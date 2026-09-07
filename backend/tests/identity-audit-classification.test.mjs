@@ -63,8 +63,9 @@ test("identity audit classification — detects duplicate phone clusters and col
   assert.equal(result.duplicatePhoneClusters, 1);
   assert.equal(result.identitiesLinkedToMultipleUsers, 1);
   assert.equal(result.profilesPhoneWithoutAuthPhone, 1); // user-b has profile phone but no auth phone!
-  assert.equal(result.accountsDuplicatedIfRegistrationOn, 1);
-  assert.ok(result.accountsRequiringManualResolution > 0);
+  assert.equal(result.profilesWhosePhoneBelongsToAnotherAuthUser, 1); // user-b phone belongs to user-a in auth.users!
+  assert.equal(result.profilesEligibleForNewPhoneRegistration, 0);
+  assert.ok(result.profilesRequiringManualResolution > 0);
   assert.equal(result.accountsSafeForLinking, 0);
   assert.equal(result.riskLevel, "HIGH");
 });
@@ -172,3 +173,58 @@ test("identity audit classification — riskLevel is LOW only when all criteria 
   assert.equal(result.accountsSafeForLinking, 0);
   assert.equal(result.accountsRequiringManualResolution, 0);
 });
+
+test("identity audit classification — retains all customer_phone_identities rows and flags users with multiple canonical phone identities", () => {
+  const authUsers = [
+    { id: "user-multi", phone: "+9647701111111", phone_confirmed_at: "2026-01-01T00:00:00Z" },
+  ];
+
+  const profiles = [
+    { id: "user-multi", phone: "07701111111" },
+  ];
+
+  // user-multi has TWO canonical phone identities in customer_phone_identities!
+  const identities = [
+    { user_id: "user-multi", phone_normalized: "07701111111" },
+    { user_id: "user-multi", phone_normalized: "07709999999" },
+  ];
+
+  const result = classifyPhoneIdentities({ authUsers, profiles, identities });
+
+  assert.equal(result.customerPhoneIdentitiesRows, 2);
+  assert.equal(result.usersWithMultipleCanonicalPhoneIdentities, 1);
+  assert.equal(result.profilesRequiringManualResolution, 1);
+  assert.equal(result.riskLevel, "HIGH");
+  assert.ok(result.riskReasons.some((r) => r.includes("multiple canonical phone identities")));
+});
+
+test("identity audit classification — separates eligible new phone registrations from phone hijacking risks", () => {
+  const authUsers = [
+    { id: "user-auth-owner", phone: "+9647701112233", phone_confirmed_at: "2026-01-01T00:00:00Z" },
+    { id: "user-clean-profile", phone: null, phone_confirmed_at: null },
+    { id: "user-hijack-risk", phone: null, phone_confirmed_at: null },
+  ];
+
+  const profiles = [
+    { id: "user-auth-owner", phone: "07701112233" },
+    // user-clean-profile has an unlinked phone that DOES NOT belong to any auth user
+    { id: "user-clean-profile", phone: "07801112233" },
+    // user-hijack-risk has a phone that belongs to user-auth-owner!
+    { id: "user-hijack-risk", phone: "07701112233" },
+  ];
+
+  const identities = [
+    { user_id: "user-auth-owner", phone_normalized: "07701112233" },
+  ];
+
+  const result = classifyPhoneIdentities({ authUsers, profiles, identities });
+
+  assert.equal(result.profilesWithPhone, 3);
+  assert.equal(result.profilesPhoneWithoutAuthPhone, 2); // user-clean-profile and user-hijack-risk
+  assert.equal(result.profilesEligibleForNewPhoneRegistration, 1); // Only user-clean-profile
+  assert.equal(result.profilesWhosePhoneBelongsToAnotherAuthUser, 1); // user-hijack-risk
+  assert.equal(result.profilesRequiringManualResolution, 2); // user-auth-owner and user-hijack-risk due to collision
+  assert.equal(result.riskLevel, "HIGH");
+  assert.ok(result.riskReasons.some((r) => r.includes("account takeover risk")));
+});
+

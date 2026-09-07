@@ -131,3 +131,62 @@ export function isTransientAuthFailure(error: unknown): boolean {
 
   return transientPatterns.some((pattern) => text.includes(pattern));
 }
+
+/**
+ * Safe OTP error categories for telemetry/logging without leaking sensitive tokens,
+ * headers, response bodies, or raw phone numbers.
+ */
+export type OtpErrorCategory =
+  | "rate_limit"
+  | "network"
+  | "invalid_code"
+  | "invalid_identifier"
+  | "provider_error"
+  | "unauthorized"
+  | "unknown";
+
+export function classifyOtpError(error: unknown): OtpErrorCategory {
+  if (!error) return "unknown";
+  if (isTransientAuthFailure(error)) return "network";
+
+  const text = errorText(error).toLowerCase();
+  const status = errorStatus(error);
+
+  if (status === 429 || text.includes("too many") || text.includes("rate limit") || text.includes("rate_limit")) {
+    return "rate_limit";
+  }
+  if (status === 401 || status === 403 || text.includes("unauthorized") || text.includes("forbidden")) {
+    return "unauthorized";
+  }
+  if (
+    text.includes("invalid code") ||
+    text.includes("token has expired") ||
+    text.includes("expired") ||
+    text.includes("otp_expired") ||
+    text.includes("bad_code") ||
+    text.includes("رمز التحقق غير صحيح")
+  ) {
+    return "invalid_code";
+  }
+  if (
+    text.includes("phone") ||
+    text.includes("identifier") ||
+    text.includes("format") ||
+    text.includes("invalid") ||
+    text.includes("غير صالح")
+  ) {
+    return "invalid_identifier";
+  }
+  if (
+    (status !== null && status >= 500) ||
+    text.includes("provider") ||
+    text.includes("upstream") ||
+    text.includes("meta") ||
+    text.includes("server")
+  ) {
+    return "provider_error";
+  }
+
+  return "unknown";
+}
+

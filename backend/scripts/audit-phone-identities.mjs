@@ -84,16 +84,25 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   }
 
   // customer_phone_identities analysis
-  const identityByUserId = new Map();
-  const identityUsersByPhone = new Map();
+  const identitiesByUserId = new Map(); // userId -> Set<phone>
+  const identityUsersByPhone = new Map(); // phone -> Set<userId>
   for (const row of identities) {
     const phone = normalize(row.phone_normalized ?? "");
     if (!phone) continue;
     if (!identityUsersByPhone.has(phone)) identityUsersByPhone.set(phone, new Set());
     identityUsersByPhone.get(phone).add(row.user_id);
-    identityByUserId.set(row.user_id, phone);
+
+    if (!identitiesByUserId.has(row.user_id)) identitiesByUserId.set(row.user_id, new Set());
+    identitiesByUserId.get(row.user_id).add(phone);
   }
   const identitiesLinkedToMultipleUsers = [...identityUsersByPhone.values()].filter((s) => s.size > 1).length;
+
+  let usersWithMultipleCanonicalPhoneIdentities = 0;
+  for (const [, phones] of identitiesByUserId) {
+    if (phones.size > 1) {
+      usersWithMultipleCanonicalPhoneIdentities += 1;
+    }
+  }
 
   // Composite union of phone owners across authUsers, profiles, and customer_phone_identities
   const allPhoneOwners = new Map();
@@ -109,8 +118,10 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   for (const [userId, phone] of profilePhones) {
     registerPhoneOwner(phone, userId);
   }
-  for (const [userId, phone] of identityByUserId) {
-    registerPhoneOwner(phone, userId);
+  for (const [userId, phones] of identitiesByUserId) {
+    for (const phone of phones) {
+      registerPhoneOwner(phone, userId);
+    }
   }
 
   const duplicatePhoneClusters = [...allPhoneOwners.values()].filter((set) => set.size > 1).length;
@@ -118,16 +129,19 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   // auth phone vs canonical customer_phone_identities mismatch
   let authVsIdentityMismatch = 0;
   for (const [userId, confirmedPhone] of confirmedAuthPhoneByUser) {
-    const canonicalPhone = identityByUserId.get(userId);
-    if (!canonicalPhone || canonicalPhone !== confirmedPhone) {
+    const userPhones = identitiesByUserId.get(userId);
+    if (!userPhones || !userPhones.has(confirmedPhone)) {
       authVsIdentityMismatch += 1;
     }
   }
 
-  // Accounts safe for linking: user has no auth phone, has profile phone that is not colliding
-  // with any other user across auth, profiles, or identities, and is not claimed by another auth user.
-  let accountsSafeForLinking = 0;
-  let accountsRequiringManualResolution = 0;
+  // Profiles evaluation separated into explicit indicators:
+  // 1. profilesWhosePhoneBelongsToAnotherAuthUser: phone belongs to another auth user (hijacking risk)
+  // 2. profilesEligibleForNewPhoneRegistration: phone does not exist in auth, no collision, would cleanly create a new account
+  // 3. profilesRequiringManualResolution: any profile having collisions, mismatches, or multi-identities
+  let profilesEligibleForNewPhoneRegistration = 0;
+  let profilesWhosePhoneBelongsToAnotherAuthUser = 0;
+  let profilesRequiringManualResolution = 0;
 
   for (const [userId, phone] of profilePhones) {
     const authPhone = authPhoneByUser.get(userId);
@@ -136,22 +150,37 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     const hasCollision = Boolean(owners && owners.size > 1);
 
     const authOwners = usersByAuthPhone.get(phone);
-    const claimedByAnotherAuthUser = Boolean(authOwners && [...authOwners].some((id) => id !== userId));
+    const belongsToAnotherAuthUser = Boolean(authOwners && [...authOwners].some((id) => id !== userId));
 
-    if (hasCollision || hasUserMismatch || claimedByAnotherAuthUser) {
-      accountsRequiringManualResolution += 1;
+    const userIdentities = identitiesByUserId.get(userId);
+    const hasMultipleIdentities = Boolean(userIdentities && userIdentities.size > 1);
+
+    if (belongsToAnotherAuthUser) {
+      profilesWhosePhoneBelongsToAnotherAuthUser += 1;
+    }
+
+    if (hasCollision || hasUserMismatch || belongsToAnotherAuthUser || hasMultipleIdentities) {
+      profilesRequiringManualResolution += 1;
     } else if (!authPhone) {
-      accountsSafeForLinking += 1;
+      profilesEligibleForNewPhoneRegistration += 1;
     }
   }
 
-  // If phone registration were turned on with shouldCreateUser: true, any profile phone without auth.phone creates a duplicate!
-  const accountsDuplicatedIfRegistrationOn = profilePhoneWithoutAuthPhone;
+  // Aliases for compatibility
+  const accountsSafeForLinking = profilesEligibleForNewPhoneRegistration;
+  const accountsRequiringManualResolution = profilesRequiringManualResolution;
+  const accountsDuplicatedIfRegistrationOn = profilesEligibleForNewPhoneRegistration;
 
   // Comprehensive risk assessment
   const riskReasons = [];
-  if (profilePhoneWithoutAuthPhone > 0) {
-    riskReasons.push(`${profilePhoneWithoutAuthPhone} profile(s) have phones unlinked in auth.users`);
+  if (profilesWhosePhoneBelongsToAnotherAuthUser > 0) {
+    riskReasons.push(`${profilesWhosePhoneBelongsToAnotherAuthUser} profile phone(s) belong to another auth user (account takeover risk)`);
+  }
+  if (usersWithMultipleCanonicalPhoneIdentities > 0) {
+    riskReasons.push(`${usersWithMultipleCanonicalPhoneIdentities} user(s) have multiple canonical phone identities`);
+  }
+  if (profilesEligibleForNewPhoneRegistration > 0) {
+    riskReasons.push(`${profilesEligibleForNewPhoneRegistration} profile(s) eligible for new phone registration would create duplicate accounts`);
   }
   if (profilesPhoneWithoutConfirmedAuthPhone > profilePhoneWithoutAuthPhone) {
     const unconfirmedCount = profilesPhoneWithoutConfirmedAuthPhone - profilePhoneWithoutAuthPhone;
@@ -172,13 +201,19 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   if (authWithUnconfirmedPhone > 0) {
     riskReasons.push(`${authWithUnconfirmedPhone} unconfirmed auth phone(s) in auth.users`);
   }
-  if (accountsRequiringManualResolution > 0) {
-    riskReasons.push(`${accountsRequiringManualResolution} account(s) require manual resolution`);
+  if (profilesRequiringManualResolution > 0) {
+    riskReasons.push(`${profilesRequiringManualResolution} profile(s) require manual resolution`);
   }
 
   let riskLevel = "LOW";
   if (riskReasons.length > 0) {
-    if (duplicatePhoneClusters > 0 || identitiesLinkedToMultipleUsers > 0 || accountsRequiringManualResolution > 0) {
+    if (
+      duplicatePhoneClusters > 0 ||
+      identitiesLinkedToMultipleUsers > 0 ||
+      profilesWhosePhoneBelongsToAnotherAuthUser > 0 ||
+      usersWithMultipleCanonicalPhoneIdentities > 0 ||
+      profilesRequiringManualResolution > 0
+    ) {
       riskLevel = "HIGH";
     } else {
       riskLevel = "ELEVATED";
@@ -198,7 +233,11 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     authVsIdentityMismatch,
     duplicatePhoneClusters,
     identitiesLinkedToMultipleUsers,
+    usersWithMultipleCanonicalPhoneIdentities,
     provisionalWithPhone,
+    profilesEligibleForNewPhoneRegistration,
+    profilesWhosePhoneBelongsToAnotherAuthUser,
+    profilesRequiringManualResolution,
     accountsSafeForLinking,
     accountsRequiringManualResolution,
     accountsDuplicatedIfRegistrationOn,
@@ -264,10 +303,12 @@ async function runAudit() {
     ["auth phone vs customer_phone_identities mismatches", result.authVsIdentityMismatch],
     ["duplicate normalized phones across users", result.duplicatePhoneClusters],
     ["phone identities linked to more than one user", result.identitiesLinkedToMultipleUsers],
+    ["users with multiple canonical phone identities", result.usersWithMultipleCanonicalPhoneIdentities],
     ["provisional users holding a phone", result.provisionalWithPhone],
+    ["profiles eligible for new phone registration", result.profilesEligibleForNewPhoneRegistration],
+    ["profiles whose phone belongs to another auth user", result.profilesWhosePhoneBelongsToAnotherAuthUser],
+    ["profiles requiring manual resolution", result.profilesRequiringManualResolution],
     ["candidate accounts safe for linking", result.accountsSafeForLinking],
-    ["accounts requiring manual resolution", result.accountsRequiringManualResolution],
-    ["accounts that would duplicate if registration active", result.accountsDuplicatedIfRegistrationOn],
   ];
 
   console.log("Phone identity audit — counts only, no personal data\n");

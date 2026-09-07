@@ -29,6 +29,8 @@ import {
 } from "@/lib/auth/auth-feature-flags";
 import { sanitizeCustomerDestination } from "@/lib/auth/safe-redirect";
 import { apiClient } from "@/lib/api-client";
+import { classifyOtpError } from "@/lib/auth/auth-errors";
+import { fetchAndCacheAuthContext } from "@/lib/auth/auth-context-fetcher";
 import type { PasswordCredentials, SignInResult } from "@/lib/auth/auth-actions";
 import { Eye, EyeOff, Lock, Mail, Phone, User, ShieldCheck, KeyRound, RefreshCw, AlertCircle } from "lucide-react";
 
@@ -179,8 +181,11 @@ export default function Auth() {
         );
       }
     } catch (error) {
-      // Redacted internal log with masked identifier; uniform user-facing Arabic message
-      console.error("[Auth] Failed to send OTP for identifier:", maskIdentifierForLogs(otp.identifier), error);
+      // Classified internal log with masked identifier; uniform user-facing Arabic message
+      console.error("[Auth] OTP request failed", {
+        identifier: maskIdentifierForLogs(otp.identifier),
+        category: classifyOtpError(error),
+      });
       toast.error("تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً.");
     }
   };
@@ -191,19 +196,18 @@ export default function Auth() {
     try {
       await otp.submitCode();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "رمز التحقق غير صحيح";
-      toast.error(message);
+      console.error("[Auth] OTP code verification failed", {
+        identifier: maskIdentifierForLogs(otp.identifier),
+        category: classifyOtpError(error),
+      });
+      toast.error("تعذر التحقق من الرمز. تأكد من صحته أو اطلب رمزاً جديداً.");
     }
   };
 
   // Helper to fetch and populate canonical auth context directly
   const refreshAuthContextOnly = async (accessToken: string, userId: string): Promise<AuthContextResponse> => {
     queryClient.removeQueries({ queryKey: ["auth-context"] });
-    const updatedContext = await apiClient.getAuthContext(accessToken);
-    queryClient.setQueryData(["auth-context", "supabase", userId], updatedContext);
-    queryClient.setQueryData(["auth-context", "supabase", userId, null], updatedContext);
-    queryClient.setQueryData(["auth-context", userId], updatedContext);
-    return updatedContext;
+    return fetchAndCacheAuthContext(queryClient, userId, accessToken);
   };
 
   // Safe device signout before changing number after session issuance
@@ -218,8 +222,10 @@ export default function Auth() {
       queryClient.removeQueries({ queryKey: ["auth-context"] });
       otp.changeIdentifier();
     } catch (err) {
-      console.error("[Auth] Error during logout before changing number:", err);
-      otp.changeIdentifier();
+      console.error("[Auth] Logout before changing number failed", {
+        category: classifyOtpError(err),
+      });
+      toast.error("تعذر تسجيل الخروج بأمان، يرجى المحاولة مجدداً.");
     } finally {
       setSwitchingAccountBusy(false);
     }

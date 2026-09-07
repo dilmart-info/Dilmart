@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import type { SignInResult } from "@/lib/auth/auth-actions";
 import type { AuthContextResponse } from "@/lib/auth-context-contract";
+import { fetchAndCacheAuthContext } from "@/lib/auth/auth-context-fetcher";
 
 export type OtpChannel = "phone" | "email";
 export type OtpStep = "identifier" | "code";
@@ -153,19 +154,20 @@ export function useOtpFlow(options: {
     try {
       const result = await verifyCode(identifier, chosenChannel, code);
 
-      // A fresh session means the cached auth context belongs to somebody else. Drop it
-      // and fetch for the new user before anything renders, so no unauthenticated frame
-      // is shown between verification and redirect.
-      queryClient.removeQueries({ queryKey: ["auth-context"] });
+      // Drop cached auth context belonging to other users, but preserve
+      // in-flight or fresh context for this user so SIGNED_IN and OTP deduplicate cleanly.
+      queryClient.removeQueries({
+        queryKey: ["auth-context"],
+        predicate: (query) => query.queryKey[2] !== result.session.user.id,
+      });
       let authContext: AuthContextResponse;
       try {
-        // Fetch context directly from API
-        authContext = await apiClient.getAuthContext(result.session.access_token);
-        // Directly populate the query cache for AuthProvider and components with matching keys
-        // without calling invalidateQueries, preserving the single deterministic fetch contract.
-        queryClient.setQueryData(["auth-context", "supabase", result.session.user.id], authContext);
-        queryClient.setQueryData(["auth-context", "supabase", result.session.user.id, null], authContext);
-        queryClient.setQueryData(["auth-context", result.session.user.id], authContext);
+        // Fetch canonical context through deduplicated fetcher
+        authContext = await fetchAndCacheAuthContext(
+          queryClient,
+          result.session.user.id,
+          result.session.access_token
+        );
         setContextError(null);
       } catch (err: any) {
         const message = err?.message || "تعذر تحميل بيانات الحساب بعد التحقق من الرمز";
@@ -188,11 +190,15 @@ export function useOtpFlow(options: {
     setPending(true);
     try {
       const { signInResult } = contextError;
-      queryClient.removeQueries({ queryKey: ["auth-context"] });
-      const authContext = await apiClient.getAuthContext(signInResult.session.access_token);
-      queryClient.setQueryData(["auth-context", "supabase", signInResult.session.user.id], authContext);
-      queryClient.setQueryData(["auth-context", "supabase", signInResult.session.user.id, null], authContext);
-      queryClient.setQueryData(["auth-context", signInResult.session.user.id], authContext);
+      queryClient.removeQueries({
+        queryKey: ["auth-context"],
+        predicate: (query) => query.queryKey[2] !== signInResult.session.user.id,
+      });
+      const authContext = await fetchAndCacheAuthContext(
+        queryClient,
+        signInResult.session.user.id,
+        signInResult.session.access_token
+      );
       setContextError(null);
       await onVerified({ signInResult, authContext });
       return true;

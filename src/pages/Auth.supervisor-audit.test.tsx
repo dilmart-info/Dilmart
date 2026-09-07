@@ -407,4 +407,194 @@ describe("Auth — Supervisor Gate Verifications (PR #42 Integration & Logic Aud
     // CRITICAL ASSERTION: Exactly 1 call to getAuthContext was made! No duplicate from invalidateQueries!
     expect(apiClient.getAuthContext).toHaveBeenCalledTimes(1);
   });
+
+  it("6. Logout failure when changing number keeps the current screen, preserves session, and does NOT open new number input", async () => {
+    vi.mocked(authActions.requestPhoneOtp).mockResolvedValue(undefined);
+    vi.mocked(authActions.verifyPhoneOtp).mockResolvedValue({
+      session: mockNewUserSession,
+      user: mockNewUserSession.user,
+    });
+
+    // Context loading fails post-verification -> triggers contextError recovery screen
+    vi.mocked(apiClient.getAuthContext).mockRejectedValue(new Error("Database connection timeout"));
+
+    renderIntegratedAuth();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("identifier")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId("identifier"), { target: { value: "07701112233" } });
+    fireEvent.click(screen.getByTestId("submit-otp-identifier"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("otp-digit-0")).toBeInTheDocument();
+    });
+    typeCode("123456");
+    fireEvent.click(screen.getByTestId("submit-otp-code"));
+
+    // Context error recovery screen rendered
+    await waitFor(() => {
+      expect(screen.getByTestId("context-error-screen")).toBeInTheDocument();
+    });
+
+    // Setup: logout fails/rejects
+    logoutCurrentDeviceMock.mockRejectedValueOnce(new Error("Device keystore write failure"));
+
+    // User clicks 'استخدام رقم آخر'
+    fireEvent.click(screen.getByTestId("change-number-after-error"));
+
+    // CRITICAL ASSERTIONS:
+    // 1. Error toast displayed
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith("تعذر تسجيل الخروج بأمان، يرجى المحاولة مجدداً.");
+    });
+    // 2. Screen STAYS on context error screen
+    expect(screen.getByTestId("context-error-screen")).toBeInTheDocument();
+    // 3. Identifier input is NOT displayed
+    expect(screen.queryByTestId("identifier")).not.toBeInTheDocument();
+  });
+
+  it("7. Console logs are sanitized: sensitive tokens, Authorization headers, and raw phone numbers are NEVER logged", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const leakedToken = "eyJhGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.super-secret-customer-access-token-99999";
+    const rawIraqiPhone = "07709876543";
+
+    // Simulate an HTTP error containing sensitive request headers and raw phone number in response body
+    const sensitiveError = new Error("Network request failed");
+    (sensitiveError as any).config = {
+      headers: {
+        Authorization: `Bearer ${leakedToken}`,
+      },
+    };
+    (sensitiveError as any).response = {
+      data: {
+        error: "invalid_grant",
+        target_phone: rawIraqiPhone,
+      },
+    };
+
+    vi.mocked(authActions.requestPhoneOtp).mockRejectedValue(sensitiveError);
+
+    renderIntegratedAuth();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("identifier")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId("identifier"), { target: { value: rawIraqiPhone } });
+    fireEvent.click(screen.getByTestId("submit-otp-identifier"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalled();
+    });
+
+    // Verify console.error was called
+    expect(consoleErrorSpy).toHaveBeenCalled();
+
+    // Verify NO console.error argument contains the leakedToken, Authorization, or the rawIraqiPhone
+    for (const callArgs of consoleErrorSpy.mock.calls) {
+      const serialized = JSON.stringify(callArgs);
+      expect(serialized).not.toContain(leakedToken);
+      expect(serialized).not.toContain("Authorization");
+      expect(serialized).not.toContain(rawIraqiPhone);
+    }
+
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("8. Uniform error on OTP code submit failure: server details are never leaked to user toast", async () => {
+    vi.mocked(authActions.requestPhoneOtp).mockResolvedValue(undefined);
+    // Verification rejects with internal backend/provider error
+    vi.mocked(authActions.verifyPhoneOtp).mockRejectedValue(
+      new Error("Supabase Auth API 400: otp_expired token has expired")
+    );
+
+    renderIntegratedAuth();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("identifier")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId("identifier"), { target: { value: "07701112233" } });
+    fireEvent.click(screen.getByTestId("submit-otp-identifier"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("otp-digit-0")).toBeInTheDocument();
+    });
+    typeCode("999999");
+    fireEvent.click(screen.getByTestId("submit-otp-code"));
+
+    await waitFor(() => {
+      expect(toast.error).toHaveBeenCalledWith(
+        "تعذر التحقق من الرمز. تأكد من صحته أو اطلب رمزاً جديداً."
+      );
+    });
+
+    // Ensure server error details were never surfaced in toast
+    expect(toast.error).not.toHaveBeenCalledWith(expect.stringContaining("Supabase Auth API"));
+    expect(toast.error).not.toHaveBeenCalledWith(expect.stringContaining("otp_expired"));
+  });
+
+  it("9. Promise deduplication gate: concurrent SIGNED_IN event + OTP completion shares exactly 1 in-flight HTTP request", async () => {
+    vi.mocked(authActions.requestPhoneOtp).mockResolvedValue(undefined);
+
+    // Create a deferred promise gate for getAuthContext to simulate in-flight network delay
+    let resolveContextGate!: (value: any) => void;
+    const contextGatePromise = new Promise((resolve) => {
+      resolveContextGate = resolve;
+    });
+
+    vi.mocked(apiClient.getAuthContext).mockImplementation(() => contextGatePromise as any);
+
+    // verifyPhoneOtp simulates Supabase returning a session AND firing SIGNED_IN auth event before resolving
+    vi.mocked(authActions.verifyPhoneOtp).mockImplementation(async () => {
+      currentSession = mockNewUserSession;
+      // AuthProvider receives SIGNED_IN while verifyPhoneOtp completes
+      act(() => {
+        if (authStateCallback) {
+          authStateCallback("SIGNED_IN", mockNewUserSession);
+        }
+      });
+      return {
+        session: mockNewUserSession,
+        user: mockNewUserSession.user,
+      };
+    });
+
+    renderIntegratedAuth();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("identifier")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByTestId("identifier"), { target: { value: "07701112233" } });
+    fireEvent.click(screen.getByTestId("submit-otp-identifier"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("otp-digit-0")).toBeInTheDocument();
+    });
+
+    // Submit code while network gate is pending
+    typeCode("123456");
+    fireEvent.click(screen.getByTestId("submit-otp-code"));
+
+    // Both SIGNED_IN and submitCode have fired and joined fetchAndCacheAuthContext while contextGatePromise is pending
+    // Now resolve the network gate
+    await act(async () => {
+      resolveContextGate({
+        user: mockNewUserSession.user as any,
+        profile: { id: "user-new-123", full_name: "تأكيد التزامن" } as any,
+        roles: ["customer"],
+        activeRole: "customer",
+        merchant: null,
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("checkout-page")).toBeInTheDocument();
+    });
+
+    // CRITICAL ASSERTION:
+    // Despite both AuthProvider (SIGNED_IN) and useOtpFlow (submitCode) attempting to fetch auth-context,
+    // the centralized fetcher deduplicated them into EXACTLY ONE call!
+    expect(apiClient.getAuthContext).toHaveBeenCalledTimes(1);
+  });
 });
