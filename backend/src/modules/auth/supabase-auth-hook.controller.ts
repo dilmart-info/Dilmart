@@ -5,7 +5,7 @@
  * unauthenticated: every request must carry a valid Standard Webhooks signature over the
  * raw body, and an unsigned or replayed call is rejected before anything is sent.
  */
-import { Body, Controller, Headers, HttpCode, HttpStatus, Post, Req } from "@nestjs/common";
+import { Body, Controller, Header, Headers, HttpCode, HttpStatus, Post, Req } from "@nestjs/common";
 import { SkipThrottle } from "@nestjs/throttler";
 import {
   SupabaseAuthHookService,
@@ -18,9 +18,9 @@ export class SupabaseAuthHookController {
   constructor(private readonly hookService: SupabaseAuthHookService) {}
 
   /**
-   * 200 with an empty body on success. Supabase's HTTP auth hook contract expects a 200;
-   * an empty body guarantees the code, the provider message id and the phone can never
-   * travel back out of this service.
+   * 200 with an empty JSON body on success. Supabase's HTTP auth hook contract expects a 200
+   * with Content-Type: application/json; returning {} satisfies GoTrue's HTTP hook parser while
+   * guaranteeing the code, the provider message id and the phone can never travel back out of this service.
    *
    * The global IP throttle is skipped here on purpose. Supabase calls this endpoint from a
    * small set of shared egress addresses, so an IP limit would treat every customer in the
@@ -41,15 +41,17 @@ export class SupabaseAuthHookController {
   @Post("send-sms")
   @SkipThrottle()
   @HttpCode(HttpStatus.OK)
+  @Header("Content-Type", "application/json")
   async sendSms(
     @Req() request: { rawBody?: string },
     @Headers() headers: SupabaseSmsHookHeaders,
     @Body() payload: SupabaseSmsHookPayload,
-  ): Promise<void> {
+  ): Promise<Record<string, never>> {
     await this.hookService.handleSendSms({
       rawBody: request?.rawBody,
       headers,
       payload,
     });
+    return {};
   }
 }
