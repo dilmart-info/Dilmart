@@ -4,35 +4,7 @@ import { useCartStore } from "@/lib/cart-store";
 import { useAuth } from "@/hooks/use-auth";
 import { isNative } from "@/lib/capacitor";
 
-const EXCLUDED_PREFIXES = [
-  "/checkout",
-  "/thank-you",
-  "/auth",
-  "/forgot-password",
-  "/claim-account",
-  "/admin",
-  "/merchant",
-  "/agent",
-];
-
-function isItemActive(itemPath: string, pathname: string): boolean {
-  if (itemPath === "/") {
-    return pathname === "/";
-  }
-  if (itemPath === "/products") {
-    return pathname.startsWith("/products") || pathname.startsWith("/category") || pathname.startsWith("/product/");
-  }
-  if (itemPath === "/wishlist") {
-    return pathname.startsWith("/wishlist");
-  }
-  if (itemPath === "/profile") {
-    return pathname.startsWith("/profile") || pathname.startsWith("/my-account");
-  }
-  if (itemPath === "/cart") {
-    return pathname.startsWith("/cart");
-  }
-  return pathname === itemPath;
-}
+import { isBottomNavExcluded, isBottomNavItemActive } from "@/components/navigation/bottom-nav-rules";
 
 const BottomNav = () => {
   const location = useLocation();
@@ -40,8 +12,7 @@ const BottomNav = () => {
   const { isMerchantUser } = useAuth();
   const native = isNative();
 
-  const isExcluded = EXCLUDED_PREFIXES.some((prefix) => location.pathname.startsWith(prefix));
-  if (isExcluded) {
+  if (isBottomNavExcluded(location.pathname)) {
     return null;
   }
 
@@ -70,7 +41,7 @@ const BottomNav = () => {
         style={{ gridTemplateColumns: `repeat(${gridCols}, minmax(0, 1fr))` }}
       >
         {navItems.map((item) => {
-          const isActive = isItemActive(item.path, location.pathname);
+          const isActive = isBottomNavItemActive(item.path, location.pathname);
           return (
             <Link
               key={item.path}

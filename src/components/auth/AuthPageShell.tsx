@@ -22,7 +22,7 @@ export default function AuthPageShell({
   return (
     <div className="flex min-h-screen flex-col bg-background" dir="rtl">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-10 md:py-16 flex items-center justify-center">
+      <main className="flex-1 container mx-auto px-4 pt-10 pb-[calc(var(--mobile-bottom-nav-total)+2rem)] md:py-16 flex items-center justify-center">
         <Card
           className={cn(
             "w-full rounded-2xl border border-border/80 bg-card p-6 md:p-8 shadow-sm transition-all animate-fade-in",

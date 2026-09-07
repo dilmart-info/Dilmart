@@ -28,7 +28,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { triggerCartAnimation } from "@/components/FlyingCartAnimation";
 import { useMerchantSwitchCart } from "@/components/MerchantSwitchCartDialog";
 import { apiClient } from "@/lib/api-client";
@@ -42,6 +42,21 @@ const PLACEHOLDER_IMG = "/placeholder.svg";
 
 const ProductDetail = () => {
   const { slug } = useParams();
+  const lastResetSlugRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    if (!slug) return;
+    if (lastResetSlugRef.current !== slug) {
+      lastResetSlugRef.current = slug;
+      if (typeof window !== "undefined" && typeof window.scrollTo === "function") {
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "auto",
+        });
+      }
+    }
+  }, [slug]);
 
   const {
     data: product,
