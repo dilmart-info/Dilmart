@@ -137,9 +137,12 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
 
   // Profiles evaluation separated into explicit indicators:
   // 1. profilesWhosePhoneBelongsToAnotherAuthUser: phone belongs to another auth user (hijacking risk)
-  // 2. profilesEligibleForNewPhoneRegistration: phone does not exist in auth, no collision, would cleanly create a new account
-  // 3. profilesRequiringManualResolution: any profile having collisions, mismatches, or multi-identities
-  let profilesEligibleForNewPhoneRegistration = 0;
+  // 2. profilesEligibleForSafePhoneLinking: profile has phone, no auth.users phone, does not belong to any other auth user,
+  //    and has no collisions across profiles/identities. Safe for linking to existing profile.
+  // 3. profilesAtDuplicateAccountRiskIfRegistrationEnabled: if phone registration (shouldCreateUser: true) were enabled,
+  //    these unlinked profile phones would create duplicate auth users instead of linking to their profile.
+  // 4. profilesRequiringManualResolution: any profile having collisions, mismatches, or multi-identities
+  let profilesEligibleForSafePhoneLinking = 0;
   let profilesWhosePhoneBelongsToAnotherAuthUser = 0;
   let profilesRequiringManualResolution = 0;
 
@@ -162,14 +165,17 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     if (hasCollision || hasUserMismatch || belongsToAnotherAuthUser || hasMultipleIdentities) {
       profilesRequiringManualResolution += 1;
     } else if (!authPhone) {
-      profilesEligibleForNewPhoneRegistration += 1;
+      profilesEligibleForSafePhoneLinking += 1;
     }
   }
 
+  const profilesAtDuplicateAccountRiskIfRegistrationEnabled = profilesEligibleForSafePhoneLinking;
+
   // Aliases for compatibility
-  const accountsSafeForLinking = profilesEligibleForNewPhoneRegistration;
+  const accountsSafeForLinking = profilesEligibleForSafePhoneLinking;
   const accountsRequiringManualResolution = profilesRequiringManualResolution;
-  const accountsDuplicatedIfRegistrationOn = profilesEligibleForNewPhoneRegistration;
+  /** @deprecated Use profilesAtDuplicateAccountRiskIfRegistrationEnabled instead */
+  const accountsDuplicatedIfRegistrationOn = profilesAtDuplicateAccountRiskIfRegistrationEnabled;
 
   // Comprehensive risk assessment
   const riskReasons = [];
@@ -179,8 +185,8 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   if (usersWithMultipleCanonicalPhoneIdentities > 0) {
     riskReasons.push(`${usersWithMultipleCanonicalPhoneIdentities} user(s) have multiple canonical phone identities`);
   }
-  if (profilesEligibleForNewPhoneRegistration > 0) {
-    riskReasons.push(`${profilesEligibleForNewPhoneRegistration} profile(s) eligible for new phone registration would create duplicate accounts`);
+  if (profilesAtDuplicateAccountRiskIfRegistrationEnabled > 0) {
+    riskReasons.push(`${profilesAtDuplicateAccountRiskIfRegistrationEnabled} profile(s) at duplicate account risk if registration enabled`);
   }
   if (profilesPhoneWithoutConfirmedAuthPhone > profilePhoneWithoutAuthPhone) {
     const unconfirmedCount = profilesPhoneWithoutConfirmedAuthPhone - profilePhoneWithoutAuthPhone;
@@ -235,7 +241,8 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     identitiesLinkedToMultipleUsers,
     usersWithMultipleCanonicalPhoneIdentities,
     provisionalWithPhone,
-    profilesEligibleForNewPhoneRegistration,
+    profilesEligibleForSafePhoneLinking,
+    profilesAtDuplicateAccountRiskIfRegistrationEnabled,
     profilesWhosePhoneBelongsToAnotherAuthUser,
     profilesRequiringManualResolution,
     accountsSafeForLinking,
@@ -305,7 +312,8 @@ async function runAudit() {
     ["phone identities linked to more than one user", result.identitiesLinkedToMultipleUsers],
     ["users with multiple canonical phone identities", result.usersWithMultipleCanonicalPhoneIdentities],
     ["provisional users holding a phone", result.provisionalWithPhone],
-    ["profiles eligible for new phone registration", result.profilesEligibleForNewPhoneRegistration],
+    ["profiles eligible for safe phone linking", result.profilesEligibleForSafePhoneLinking],
+    ["profiles at duplicate risk if registration enabled", result.profilesAtDuplicateAccountRiskIfRegistrationEnabled],
     ["profiles whose phone belongs to another auth user", result.profilesWhosePhoneBelongsToAnotherAuthUser],
     ["profiles requiring manual resolution", result.profilesRequiringManualResolution],
     ["candidate accounts safe for linking", result.accountsSafeForLinking],
@@ -321,7 +329,8 @@ async function runAudit() {
     console.log("  LOW — all profile phones correspond to confirmed auth users without collisions or mismatches.");
   } else {
     console.log(`  ${result.riskLevel} — ${result.riskReasons.join("; ")}.`);
-    console.log("  With shouldCreateUser: true, unlinked or colliding accounts would create duplicate users.");
+    console.log("  Unlinked profile phones may create duplicate auth users.");
+    console.log("  Colliding phones may authenticate into a different existing account and require mandatory manual resolution.");
     console.log("  Phone registration must remain BLOCKED until account linking completes.");
   }
 }

@@ -147,17 +147,28 @@ export type OtpErrorCategory =
 
 export function classifyOtpError(error: unknown): OtpErrorCategory {
   if (!error) return "unknown";
-  if (isTransientAuthFailure(error)) return "network";
 
   const text = errorText(error).toLowerCase();
   const status = errorStatus(error);
 
-  if (status === 429 || text.includes("too many") || text.includes("rate limit") || text.includes("rate_limit")) {
+  // 1. Rate limiting MUST be checked first, since isTransientAuthFailure treats 429 as transient.
+  if (
+    status === 429 ||
+    text.includes("429") ||
+    text.includes("too many") ||
+    text.includes("rate limit") ||
+    text.includes("rate_limit") ||
+    text.includes("too_many_requests")
+  ) {
     return "rate_limit";
   }
+
+  // 2. Unauthorized / Forbidden
   if (status === 401 || status === 403 || text.includes("unauthorized") || text.includes("forbidden")) {
     return "unauthorized";
   }
+
+  // 3. Invalid or expired OTP code
   if (
     text.includes("invalid code") ||
     text.includes("token has expired") ||
@@ -168,6 +179,8 @@ export function classifyOtpError(error: unknown): OtpErrorCategory {
   ) {
     return "invalid_code";
   }
+
+  // 4. Invalid phone or identifier format
   if (
     text.includes("phone") ||
     text.includes("identifier") ||
@@ -177,14 +190,21 @@ export function classifyOtpError(error: unknown): OtpErrorCategory {
   ) {
     return "invalid_identifier";
   }
+
+  // 5. Upstream provider or server error (500, 502, 503, 504, etc.)
   if (
     (status !== null && status >= 500) ||
     text.includes("provider") ||
     text.includes("upstream") ||
     text.includes("meta") ||
-    text.includes("server")
+    text.includes("internal server")
   ) {
     return "provider_error";
+  }
+
+  // 6. Generic transient network failure (timeout, network error, failed to fetch, offline)
+  if (isTransientAuthFailure(error)) {
+    return "network";
   }
 
   return "unknown";

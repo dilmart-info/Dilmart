@@ -64,7 +64,8 @@ test("identity audit classification — detects duplicate phone clusters and col
   assert.equal(result.identitiesLinkedToMultipleUsers, 1);
   assert.equal(result.profilesPhoneWithoutAuthPhone, 1); // user-b has profile phone but no auth phone!
   assert.equal(result.profilesWhosePhoneBelongsToAnotherAuthUser, 1); // user-b phone belongs to user-a in auth.users!
-  assert.equal(result.profilesEligibleForNewPhoneRegistration, 0);
+  assert.equal(result.profilesEligibleForSafePhoneLinking, 0);
+  assert.equal(result.profilesAtDuplicateAccountRiskIfRegistrationEnabled, 0);
   assert.ok(result.profilesRequiringManualResolution > 0);
   assert.equal(result.accountsSafeForLinking, 0);
   assert.equal(result.riskLevel, "HIGH");
@@ -221,10 +222,13 @@ test("identity audit classification — separates eligible new phone registratio
 
   assert.equal(result.profilesWithPhone, 3);
   assert.equal(result.profilesPhoneWithoutAuthPhone, 2); // user-clean-profile and user-hijack-risk
-  assert.equal(result.profilesEligibleForNewPhoneRegistration, 1); // Only user-clean-profile
+  assert.equal(result.profilesEligibleForSafePhoneLinking, 1); // Only user-clean-profile is safe to link
+  assert.equal(result.profilesAtDuplicateAccountRiskIfRegistrationEnabled, 1); // user-clean-profile would duplicate if registration enabled
+  assert.equal(result.accountsDuplicatedIfRegistrationOn, 1); // Deprecated alias check
   assert.equal(result.profilesWhosePhoneBelongsToAnotherAuthUser, 1); // user-hijack-risk
   assert.equal(result.profilesRequiringManualResolution, 2); // user-auth-owner and user-hijack-risk due to collision
   assert.equal(result.riskLevel, "HIGH");
   assert.ok(result.riskReasons.some((r) => r.includes("account takeover risk")));
+  assert.ok(result.riskReasons.some((r) => r.includes("at duplicate account risk if registration enabled")));
 });
 
