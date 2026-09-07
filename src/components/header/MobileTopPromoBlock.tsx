@@ -67,7 +67,7 @@ export default function MobileTopPromoBlock({
             <div className="flex items-center justify-start">
               <Link
                 to="/"
-                className="inline-flex items-center focus:outline-none"
+                className="inline-flex items-center rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
                 aria-label="الرئيسية"
               >
                 <img
@@ -82,7 +82,7 @@ export default function MobileTopPromoBlock({
             {/* Center: Brand Wordmark */}
             <Link
               to="/"
-              className="flex flex-col items-center justify-center text-center select-none outline-none"
+              className="flex flex-col items-center justify-center text-center select-none rounded-lg px-1.5 py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-navy"
               aria-label={`${storeConfig.brand.ar} ${storeConfig.brand.en}`}
             >
               <span className="font-tajawal text-lg font-black text-white tracking-tight leading-none">

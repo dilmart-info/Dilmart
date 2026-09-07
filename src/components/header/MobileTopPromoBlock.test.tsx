@@ -99,6 +99,19 @@ describe("MobileTopPromoBlock — Visual Cleanup & Layout Rebalance (Task 005)",
     expect(within(trackLink).getByText("تتبع")).toBeInTheDocument();
   });
 
+  it("provides accessible visible focus styling on both homepage links", () => {
+    renderPromoBlock();
+    const block = screen.getByTestId("mobile-top-promo-block");
+
+    const logoLink = within(block).getByRole("link", { name: "الرئيسية" });
+    const wordmarkLink = within(block).getByRole("link", {
+      name: `${storeConfig.brand.ar} ${storeConfig.brand.en}`,
+    });
+
+    expect(logoLink).toHaveClass("focus-visible:ring-2", "focus-visible:ring-accent", "rounded-lg");
+    expect(wordmarkLink).toHaveClass("focus-visible:ring-2", "focus-visible:ring-accent", "rounded-lg");
+  });
+
   it("keeps the search form fully functional", () => {
     const onSearchMock = vi.fn((e: React.FormEvent) => e.preventDefault());
     const setSearchQueryMock = vi.fn();
