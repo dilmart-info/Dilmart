@@ -33,11 +33,22 @@ DilMart customer authentication is architected to be **phone-first via WhatsApp 
 | `VITE_AUTH_PHONE_REGISTRATION_ENABLED` | Frontend | `false` | Build-time | Unified login/register entry; sets `createUser: true` |
 | `VITE_AUTH_PHONE_LINKING_ENABLED` | Frontend | `false` | Build-time | Allows existing email customers to link verified phone |
 | `VITE_AUTH_EMAIL_OTP_ENABLED` | Frontend | `false` | Build-time | Email OTP channel |
-| `OTP_WHATSAPP_MODE` | Backend | `disabled` | Runtime | Options: `disabled`, `mock`, `live` |
+| `OTP_WHATSAPP_MODE` | Backend | `disabled` | Runtime | Options: `disabled`, `sandbox`, `live` |
+| `OTP_WHATSAPP_TEMPLATE_NAME` | Backend | unset | Runtime | Approved template name in Meta Business Manager |
+| `OTP_WHATSAPP_TEMPLATE_LANGUAGE` | Backend | unset | Runtime | Approved template language code (e.g. `ar` or `en_US`) |
 | `OTP_WHATSAPP_TEMPLATE_TYPE` | Backend | dynamic | Runtime | `AUTH_COPY_CODE`, `AUTH_ONE_TAP`, `TEXT_CUSTOM`, etc. |
 | `OTP_WHATSAPP_PHONE_NUMBER_ID` | Backend | unset | Runtime | Meta Graph API Phone Number ID |
-| `OTP_WHATSAPP_ACCESS_TOKEN` | Backend | unset | Runtime | Meta System User permanent token |
+| `OTP_WHATSAPP_DAILY_GLOBAL_LIMIT` | Backend | Mandatory in `sandbox` | Runtime | Global daily dispatch cap. Recommended canary value: `200`. No implicit default. |
+| `OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE` | Backend | `Asia/Baghdad` | Runtime | Timezone for daily dispatch bucket reset |
 | `SUPABASE_AUTH_HOOK_SECRET` | Backend | unset | Runtime | HMAC-SHA256 signature secret from Supabase Hook |
+
+> [!IMPORTANT]
+> **Daily Cap Contract & Counter Semantics:**
+> - `OTP_WHATSAPP_DAILY_GLOBAL_LIMIT` is mandatory in `sandbox` mode. Missing, zero, or negative limits strictly fail closed before calling Meta.
+> - Recommended controlled-canary value: `200`. There is no implicit default.
+> - The daily limit counter reserves slots immediately BEFORE calling Meta. It tracks `reserved WhatsApp dispatch attempts`, not successful deliveries.
+> - If Meta fails, errors, or times out after the slot is claimed, the reservation is **not** refunded. This behavior is intentional, defensive, and prevents unbounded retry cost spikes.
+
 
 ---
 
@@ -49,15 +60,16 @@ sequenceDiagram
     actor Customer
     participant Frontend as DilMart Frontend (Web/Mobile)
     participant Supabase as Supabase Auth Engine
-    participant Hook as Backend SMS Hook (/api/auth/hook)
+    participant Hook as Backend SMS Hook (/api/auth/hooks/supabase/send-sms)
     participant Meta as Meta WhatsApp Cloud API
     participant DB as Supabase PostgreSQL
 
     Customer->>Frontend: Enters 07XXXXXXXXX
     Frontend->>Supabase: supabase.auth.signInWithOtp({ phone, shouldCreateUser })
-    Supabase->>Hook: POST /api/auth/hook (payload + X-Supabase-Signature)
+    Supabase->>Hook: POST /api/auth/hooks/supabase/send-sms (payload + X-Supabase-Signature)
     Hook->>Hook: Verify HMAC-SHA256 signature & parse E.164 phone
     Hook->>Hook: Check Idempotency Lease (webhook_id / payload digest)
+    Hook->>Hook: Check Global Daily Dispatch Cap (durable bucket)
     Hook->>Meta: POST /v21.0/{phone_number_id}/messages (Template with OTP)
     Meta-->>Customer: WhatsApp Message with 6-digit OTP code & Copy button
     Customer->>Frontend: Enters 6-digit code
@@ -108,14 +120,15 @@ To prevent Open Redirect and query-truncation bugs:
 
 ## 5. Backend SMS Hook & Meta Provider Architecture
 
-### 5.1 Supabase Send SMS Hook (`/api/auth/hook`)
+### 5.1 Supabase Send SMS Hook (`/api/auth/hooks/supabase/send-sms`)
 - **Signature Verification**: Validates `X-Supabase-Signature` using raw request body buffer and HMAC-SHA256 against `SUPABASE_AUTH_HOOK_SECRET`. Requests lacking a valid signature are rejected with HTTP 401.
 - **Idempotency Lease**: Tracks `webhook-id` and payload hash for 10 minutes to prevent duplicate dispatches if Supabase retries hooks.
+- **Canary Daily Dispatch Cap**: Limits total dispatches reaching Meta via durable table `whatsapp_otp_daily_dispatches` and atomic RPC `claim_whatsapp_daily_dispatch`, resetting daily at midnight in `Asia/Baghdad`. Sandbox mode fails closed if limit is missing or invalid.
 - **Timeouts & Circuit Breaker**: Dispatches to Meta with a 4000ms timeout.
 - **Fail-Closed**: If `OTP_WHATSAPP_MODE=disabled`, returns an immediate rejection, preventing unwanted charges.
 
 ### 5.2 Meta WhatsApp OTP Provider
-- Supports dynamic authentication templates:
+- Supports dynamic authentication templates matching the actual approved Meta template:
   - `AUTH_COPY_CODE`: Meta template with `type: "BUTTON", sub_type: "url", index: "0"` or copy-code button.
   - `AUTH_ONE_TAP`: Zero-tap / one-tap autofill.
   - `TEXT_CUSTOM`: Fallback transactional text message.

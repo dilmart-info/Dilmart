@@ -5,12 +5,22 @@ import { ServiceUnavailableException } from "@nestjs/common";
 const { Test } = await import("@nestjs/testing");
 const { ConfigService } = await import("@nestjs/config");
 const { WhatsAppOtpProvider } = await import("../dist/modules/auth/whatsapp-otp.provider.js");
+const { WhatsAppDailyDispatchService } = await import("../dist/modules/auth/whatsapp-daily-dispatch.service.js");
 const { OtpDeliveryService } = await import("../dist/modules/auth/otp-delivery.service.js");
 const { OtpChallengeService } = await import("../dist/modules/auth/otp-challenge.service.js");
 const { PasswordRecoveryService } = await import("../dist/modules/auth/password-recovery.service.js");
 const { AccountClaimService } = await import("../dist/modules/auth/account-claim.service.js");
 const { toWhatsAppE164, maskPhoneForLogs } = await import("../dist/modules/auth/otp-phone.util.js");
 const { normalizeIraqiPhone } = await import("../dist/common/validators/iraqi-phone.validator.js");
+
+const mockDailyDispatch = {
+  provide: WhatsAppDailyDispatchService,
+  useValue: {
+    claimDispatch: async () => ({ allowed: true }),
+    getLimit: () => 200,
+    getTimezone: () => "Asia/Baghdad",
+  },
+};
 
 function makeConfig(overrides = {}) {
   return {
@@ -95,6 +105,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig({}) },
       ],
     }).compile();
@@ -120,6 +131,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig({ OTP_PROVIDER: "fake" }) },
       ],
     }).compile();
@@ -143,6 +155,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig({ OTP_PROVIDER: "test" }) },
       ],
     }).compile();
@@ -166,6 +179,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig({ OTP_PROVIDER: "fake" }) },
       ],
     }).compile();
@@ -194,6 +208,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig(WA_CFG) },
       ],
     }).compile();
@@ -231,6 +246,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
     const waModule = await Test.createTestingModule({
       providers: [
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig(WA_CFG) },
       ],
     }).compile();
@@ -248,6 +264,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
     const waModule = await Test.createTestingModule({
       providers: [
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         {
           provide: ConfigService,
           useValue: makeConfig({ ...WA_CFG, OTP_WHATSAPP_TEMPLATE_TYPE: "NOT_A_REAL_TYPE" }),
@@ -271,6 +288,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         {
           provide: ConfigService,
           useValue: makeConfig({
@@ -313,6 +331,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
     const waModule = await Test.createTestingModule({
       providers: [
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig(WA_CFG) },
       ],
     }).compile();
@@ -332,6 +351,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
     const waModule = await Test.createTestingModule({
       providers: [
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig(WA_CFG) },
       ],
     }).compile();
@@ -352,6 +372,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
     const waModule = await Test.createTestingModule({
       providers: [
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig(WA_CFG) },
       ],
     }).compile();
@@ -372,6 +393,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
     const waModule = await Test.createTestingModule({
       providers: [
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         {
           provide: ConfigService,
           useValue: makeConfig({ ...WA_CFG, OTP_WHATSAPP_TIMEOUT_MS: "1000" }),
@@ -399,6 +421,7 @@ test("WhatsApp OTP delivery suite", async (t) => {
       providers: [
         OtpDeliveryService,
         WhatsAppOtpProvider,
+        mockDailyDispatch,
         { provide: ConfigService, useValue: makeConfig(WA_CFG) },
       ],
     }).compile();

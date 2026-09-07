@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { maskPhoneForLogs } from "./otp-phone.util";
+import { WhatsAppDailyDispatchService } from "./whatsapp-daily-dispatch.service";
 
 /**
  * Meta WhatsApp Cloud API authentication template styles.
@@ -21,6 +22,7 @@ export type WhatsAppMode = "disabled" | "sandbox" | "live";
 /** Per-call overrides. Only narrowing is honoured — never widening past the channel cap. */
 export interface WhatsAppSendOptions {
   timeoutMs?: number;
+  correlationId?: string;
 }
 
 export interface WhatsAppOtpSendResult {
@@ -46,7 +48,10 @@ export class WhatsAppOtpProvider {
   /** Injectable for unit tests — defaults to global fetch. */
   fetchImpl: typeof fetch = globalThis.fetch.bind(globalThis);
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly dailyDispatch: WhatsAppDailyDispatchService,
+  ) {}
 
   getMode(): WhatsAppMode {
     const raw = (this.config.get<string>("OTP_WHATSAPP_MODE") || "").trim().toLowerCase();
@@ -55,9 +60,13 @@ export class WhatsAppOtpProvider {
   }
 
   /**
-   * Send OTP via Meta authentication template.
-   * `destinationE164` must already be E.164 (e.g. +9647XXXXXXXXX).
-   * Never logs OTP code, access token, or full phone.
+   * Primary entry point for sending an OTP via Meta WhatsApp Cloud API.
+   *
+   * Rate limiting and dispatch counters:
+   * - Daily dispatch cap is checked and reserved BEFORE calling Meta.
+   * - The counter tracks RESERVED WhatsApp dispatch attempts, not confirmed deliveries.
+   * - If the call to Meta subsequently fails or times out, the reservation is NOT refunded.
+   *   This behavior is intentional and defensive against runaway costs.
    */
   async sendOtp(
     destinationE164: string,
@@ -66,8 +75,14 @@ export class WhatsAppOtpProvider {
   ): Promise<WhatsAppOtpSendResult> {
     const mode = this.getMode();
     if (mode === "disabled") {
-      this.logger.warn("[WHATSAPP] Provider mode is disabled — CONFIG_ERROR");
-      return this.configError("WhatsApp OTP channel is disabled (OTP_WHATSAPP_MODE=disabled)");
+      this.logger.warn(`[WHATSAPP][DISABLED] Attempt to send OTP while mode=disabled`);
+      return {
+        success: false,
+        errorCode: "OTP_WHATSAPP_CONFIG_ERROR",
+        errorMessage: "WhatsApp OTP is currently disabled",
+        failureClass: "CONFIG_ERROR",
+        latencyMs: 0,
+      };
     }
 
     const configValidation = this.validateConfig();
@@ -76,9 +91,25 @@ export class WhatsAppOtpProvider {
       return this.configError(configValidation.reason!);
     }
 
+    const startTime = Date.now();
+    const correlationId = options?.correlationId || "unknown";
+
+    // Canary protection: global daily dispatch cap
+    // Note: Slots are claimed BEFORE dispatching to Meta. This tracks reserved
+    // dispatch attempts; failures or timeouts from Meta do not refund the reservation.
+    const claim = await this.dailyDispatch.claimDispatch({ correlationId, mode });
+    if (!claim.allowed) {
+      return {
+        success: false,
+        errorCode: claim.errorCode || "OTP_DAILY_LIMIT_EXCEEDED",
+        errorMessage: "Daily WhatsApp dispatch limit reached or unconfigured in sandbox",
+        failureClass: "PROVIDER_REJECTED",
+        latencyMs: Date.now() - startTime,
+      };
+    }
+
     const cfg = this.getConfig();
     const maskedPhone = maskPhoneForLogs(destinationE164);
-    const startTime = Date.now();
     const logPrefix = mode === "sandbox" ? "[WHATSAPP][SANDBOX]" : "[WHATSAPP]";
 
     try {

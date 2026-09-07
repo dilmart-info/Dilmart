@@ -32,6 +32,8 @@ const VARIABLES = [
   "OTP_WHATSAPP_TEMPLATE_TYPE",
   "OTP_WHATSAPP_API_VERSION",
   "OTP_WHATSAPP_TIMEOUT_MS",
+  "OTP_WHATSAPP_DAILY_GLOBAL_LIMIT",
+  "OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE",
   "OTP_HMAC_SECRET",
   "OTP_TOKEN_SECRET",
   "OTP_REQUEST_HANDLE_SECRET",
@@ -95,6 +97,13 @@ function classify(key) {
     case "OTP_WHATSAPP_TIMEOUT_MS": {
       const n = Number(trimmed);
       return Number.isFinite(n) && n >= 1000 && n <= 60000 ? `SET (${n}ms)` : "INVALID FORMAT";
+    }
+    case "OTP_WHATSAPP_DAILY_GLOBAL_LIMIT": {
+      const n = Number(trimmed);
+      return Number.isInteger(n) && n > 0 ? `SET (${n})` : "INVALID FORMAT";
+    }
+    case "OTP_WHATSAPP_DAILY_LIMIT_TIMEZONE": {
+      return trimmed ? `SET (${trimmed})` : "INVALID FORMAT";
     }
     case "SUPABASE_AUTH_HOOK_TIMEOUT_MS": {
       const n = Number(trimmed);

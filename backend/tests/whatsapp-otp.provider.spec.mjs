@@ -20,8 +20,17 @@ function makeConfig(overrides = {}) {
   };
 }
 
+function makeDailyDispatch(allowed = true) {
+  return {
+    claimDispatch: async () => ({ allowed }),
+  };
+}
+
 test("WhatsAppOtpProvider — fail-closed when disabled", async () => {
-  const provider = new WhatsAppOtpProvider(makeConfig({ OTP_WHATSAPP_MODE: "disabled" }));
+  const provider = new WhatsAppOtpProvider(
+    makeConfig({ OTP_WHATSAPP_MODE: "disabled" }),
+    makeDailyDispatch()
+  );
   const result = await provider.sendOtp("+9647701234567", "123456");
 
   assert.equal(result.success, false);
@@ -30,13 +39,22 @@ test("WhatsAppOtpProvider — fail-closed when disabled", async () => {
 });
 
 test("WhatsAppOtpProvider — validates missing or invalid configuration", () => {
-  const missingToken = new WhatsAppOtpProvider(makeConfig({ OTP_WHATSAPP_ACCESS_TOKEN: "" }));
+  const missingToken = new WhatsAppOtpProvider(
+    makeConfig({ OTP_WHATSAPP_ACCESS_TOKEN: "" }),
+    makeDailyDispatch()
+  );
   assert.equal(missingToken.validateConfig().ok, false);
 
-  const invalidPhoneId = new WhatsAppOtpProvider(makeConfig({ OTP_WHATSAPP_PHONE_NUMBER_ID: "abc" }));
+  const invalidPhoneId = new WhatsAppOtpProvider(
+    makeConfig({ OTP_WHATSAPP_PHONE_NUMBER_ID: "abc" }),
+    makeDailyDispatch()
+  );
   assert.equal(invalidPhoneId.validateConfig().ok, false);
 
-  const invalidApiVersion = new WhatsAppOtpProvider(makeConfig({ OTP_WHATSAPP_API_VERSION: "invalid" }));
+  const invalidApiVersion = new WhatsAppOtpProvider(
+    makeConfig({ OTP_WHATSAPP_API_VERSION: "invalid" }),
+    makeDailyDispatch()
+  );
   assert.equal(invalidApiVersion.validateConfig().ok, false);
 });
 
@@ -46,7 +64,8 @@ test("WhatsAppOtpProvider — builds template payload matching Meta API specific
       OTP_WHATSAPP_TEMPLATE_TYPE: "AUTH_COPY_CODE",
       OTP_WHATSAPP_TEMPLATE_NAME: "custom_template",
       OTP_WHATSAPP_TEMPLATE_LANGUAGE: "en",
-    })
+    }),
+    makeDailyDispatch()
   );
 
   const payload = provider.buildPayload("+9647701234567", "654321");
@@ -62,7 +81,7 @@ test("WhatsAppOtpProvider — builds template payload matching Meta API specific
 });
 
 test("WhatsAppOtpProvider — classifies Meta OAuth and Permission errors as PROVIDER_REJECTED", async () => {
-  const provider = new WhatsAppOtpProvider(makeConfig());
+  const provider = new WhatsAppOtpProvider(makeConfig(), makeDailyDispatch());
   provider.fetchImpl = async () =>
     new Response(
       JSON.stringify({
@@ -83,7 +102,7 @@ test("WhatsAppOtpProvider — classifies Meta OAuth and Permission errors as PRO
 });
 
 test("WhatsAppOtpProvider — handles network timeouts cleanly", async () => {
-  const provider = new WhatsAppOtpProvider(makeConfig());
+  const provider = new WhatsAppOtpProvider(makeConfig(), makeDailyDispatch());
   provider.fetchImpl = async () => {
     const error = new Error("The operation was aborted");
     error.name = "AbortError";
