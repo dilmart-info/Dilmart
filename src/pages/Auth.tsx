@@ -41,8 +41,11 @@ export default function Auth() {
   const queryClient = useQueryClient();
   const {
     appSession,
+    session,
+    profile,
     authStatus,
     retryStorageBootstrap,
+    logoutCurrentDevice,
     signInWithPassword,
     signUpWithPassword,
     requestEmailOtp,
@@ -96,13 +99,14 @@ export default function Auth() {
   const [showPassword, setShowPassword] = useState(false);
   const [passwordBusy, setPasswordBusy] = useState(false);
   const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
-  const [noAccountHint, setNoAccountHint] = useState(false);
 
   const [fullName, setFullName] = useState("");
   const [onboardingSession, setOnboardingSession] = useState<SignInResult | null>(null);
   const [onboardingName, setOnboardingName] = useState("");
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [onboardingError, setOnboardingError] = useState<string | null>(null);
+  const [profileNameSaved, setProfileNameSaved] = useState(false);
+  const [switchingAccountBusy, setSwitchingAccountBusy] = useState(false);
 
   // OTP flow configuration
   const requestCode = useCallback(
@@ -144,6 +148,7 @@ export default function Auth() {
       // If user profile is missing or full_name is blank, transition to lightweight onboarding
       if (!profileFullName) {
         setOnboardingSession(completion.signInResult);
+        setProfileNameSaved(false);
         setOnboardingName("");
         return;
       }
@@ -161,10 +166,9 @@ export default function Auth() {
     allowedChannels: availableChannels,
   });
 
-  // Handle OTP Identifier Submit
+  // Handle OTP Identifier Submit — unified message, no account enumeration
   const handleOtpIdentifierSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setNoAccountHint(false);
     try {
       const sent = await otp.submitIdentifier();
       if (sent) {
@@ -175,15 +179,9 @@ export default function Auth() {
         );
       }
     } catch (error) {
-      // Generic error message without exposing account existence
-      const message =
-        error instanceof Error
-          ? error.message
-          : "تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً.";
-      if (!unifiedPhoneActive && !registering) {
-        setNoAccountHint(true);
-      }
-      toast.error(message);
+      // Redacted internal log with masked identifier; uniform user-facing Arabic message
+      console.error("[Auth] Failed to send OTP for identifier:", maskIdentifierForLogs(otp.identifier), error);
+      toast.error("تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً.");
     }
   };
 
@@ -198,28 +196,57 @@ export default function Auth() {
     }
   };
 
-  // Handle Onboarding Name Submit
+  // Helper to fetch and populate canonical auth context directly
+  const refreshAuthContextOnly = async (accessToken: string, userId: string): Promise<AuthContextResponse> => {
+    queryClient.removeQueries({ queryKey: ["auth-context"] });
+    const updatedContext = await apiClient.getAuthContext(accessToken);
+    queryClient.setQueryData(["auth-context", "supabase", userId], updatedContext);
+    queryClient.setQueryData(["auth-context", "supabase", userId, null], updatedContext);
+    queryClient.setQueryData(["auth-context", userId], updatedContext);
+    return updatedContext;
+  };
+
+  // Safe device signout before changing number after session issuance
+  const handleUseAnotherNumber = async () => {
+    if (switchingAccountBusy) return;
+    setSwitchingAccountBusy(true);
+    try {
+      await logoutCurrentDevice();
+      setOnboardingSession(null);
+      setProfileNameSaved(false);
+      setOnboardingError(null);
+      queryClient.removeQueries({ queryKey: ["auth-context"] });
+      otp.changeIdentifier();
+    } catch (err) {
+      console.error("[Auth] Error during logout before changing number:", err);
+      otp.changeIdentifier();
+    } finally {
+      setSwitchingAccountBusy(false);
+    }
+  };
+
+  // Handle Onboarding Name Submit: separate saveNameOnce and retryAuthContextOnly
   const handleOnboardingSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     const trimmed = onboardingName.trim();
-    if (!trimmed || onboardingBusy || !onboardingSession) return;
+    const activeToken = onboardingSession?.session?.access_token || appSession?.accessToken || session?.access_token;
+    const activeUserId = onboardingSession?.session?.user?.id || appSession?.user?.id || session?.user?.id;
+
+    if (!trimmed || onboardingBusy || !activeToken || !activeUserId) return;
 
     setOnboardingBusy(true);
     setOnboardingError(null);
     try {
-      // 1. Save customer profile name through backend API
-      await apiClient.updateCustomerProfile({ full_name: trimmed });
+      // Phase 1: Save customer profile name once
+      if (!profileNameSaved) {
+        await apiClient.updateCustomerProfile({ full_name: trimmed });
+        setProfileNameSaved(true);
+      }
 
-      // 2. Fetch canonical auth context exactly once to verify
-      queryClient.removeQueries({ queryKey: ["auth-context"] });
+      // Phase 2: Fetch canonical auth context directly without invalidation loops
       let updatedContext: AuthContextResponse;
       try {
-        updatedContext = await queryClient.fetchQuery({
-          queryKey: ["auth-context", onboardingSession.session.user.id],
-          queryFn: () => apiClient.getAuthContext(onboardingSession.session.access_token),
-          staleTime: 0,
-        });
-        await queryClient.invalidateQueries({ queryKey: ["auth-context"] });
+        updatedContext = await refreshAuthContextOnly(activeToken, activeUserId);
       } catch {
         setOnboardingError("تم حفظ الاسم بنجاح، لكن تعذر تحديث الجلسة. يرجى الضغط على زر المتابعة للمحاولة مجدداً.");
         return;
@@ -295,7 +322,6 @@ export default function Auth() {
   const handleTabChange = (nextMode: string) => {
     const m = nextMode as Mode;
     setMode(m);
-    setNoAccountHint(false);
     setUnconfirmedEmail(null);
     otp.changeIdentifier();
   };
@@ -305,25 +331,62 @@ export default function Auth() {
     return <AuthStorageErrorScreen onRetry={retryStorageBootstrap || (() => {})} />;
   }
 
-  // 2. Bootstrapping / Context Loading State -> render skeleton, never render login form
-  if (authStatus === "bootstrapping" || authStatus === "authenticated_loading_context") {
+  // 2. Auth Context Loading Error Recovery (Session is valid, but context loading failed)
+  // MUST precede authenticated ready redirect so the recovery screen is visible!
+  if (otp.contextError) {
     return (
       <AuthPageShell>
-        <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm font-medium">جاري التحقق من الجلسة...</p>
+        <div className="space-y-6 text-center" data-testid="context-error-screen">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
+            <AlertCircle className="h-7 w-7" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="font-display text-xl font-bold text-foreground">
+              تم التحقق من رقمك بنجاح
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              تعذر تحميل بيانات حسابك في الوقت الحالي. يرجى الضغط أدناه لإعادة المحاولة دون الحاجة لطلب رمز جديد.
+            </p>
+          </div>
+
+          <div className="pt-2 space-y-3">
+            <Button
+              type="button"
+              data-testid="retry-context-fetch"
+              onClick={otp.retryContextFetch}
+              disabled={otp.pending || switchingAccountBusy}
+              className="w-full h-11 rounded-xl font-bold gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${otp.pending ? "animate-spin" : ""}`} />
+              <span>{otp.pending ? "جارٍ المحاولة..." : "إعادة المحاولة"}</span>
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              data-testid="change-number-after-error"
+              onClick={handleUseAnotherNumber}
+              disabled={switchingAccountBusy || otp.pending}
+              className="w-full h-11 rounded-xl font-medium text-xs"
+            >
+              {switchingAccountBusy ? "جارٍ تسجيل الخروج..." : "استخدام رقم آخر"}
+            </Button>
+          </div>
         </div>
       </AuthPageShell>
     );
   }
 
-  // 3. Authenticated Ready or Authenticated Offline with existing session -> Synchronously redirect
-  if ((authStatus === "authenticated_ready" || authStatus === "authenticated_offline") && appSession) {
-    return <Navigate to={sanitizeCustomerDestination(from)} replace />;
-  }
+  // 3. Lightweight Customer Onboarding Screen (After OTP verification when full_name is missing)
+  // MUST precede authenticated ready redirect so newly authenticated users without profile name are not bypassed!
+  const requiresOnboarding = Boolean(
+    onboardingSession ||
+      ((authStatus === "authenticated_ready" || authStatus === "authenticated_offline") &&
+        appSession &&
+        !profile?.full_name?.trim() &&
+        effectiveMethod === "otp")
+  );
 
-  // 4. Lightweight Customer Onboarding Screen (After OTP verification when full_name is missing)
-  if (onboardingSession) {
+  if (requiresOnboarding) {
     return (
       <AuthPageShell>
         <div className="space-y-6" data-testid="onboarding-screen">
@@ -371,7 +434,22 @@ export default function Auth() {
               className="w-full h-11 rounded-xl font-bold"
               disabled={onboardingBusy || !onboardingName.trim()}
             >
-              {onboardingBusy ? "جارٍ الحفظ..." : "إكمال ومتابعة"}
+              {onboardingBusy
+                ? "جارٍ الحفظ..."
+                : profileNameSaved
+                ? "إعادة محاولة المتابعة"
+                : "إكمال ومتابعة"}
+            </Button>
+
+            <Button
+              type="button"
+              variant="ghost"
+              data-testid="cancel-onboarding"
+              onClick={handleUseAnotherNumber}
+              disabled={onboardingBusy || switchingAccountBusy}
+              className="w-full text-xs text-muted-foreground hover:text-foreground"
+            >
+              {switchingAccountBusy ? "جارٍ تسجيل الخروج..." : "استخدام رقم آخر"}
             </Button>
           </form>
         </div>
@@ -379,47 +457,21 @@ export default function Auth() {
     );
   }
 
-  // 5. Auth Context Loading Error Recovery (Session is valid, but context loading failed)
-  if (otp.contextError) {
+  // 4. Bootstrapping / Context Loading State -> render skeleton, never render login form
+  if (authStatus === "bootstrapping" || authStatus === "authenticated_loading_context") {
     return (
       <AuthPageShell>
-        <div className="space-y-6 text-center" data-testid="context-error-screen">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-600">
-            <AlertCircle className="h-7 w-7" />
-          </div>
-          <div className="space-y-1">
-            <h2 className="font-display text-xl font-bold text-foreground">
-              تم التحقق من رقمك بنجاح
-            </h2>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              تعذر تحميل بيانات حسابك في الوقت الحالي. يرجى الضغط أدناه لإعادة المحاولة دون الحاجة لطلب رمز جديد.
-            </p>
-          </div>
-
-          <div className="pt-2 space-y-3">
-            <Button
-              type="button"
-              data-testid="retry-context-fetch"
-              onClick={otp.retryContextFetch}
-              disabled={otp.pending}
-              className="w-full h-11 rounded-xl font-bold gap-2"
-            >
-              <RefreshCw className={`h-4 w-4 ${otp.pending ? "animate-spin" : ""}`} />
-              <span>{otp.pending ? "جارٍ المحاولة..." : "إعادة المحاولة"}</span>
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              data-testid="change-number-after-error"
-              onClick={otp.changeIdentifier}
-              className="w-full h-11 rounded-xl font-medium text-xs"
-            >
-              استخدام رقم آخر
-            </Button>
-          </div>
+        <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm font-medium">جاري التحقق من الجلسة...</p>
         </div>
       </AuthPageShell>
     );
+  }
+
+  // 5. Authenticated Ready or Authenticated Offline with existing session -> Synchronously redirect
+  if ((authStatus === "authenticated_ready" || authStatus === "authenticated_offline") && appSession) {
+    return <Navigate to={sanitizeCustomerDestination(from)} replace />;
   }
 
   // 6. Persistent Unconfirmed Email State
@@ -507,10 +559,7 @@ export default function Auth() {
             <button
               type="button"
               data-testid="method-otp"
-              onClick={() => {
-                setMethod("otp");
-                setNoAccountHint(false);
-              }}
+              onClick={() => setMethod("otp")}
               className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
                 effectiveMethod === "otp"
                   ? "bg-card text-foreground shadow-sm"
@@ -522,10 +571,7 @@ export default function Auth() {
             <button
               type="button"
               data-testid="method-password"
-              onClick={() => {
-                setMethod("password");
-                setNoAccountHint(false);
-              }}
+              onClick={() => setMethod("password")}
               className={`flex-1 rounded-lg py-1.5 text-xs font-bold transition-all ${
                 effectiveMethod === "password"
                   ? "bg-card text-foreground shadow-sm"
@@ -637,22 +683,6 @@ export default function Auth() {
                     ? "المتابعة عبر واتساب"
                     : "إرسال رمز التحقق"}
                 </Button>
-
-                {noAccountHint ? (
-                  <div
-                    data-testid="no-account-hint"
-                    className="rounded-xl border border-border bg-muted/40 p-3 text-center text-xs text-muted-foreground space-y-1"
-                  >
-                    <p>إذا لم يكن لديك حساب بعد، يمكنك إنشاء حساب بسهولة.</p>
-                    <button
-                      type="button"
-                      onClick={() => handleTabChange("register")}
-                      className="text-primary font-bold hover:underline"
-                    >
-                      إنشاء حساب الآن
-                    </button>
-                  </div>
-                ) : null}
               </form>
             ) : (
               /* Step: Code Entry */
@@ -845,7 +875,6 @@ export default function Auth() {
               className="font-semibold text-primary hover:underline"
               onClick={() => {
                 setMethod((current) => (current === "otp" ? "password" : "otp"));
-                setNoAccountHint(false);
               }}
             >
               {effectiveMethod === "otp" ? "الدخول بكلمة المرور" : "الدخول عبر واتساب"}

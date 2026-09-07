@@ -159,12 +159,13 @@ export function useOtpFlow(options: {
       queryClient.removeQueries({ queryKey: ["auth-context"] });
       let authContext: AuthContextResponse;
       try {
-        authContext = await queryClient.fetchQuery({
-          queryKey: ["auth-context", result.session.user.id],
-          queryFn: () => apiClient.getAuthContext(result.session.access_token),
-          staleTime: 0,
-        });
-        await queryClient.invalidateQueries({ queryKey: ["auth-context"] });
+        // Fetch context directly from API
+        authContext = await apiClient.getAuthContext(result.session.access_token);
+        // Directly populate the query cache for AuthProvider and components with matching keys
+        // without calling invalidateQueries, preserving the single deterministic fetch contract.
+        queryClient.setQueryData(["auth-context", "supabase", result.session.user.id], authContext);
+        queryClient.setQueryData(["auth-context", "supabase", result.session.user.id, null], authContext);
+        queryClient.setQueryData(["auth-context", result.session.user.id], authContext);
         setContextError(null);
       } catch (err: any) {
         const message = err?.message || "تعذر تحميل بيانات الحساب بعد التحقق من الرمز";
@@ -188,12 +189,10 @@ export function useOtpFlow(options: {
     try {
       const { signInResult } = contextError;
       queryClient.removeQueries({ queryKey: ["auth-context"] });
-      const authContext = await queryClient.fetchQuery({
-        queryKey: ["auth-context", signInResult.session.user.id],
-        queryFn: () => apiClient.getAuthContext(signInResult.session.access_token),
-        staleTime: 0,
-      });
-      await queryClient.invalidateQueries({ queryKey: ["auth-context"] });
+      const authContext = await apiClient.getAuthContext(signInResult.session.access_token);
+      queryClient.setQueryData(["auth-context", "supabase", signInResult.session.user.id], authContext);
+      queryClient.setQueryData(["auth-context", "supabase", signInResult.session.user.id, null], authContext);
+      queryClient.setQueryData(["auth-context", signInResult.session.user.id], authContext);
       setContextError(null);
       await onVerified({ signInResult, authContext });
       return true;

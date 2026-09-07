@@ -226,7 +226,9 @@ describe("Auth.tsx — Customer Identity, Invariants & Edge Cases Suite", () => 
     fireEvent.submit(screen.getByTestId("otp-identifier-form"));
 
     await waitFor(() => {
-      expect(toastError).toHaveBeenCalledWith("Rate limit exceeded");
+      expect(toastError).toHaveBeenCalledWith(
+        "تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً."
+      );
     });
     // Stays on identifier form
     expect(screen.getByTestId("otp-identifier-form")).toBeTruthy();

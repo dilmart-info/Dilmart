@@ -138,15 +138,19 @@ describe("login by OTP", () => {
     expect(getAuthContext).toHaveBeenCalledWith("token");
   });
 
-  it("offers the register path when a login request fails, without confirming the account exists", async () => {
+  it("shows unified error when a login request fails, without confirming the account exists or leaking hint", async () => {
     requestEmailOtp.mockRejectedValue(new Error("Signups not allowed for otp"));
     renderAuth();
     fireEvent.click(screen.getByTestId("channel-email"));
     fireEvent.change(screen.getByTestId("identifier"), { target: { value: "ghost@example.com" } });
     fireEvent.submit(screen.getByTestId("otp-identifier-form"));
 
-    await screen.findByTestId("no-account-hint");
+    await waitFor(() =>
+      expect(toastError).toHaveBeenCalledWith("تعذر إرسال رمز التحقق. يرجى التأكد من صحة الرقم والمحاولة لاحقاً.")
+    );
     expect(toastSuccess).not.toHaveBeenCalled();
+    // No account hint leaked
+    expect(screen.queryByTestId("no-account-hint")).toBeNull();
     // Still on the identifier step — no code screen for a request that never went out.
     expect(screen.queryByTestId("otp-code-form")).toBeNull();
   });

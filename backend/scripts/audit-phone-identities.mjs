@@ -33,6 +33,7 @@ export function normalize(phone) {
 export function classifyPhoneIdentities({ authUsers = [], profiles = [], identities = [] }) {
   const authPhoneByUser = new Map();
   const confirmedAuthPhoneByUser = new Map();
+  const usersByAuthPhone = new Map();
   let authWithPhone = 0;
   let authWithConfirmedPhone = 0;
   let authWithUnconfirmedPhone = 0;
@@ -42,6 +43,9 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     if (normalized) {
       authWithPhone += 1;
       authPhoneByUser.set(user.id, normalized);
+      if (!usersByAuthPhone.has(normalized)) usersByAuthPhone.set(normalized, new Set());
+      usersByAuthPhone.get(normalized).add(user.id);
+
       const isConfirmed = Boolean(user.phone_confirmed_at && String(user.phone_confirmed_at).trim());
       if (isConfirmed) {
         authWithConfirmedPhone += 1;
@@ -56,6 +60,7 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   let profilesWithPhone = 0;
   let provisionalWithPhone = 0;
   let profilePhoneWithoutAuthPhone = 0;
+  let profilesPhoneWithoutConfirmedAuthPhone = 0;
   let authPhoneVsProfileMismatch = 0;
 
   for (const profile of profiles) {
@@ -71,15 +76,12 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     } else if (authPhone !== normalized) {
       authPhoneVsProfileMismatch += 1;
     }
-  }
 
-  // Duplicate normalized phones across distinct users in profiles
-  const usersByProfilePhone = new Map();
-  for (const [userId, phone] of profilePhones) {
-    if (!usersByProfilePhone.has(phone)) usersByProfilePhone.set(phone, new Set());
-    usersByProfilePhone.get(phone).add(userId);
+    const confirmedPhone = confirmedAuthPhoneByUser.get(profile.id);
+    if (!confirmedPhone || confirmedPhone !== normalized) {
+      profilesPhoneWithoutConfirmedAuthPhone += 1;
+    }
   }
-  const duplicatePhoneClusters = [...usersByProfilePhone.values()].filter((set) => set.size > 1).length;
 
   // customer_phone_identities analysis
   const identityByUserId = new Map();
@@ -93,6 +95,26 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   }
   const identitiesLinkedToMultipleUsers = [...identityUsersByPhone.values()].filter((s) => s.size > 1).length;
 
+  // Composite union of phone owners across authUsers, profiles, and customer_phone_identities
+  const allPhoneOwners = new Map();
+  const registerPhoneOwner = (phone, userId) => {
+    if (!phone || !userId) return;
+    if (!allPhoneOwners.has(phone)) allPhoneOwners.set(phone, new Set());
+    allPhoneOwners.get(phone).add(userId);
+  };
+
+  for (const [userId, phone] of authPhoneByUser) {
+    registerPhoneOwner(phone, userId);
+  }
+  for (const [userId, phone] of profilePhones) {
+    registerPhoneOwner(phone, userId);
+  }
+  for (const [userId, phone] of identityByUserId) {
+    registerPhoneOwner(phone, userId);
+  }
+
+  const duplicatePhoneClusters = [...allPhoneOwners.values()].filter((set) => set.size > 1).length;
+
   // auth phone vs canonical customer_phone_identities mismatch
   let authVsIdentityMismatch = 0;
   for (const [userId, confirmedPhone] of confirmedAuthPhoneByUser) {
@@ -102,16 +124,21 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     }
   }
 
-  // Accounts safe for linking: user has no auth phone, has profile phone that is unique across all users
+  // Accounts safe for linking: user has no auth phone, has profile phone that is not colliding
+  // with any other user across auth, profiles, or identities, and is not claimed by another auth user.
   let accountsSafeForLinking = 0;
   let accountsRequiringManualResolution = 0;
 
   for (const [userId, phone] of profilePhones) {
     const authPhone = authPhoneByUser.get(userId);
-    const cluster = usersByProfilePhone.get(phone);
-    const hasCollision = (cluster && cluster.size > 1) || (identityUsersByPhone.get(phone)?.size ?? 0) > 1;
+    const hasUserMismatch = Boolean(authPhone && authPhone !== phone);
+    const owners = allPhoneOwners.get(phone);
+    const hasCollision = Boolean(owners && owners.size > 1);
 
-    if (hasCollision || authPhoneVsProfileMismatch > 0) {
+    const authOwners = usersByAuthPhone.get(phone);
+    const claimedByAnotherAuthUser = Boolean(authOwners && [...authOwners].some((id) => id !== userId));
+
+    if (hasCollision || hasUserMismatch || claimedByAnotherAuthUser) {
       accountsRequiringManualResolution += 1;
     } else if (!authPhone) {
       accountsSafeForLinking += 1;
@@ -121,6 +148,43 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
   // If phone registration were turned on with shouldCreateUser: true, any profile phone without auth.phone creates a duplicate!
   const accountsDuplicatedIfRegistrationOn = profilePhoneWithoutAuthPhone;
 
+  // Comprehensive risk assessment
+  const riskReasons = [];
+  if (profilePhoneWithoutAuthPhone > 0) {
+    riskReasons.push(`${profilePhoneWithoutAuthPhone} profile(s) have phones unlinked in auth.users`);
+  }
+  if (profilesPhoneWithoutConfirmedAuthPhone > profilePhoneWithoutAuthPhone) {
+    const unconfirmedCount = profilesPhoneWithoutConfirmedAuthPhone - profilePhoneWithoutAuthPhone;
+    riskReasons.push(`${unconfirmedCount} profile phone(s) match unconfirmed auth user(s)`);
+  }
+  if (duplicatePhoneClusters > 0) {
+    riskReasons.push(`${duplicatePhoneClusters} phone cluster(s) shared across multiple distinct users`);
+  }
+  if (authPhoneVsProfileMismatch > 0) {
+    riskReasons.push(`${authPhoneVsProfileMismatch} auth vs profile phone mismatch(es)`);
+  }
+  if (authVsIdentityMismatch > 0) {
+    riskReasons.push(`${authVsIdentityMismatch} auth vs identity table mismatch(es)`);
+  }
+  if (identitiesLinkedToMultipleUsers > 0) {
+    riskReasons.push(`${identitiesLinkedToMultipleUsers} phone identity row(s) linked to multiple users`);
+  }
+  if (authWithUnconfirmedPhone > 0) {
+    riskReasons.push(`${authWithUnconfirmedPhone} unconfirmed auth phone(s) in auth.users`);
+  }
+  if (accountsRequiringManualResolution > 0) {
+    riskReasons.push(`${accountsRequiringManualResolution} account(s) require manual resolution`);
+  }
+
+  let riskLevel = "LOW";
+  if (riskReasons.length > 0) {
+    if (duplicatePhoneClusters > 0 || identitiesLinkedToMultipleUsers > 0 || accountsRequiringManualResolution > 0) {
+      riskLevel = "HIGH";
+    } else {
+      riskLevel = "ELEVATED";
+    }
+  }
+
   return {
     authUsersTotal: authUsers.length,
     authWithPhone,
@@ -129,6 +193,7 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     profilesWithPhone,
     customerPhoneIdentitiesRows: identities.length,
     profilesPhoneWithoutAuthPhone: profilePhoneWithoutAuthPhone,
+    profilesPhoneWithoutConfirmedAuthPhone,
     authPhoneVsProfileMismatch,
     authVsIdentityMismatch,
     duplicatePhoneClusters,
@@ -137,6 +202,8 @@ export function classifyPhoneIdentities({ authUsers = [], profiles = [], identit
     accountsSafeForLinking,
     accountsRequiringManualResolution,
     accountsDuplicatedIfRegistrationOn,
+    riskLevel,
+    riskReasons,
   };
 }
 
@@ -192,6 +259,7 @@ async function runAudit() {
     ["profiles with a usable phone", result.profilesWithPhone],
     ["customer_phone_identities rows", result.customerPhoneIdentitiesRows],
     ["profiles phone with no matching auth.users.phone", result.profilesPhoneWithoutAuthPhone],
+    ["profiles phone with no CONFIRMED auth.users.phone", result.profilesPhoneWithoutConfirmedAuthPhone],
     ["auth phone vs profile phone mismatches", result.authPhoneVsProfileMismatch],
     ["auth phone vs customer_phone_identities mismatches", result.authVsIdentityMismatch],
     ["duplicate normalized phones across users", result.duplicatePhoneClusters],
@@ -208,11 +276,11 @@ async function runAudit() {
   }
 
   console.log("\n## Duplicate-account risk\n");
-  if (result.profilesPhoneWithoutAuthPhone === 0 && result.duplicatePhoneClusters === 0) {
-    console.log("  LOW — all profile phones correspond to confirmed auth users without collisions.");
+  if (result.riskLevel === "LOW") {
+    console.log("  LOW — all profile phones correspond to confirmed auth users without collisions or mismatches.");
   } else {
-    console.log(`  ELEVATED — ${result.profilesPhoneWithoutAuthPhone} profile(s) have phones unlinked in auth.users.`);
-    console.log("  With shouldCreateUser: true, these would create duplicate accounts.");
+    console.log(`  ${result.riskLevel} — ${result.riskReasons.join("; ")}.`);
+    console.log("  With shouldCreateUser: true, unlinked or colliding accounts would create duplicate users.");
     console.log("  Phone registration must remain BLOCKED until account linking completes.");
   }
 }
