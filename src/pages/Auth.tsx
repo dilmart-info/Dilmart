@@ -107,7 +107,7 @@ export default function Auth() {
   const [onboardingName, setOnboardingName] = useState("");
   const [onboardingBusy, setOnboardingBusy] = useState(false);
   const [onboardingError, setOnboardingError] = useState<string | null>(null);
-  const [profileNameSaved, setProfileNameSaved] = useState(false);
+  const [lastSavedName, setLastSavedName] = useState<string | null>(null);
   const [switchingAccountBusy, setSwitchingAccountBusy] = useState(false);
 
   // OTP flow configuration
@@ -150,7 +150,7 @@ export default function Auth() {
       // If user profile is missing or full_name is blank, transition to lightweight onboarding
       if (!profileFullName) {
         setOnboardingSession(completion.signInResult);
-        setProfileNameSaved(false);
+        setLastSavedName(null);
         setOnboardingName("");
         return;
       }
@@ -217,7 +217,7 @@ export default function Auth() {
     try {
       await logoutCurrentDevice();
       setOnboardingSession(null);
-      setProfileNameSaved(false);
+      setLastSavedName(null);
       setOnboardingError(null);
       queryClient.removeQueries({ queryKey: ["auth-context"] });
       otp.changeIdentifier();
@@ -240,13 +240,22 @@ export default function Auth() {
 
     if (!trimmed || onboardingBusy || !activeToken || !activeUserId) return;
 
+    if (trimmed.length < 2) {
+      setOnboardingError("يجب أن يتكون الاسم من حرفين على الأقل.");
+      return;
+    }
+    if (trimmed.length > 100) {
+      setOnboardingError("لا يمكن أن يتجاوز الاسم 100 حرف.");
+      return;
+    }
+
     setOnboardingBusy(true);
     setOnboardingError(null);
     try {
-      // Phase 1: Save customer profile name once
-      if (!profileNameSaved) {
+      // Phase 1: Save customer profile name only if not yet saved or if user edited the name
+      if (lastSavedName !== trimmed) {
         await apiClient.updateCustomerProfile({ full_name: trimmed });
-        setProfileNameSaved(true);
+        setLastSavedName(trimmed);
       }
 
       // Phase 2: Fetch canonical auth context directly without invalidation loops
@@ -258,8 +267,9 @@ export default function Auth() {
         return;
       }
 
-      // 3. Verify returned profile contains non-blank name
-      if (!updatedContext.profile?.full_name?.trim()) {
+      // Phase 3: Verify returned profile contains the exact matching normalized name
+      const returnedName = updatedContext.profile?.full_name?.trim();
+      if (returnedName !== trimmed) {
         setOnboardingError("تعذر تأكيد حفظ البيانات الشخصية، يرجى إعادة المحاولة.");
         return;
       }
@@ -442,7 +452,7 @@ export default function Auth() {
             >
               {onboardingBusy
                 ? "جارٍ الحفظ..."
-                : profileNameSaved
+                : (lastSavedName === onboardingName.trim() && lastSavedName !== null)
                 ? "إعادة محاولة المتابعة"
                 : "إكمال ومتابعة"}
             </Button>

@@ -367,4 +367,148 @@ describe("Auth — Deterministic Post-OTP Customer Onboarding Journey", () => {
       expect(navigate).toHaveBeenCalledTimes(1);
     });
   });
+
+  it("editing name after context failure executes a new PATCH with the edited name", async () => {
+    requestPhoneOtp.mockResolvedValue(undefined);
+    verifyPhoneOtp.mockResolvedValue({
+      session: mockSession,
+      user: mockSession.user,
+    });
+
+    vi.mocked(apiClient.getAuthContext).mockResolvedValueOnce({
+      user: mockSession.user as any,
+      profile: null,
+      roles: ["customer"],
+      activeRole: "customer",
+      merchant: null,
+    });
+
+    renderAuth();
+
+    fireEvent.change(screen.getByPlaceholderText("07XXXXXXXXX"), {
+      target: { value: "07701112233" },
+    });
+    fireEvent.click(screen.getByTestId("submit-otp-identifier"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("otp-code-form")).toBeInTheDocument();
+    });
+
+    typeCode("654321");
+    fireEvent.click(screen.getByTestId("submit-otp-code"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("onboarding-screen")).toBeInTheDocument();
+    });
+
+    // 1st attempt: update succeeds, context fails
+    vi.mocked(apiClient.updateCustomerProfile).mockResolvedValueOnce({ success: true } as any);
+    vi.mocked(apiClient.getAuthContext).mockRejectedValueOnce(new Error("Transient network error"));
+
+    fireEvent.change(screen.getByTestId("onboarding-full-name"), {
+      target: { value: "الاسم الأول" },
+    });
+    fireEvent.click(screen.getByTestId("onboarding-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("onboarding-error")).toBeInTheDocument();
+    });
+    expect(apiClient.updateCustomerProfile).toHaveBeenCalledTimes(1);
+    expect(apiClient.updateCustomerProfile).toHaveBeenLastCalledWith({ full_name: "الاسم الأول" });
+
+    // User edits name to a new name
+    vi.mocked(apiClient.updateCustomerProfile).mockResolvedValueOnce({ success: true } as any);
+    vi.mocked(apiClient.getAuthContext).mockResolvedValueOnce({
+      user: mockSession.user as any,
+      profile: {
+        id: "user-new",
+        role: "customer",
+        full_name: "الاسم المعدل",
+        email: null,
+        phone: "07701112233",
+        address: null,
+        points: 0,
+      },
+      roles: ["customer"],
+      activeRole: "customer",
+      merchant: null,
+    });
+
+    fireEvent.change(screen.getByTestId("onboarding-full-name"), {
+      target: { value: "الاسم المعدل" },
+    });
+    fireEvent.click(screen.getByTestId("onboarding-submit"));
+
+    // CRITICAL: A new PATCH must be called with the edited name!
+    await waitFor(() => {
+      expect(apiClient.updateCustomerProfile).toHaveBeenCalledTimes(2);
+      expect(apiClient.updateCustomerProfile).toHaveBeenLastCalledWith({ full_name: "الاسم المعدل" });
+      expect(navigate).toHaveBeenCalledWith("/products", { replace: true });
+    });
+  });
+
+  it("refreshed context returning mismatched name keeps user on onboarding with retryable error", async () => {
+    requestPhoneOtp.mockResolvedValue(undefined);
+    verifyPhoneOtp.mockResolvedValue({
+      session: mockSession,
+      user: mockSession.user,
+    });
+
+    vi.mocked(apiClient.getAuthContext).mockResolvedValueOnce({
+      user: mockSession.user as any,
+      profile: null,
+      roles: ["customer"],
+      activeRole: "customer",
+      merchant: null,
+    });
+
+    renderAuth();
+
+    fireEvent.change(screen.getByPlaceholderText("07XXXXXXXXX"), {
+      target: { value: "07701112233" },
+    });
+    fireEvent.click(screen.getByTestId("submit-otp-identifier"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("otp-code-form")).toBeInTheDocument();
+    });
+
+    typeCode("654321");
+    fireEvent.click(screen.getByTestId("submit-otp-code"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("onboarding-screen")).toBeInTheDocument();
+    });
+
+    // Update succeeds, but context returns a different/mismatched name
+    vi.mocked(apiClient.updateCustomerProfile).mockResolvedValueOnce({ success: true } as any);
+    vi.mocked(apiClient.getAuthContext).mockResolvedValueOnce({
+      user: mockSession.user as any,
+      profile: {
+        id: "user-new",
+        role: "customer",
+        full_name: "اسم غير متطابق",
+        email: null,
+        phone: "07701112233",
+        address: null,
+        points: 0,
+      },
+      roles: ["customer"],
+      activeRole: "customer",
+      merchant: null,
+    });
+
+    fireEvent.change(screen.getByTestId("onboarding-full-name"), {
+      target: { value: "الاسم المطلوب" },
+    });
+    fireEvent.click(screen.getByTestId("onboarding-submit"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("onboarding-error")).toHaveTextContent("تعذر تأكيد حفظ البيانات الشخصية، يرجى إعادة المحاولة.");
+    });
+
+    // User is NOT redirected and session remains on onboarding
+    expect(screen.getByTestId("onboarding-screen")).toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
 });

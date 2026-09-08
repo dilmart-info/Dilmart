@@ -1,17 +1,11 @@
-import { IsBoolean, IsOptional, IsString, IsUUID } from "class-validator";
+import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 
 export class UpdateCustomerProfileDto {
-  @IsOptional()
-  @IsString()
-  full_name?: string;
-
-  @IsOptional()
-  @IsString()
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  email?: string;
+  @IsString({ message: "full_name must be a string." })
+  @IsNotEmpty({ message: "full_name cannot be empty." })
+  @MinLength(2, { message: "full_name must be at least 2 characters." })
+  @MaxLength(100, { message: "full_name cannot exceed 100 characters." })
+  full_name!: string;
 }
 
 export class UpsertCustomerAddressDto {
