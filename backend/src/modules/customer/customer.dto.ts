@@ -1,6 +1,8 @@
+import { Transform } from "class-transformer";
 import { IsBoolean, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength, MinLength } from "class-validator";
 
 export class UpdateCustomerProfileDto {
+  @Transform(({ value }) => (typeof value === "string" ? value.trim() : value))
   @IsString({ message: "full_name must be a string." })
   @IsNotEmpty({ message: "full_name cannot be empty." })
   @MinLength(2, { message: "full_name must be at least 2 characters." })

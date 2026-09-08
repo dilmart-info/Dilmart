@@ -31,16 +31,15 @@ export class CustomerService {
     };
   }
 
-  async updateProfile(actorId?: string, payload?: UpdateCustomerProfileDto, rawBody?: Record<string, any>) {
+  async updateProfile(actorId?: string, payload?: UpdateCustomerProfileDto) {
     this.assertActor(actorId);
 
-    // Defense-in-depth: Reject forbidden fields with 400 Bad Request
-    const bodyToCheck = rawBody || (payload as any);
-    if (bodyToCheck && typeof bodyToCheck === "object") {
-      const forbiddenFields = ["phone", "email", "role", "account_type", "user_id", "id"];
-      for (const field of forbiddenFields) {
-        if (field in bodyToCheck) {
-          throw new BadRequestException(`Field '${field}' cannot be modified via this endpoint. Dedicated verification flows are required.`);
+    // Defense-in-depth: Reject any runtime payload keys other than 'full_name'
+    if (payload && typeof payload === "object") {
+      const allowedKeys = new Set(["full_name"]);
+      for (const key of Object.keys(payload)) {
+        if (!allowedKeys.has(key)) {
+          throw new BadRequestException(`Field '${key}' cannot be modified via this endpoint. Dedicated verification flows are required.`);
         }
       }
     }

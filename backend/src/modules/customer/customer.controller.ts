@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, ValidationPipe } from "@nestjs/common";
 import { CurrentActor } from "../../common/authz/actor-context.decorator";
 import { Roles } from "../../common/authz/roles.decorator";
 import { GetCustomerOrdersQueryDto, UpdateCustomerProfileDto, UpsertCustomerAddressDto } from "./customer.dto";
@@ -18,9 +18,8 @@ export class CustomerController {
   updateProfile(
     @CurrentActor() actor: { actorId?: string },
     @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })) payload: UpdateCustomerProfileDto,
-    @Req() req?: any,
   ) {
-    return this.customerService.updateProfile(actor?.actorId, payload, req?.body);
+    return this.customerService.updateProfile(actor?.actorId, payload);
   }
 
   @Get("addresses")
