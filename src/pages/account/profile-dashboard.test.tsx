@@ -308,4 +308,26 @@ describe("Profile - Account Dashboard", () => {
     // Invariant: no arbitrary address was nominated as default in the quick card
     expect(screen.queryByText("المنصور")).not.toBeInTheDocument();
   });
+
+  it("renders 'لم يتم تسجيل بريد إلكتروني' and never displays phone in email field when email is null", async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: "user-phone-only", email: null },
+      profile: {
+        full_name: "سامر البدري",
+        phone: "07701112233",
+        phone_verified: true,
+      },
+      appSession: { authSource: "supabase", user: { id: "user-phone-only", email: null } },
+      authSource: "supabase",
+      authStatus: "authenticated_ready",
+      capabilities: { phoneIdentity: true },
+      logoutCurrentDevice: vi.fn(),
+    });
+
+    renderWithProviders(<Profile />);
+
+    const emailInput = screen.getByLabelText("البريد الإلكتروني") as HTMLInputElement;
+    expect(emailInput.value).toBe("لم يتم تسجيل بريد إلكتروني");
+    expect(emailInput.value).not.toContain("07701112233");
+  });
 });

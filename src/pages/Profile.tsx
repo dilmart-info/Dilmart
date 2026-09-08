@@ -337,7 +337,7 @@ function ProfileDashboardContent() {
                   </Label>
                   <Input
                     id="email"
-                    value={customerEmail || (profile?.phone ? profile.phone : "لم يتم تسجيل بريد إلكتروني")}
+                    value={customerEmail || "لم يتم تسجيل بريد إلكتروني"}
                     disabled
                     className="text-sm bg-slate-100/80 border-slate-200 text-slate-500 cursor-not-allowed"
                     dir={customerEmail ? "ltr" : "rtl"}

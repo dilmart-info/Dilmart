@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { UpdateCustomerProfileDto, UpsertCustomerAddressDto } from "./customer.dto";
 
@@ -12,44 +12,72 @@ export class CustomerService {
 
   async getProfile(actorId?: string) {
     this.assertActor(actorId);
-    const { data, error } = await this.supabaseAdmin.client.from("customer_profiles").select("*").eq("user_id", actorId!).maybeSingle();
-    if (!error && data) {
-      return data;
-    }
 
-    const { data: legacy, error: legacyError } = await this.supabaseAdmin.client
+    // Canonical identity fields (full_name, phone, email) are read strictly from public.profiles.
+    // customer_profiles is treated as deprecated secondary storage and must never override canonical identity.
+    const { data: profile, error } = await this.supabaseAdmin.client
       .from("profiles")
-      .select("id,full_name,phone,email")
+      .select("id, full_name, phone, email")
       .eq("id", actorId!)
       .maybeSingle();
-    if (legacyError) {
-      return { user_id: actorId, full_name: null, phone: null, email: null };
-    }
+
+    if (error) throw error;
+
     return {
       user_id: actorId,
-      full_name: (legacy as any)?.full_name ?? null,
-      phone: (legacy as any)?.phone ?? null,
-      email: (legacy as any)?.email ?? null,
+      full_name: (profile as any)?.full_name ?? null,
+      phone: (profile as any)?.phone ?? null,
+      email: (profile as any)?.email ?? null,
     };
   }
 
   async updateProfile(actorId?: string, payload?: UpdateCustomerProfileDto) {
     this.assertActor(actorId);
-    const { data, error } = await this.supabaseAdmin.client
-      .from("customer_profiles")
-      .upsert(
-        {
-          user_id: actorId!,
-          full_name: payload?.full_name ?? null,
-          phone: payload?.phone ?? null,
-          email: payload?.email ?? null,
-        } as any,
-        { onConflict: "user_id" },
-      )
-      .select("*")
-      .single();
+
+    // Defense-in-depth: Reject any runtime payload keys other than 'full_name'
+    if (payload && typeof payload === "object") {
+      const allowedKeys = new Set(["full_name"]);
+      for (const key of Object.keys(payload)) {
+        if (!allowedKeys.has(key)) {
+          throw new BadRequestException(`Field '${key}' cannot be modified via this endpoint. Dedicated verification flows are required.`);
+        }
+      }
+    }
+
+    if (!payload?.full_name || typeof payload.full_name !== "string") {
+      throw new BadRequestException("full_name is required.");
+    }
+
+    const trimmed = payload.full_name.trim();
+    if (trimmed.length < 2) {
+      throw new BadRequestException("full_name must be at least 2 characters.");
+    }
+    if (trimmed.length > 100) {
+      throw new BadRequestException("full_name cannot exceed 100 characters.");
+    }
+
+    // Canonical write: updates ONLY the authenticated actor's profiles.full_name
+    const { data: updatedProfile, error } = await this.supabaseAdmin.client
+      .from("profiles")
+      .update({
+        full_name: trimmed,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", actorId!)
+      .select("id, full_name, phone, email")
+      .maybeSingle();
+
     if (error) throw error;
-    return data;
+    if (!updatedProfile) {
+      throw new NotFoundException("Profile not found for authenticated actor.");
+    }
+
+    return {
+      user_id: actorId,
+      full_name: (updatedProfile as any).full_name ?? null,
+      phone: (updatedProfile as any).phone ?? null,
+      email: (updatedProfile as any).email ?? null,
+    };
   }
 
   async listAddresses(actorId?: string) {
