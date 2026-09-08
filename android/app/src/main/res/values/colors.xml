@@ -2,4 +2,5 @@
 <resources>
     <!-- Approved DILMART brand background matching native splash and launcher theme. -->
     <color name="brandSplashBackground">#FFFFFF</color>
+    <color name="ic_launcher_background">#1959F6</color>
 </resources>
