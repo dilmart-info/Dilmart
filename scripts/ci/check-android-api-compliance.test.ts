@@ -150,8 +150,8 @@ describe("Android 16 / API 36 Compliance Guard — Fail-Closed Suite", () => {
       expect(Number.isInteger(config.versionCode)).toBe(true);
       expect(config.versionCode).toBeGreaterThan(0);
       expect(config.versionName.length).toBeGreaterThan(0);
-      expect(config.versionCode).toBe(1);
-      expect(config.versionName).toBe("1.0");
+      expect(config.versionCode).toBe(2);
+      expect(config.versionName).toBe("1.0.1");
     });
 
     it("accepts future release versions (does not permanently freeze versionCode=1)", () => {

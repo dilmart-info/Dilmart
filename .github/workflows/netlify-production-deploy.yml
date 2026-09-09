@@ -61,7 +61,7 @@ env:
   NETLIFY_SITE_ID: e9925590-a4cb-4e31-a97b-141f45264f24
   LAUNCH_CRITICAL_WORKFLOW: "DilMart Store Launch Critical PR Quality & Security CI"
   NATIVE_FOUNDATION_WORKFLOW: "Native Foundation CI"
-  PRODUCTION_URL: https://store.DilMart.org
+  PRODUCTION_URL: https://dilmart.store
   # Pinned deliberately. A floating version tag would let the tool that performs the publish change
   # underneath a reviewed pipeline without any commit to this repository.
   NETLIFY_CLI_VERSION: "17.38.1"

@@ -118,6 +118,11 @@ jobs:
           KEY="${KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.ci_mobile_test_build}"
           export VITE_SUPABASE_URL VITE_SUPABASE_PROJECT_ID VITE_STORE_API_BASE_URL
           export VITE_SUPABASE_PUBLISHABLE_KEY="$KEY"
+          VITE_AUTH_PHONE_OTP_ENABLED="true"
+          VITE_AUTH_PHONE_REGISTRATION_ENABLED="false"
+          VITE_AUTH_PHONE_LINKING_ENABLED="false"
+          VITE_AUTH_EMAIL_OTP_ENABLED="false"
+          export VITE_AUTH_PHONE_OTP_ENABLED VITE_AUTH_PHONE_REGISTRATION_ENABLED VITE_AUTH_PHONE_LINKING_ENABLED VITE_AUTH_EMAIL_OTP_ENABLED
           echo "Mobile build API base: $VITE_STORE_API_BASE_URL"
           echo "Mobile build Supabase host: ztplxqlthuqkuktbznbo.supabase.co"
           npm run build:mobile
@@ -222,6 +227,11 @@ jobs:
           KEY="${KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.ci_mobile_test_build}"
           export VITE_SUPABASE_URL VITE_SUPABASE_PROJECT_ID VITE_STORE_API_BASE_URL
           export VITE_SUPABASE_PUBLISHABLE_KEY="$KEY"
+          VITE_AUTH_PHONE_OTP_ENABLED="true"
+          VITE_AUTH_PHONE_REGISTRATION_ENABLED="false"
+          VITE_AUTH_PHONE_LINKING_ENABLED="false"
+          VITE_AUTH_EMAIL_OTP_ENABLED="false"
+          export VITE_AUTH_PHONE_OTP_ENABLED VITE_AUTH_PHONE_REGISTRATION_ENABLED VITE_AUTH_PHONE_LINKING_ENABLED VITE_AUTH_EMAIL_OTP_ENABLED
           echo "Mobile build API base: $VITE_STORE_API_BASE_URL"
           echo "Mobile build Supabase host: ztplxqlthuqkuktbznbo.supabase.co"
           npm run build:mobile
