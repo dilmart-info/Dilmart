@@ -99,8 +99,8 @@ test("Account Deletion RPC — Real PostgREST Execution & Concurrency Suite", as
   });
 
   if (probeError && (probeError.code === "42883" || probeError.code === "PGRST202" || probeError.message?.includes("function") || probeError.message?.includes("does not exist"))) {
-    console.log("SKIP: claim_account_deletion_batch RPC not yet applied or visible in PostgREST schema cache.");
-    t.skip("Migration not applied on this database");
+    console.log("SKIP: claim_account_deletion_batch RPC not yet applied or visible in PostgREST schema cache:", probeError.message, probeError.code);
+    t.skip("Migration not applied on this database: " + probeError.message);
     return;
   }
 

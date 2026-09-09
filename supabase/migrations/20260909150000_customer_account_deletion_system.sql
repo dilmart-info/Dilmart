@@ -332,10 +332,10 @@ BEGIN
     WHERE r.user_id IS NOT NULL
       AND (
         r.status IN ('requested', 'failed')
-        OR (r.status = 'processing' AND r.updated_at < (pg_catalog.now() - pg_catalog.interval '15 minutes'))
+        OR (r.status = 'processing' AND r.updated_at < (pg_catalog.now() - interval '15 minutes'))
       )
     ORDER BY r.created_at ASC
-    LIMIT pg_catalog.greatest(1, pg_catalog.least(p_batch_size, 50))
+    LIMIT greatest(1, least(p_batch_size, 50))
     FOR UPDATE SKIP LOCKED
   ),
   updated AS (
