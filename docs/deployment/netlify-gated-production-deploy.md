@@ -1,6 +1,6 @@
 # Netlify gated production deployment
 
-`store.DilMart.org` is published by `.github/workflows/netlify-production-deploy.yml`, and only for a
+`dilmart.store` is published by `.github/workflows/netlify-production-deploy.yml`, and only for a
 commit that is the current tip of `main` **and** has already passed the required push CI for that exact
 SHA.
 
@@ -115,7 +115,7 @@ artifact carries its own identity at `dist/deploy-meta.json`:
 ```
 
 Non-secret by construction — repository, commit and run identifiers only. No tokens, no environment
-values, no user identity, no PII. `https://store.DilMart.org/deploy-meta.json` is the independent proof of
+values, no user identity, no PII. `https://dilmart.store/deploy-meta.json` is the independent proof of
 which commit is actually live, and the workflow verifies it after publishing rather than assuming the
 upload worked.
 
