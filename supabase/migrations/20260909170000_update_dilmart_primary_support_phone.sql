@@ -3,24 +3,35 @@
 -- Authority: Product owner directive for DilMart customer care contact line (+9647759600068 / 07759600068)
 -- Invariants:
 --   - Does NOT modify any user or customer profiles
---   - Scoped strictly to the specific merchant slug 'DilMart-primary' (exact case-sensitive match)
---   - Asserts that exactly 1 row is updated; fails loudly otherwise via GET DIAGNOSTICS ROW_COUNT
+--   - Scoped strictly to DilMart primary merchant candidate ('dilmart-store' in production, 'DilMart-primary' in historical fixtures)
+--   - Asserts count(*) = 1 to fail-closed against ambiguous or missing records
+--   - Asserts that exactly 1 merchant_settings row is updated via GET DIAGNOSTICS ROW_COUNT
 
 DO $$
 DECLARE
+  v_merchant_count INT := 0;
   v_dilmart_merchant_id UUID;
   v_updated_count INT := 0;
 BEGIN
-  -- 1. Locate the specific DilMart-primary merchant record with exact case sensitivity
-  SELECT id INTO v_dilmart_merchant_id
+  -- 1. Assert exactly one candidate merchant exists across production and fixtures
+  SELECT count(*)
+  INTO v_merchant_count
   FROM public.merchants
-  WHERE slug = 'DilMart-primary';
+  WHERE slug IN ('dilmart-store', 'DilMart-primary');
 
-  IF v_dilmart_merchant_id IS NULL THEN
-    RAISE EXCEPTION 'MIGRATION_INTEGRITY_FAILED: DilMart-primary merchant record not found';
+  IF v_merchant_count <> 1 THEN
+    RAISE EXCEPTION
+      'MIGRATION_INTEGRITY_FAILED: Expected exactly one DilMart merchant candidate, found %',
+      v_merchant_count;
   END IF;
 
-  -- 2. Strictly update only this merchant's settings and verify row count
+  -- 2. Retrieve the unambiguous merchant ID
+  SELECT id
+  INTO v_dilmart_merchant_id
+  FROM public.merchants
+  WHERE slug IN ('dilmart-store', 'DilMart-primary');
+
+  -- 3. Strictly update only this merchant's settings and verify row count
   UPDATE public.merchant_settings
   SET
     contact_phone = '+9647759600068',
@@ -31,6 +42,6 @@ BEGIN
   GET DIAGNOSTICS v_updated_count = ROW_COUNT;
 
   IF v_updated_count <> 1 THEN
-    RAISE EXCEPTION 'MIGRATION_INTEGRITY_FAILED: Expected exactly 1 merchant_settings row updated for DilMart-primary, but updated % rows', v_updated_count;
+    RAISE EXCEPTION 'MIGRATION_INTEGRITY_FAILED: Expected exactly 1 merchant_settings row updated for DilMart primary, but updated % rows', v_updated_count;
   END IF;
 END $$;
