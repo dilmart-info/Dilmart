@@ -44,4 +44,10 @@ export const INFO_NAV_LINKS: InfoPageLink[] = [
     href: "/privacy",
     description: "كيفية التعامل مع البيانات وحمايتها أثناء الاستخدام",
   },
+  {
+    title: "حذف الحساب والبيانات",
+    href: "/account-deletion",
+    description: "إرشادات وإجراءات حذف الحساب وحذف البيانات الشخصية",
+  },
 ];
+

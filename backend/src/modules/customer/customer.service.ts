@@ -1,9 +1,12 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, InternalServerErrorException, Logger, NotFoundException } from "@nestjs/common";
+import { ActorContext } from "../../common/authz/actor-context.decorator";
 import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
-import { UpdateCustomerProfileDto, UpsertCustomerAddressDto } from "./customer.dto";
+import { RequestAccountDeletionDto, UpdateCustomerProfileDto, UpsertCustomerAddressDto } from "./customer.dto";
 
 @Injectable()
 export class CustomerService {
+  private readonly logger = new Logger(CustomerService.name);
+
   constructor(private readonly supabaseAdmin: SupabaseAdminService) {}
 
   private assertActor(actorId?: string) {
@@ -376,4 +379,316 @@ export class CustomerService {
       warnings: Array.from(new Set(warnings)),
     };
   }
+
+  /**
+   * Permanent account deletion for customer accounts.
+   * Enforces customer-only role, active order/dispute precheck, transactional DB anonymization & detachment,
+   * JWT-based global session revocation, Auth deletion, and verification before reporting success.
+   */
+  async deleteAccount(actor: ActorContext, payload: RequestAccountDeletionDto) {
+    this.assertActor(actor?.actorId);
+    const actorId = actor.actorId!;
+
+    // 1. Authorization: customer-only endpoint
+    if (actor.actorRole && !["customer", "authenticated"].includes(actor.actorRole)) {
+      throw new ForbiddenException("حذف الحساب مخصص لحسابات المتسوقين فقط. يرجى التواصل مع الإدارة المركزية.");
+    }
+
+    // Check if user has administrative or merchant staff role in DB
+    const { data: profile } = await this.supabaseAdmin.client
+      .from("profiles")
+      .select("role")
+      .eq("id", actorId)
+      .maybeSingle();
+
+    if (profile?.role && !["customer", "authenticated"].includes(profile.role)) {
+      throw new ForbiddenException("لا يمكن حذف حسابات المشرفين أو الإداريين من هذه البوابة.");
+    }
+
+    const { data: merchantUser } = await this.supabaseAdmin.client
+      .from("merchant_users")
+      .select("id")
+      .eq("user_id", actorId)
+      .limit(1)
+      .maybeSingle();
+
+    if (merchantUser) {
+      throw new ForbiddenException("حساب التاجر مرتبط بمتجر، يرجى مراجعة إدارة المنصة لإنهاء الحساب.");
+    }
+
+    // 2. Explicit confirmation check
+    if (payload?.confirmed !== true) {
+      throw new BadRequestException("يجب تأكيد الرغبة في حذف الحساب صراحةً.");
+    }
+
+    // 3. Bearer session token check for session revocation
+    const accessToken = actor.actorToken?.trim();
+    if (!accessToken) {
+      throw new ForbiddenException("رمز الجلسة مفقود، يرجى تسجيل الدخول مجدداً لإتمام الحذف.");
+    }
+
+    // 4. Precheck: Reject if active fulfillment, return disputes, or pending cancellations exist
+    const { data: activeOrders } = await this.supabaseAdmin.client
+      .from("orders")
+      .select("id, status, delivery_status")
+      .eq("user_id", actorId)
+      .in("status", ["new", "contacted", "preparing", "shipped"])
+      .limit(1);
+
+    if (activeOrders && activeOrders.length > 0) {
+      throw new BadRequestException("لا يمكن حذف الحساب نظراً لوجود طلبات قيد التجهيز أو التوصيل حالياً.");
+    }
+
+    const { data: activeReturns } = await this.supabaseAdmin.client
+      .from("order_return_requests")
+      .select("id, status, refund_status")
+      .eq("customer_id", actorId)
+      .not("status", "in", '("rejected","completed","cancelled")')
+      .limit(1);
+
+    if (activeReturns && activeReturns.length > 0) {
+      throw new BadRequestException("لا يمكن حذف الحساب نظراً لوجود طلب استرجاع أو استرداد مالي قيد المراجعة.");
+    }
+
+    const { data: activeCancellations } = await this.supabaseAdmin.client
+      .from("order_cancellation_requests")
+      .select("id, status")
+      .eq("user_id", actorId)
+      .eq("status", "pending")
+      .limit(1);
+
+    if (activeCancellations && activeCancellations.length > 0) {
+      throw new BadRequestException("لا يمكن حذف الحساب نظراً لوجود طلب إلغاء قيد المعالجة.");
+    }
+
+    // 5. Concurrency & partial-failure recovery: find or create logical request
+    const { data: existingRequest } = await this.supabaseAdmin.client
+      .from("account_deletion_requests")
+      .select("id, status, step")
+      .eq("user_id", actorId)
+      .in("status", ["requested", "processing"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    let requestId = existingRequest?.id;
+    let currentStep = existingRequest?.step ?? "requested";
+
+    if (!requestId) {
+      const { data: created, error: createError } = await this.supabaseAdmin.client
+        .from("account_deletion_requests")
+        .insert({
+          user_id: actorId,
+          status: "processing",
+          step: "requested",
+          source: "app_customer",
+          metadata: { reason: payload.reason ?? null },
+        })
+        .select("id")
+        .single();
+
+      if (createError) {
+        this.logger.error(`Failed to create account_deletion_request: ${createError.message}`);
+        throw new InternalServerErrorException("تعذر تسجيل طلب الحذف، يرجى المحاولة لاحقاً.");
+      }
+      requestId = created.id;
+    }
+
+    // 6. Step: Database Anonymization and Detachment via transactional RPC
+    if (currentStep === "requested") {
+      try {
+        const { error: rpcError } = await this.supabaseAdmin.client.rpc(
+          "anonymize_and_detach_customer",
+          { p_user_id: actorId, p_reason: payload.reason ?? "customer_requested" },
+        );
+
+        if (rpcError) {
+          const msg = rpcError.message || "";
+          if (msg.includes("ACTIVE_ORDERS_IN_FULFILLMENT")) {
+            throw new BadRequestException("لا يمكن حذف الحساب نظراً لوجود طلبات قيد التجهيز أو التوصيل حالياً.");
+          }
+          if (msg.includes("ACTIVE_RETURNS_EXIST")) {
+            throw new BadRequestException("لا يمكن حذف الحساب نظراً لوجود طلب استرجاع أو استرداد مالي قيد المراجعة.");
+          }
+          if (msg.includes("ACTIVE_CANCELLATIONS_EXIST")) {
+            throw new BadRequestException("لا يمكن حذف الحساب نظراً لوجود طلب إلغاء قيد المعالجة.");
+          }
+          throw rpcError;
+        }
+
+        await this.supabaseAdmin.client
+          .from("account_deletion_requests")
+          .update({ step: "db_anonymized", updated_at: new Date().toISOString() })
+          .eq("id", requestId);
+        currentStep = "db_anonymized";
+      } catch (err: any) {
+        if (err instanceof BadRequestException || err instanceof ForbiddenException) {
+          await this.supabaseAdmin.client
+            .from("account_deletion_requests")
+            .update({ status: "failed", error_code: "PRECONDITION_FAILED", updated_at: new Date().toISOString() })
+            .eq("id", requestId);
+          throw err;
+        }
+        await this.supabaseAdmin.client
+          .from("account_deletion_requests")
+          .update({ status: "failed", error_code: "DB_ANONYMIZATION_ERROR", updated_at: new Date().toISOString() })
+          .eq("id", requestId);
+        this.logger.error(`Database anonymization failed for actor ${actorId}: ${err?.message}`);
+        throw new InternalServerErrorException("تعذر إكمال معالجة بيانات الحساب، سيقوم النظام بالمحاولة لاحقاً.");
+      }
+    }
+
+    // 7. Step: Global session revocation using Bearer accessToken
+    if (currentStep === "db_anonymized") {
+      const revokeRes = await this.supabaseAdmin.revokeUserSession(accessToken);
+      if (!revokeRes.ok) {
+        this.logger.warn(`Global session revocation warning for ${actorId}: ${revokeRes.error}`);
+      }
+      await this.supabaseAdmin.client
+        .from("account_deletion_requests")
+        .update({ step: "auth_revoked", updated_at: new Date().toISOString() })
+        .eq("id", requestId);
+      currentStep = "auth_revoked";
+    }
+
+    // 8. Step: Supabase Auth user deletion from auth.users
+    if (currentStep === "auth_revoked" || currentStep === "db_anonymized") {
+      const delRes = await this.supabaseAdmin.deleteAuthUser(actorId);
+      if (!delRes.ok) {
+        this.logger.error(`Supabase Auth deleteUser failed for ${actorId}: ${delRes.error}`);
+        await this.supabaseAdmin.client
+          .from("account_deletion_requests")
+          .update({
+            status: "failed",
+            error_code: "AUTH_DELETE_FAILED",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", requestId);
+        throw new InternalServerErrorException(
+          "تم إخفاء بياناتك الشخصية ولكن تعذر حذف الحساب نهائياً من خادم المصادقة بشكل فوري. سيكمل النظام الحذف تلقائياً.",
+        );
+      }
+      currentStep = "auth_deleted";
+    }
+
+    // 9. Step: Verify deletion before reporting completion
+    const isDeleted = await this.supabaseAdmin.verifyUserDeleted(actorId);
+    if (!isDeleted) {
+      await this.supabaseAdmin.client
+        .from("account_deletion_requests")
+        .update({
+          status: "failed",
+          error_code: "AUTH_VERIFICATION_PENDING",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", requestId);
+      throw new InternalServerErrorException(
+        "جارٍ التحقق من إتمام حذف الحساب، ستتم المعالجة عبر نظام المطابقة التلقائي.",
+      );
+    }
+
+    // 10. Step: Finalize request record and scrub raw user_id, reason metadata, and all PII
+    await this.supabaseAdmin.client
+      .from("account_deletion_requests")
+      .update({
+        user_id: null,
+        metadata: null,
+        status: "completed",
+        step: "auth_deleted",
+        completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", requestId);
+
+    return {
+      ok: true,
+      message: "تم حذف حسابك وجميع بياناتك الشخصية بنجاح وفق المعايير المعتمدة.",
+    };
+  }
+
+  /**
+   * Trusted backend reconciliation mechanism for unfinished deletion requests.
+   * Atomically claims a batch using app_private.claim_account_deletion_batch (FOR UPDATE SKIP LOCKED)
+   * and processes strictly the returned rows.
+   */
+  async reconcilePendingAccountDeletions(batchSize = 20): Promise<{ processed: number; completed: number; errors: number }> {
+    const { data: requests, error } = await this.supabaseAdmin.client
+      .rpc("claim_account_deletion_batch", {
+        p_batch_size: batchSize,
+        p_worker_id: "reconciliation_worker",
+      });
+
+    if (error || !requests || !Array.isArray(requests) || requests.length === 0) {
+      if (error) {
+        this.logger.error(`Error claiming account deletion batch: ${error.message}`);
+      }
+      return { processed: 0, completed: 0, errors: 0 };
+    }
+
+    let completedCount = 0;
+    let errorCount = 0;
+
+    for (const req of requests) {
+      if (!req.user_id) continue;
+      try {
+        // First check if already deleted from auth
+        const alreadyDeleted = await this.supabaseAdmin.verifyUserDeleted(req.user_id);
+        if (alreadyDeleted) {
+          await this.supabaseAdmin.client
+            .from("account_deletion_requests")
+            .update({
+              user_id: null,
+              metadata: null,
+              status: "completed",
+              step: "auth_deleted",
+              completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", req.id);
+          completedCount++;
+          continue;
+        }
+
+        // If step was requested, try DB anonymization first
+        if (req.step === "requested") {
+          await this.supabaseAdmin.client.rpc("anonymize_and_detach_customer", {
+            p_user_id: req.user_id,
+            p_reason: "reconciliation_worker",
+          });
+        }
+
+        // Attempt deleteUser (reconciliation worker does not store JWT and does NOT call signOut with user UUID)
+        const delRes = await this.supabaseAdmin.deleteAuthUser(req.user_id);
+        if (delRes.ok) {
+          const verified = await this.supabaseAdmin.verifyUserDeleted(req.user_id);
+          if (verified) {
+            await this.supabaseAdmin.client
+              .from("account_deletion_requests")
+              .update({
+                user_id: null,
+                metadata: null,
+                status: "completed",
+                step: "auth_deleted",
+                completed_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", req.id);
+            completedCount++;
+            continue;
+          }
+        }
+        errorCount++;
+      } catch (err: any) {
+        this.logger.error(`Reconciliation error for deletion request ${req.id}: ${err?.message}`);
+        errorCount++;
+      }
+    }
+
+    return {
+      processed: requests.length,
+      completed: completedCount,
+      errors: errorCount,
+    };
+  }
 }
+

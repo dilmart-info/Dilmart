@@ -15,6 +15,16 @@ import { isAuthStorageError } from "@/lib/auth/auth-errors";
 import { getCustomerFacingEmail } from "@/lib/auth/identifier";
 import AccountRecommendations from "@/components/AccountRecommendations";
 import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
   Package,
   MapPin,
   ShieldCheck,
@@ -24,6 +34,7 @@ import {
   ChevronLeft,
   Phone,
   CheckCircle2,
+  Trash2,
 } from "lucide-react";
 
 function ProfileDashboardContent() {
@@ -46,6 +57,23 @@ function ProfileDashboardContent() {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [phoneInput, setPhoneInput] = useState(profile?.phone || "");
   const [loggingOutAll, setLoggingOutAll] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      const res = await apiClient.requestAccountDeletion({ confirmed: true });
+      toast.success(res?.message || "تم حذف الحساب بنجاح");
+      setDeleteConfirmOpen(false);
+      await logoutCurrentDevice();
+      navigate("/auth");
+    } catch (error: any) {
+      toast.error(error?.message || "تعذر إتمام حذف الحساب. يرجى مراجعة الدعم الفني.");
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
 
   useEffect(() => {
     if (profile?.full_name) {
@@ -431,6 +459,62 @@ function ProfileDashboardContent() {
                 {loggingOutAll ? "جارٍ تسجيل الخروج..." : "تسجيل الخروج من جميع الأجهزة"}
               </Button>
             ) : null}
+
+            <div className="pt-2 border-t border-slate-100">
+              <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    data-testid="delete-account-button"
+                    className="w-full text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    حذف الحساب والبيانات نهائياً
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent dir="rtl" className="sm:max-w-md">
+                  <AlertDialogHeader className="text-right">
+                    <AlertDialogTitle className="text-base font-bold text-rose-700 flex items-center gap-2">
+                      <Trash2 className="w-4 h-4 shrink-0 text-rose-600" />
+                      تأكيد حذف الحساب نهائياً
+                    </AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="text-xs text-slate-600 space-y-2 text-right">
+                        <span className="block font-semibold text-slate-800">
+                          هل أنت متأكد من رغبتك في حذف حسابك من منصة ديلمارت؟
+                        </span>
+                        <span className="block text-slate-600">
+                          سيؤدي هذا الإجراء إلى:
+                        </span>
+                        <ul className="list-disc list-inside space-y-1 text-slate-600 pr-1">
+                          <li>تسجيل الخروج وإبطال كافة الجلسات النشطة.</li>
+                          <li>حذف بيانات الدخول والملف الشخصي والعناوين المحفوظة.</li>
+                          <li>فك ارتباط السجلات التاريخية للطلبات وإخفاء هويتك منها.</li>
+                        </ul>
+                        <span className="block text-rose-600 font-semibold pt-1">
+                          تنبيه: لا يمكن التراجع عن هذا الإجراء بعد تنفيذه.
+                        </span>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="flex-row-reverse justify-start gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      data-testid="confirm-delete-account-button"
+                      disabled={isDeletingAccount}
+                      onClick={() => void handleDeleteAccount()}
+                      className="text-xs font-bold bg-rose-600 hover:bg-rose-700"
+                    >
+                      {isDeletingAccount ? "جارٍ حذف الحساب..." : "تأكيد حذف الحساب نهائياً"}
+                    </Button>
+                    <AlertDialogCancel disabled={isDeletingAccount} className="text-xs">
+                      إلغاء
+                    </AlertDialogCancel>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </CardContent>
         </Card>
       </div>

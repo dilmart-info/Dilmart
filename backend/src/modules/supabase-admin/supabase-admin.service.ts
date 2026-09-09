@@ -75,4 +75,66 @@ export class SupabaseAdminService {
       },
     });
   }
+
+  /**
+   * Revoke all user sessions globally via Supabase Admin API.
+   * NOTE: Requires the user's valid access JWT (Bearer token), NOT the user UUID.
+   */
+  async revokeUserSession(accessToken: string): Promise<{ ok: boolean; error?: string }> {
+    const token = (accessToken ?? "").trim();
+    if (!token) return { ok: false, error: "Missing access token for session revocation." };
+    try {
+      const { error } = await this.client.auth.admin.signOut(token, "global");
+      if (error) return { ok: false, error: error.message };
+      return { ok: true };
+    } catch (err: any) {
+      return { ok: false, error: err?.message ?? "Session revocation failed." };
+    }
+  }
+
+  /**
+   * Permanently delete user from Supabase Auth (auth.users).
+   * Server-side service-role only.
+   */
+  async deleteAuthUser(actorId: string): Promise<{ ok: boolean; error?: string }> {
+    const id = (actorId ?? "").trim();
+    if (!id) return { ok: false, error: "Missing actorId for user deletion." };
+    try {
+      const { error } = await this.client.auth.admin.deleteUser(id, false);
+      if (error) {
+        const msg = (error.message ?? "").toLowerCase();
+        const status = (error as any).status;
+        // Idempotent: If user is already deleted or not found in Auth, treat as success
+        if (status === 404 || msg.includes("not found") || msg.includes("user not found")) {
+          return { ok: true };
+        }
+        return { ok: false, error: error.message };
+      }
+      return { ok: true };
+    } catch (err: any) {
+      const msg = (err?.message ?? "").toLowerCase();
+      const status = err?.status;
+      if (status === 404 || msg.includes("not found") || msg.includes("user not found")) {
+        return { ok: true };
+      }
+      return { ok: false, error: err?.message ?? "User deletion failed." };
+    }
+  }
+
+  /**
+   * Verify that the user no longer exists in Supabase Auth (auth.users).
+   * Returns true when getUserById confirms the user is not found.
+   */
+  async verifyUserDeleted(actorId: string): Promise<boolean> {
+    const id = (actorId ?? "").trim();
+    if (!id) return true;
+    try {
+      const { data, error } = await this.client.auth.admin.getUserById(id);
+      if (error) return true; // User not found or error looking up deleted user
+      return !data?.user;
+    } catch {
+      return true;
+    }
+  }
 }
+

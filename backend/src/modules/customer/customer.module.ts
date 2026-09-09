@@ -7,5 +7,6 @@ import { CustomerService } from "./customer.service";
   imports: [SupabaseAdminModule],
   controllers: [CustomerController],
   providers: [CustomerService],
+  exports: [CustomerService],
 })
 export class CustomerModule {}

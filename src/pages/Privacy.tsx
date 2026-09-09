@@ -105,21 +105,74 @@ export default function Privacy() {
           </p>
         </section>
 
+        {/* Payments & Financial Info */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-[#1261D8]">
+            <Lock className="w-5 h-5 shrink-0" />
+            <h2 className="text-lg sm:text-xl font-bold text-[#071A3D]">المدفوعات والبيانات المالية</h2>
+          </div>
+          <p className="leading-relaxed text-slate-700 text-xs sm:text-sm">
+            تعتمد منصة ديلمارت وسيلة <strong>الدفع نقداً عند الاستلام (Cash on Delivery)</strong> كوسيلة دفع حصرية لطلبات
+            المتسوقين. لذلك، <strong>لا نقوم بجمع أو تخزين أرقام البطاقات الائتمانية</strong> أو الحسابات المصرفية الخاصة بالمتسوقين،
+            ولا تتم معالجة أي بيانات بطاقات دفع داخل التطبيق أو مشاركتها مع بوابات دفع إلكترونية.
+          </p>
+        </section>
+
+        {/* Advertising & Tracking Disclosures */}
+        <section className="space-y-3">
+          <div className="flex items-center gap-2 text-[#1261D8]">
+            <ShieldCheck className="w-5 h-5 shrink-0" />
+            <h2 className="text-lg sm:text-xl font-bold text-[#071A3D]">الإعلانات ومعرفات التتبع</h2>
+          </div>
+          <p className="leading-relaxed text-slate-700 text-xs sm:text-sm">
+            تطبيق ديلمارت <strong>خالٍ تماماً من الشبكات الإعلانية للطرف الثالث</strong>. لا نقوم بالوصول إلى معرف الإعلانات
+            (Advertising ID / AAID / IDFA)، ولا نشارك أي بيانات لأغراض الإعلانات الموجهة أو التتبع السلوكي عبر التطبيقات
+            والمواقع الأخرى. كافة التحليلات المستخدمة داخل المنصة هي تحليلات تشغيلية داخلية أولى (First-party) لتحسين تجربة
+            التصفح وسرعة الأداء فقط.
+          </p>
+        </section>
+
         {/* User Rights & Controls */}
         <section className="space-y-3 p-5 rounded-2xl bg-slate-50 border border-slate-200">
           <h2 className="font-bold text-sm sm:text-base text-[#071A3D]">إدارة البيانات وحقوق المستخدم</h2>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
             يمكن للمستخدم إدارة البيانات التي تتيح المنصة تعديلها، مثل الاسم والعناوين المحفوظة، بينما
-            قد تتطلب بعض بيانات الهوية مثل رقم الهاتف خطوات تحقق إضافية. لأي استفسارات أو طلبات متعلقة
-            بخصوصية البيانات، يرجى التواصل عبر قنوات الدعم المعتمدة.
+            تتطلب بيانات الهوية مثل رقم الهاتف خطوات تحقق مباشرة لضمان الأمان.
           </p>
+        </section>
+
+        {/* Account Deletion Section */}
+        <section className="space-y-3 p-5 rounded-2xl bg-rose-50/60 border border-rose-200">
+          <div className="flex items-center gap-2 text-rose-600">
+            <ShieldCheck className="w-5 h-5 shrink-0" />
+            <h2 className="font-bold text-sm sm:text-base text-slate-900">حذف الحساب والبيانات الشخصية</h2>
+          </div>
+          <p className="text-xs sm:text-sm text-slate-700 leading-relaxed">
+            يحق لك في أي وقت طلب حذف حسابك وبياناتك الشخصية بشكل نهائي سواء من داخل التطبيق عبر صفحة الحساب، أو من خلال
+            التواصل مع الدعم المعتمد. لمزيد من التفاصيل والاطلاع على سياسة الحذف والبيانات المحذوفة والمحتفظ بها:
+          </p>
+          <div className="pt-1">
+            <a
+              href="/account-deletion"
+              className="inline-flex items-center gap-1 text-xs font-bold text-rose-700 hover:text-rose-800 underline underline-offset-4"
+            >
+              الانتقال إلى صفحة سياسة وإرشادات حذف الحساب الرسمية (account-deletion) &larr;
+            </a>
+          </div>
         </section>
 
         {/* Contact Info */}
         <section className="pt-4 border-t border-slate-200 text-xs text-slate-500 space-y-1">
           <p>
             للتواصل بشأن سياسة الخصوصية: يمكنك التواصل مع فريق الدعم عبر الهاتف أو واتساب على الرقم{" "}
-            <span dir="ltr" className="font-bold text-slate-700">{storeConfig.phone}</span>.
+            <a
+              href={`tel:${storeConfig.phone.replace(/\s/g, "")}`}
+              className="font-bold text-slate-700 hover:underline hover:text-[#1261D8]"
+              dir="ltr"
+            >
+              {storeConfig.phone}
+            </a>{" "}
+            <span className="text-slate-500">({storeConfig.phoneDisplay})</span>.
           </p>
         </section>
       </div>

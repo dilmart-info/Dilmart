@@ -7,6 +7,7 @@ import Contact from "@/pages/Contact";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 import Returns from "@/pages/Returns";
+import AccountDeletion from "@/pages/AccountDeletion";
 import Footer from "@/components/Footer";
 import { CUSTOMER_ROUTE_PATHS } from "@/app/CustomerRoutes";
 import { storeConfig } from "@/config/store";
@@ -34,6 +35,7 @@ describe("Phase 2E — Static, Legal, Help & Contact Customer Pages", () => {
       expect(CUSTOMER_ROUTE_PATHS).toContain("/terms");
       expect(CUSTOMER_ROUTE_PATHS).toContain("/returns");
       expect(CUSTOMER_ROUTE_PATHS).toContain("/privacy");
+      expect(CUSTOMER_ROUTE_PATHS).toContain("/account-deletion");
       expect(CUSTOMER_ROUTE_PATHS).toContain("/support");
     });
   });
@@ -46,8 +48,9 @@ describe("Phase 2E — Static, Legal, Help & Contact Customer Pages", () => {
     });
 
     it("has valid verified contact facts", () => {
-      expect(storeConfig.phone).toBe("+964 787 185 7930");
-      expect(storeConfig.whatsapp).toBe("9647871857930");
+      expect(storeConfig.phone).toBe("+9647759600068");
+      expect(storeConfig.phoneDisplay).toBe("07759600068");
+      expect(storeConfig.whatsapp).toBe("9647759600068");
       expect(storeConfig.address).toBe("بغداد، العراق");
     });
   });
@@ -136,8 +139,7 @@ describe("Phase 2E — Static, Legal, Help & Contact Customer Pages", () => {
       renderWithRouter(<Contact />);
 
       expect(screen.getByRole("heading", { name: "تواصل معنا", level: 1 })).toBeInTheDocument();
-      expect(screen.getAllByText("+964 787 185 7930").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText("+9647871857930").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("+9647759600068").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("بغداد، العراق").length).toBeGreaterThanOrEqual(1);
 
       // Invariants: NO invented email, fake working hours, or false headquarters
@@ -212,4 +214,34 @@ describe("Phase 2E — Static, Legal, Help & Contact Customer Pages", () => {
       expect(screen.queryByText(/٧ أيام/)).not.toBeInTheDocument();
     });
   });
+
+  describe("Account Deletion Information Page (/account-deletion)", () => {
+    it("renders Account Deletion policy compliant with Google Play and Apple requirements without authentication", () => {
+      renderWithRouter(<AccountDeletion />);
+
+      expect(screen.getByRole("heading", { name: "حذف الحساب والبيانات", level: 1 })).toBeInTheDocument();
+      expect(screen.getByText("سياسة حذف الحساب والبيانات الشخصية")).toBeInTheDocument();
+      expect(screen.getByText("الطريقة الأولى: حذف الحساب مباشرة من داخل التطبيق")).toBeInTheDocument();
+      expect(screen.getByText("الطريقة الثانية: تقديم طلب حذف مباشر عبر الدعم المعتمد")).toBeInTheDocument();
+      expect(screen.getByText("البيانات التي تُحذف نهائياً")).toBeInTheDocument();
+      expect(screen.getByText("البيانات المحتفظ بها للأغراض القانونية")).toBeInTheDocument();
+      expect(screen.getByText("شروط وضوابط تنفيذ الحذف")).toBeInTheDocument();
+
+      // Package identity
+      expect(screen.getByText("com.dilmart.store")).toBeInTheDocument();
+
+      // Official URL and verified contact facts
+      expect(screen.getByText(/https:\/\/dilmart.store\/account-deletion/)).toBeInTheDocument();
+      expect(screen.getAllByText(storeConfig.phone).length).toBeGreaterThanOrEqual(1);
+
+      // In-app step-by-step instructions
+      expect(screen.getByText(/أمان الحساب والجلسات/)).toBeInTheDocument();
+      expect(screen.getByText(/تأكيد حذف الحساب نهائياً/)).toBeInTheDocument();
+
+      // Retention justification: financial and tax records
+      expect(screen.getByText(/سجلات المعاملات والطلبات التاريخية/)).toBeInTheDocument();
+      expect(screen.getByText(/Anonymization/)).toBeInTheDocument();
+    });
+  });
 });
+

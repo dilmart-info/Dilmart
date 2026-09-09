@@ -26,6 +26,7 @@ const ALLOWED_EXACT_ROUTES = new Set([
   "/terms",
   "/returns",
   "/privacy",
+  "/account-deletion",
   "/support",
   "/profile",
   "/profile/security/phone",

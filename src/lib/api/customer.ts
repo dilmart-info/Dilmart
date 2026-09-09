@@ -282,4 +282,13 @@ export const customerApi = {
       "GET",
     );
   },
+
+  requestAccountDeletion(payload: { confirmed: boolean; reason?: string }) {
+    return request<{ ok: boolean; message: string }>(
+      "/customer/account/delete",
+      "POST",
+      payload,
+    );
+  },
 };
+

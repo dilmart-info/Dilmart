@@ -8,6 +8,7 @@ import ProductDetail from "@/pages/ProductDetail";
 import Checkout from "@/pages/Checkout";
 import ThankYou from "@/pages/ThankYou";
 import Privacy from "@/pages/Privacy";
+import AccountDeletion from "@/pages/AccountDeletion";
 import Support from "@/pages/Support";
 import About from "@/pages/About";
 import Contact from "@/pages/Contact";
@@ -58,6 +59,7 @@ export function getCustomerRouteElements(): ReactElement[] {
     <Route key="terms" path="/terms" element={<Terms />} />,
     <Route key="returns" path="/returns" element={<Returns />} />,
     <Route key="privacy" path="/privacy" element={<Privacy />} />,
+    <Route key="account-deletion" path="/account-deletion" element={<AccountDeletion />} />,
     <Route key="support" path="/support" element={<Support />} />,
     <Route key="auth" path="/auth" element={<Auth />} />,
     <Route
@@ -156,6 +158,7 @@ export const CUSTOMER_ROUTE_PATHS = [
   "/terms",
   "/returns",
   "/privacy",
+  "/account-deletion",
   "/support",
   "/auth",
   "/forgot-password",

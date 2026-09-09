@@ -16,6 +16,7 @@ vi.mock("@/lib/api-client", () => ({
     getCustomerOrders: vi.fn(),
     getCustomerAddresses: vi.fn(),
     updateCustomerProfile: vi.fn(),
+    requestAccountDeletion: vi.fn(),
   },
 }));
 
@@ -330,4 +331,39 @@ describe("Profile - Account Dashboard", () => {
     expect(emailInput.value).toBe("لم يتم تسجيل بريد إلكتروني");
     expect(emailInput.value).not.toContain("07701112233");
   });
+
+  it("renders delete account button and calls requestAccountDeletion upon user confirmation", async () => {
+    const logoutMock = vi.fn().mockResolvedValue(undefined);
+    (apiClient.requestAccountDeletion as any) = vi.fn().mockResolvedValue({
+      ok: true,
+      message: "تم حذف الحساب بنجاح",
+    });
+
+    useAuthMock.mockReturnValue({
+      user: { id: "user-delete-test", email: "delete@example.com" },
+      profile: { full_name: "مستخدم للاختبار", phone: "07701112233" },
+      appSession: { authSource: "supabase", user: { id: "user-delete-test" } },
+      authSource: "supabase",
+      authStatus: "authenticated_ready",
+      capabilities: {},
+      logoutCurrentDevice: logoutMock,
+    });
+
+    renderWithProviders(<Profile />);
+
+    const deleteBtn = screen.getByTestId("delete-account-button");
+    expect(deleteBtn).toBeInTheDocument();
+    fireEvent.click(deleteBtn);
+
+    // Confirmation dialog opens
+    expect(screen.getAllByText("تأكيد حذف الحساب نهائياً").length).toBeGreaterThanOrEqual(1);
+    const confirmBtn = screen.getByTestId("confirm-delete-account-button");
+    fireEvent.click(confirmBtn);
+
+    await waitFor(() => {
+      expect(apiClient.requestAccountDeletion).toHaveBeenCalledWith({ confirmed: true });
+      expect(logoutMock).toHaveBeenCalled();
+    });
+  });
 });
+
