@@ -355,3 +355,52 @@ $$;
 -- Restrict function execution: backend service role ONLY
 REVOKE ALL ON FUNCTION app_private.claim_account_deletion_batch(pg_catalog.int4, pg_catalog.text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION app_private.claim_account_deletion_batch(pg_catalog.int4, pg_catalog.text) TO service_role;
+
+-- 8. PostgREST Secure Public Wrappers (Exposed schema entry points)
+-- PostgREST exposes only the 'public' schema on this project.
+-- Core logic remains locked inside app_private with pinned search_path = ''.
+-- These wrappers provide schema-qualified delegation, lock out browser roles,
+-- and grant execution strictly to service_role.
+
+CREATE OR REPLACE FUNCTION public.claim_account_deletion_batch(
+  p_batch_size pg_catalog.int4 DEFAULT 10,
+  p_worker_id pg_catalog.text DEFAULT 'reconciliation_worker'
+)
+RETURNS TABLE (
+  id pg_catalog.uuid,
+  user_id pg_catalog.uuid,
+  status pg_catalog.text,
+  step pg_catalog.text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT * FROM app_private.claim_account_deletion_batch(p_batch_size, p_worker_id);
+END;
+$$;
+
+-- Restrict function execution: backend service role ONLY
+REVOKE ALL ON FUNCTION public.claim_account_deletion_batch(pg_catalog.int4, pg_catalog.text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_account_deletion_batch(pg_catalog.int4, pg_catalog.text) TO service_role;
+
+CREATE OR REPLACE FUNCTION public.anonymize_and_detach_customer(
+  p_user_id pg_catalog.uuid,
+  p_reason pg_catalog.text DEFAULT 'customer_account_deletion'
+)
+RETURNS pg_catalog.jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN app_private.anonymize_and_detach_customer(p_user_id, p_reason);
+END;
+$$;
+
+-- Restrict function execution: backend service role ONLY
+REVOKE ALL ON FUNCTION public.anonymize_and_detach_customer(pg_catalog.uuid, pg_catalog.text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.anonymize_and_detach_customer(pg_catalog.uuid, pg_catalog.text) TO service_role;
+
