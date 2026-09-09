@@ -126,19 +126,19 @@ GRANT USAGE ON SCHEMA app_private TO anon, authenticated, service_role;
 
 -- 6. Transactional anonymization & detachment function in app_private
 CREATE OR REPLACE FUNCTION app_private.anonymize_and_detach_customer(
-  p_user_id UUID,
-  p_reason TEXT DEFAULT 'customer_account_deletion'
+  p_user_id pg_catalog.uuid,
+  p_reason pg_catalog.text DEFAULT 'customer_account_deletion'
 )
-RETURNS JSONB
+RETURNS pg_catalog.jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public, app_private, pg_temp
+SET search_path = ''
 AS $$
 DECLARE
-  v_orders_detached INT := 0;
-  v_returns_detached INT := 0;
-  v_cancellations_detached INT := 0;
-  v_addresses_deleted INT := 0;
+  v_orders_detached pg_catalog.int4 := 0;
+  v_returns_detached pg_catalog.int4 := 0;
+  v_cancellations_detached pg_catalog.int4 := 0;
+  v_addresses_deleted pg_catalog.int4 := 0;
 BEGIN
   IF p_user_id IS NULL THEN
     RAISE EXCEPTION 'INVALID_ARGUMENT: user_id is required';
@@ -271,6 +271,7 @@ BEGIN
     DELETE FROM public.notification_outbox WHERE recipient_type = 'customer' AND recipient_id = p_user_id;
   END IF;
 
+  -- Delete user notifications
   IF EXISTS (
     SELECT 1 FROM information_schema.tables 
     WHERE table_schema = 'public' AND table_name = 'user_notifications'
@@ -294,7 +295,7 @@ BEGIN
     DELETE FROM public.checkout_idempotency_records WHERE user_id = p_user_id;
   END IF;
 
-  RETURN jsonb_build_object(
+  RETURN pg_catalog.jsonb_build_object(
     'ok', true,
     'orders_detached', v_orders_detached,
     'returns_detached', v_returns_detached,
@@ -305,5 +306,52 @@ END;
 $$;
 
 -- Restrict function execution: backend service role ONLY
-REVOKE ALL ON FUNCTION app_private.anonymize_and_detach_customer(UUID, TEXT) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION app_private.anonymize_and_detach_customer(UUID, TEXT) TO service_role;
+REVOKE ALL ON FUNCTION app_private.anonymize_and_detach_customer(pg_catalog.uuid, pg_catalog.text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION app_private.anonymize_and_detach_customer(pg_catalog.uuid, pg_catalog.text) TO service_role;
+
+-- 7. Atomic batch claiming function for reconciliation worker (FOR UPDATE SKIP LOCKED)
+CREATE OR REPLACE FUNCTION app_private.claim_account_deletion_batch(
+  p_batch_size pg_catalog.int4 DEFAULT 10,
+  p_worker_id pg_catalog.text DEFAULT 'reconciliation_worker'
+)
+RETURNS TABLE (
+  id pg_catalog.uuid,
+  user_id pg_catalog.uuid,
+  status pg_catalog.text,
+  step pg_catalog.text
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  RETURN QUERY
+  WITH claimable AS (
+    SELECT r.id
+    FROM public.account_deletion_requests r
+    WHERE r.user_id IS NOT NULL
+      AND (
+        r.status IN ('requested', 'failed')
+        OR (r.status = 'processing' AND r.updated_at < (pg_catalog.now() - pg_catalog.interval '15 minutes'))
+      )
+    ORDER BY r.created_at ASC
+    LIMIT pg_catalog.greatest(1, pg_catalog.least(p_batch_size, 50))
+    FOR UPDATE SKIP LOCKED
+  ),
+  updated AS (
+    UPDATE public.account_deletion_requests r
+    SET
+      status = 'processing',
+      updated_at = pg_catalog.now()
+    FROM claimable c
+    WHERE r.id = c.id
+    RETURNING r.id, r.user_id, r.status, r.step
+  )
+  SELECT u.id, u.user_id, u.status, u.step
+  FROM updated u;
+END;
+$$;
+
+-- Restrict function execution: backend service role ONLY
+REVOKE ALL ON FUNCTION app_private.claim_account_deletion_batch(pg_catalog.int4, pg_catalog.text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION app_private.claim_account_deletion_batch(pg_catalog.int4, pg_catalog.text) TO service_role;

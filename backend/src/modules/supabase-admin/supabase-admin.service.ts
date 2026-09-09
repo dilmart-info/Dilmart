@@ -101,9 +101,22 @@ export class SupabaseAdminService {
     if (!id) return { ok: false, error: "Missing actorId for user deletion." };
     try {
       const { error } = await this.client.auth.admin.deleteUser(id, false);
-      if (error) return { ok: false, error: error.message };
+      if (error) {
+        const msg = (error.message ?? "").toLowerCase();
+        const status = (error as any).status;
+        // Idempotent: If user is already deleted or not found in Auth, treat as success
+        if (status === 404 || msg.includes("not found") || msg.includes("user not found")) {
+          return { ok: true };
+        }
+        return { ok: false, error: error.message };
+      }
       return { ok: true };
     } catch (err: any) {
+      const msg = (err?.message ?? "").toLowerCase();
+      const status = err?.status;
+      if (status === 404 || msg.includes("not found") || msg.includes("user not found")) {
+        return { ok: true };
+      }
       return { ok: false, error: err?.message ?? "User deletion failed." };
     }
   }

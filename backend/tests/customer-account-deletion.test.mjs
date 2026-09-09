@@ -154,9 +154,12 @@ function createTestSupabaseAdmin() {
         },
         async deleteUser(userId, shouldSoftDelete) {
           deleteUserCalls.push({ userId, shouldSoftDelete });
-          if (mockAuthUsers[userId]) {
-            delete mockAuthUsers[userId];
+          if (!mockAuthUsers[userId]) {
+            const err = new Error("User not found");
+            err.status = 404;
+            return { data: null, error: err };
           }
+          delete mockAuthUsers[userId];
           return { data: { user: null }, error: null };
         },
         async getUserById(userId) {
@@ -171,6 +174,36 @@ function createTestSupabaseAdmin() {
     },
     async rpc(funcName, params) {
       rpcCalls.push({ funcName, params });
+      if (funcName === "claim_account_deletion_batch") {
+        const batchSize = params?.p_batch_size ?? 10;
+        const now = Date.now();
+        const claimable = [];
+        for (const req of mockAccountDeletionRequests) {
+          if (!req.user_id) continue;
+          const isEligible =
+            req.status === "requested" ||
+            req.status === "failed" ||
+            (req.status === "processing" && (now - new Date(req.updated_at || req.created_at).getTime()) > 15 * 60 * 1000);
+
+          if (isEligible) {
+            claimable.push(req);
+            if (claimable.length >= batchSize) break;
+          }
+        }
+
+        const claimed = [];
+        for (const req of claimable) {
+          req.status = "processing";
+          req.updated_at = new Date().toISOString();
+          claimed.push({
+            id: req.id,
+            user_id: req.user_id,
+            status: req.status,
+            step: req.step,
+          });
+        }
+        return { data: claimed, error: null };
+      }
       if (funcName === "anonymize_and_detach_customer") {
         const userId = params?.p_user_id;
         // Anonymize orders
@@ -405,7 +438,15 @@ function createTestSupabaseAdmin() {
     },
     async deleteAuthUser(id) {
       const res = await client.auth.admin.deleteUser(id, false);
-      return { ok: !res.error, error: res.error?.message };
+      if (res.error) {
+        const msg = (res.error.message ?? "").toLowerCase();
+        const status = res.error.status;
+        if (status === 404 || msg.includes("not found") || msg.includes("user not found")) {
+          return { ok: true };
+        }
+        return { ok: false, error: res.error.message };
+      }
+      return { ok: true };
     },
     async verifyUserDeleted(id) {
       const { error } = await client.auth.admin.getUserById(id);
@@ -612,7 +653,94 @@ test("Store Customer Account Deletion & Anonymization Engine Test Suite", async 
     assert.equal(reqRow.user_id, null, "Raw user_id must be scrubbed upon completion");
   });
 
-  await suite.test("8. Teardown HTTP Server", async () => {
+  await suite.test("8. Concurrency Safety: Two workers claiming concurrently never receive the same request_id", async () => {
+    resetFixtures();
+
+    // Seed 4 pending deletion requests
+    mockAuthUsers["worker-c1"] = { id: "worker-c1", email: "c1@example.com" };
+    mockAuthUsers["worker-c2"] = { id: "worker-c2", email: "c2@example.com" };
+    mockAuthUsers["worker-c3"] = { id: "worker-c3", email: "c3@example.com" };
+    mockAuthUsers["worker-c4"] = { id: "worker-c4", email: "c4@example.com" };
+
+    mockAccountDeletionRequests.push(
+      { id: "del-c1", user_id: "worker-c1", status: "requested", step: "requested", created_at: new Date(Date.now() - 40000).toISOString() },
+      { id: "del-c2", user_id: "worker-c2", status: "requested", step: "requested", created_at: new Date(Date.now() - 30000).toISOString() },
+      { id: "del-c3", user_id: "worker-c3", status: "requested", step: "requested", created_at: new Date(Date.now() - 20000).toISOString() },
+      { id: "del-c4", user_id: "worker-c4", status: "requested", step: "requested", created_at: new Date(Date.now() - 10000).toISOString() },
+    );
+
+    const customerService = app.get(CustomerService);
+
+    // Worker A and Worker B claim batches concurrently (batch size 2 each)
+    const [workerAClaim, workerBClaim] = await Promise.all([
+      mockSupabase.client.rpc("claim_account_deletion_batch", { p_batch_size: 2, p_worker_id: "worker_A" }),
+      mockSupabase.client.rpc("claim_account_deletion_batch", { p_batch_size: 2, p_worker_id: "worker_B" }),
+    ]);
+
+    const workerAIds = (workerAClaim.data || []).map((r) => r.id);
+    const workerBIds = (workerBClaim.data || []).map((r) => r.id);
+
+    assert.equal(workerAIds.length, 2, "Worker A must claim exactly 2 rows");
+    assert.equal(workerBIds.length, 2, "Worker B must claim exactly 2 rows");
+
+    // PROVE: Disjoint sets — zero overlap between claimed request IDs
+    const overlap = workerAIds.filter((id) => workerBIds.includes(id));
+    assert.deepEqual(overlap, [], "Workers must never claim or process the same request_id");
+  });
+
+  await suite.test("9. Resumption: deleteUser succeeded -> completed update failed -> next run completes request cleanly", async () => {
+    resetFixtures();
+
+    // Scenario: User was already deleted from Supabase Auth, but previous run crashed before setting completed in DB
+    // Simulate deleteUser having already succeeded
+    delete mockAuthUsers["customer-uuid-1"];
+    assert.equal(mockAuthUsers["customer-uuid-1"], undefined);
+
+    mockAccountDeletionRequests.push({
+      id: "del-req-resume-1",
+      user_id: "customer-uuid-1",
+      status: "failed",
+      step: "auth_revoked",
+      source: "app_customer",
+      error_code: "PREVIOUS_CRASH_OR_TIMEOUT",
+      created_at: new Date(Date.now() - 600000).toISOString(),
+    });
+
+    const customerService = app.get(CustomerService);
+    const result = await customerService.reconcilePendingAccountDeletions();
+
+    assert.equal(result.processed, 1, "Reconciler must process the orphaned request");
+    assert.equal(result.completed, 1, "Reconciler must complete the request without error");
+
+    const reqRow = mockAccountDeletionRequests.find((r) => r.id === "del-req-resume-1");
+    assert.equal(reqRow.status, "completed", "Request must be completed");
+    assert.equal(reqRow.step, "auth_deleted", "Step must be auth_deleted");
+    assert.equal(reqRow.user_id, null, "user_id must be scrubbed to null");
+  });
+
+  await suite.test("10. deleteAuthUser Idempotence: 404 / not found is success, 500 error remains retryable", async () => {
+    // 1. User not found (404) -> must return { ok: true }
+    const res404 = await mockSupabase.deleteAuthUser("non-existent-user-id");
+    assert.equal(res404.ok, true, "Deleting already-deleted or non-existent user must be idempotent ok: true");
+
+    // 2. Non-404 error (e.g. 500 server error) -> must return { ok: false, error }
+    const originalDeleteUser = mockSupabase.client.auth.admin.deleteUser;
+    mockSupabase.client.auth.admin.deleteUser = async () => {
+      const err = new Error("Supabase Auth API 500 Internal Server Error");
+      err.status = 500;
+      return { data: null, error: err };
+    };
+
+    const res500 = await mockSupabase.deleteAuthUser("any-user-id");
+    assert.equal(res500.ok, false, "Server errors must not be marked ok: true");
+    assert.ok(res500.error.includes("500"), "Error message must be preserved");
+
+    // Restore original mock
+    mockSupabase.client.auth.admin.deleteUser = originalDeleteUser;
+  });
+
+  await suite.test("11. Teardown HTTP Server", async () => {
     await app.close();
   });
 });
+

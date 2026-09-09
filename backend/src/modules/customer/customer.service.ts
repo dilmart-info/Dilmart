@@ -608,19 +608,20 @@ export class CustomerService {
 
   /**
    * Trusted backend reconciliation mechanism for unfinished deletion requests.
-   * Inspects pending/failed deletion requests and completes auth deletion.
+   * Atomically claims a batch using app_private.claim_account_deletion_batch (FOR UPDATE SKIP LOCKED)
+   * and processes strictly the returned rows.
    */
-  async reconcilePendingAccountDeletions(): Promise<{ processed: number; completed: number; errors: number }> {
+  async reconcilePendingAccountDeletions(batchSize = 20): Promise<{ processed: number; completed: number; errors: number }> {
     const { data: requests, error } = await this.supabaseAdmin.client
-      .from("account_deletion_requests")
-      .select("id, user_id, status, step")
-      .not("user_id", "is", null)
-      .in("status", ["processing", "failed"])
-      .order("created_at", { ascending: true })
-      .limit(20);
+      .rpc("claim_account_deletion_batch", {
+        p_batch_size: batchSize,
+        p_worker_id: "reconciliation_worker",
+      });
 
-    if (error || !requests) {
-      this.logger.debug(`No pending deletion requests found or error: ${error?.message}`);
+    if (error || !requests || !Array.isArray(requests) || requests.length === 0) {
+      if (error) {
+        this.logger.error(`Error claiming account deletion batch: ${error.message}`);
+      }
       return { processed: 0, completed: 0, errors: 0 };
     }
 
