@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query, ValidationPipe } from "@nestjs/common";
-import { CurrentActor } from "../../common/authz/actor-context.decorator";
+import { ActorContext, CurrentActor } from "../../common/authz/actor-context.decorator";
 import { Roles } from "../../common/authz/roles.decorator";
-import { GetCustomerOrdersQueryDto, UpdateCustomerProfileDto, UpsertCustomerAddressDto } from "./customer.dto";
+import { GetCustomerOrdersQueryDto, RequestAccountDeletionDto, UpdateCustomerProfileDto, UpsertCustomerAddressDto } from "./customer.dto";
 import { CustomerService } from "./customer.service";
 
 @Controller("customer")
@@ -61,5 +61,15 @@ export class CustomerController {
   reorderPreview(@Param("id") id: string, @CurrentActor() actor: { actorId?: string }) {
     return this.customerService.getReorderPreview(actor?.actorId, id);
   }
+
+  @Post("account/delete")
+  deleteAccount(
+    @CurrentActor() actor: ActorContext,
+    @Body(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+    payload: RequestAccountDeletionDto,
+  ) {
+    return this.customerService.deleteAccount(actor, payload);
+  }
 }
+
 

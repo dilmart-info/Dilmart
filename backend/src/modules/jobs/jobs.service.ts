@@ -6,6 +6,7 @@ import { NotificationsService } from "../notifications/notifications.service";
 import { SupabaseAdminService } from "../supabase-admin/supabase-admin.service";
 import { MerchantPushService } from "../merchants/merchant-push.service";
 import { parseOrderIdFromPushEventKey } from "../merchants/merchant-push.helpers";
+import { CustomerService } from "../customer/customer.service";
 
 type JobStatus = "ok" | "partial" | "failed";
 
@@ -22,6 +23,7 @@ export class JobsService {
     private readonly notificationsService: NotificationsService,
     private readonly supabaseAdmin: SupabaseAdminService,
     private readonly merchantPushService: MerchantPushService,
+    private readonly customerService: CustomerService,
   ) {
     this.replayPerRunCap = Math.min(50, Math.max(1, Number(this.configService.get<string>("OPS_REPLAY_MAX_PER_RUN") ?? 10)));
     this.replayMinAgeMinutes = Math.min(24 * 60, Math.max(5, Number(this.configService.get<string>("OPS_REPLAY_MIN_AGE_MINUTES") ?? 30)));
@@ -373,5 +375,38 @@ export class JobsService {
       this.logger.error(`notification_outbox_worker failed: ${error.message}`);
     }
   }
+
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async runAccountDeletionReconciliation() {
+    if (!this.isEnabled("OPS_JOB_ACCOUNT_DELETION_RECONCILIATION_ENABLED", true)) return;
+    const startedAt = new Date().toISOString();
+    try {
+      const result = await this.customerService.reconcilePendingAccountDeletions();
+      if (result.processed > 0) {
+        const ok = result.errors === 0;
+        await this.recordJobRun({
+          job_name: "account_deletion_reconciliation",
+          status: ok ? "ok" : result.completed > 0 ? "partial" : "failed",
+          started_at: startedAt,
+          finished_at: new Date().toISOString(),
+          processed_count: result.processed,
+          error_count: result.errors,
+          notes: `processed=${result.processed}, completed=${result.completed}, errors=${result.errors}`,
+        });
+      }
+    } catch (error: any) {
+      this.logger.error(`account_deletion_reconciliation failed: ${error.message}`);
+      await this.recordJobRun({
+        job_name: "account_deletion_reconciliation",
+        status: "failed",
+        started_at: startedAt,
+        finished_at: new Date().toISOString(),
+        processed_count: 0,
+        error_count: 1,
+        notes: error?.message ?? "Account deletion reconciliation crashed.",
+      });
+    }
+  }
 }
+
 

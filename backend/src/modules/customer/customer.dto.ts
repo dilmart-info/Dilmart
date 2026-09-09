@@ -50,3 +50,15 @@ export class GetCustomerOrdersQueryDto {
   @IsString()
   limit?: string;
 }
+
+export class RequestAccountDeletionDto {
+  @IsBoolean({ message: "confirmed must be a boolean." })
+  @IsNotEmpty({ message: "confirmed is required." })
+  confirmed!: boolean;
+
+  @IsOptional()
+  @IsString({ message: "reason must be a string." })
+  @MaxLength(500, { message: "reason cannot exceed 500 characters." })
+  reason?: string;
+}
+

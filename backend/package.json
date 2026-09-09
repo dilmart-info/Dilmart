@@ -8,6 +8,7 @@
     "build": "nest build",
     "lint": "eslint \"src/**/*.ts\"",
     "test:cors": "npm run build && node --test tests/allowed-origins-cors.test.mjs",
+    "test:account-deletion": "npm run build && node --test tests/customer-account-deletion.test.mjs",
     "test:policy": "npm run build && node --test tests/policy-matrix.test.mjs tests/policy-endpoints.test.mjs tests/profiles-acl-lockdown.test.mjs tests/orders-acl-lockdown.test.mjs tests/product-import-acl-lockdown.test.mjs tests/product-import-behavior-acl.test.mjs tests/customer-profile-canonical.test.mjs",
     "test:commercial": "npm run build && node --test tests/commercial-rule-resolution.test.mjs",
     "test:merchant-coupons": "npm run build && node --test tests/merchant-coupons-multi-store-authority.test.mjs",

@@ -151,6 +151,9 @@ const Footer = () => {
               <Link to="/privacy" className="block hover:text-accent transition-colors">
                 سياسة الخصوصية
               </Link>
+              <Link to="/account-deletion" className="block hover:text-accent transition-colors">
+                حذف الحساب والبيانات
+              </Link>
               <Link to="/contact" className="block hover:text-accent transition-colors">
                 تواصل معنا
               </Link>
