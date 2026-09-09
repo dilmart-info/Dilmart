@@ -7,7 +7,7 @@
  * amount of later checking recovers it — the artifact is already wrong. So this runs BEFORE the build
  * and refuses to let a misconfigured target become a Production artifact at all.
  *
- * Rejects, specifically: `localhost`, `*.onrender.com`, any other DilMart host, plain HTTP, arbitrary
+ * Rejects, specifically: `localhost`, any unapproved Render service or host, plain HTTP, arbitrary
  * paths, any Supabase project that is not the Production one, and any URL carrying a non-default port,
  * embedded credentials, a query string or a fragment.
  *
@@ -18,14 +18,14 @@
 
 /** Canonical Production identity. Changing these changes what may be published. */
 export const CANONICAL = Object.freeze({
-  apiBaseUrl: "https://api.store.dilmart.org/api",
-  apiHostname: "api.store.dilmart.org",
+  apiBaseUrl: "https://dilmart-store-backend.onrender.com/api",
+  apiHostname: "dilmart-store-backend.onrender.com",
   apiPathname: "/api",
   supabaseProjectRef: "ztplxqlthuqkuktbznbo",
   supabaseHostname: "ztplxqlthuqkuktbznbo.supabase.co",
   supabasePathname: "/",
   supabaseUrl: "https://ztplxqlthuqkuktbznbo.supabase.co",
-  backendBindingUrl: "https://api.store.dilmart.org/api/health/config-public",
+  backendBindingUrl: "https://dilmart-store-backend.onrender.com/api/health/config-public",
 });
 
 const REQUIRED_KEYS = [
