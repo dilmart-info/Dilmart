@@ -29,7 +29,7 @@
 
 | التاجر                            | `jenni_store_id` | `merchant_settings`                                                  |
 | --------------------------------- | ---------------- | -------------------------------------------------------------------- |
-| `DilMart-primary` (DilMart Store) | `NULL`           | phone: `+9647759600068`, city: `Baghdad`, address: `null`         |
+| `DilMart-primary` (DilMart Store) | `NULL`           | phone: `+964 787 185 7930`, city: `Baghdad`, address: `null`         |
 | `alarsh` (شركة العرش)             | `NULL`           | phone: `0780123134`, city: `بغداد`, address: `المنصور شارع 14 رمضان` |
 
 ### Jenni Store موجود (Phase 0A reference فقط)

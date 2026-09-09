@@ -587,11 +587,12 @@ export class CustomerService {
       );
     }
 
-    // 10. Step: Finalize request record and scrub raw user_id/PII
+    // 10. Step: Finalize request record and scrub raw user_id, reason metadata, and all PII
     await this.supabaseAdmin.client
       .from("account_deletion_requests")
       .update({
         user_id: null,
+        metadata: null,
         status: "completed",
         step: "auth_deleted",
         completed_at: new Date().toISOString(),
@@ -636,6 +637,7 @@ export class CustomerService {
             .from("account_deletion_requests")
             .update({
               user_id: null,
+              metadata: null,
               status: "completed",
               step: "auth_deleted",
               completed_at: new Date().toISOString(),
@@ -654,7 +656,7 @@ export class CustomerService {
           });
         }
 
-        // Attempt deleteUser
+        // Attempt deleteUser (reconciliation worker does not store JWT and does NOT call signOut with user UUID)
         const delRes = await this.supabaseAdmin.deleteAuthUser(req.user_id);
         if (delRes.ok) {
           const verified = await this.supabaseAdmin.verifyUserDeleted(req.user_id);
@@ -663,6 +665,7 @@ export class CustomerService {
               .from("account_deletion_requests")
               .update({
                 user_id: null,
+                metadata: null,
                 status: "completed",
                 step: "auth_deleted",
                 completed_at: new Date().toISOString(),
