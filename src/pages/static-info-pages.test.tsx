@@ -48,8 +48,9 @@ describe("Phase 2E — Static, Legal, Help & Contact Customer Pages", () => {
     });
 
     it("has valid verified contact facts", () => {
-      expect(storeConfig.phone).toBe("+964 787 185 7930");
-      expect(storeConfig.whatsapp).toBe("9647871857930");
+      expect(storeConfig.phone).toBe("+9647759600068");
+      expect(storeConfig.phoneDisplay).toBe("07759600068");
+      expect(storeConfig.whatsapp).toBe("9647759600068");
       expect(storeConfig.address).toBe("بغداد، العراق");
     });
   });
@@ -138,8 +139,7 @@ describe("Phase 2E — Static, Legal, Help & Contact Customer Pages", () => {
       renderWithRouter(<Contact />);
 
       expect(screen.getByRole("heading", { name: "تواصل معنا", level: 1 })).toBeInTheDocument();
-      expect(screen.getAllByText("+964 787 185 7930").length).toBeGreaterThanOrEqual(1);
-      expect(screen.getAllByText("+9647871857930").length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText("+9647759600068").length).toBeGreaterThanOrEqual(1);
       expect(screen.getAllByText("بغداد، العراق").length).toBeGreaterThanOrEqual(1);
 
       // Invariants: NO invented email, fake working hours, or false headquarters

@@ -165,7 +165,14 @@ export default function Privacy() {
         <section className="pt-4 border-t border-slate-200 text-xs text-slate-500 space-y-1">
           <p>
             للتواصل بشأن سياسة الخصوصية: يمكنك التواصل مع فريق الدعم عبر الهاتف أو واتساب على الرقم{" "}
-            <span dir="ltr" className="font-bold text-slate-700">{storeConfig.phone}</span>.
+            <a
+              href={`tel:${storeConfig.phone.replace(/\s/g, "")}`}
+              className="font-bold text-slate-700 hover:underline hover:text-[#1261D8]"
+              dir="ltr"
+            >
+              {storeConfig.phone}
+            </a>{" "}
+            <span className="text-slate-500">({storeConfig.phoneDisplay})</span>.
           </p>
         </section>
       </div>

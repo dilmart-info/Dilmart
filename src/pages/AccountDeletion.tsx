@@ -87,9 +87,15 @@ export default function AccountDeletion() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <p className="text-xs text-slate-500">قناة التواصل والدعم المعتمدة:</p>
-                <p className="text-sm font-bold text-slate-800" dir="ltr">
-                  {storeConfig.phone}
-                </p>
+                <div className="flex items-center gap-2" dir="ltr">
+                  <a
+                    href={`tel:${storeConfig.phone.replace(/\s/g, "")}`}
+                    className="text-sm font-bold text-slate-800 hover:underline hover:text-[#1261D8]"
+                  >
+                    {storeConfig.phone}
+                  </a>
+                  <span className="text-xs font-normal text-slate-500">({storeConfig.phoneDisplay})</span>
+                </div>
               </div>
               <a
                 href={`https://wa.me/${storeConfig.whatsapp}`}
@@ -177,10 +183,14 @@ export default function AccountDeletion() {
           </p>
           <p>
             لأي مساعدة إضافية، يسعدنا تواصلك مع خدمة عملاء ديلمارت عبر واتساب أو الهاتف:{" "}
-            <span dir="ltr" className="font-bold text-slate-700">
+            <a
+              href={`tel:${storeConfig.phone.replace(/\s/g, "")}`}
+              className="font-bold text-slate-700 hover:underline hover:text-[#1261D8]"
+              dir="ltr"
+            >
               {storeConfig.phone}
-            </span>
-            .
+            </a>{" "}
+            <span className="text-slate-500">({storeConfig.phoneDisplay})</span>.
           </p>
         </section>
       </div>

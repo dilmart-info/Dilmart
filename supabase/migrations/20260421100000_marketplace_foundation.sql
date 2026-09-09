@@ -102,8 +102,8 @@ ON CONFLICT (slug) DO NOTHING;
 INSERT INTO public.merchant_settings (merchant_id, contact_phone, whatsapp_phone, support_email, city, address, delivery_notes, order_auto_accept)
 SELECT
   m.id,
-  '+964 787 185 7930',
-  '9647871857930',
+  '+9647759600068',
+  '9647759600068',
   NULL,
   'Baghdad',
   NULL,

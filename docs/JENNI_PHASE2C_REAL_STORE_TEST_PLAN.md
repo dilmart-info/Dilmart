@@ -34,8 +34,8 @@
 | jenni_store_id   | **NULL**                               | **NULL**                               |
 | jenni_synced_at  | NULL                                   | NULL                                   |
 | jenni_sync_error | NULL                                   | NULL                                   |
-| contact_phone    | **07725332211** (Corrected)            | +964 787 185 7930                      |
-| whatsapp_phone   | **07725332211** (Corrected)            | 9647871857930                          |
+| contact_phone    | **07725332211** (Corrected)            | +9647759600068                         |
+| whatsapp_phone   | **07725332211** (Corrected)            | 9647759600068                          |
 | address          | المنصور شارع 14 رمضان                  | **NULL** ❌                            |
 | city             | بغداد                                  | Baghdad                                |
 
