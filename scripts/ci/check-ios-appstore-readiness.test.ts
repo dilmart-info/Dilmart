@@ -96,17 +96,27 @@ describe("iOS App Store Readiness Guard", () => {
     expect(content).not.toContain("NSAllowsArbitraryLoads");
   });
 
-  it("validates PrivacyInfo.xcprivacy contains required declarations and no tracking", () => {
+  it("enforces iPhone orientation is Portrait only in Info.plist", () => {
+    const content = fs.readFileSync(infoPlistPath, "utf8");
+    expect(content).toContain("<key>UISupportedInterfaceOrientations</key>\n\t<array>\n\t\t<string>UIInterfaceOrientationPortrait</string>\n\t</array>");
+    expect(content).not.toContain("UIInterfaceOrientationLandscapeLeft");
+    expect(content).not.toContain("UIInterfaceOrientationLandscapeRight");
+  });
+
+  it("validates PrivacyInfo.xcprivacy contains required declarations, precise location, and no tracking", () => {
     const content = fs.readFileSync(privacyManifestPath, "utf8");
     expect(content).toContain("<key>NSPrivacyTracking</key>\n\t<false/>");
     expect(content).toContain("<key>NSPrivacyTrackingDomains</key>\n\t<array/>");
     expect(content).toContain("NSPrivacyAccessedAPICategoryUserDefaults");
     expect(content).toContain("CA92.1");
     expect(content).toContain("NSPrivacyCollectedDataTypeName");
+    expect(content).toContain("NSPrivacyCollectedDataTypeEmailAddress");
     expect(content).toContain("NSPrivacyCollectedDataTypePhoneNumber");
     expect(content).toContain("NSPrivacyCollectedDataTypePhysicalAddress");
     expect(content).toContain("NSPrivacyCollectedDataTypeUserID");
     expect(content).toContain("NSPrivacyCollectedDataTypePurchaseHistory");
+    expect(content).toContain("NSPrivacyCollectedDataTypeCustomerSupport");
+    expect(content).toContain("NSPrivacyCollectedDataTypePreciseLocation");
     expect(content).not.toContain("<key>NSPrivacyTracking</key>\n\t<true/>");
   });
 
