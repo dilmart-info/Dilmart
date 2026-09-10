@@ -204,6 +204,9 @@ jobs:
       - name: Frontend unit tests
         run: npm test
 
+      - name: CI guards & iOS App Store readiness tests
+        run: npm run test:ci-guards
+
       - name: Auth lifecycle guard
         run: npm run auth:guard
 
@@ -336,7 +339,7 @@ jobs:
           if grep -Eqi \
             'requires a development team|requires a provisioning profile|No profiles for|Signing for .* requires|No signing certificate' \
             "$log"; then
-            echo "::warning::Archive is blocked only by Apple signing/provisioning."
+            echo "::warning::Archive is blocked only by Apple signing/provisioning. Signed Archive will be executed on Mac with Xcode 26 Automatic Signing after merge."
             exit 0
           fi
           echo "::error::Archive failed for a non-signing reason."

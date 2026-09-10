@@ -61,7 +61,7 @@ if (!validateAndroidPackageId(androidPkg)) {
 }
 
 if (!validateIosBundleId(iosBundle)) {
-  console.error(`[app-links:prepare] FAIL CLOSED: STORE_IOS_BUNDLE_ID is invalid: '${iosBundle}' (expected bundle ID format, e.g. com.DilMart.store)`);
+  console.error(`[app-links:prepare] FAIL CLOSED: STORE_IOS_BUNDLE_ID is invalid: '${iosBundle}' (expected bundle ID format, e.g. com.dilmart.store)`);
   process.exit(1);
 }
 

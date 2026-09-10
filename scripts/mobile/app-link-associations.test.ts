@@ -10,10 +10,10 @@ import {
 } from "./generate-app-link-associations.mjs";
 
 describe("App-Link Associations Generator", () => {
-  it("defines distinct canonical Android package and preserved iOS bundle ID defaults", () => {
+  it("defines canonical Android package and lowercase iOS bundle ID defaults", () => {
     expect(DEFAULT_ANDROID_PACKAGE_ID).toBe("com.dilmart.store");
-    expect(DEFAULT_IOS_BUNDLE_ID).toBe("com.DilMart.store");
-    expect(DEFAULT_ANDROID_PACKAGE_ID).not.toBe(DEFAULT_IOS_BUNDLE_ID);
+    expect(DEFAULT_IOS_BUNDLE_ID).toBe("com.dilmart.store");
+    expect(DEFAULT_ANDROID_PACKAGE_ID).toBe(DEFAULT_IOS_BUNDLE_ID);
   });
 
   it("validates Android package identifier format strictly (lowercase)", () => {
@@ -59,9 +59,9 @@ describe("App-Link Associations Generator", () => {
     ]);
   });
 
-  it("builds valid iOS apple-app-site-association with preserved iOS bundle ID", () => {
+  it("builds valid iOS apple-app-site-association with canonical iOS bundle ID", () => {
     const doc = buildAasa("ABC1234567", DEFAULT_IOS_BUNDLE_ID);
-    expect(doc.applinks.details[0].appIDs).toEqual(["ABC1234567.com.DilMart.store"]);
+    expect(doc.applinks.details[0].appIDs).toEqual(["ABC1234567.com.dilmart.store"]);
     const paths = doc.applinks.details[0].components.map((c: any) => c["/"]);
     expect(paths).toContain("/product/*");
     expect(paths).toContain("/category/*");
