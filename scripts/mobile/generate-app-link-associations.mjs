@@ -11,7 +11,7 @@
  *                                                    (uppercase hex, colon-separated, 32 bytes)
  *   STORE_IOS_TEAM_ID                                Apple Team ID (10 alphanumeric chars)
  *   STORE_ANDROID_PACKAGE_ID                         optional (default com.dilmart.store)
- *   STORE_IOS_BUNDLE_ID                              optional (default com.DilMart.store)
+ *   STORE_IOS_BUNDLE_ID                              optional (default com.dilmart.store)
  *   STORE_ASSOCIATION_OUT_DIR                        optional (default public/.well-known)
  *
  * Usage: node scripts/mobile/generate-app-link-associations.mjs
@@ -21,7 +21,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
 export const DEFAULT_ANDROID_PACKAGE_ID = "com.dilmart.store";
-export const DEFAULT_IOS_BUNDLE_ID = "com.DilMart.store";
+export const DEFAULT_IOS_BUNDLE_ID = "com.dilmart.store";
 
 export const ANDROID_PACKAGE_REGEX = /^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$/;
 export const IOS_BUNDLE_REGEX = /^[a-zA-Z0-9.-]+$/;
@@ -96,7 +96,7 @@ function main() {
     fail(`STORE_ANDROID_PACKAGE_ID missing/invalid: '${androidPackageId}' — expected lowercase reverse-domain format (e.g. com.dilmart.store)`);
   }
   if (!validateIosBundleId(iosBundleId)) {
-    fail(`STORE_IOS_BUNDLE_ID missing/invalid: '${iosBundleId}' — expected bundle ID format (e.g. com.DilMart.store)`);
+    fail(`STORE_IOS_BUNDLE_ID missing/invalid: '${iosBundleId}' — expected bundle ID format (e.g. com.dilmart.store)`);
   }
 
   mkdirSync(OUT_DIR, { recursive: true });

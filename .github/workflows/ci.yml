@@ -203,7 +203,7 @@ jobs:
       - name: Run Deploy Association Output Proof (STORE-PR6 §6/§7)
         run: |
           # Runs a REAL `npm run build:deploy` and asserts what lands in dist/.well-known: with TEST signing
-          # identity → correctly-scoped assetlinks.json + apple-app-site-association (package com.DilMart.store,
+          # identity → correctly-scoped assetlinks.json + apple-app-site-association (package com.dilmart.store,
           # appID TEAM.bundle, components → /open only); with NO identity + preseeded stale files → the deploy
           # output contains NO association files (stale scrubbed before the bundler copies publicDir). TEST
           # fixtures only — never real fingerprints/Team IDs; artifacts are cleaned; nothing committed.
