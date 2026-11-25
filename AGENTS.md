@@ -2,6 +2,10 @@
 
 > **هذا الملف هو نقطة الدخول الحاكمة لأي AI agent يعمل داخل DilMart-Store.**
 
+## DilMart 2.0 phase boundary
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
 ## Required reading before any implementation or live operation
 
 1. `ai/ENVIRONMENT_SOURCE_OF_TRUTH.md` ← **الخريطة الحاكمة للـ DilMart Main / staging / Store current environment**
@@ -10,7 +14,9 @@
 4. `ai/AGENTS.md`
 5. `ai/CURSOR_EXECUTION_RULES.md`
 6. `ai/QA_CLOSURE_GATE.md`
-7. Domain-specific skill(s) relevant to the task.
+7. `governance/CURRENT_PHASE.md` and `governance/MASTER_SPEC.md`
+8. `docs/dilmart-2.0/00_MASTER_SPEC.md` and `docs/dilmart-2.0/01_PHASE_0_REPOSITORY_AUDIT.md`
+9. Domain-specific skill(s) relevant to the task.
 
 ## Environment precedence
 
