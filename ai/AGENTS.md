@@ -4,6 +4,10 @@
 
 ---
 
+## V2 phase boundary
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
 ## 1. Agent Mental Model
 
 تعامل مع DilMart-Store كنظام تشغيل Marketplace حقيقي، وليس CRUD dashboard.
@@ -95,7 +99,7 @@ Required:
 - إضافة payment gateway وهمي.
 - إضافة dependency كبيرة بدون سبب واضح.
 - إصلاح lint عن طريق تعطيل rules عشوائيًا.
-- إدخال multi-merchant cart أو checkout في launch phase.
+- إدخال multi-merchant cart أو checkout خارج مرحلة V2 معتمدة، أو تفعيله دون إذن. يبقى كل طلب فرعي أحادي التاجر، وتبقى السلة القديمة دون تغيير.
 - تنفيذ destructive SQL.
 
 ---
