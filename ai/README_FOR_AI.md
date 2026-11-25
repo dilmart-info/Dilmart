@@ -6,6 +6,10 @@
 
 ---
 
+## V2 phase boundary
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
 ## Required Reading Order
 
 قبل أي تعديل غير بسيط، اقرأ بالترتيب:
@@ -94,8 +98,8 @@
 3. لا تثق بأي `user_id`, `merchant_id`, `price`, `discount`, `points`, أو `stock` قادم من العميل.
 4. Checkout والتسعير والكوبونات والنقاط والمخزون يجب أن تُحسب وتُثبت في backend/RPC/DB بشكل آمن.
 5. كل عملية مالية أو توصيل أو order status يجب أن تكون auditable وقابلة للتتبع.
-6. One merchant per cart/order قيد إجباري للإطلاق الحالي.
-7. لا تضف multi-merchant checkout إلا كمرحلة معمارية مستقلة.
+6. One merchant per legacy cart and per merchant child order remains mandatory.
+7. Multi-merchant master checkout is a V2 target only; implement after G0 and explicit phase authorization.
 8. لا تضف payment gateway أو UI يوحي بوجود دفع إلكتروني production-ready قبل اكتمال provider/webhook/idempotency/reconciliation.
 9. لا تغيّر migrations قديمة بعد تطبيقها؛ أضف migration جديدًا فقط.
 10. لا تغيّر `.env` أو production config أو secrets.
@@ -114,7 +118,7 @@ P0-1 Secure checkout user identity and loyalty points.
 P0-2 Ensure checkout persists delivery geo fields: latitude, longitude, map_url.
 P0-3 Remove remaining frontend direct Supabase business access.
 P0-4 Add backend APIs for DesktopQuickLinks and any remaining admin/merchant fallbacks.
-P0-5 Validate single-merchant, stock, coupon, pricing, and settlement invariants end-to-end.
+P0-5 Validate legacy single-merchant and V2 child isolation, atomic master checkout, stock, coupon, pricing, and settlement invariants end-to-end.
 P1-1 Reduce lint failures or explicitly stage lint cleanup.
 P1-2 Add scenario tests for checkout/order/delivery/finance.
 P1-3 Prepare staging/prod environment separation.
