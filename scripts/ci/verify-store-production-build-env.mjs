@@ -18,14 +18,14 @@
 
 /** Canonical Production identity. Changing these changes what may be published. */
 export const CANONICAL = Object.freeze({
-  apiBaseUrl: "https://dilmart-store-backend.onrender.com/api",
-  apiHostname: "dilmart-store-backend.onrender.com",
+  apiBaseUrl: "https://dilmart-store-api.onrender.com/api",
+  apiHostname: "dilmart-store-api.onrender.com",
   apiPathname: "/api",
   supabaseProjectRef: "ztplxqlthuqkuktbznbo",
   supabaseHostname: "ztplxqlthuqkuktbznbo.supabase.co",
   supabasePathname: "/",
   supabaseUrl: "https://ztplxqlthuqkuktbznbo.supabase.co",
-  backendBindingUrl: "https://dilmart-store-backend.onrender.com/api/health/config-public",
+  backendBindingUrl: "https://dilmart-store-api.onrender.com/api/health/config-public",
 });
 
 const REQUIRED_KEYS = [
