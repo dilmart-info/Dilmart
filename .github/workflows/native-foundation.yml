@@ -4,20 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "package.json"
-      - "package-lock.json"
-      - "capacitor.config.ts"
-      - "vite.mobile.config.ts"
-      - "index.mobile.html"
-      - "scripts/mobile/**"
-      - "scripts/auth/**"
-      - "src/**"
-      - "public/**"
-      - "vite-capacitor-fix.js"
-      - "android/**"
-      - "ios/**"
-      - ".github/workflows/native-foundation.yml"
   push:
     branches:
       - main
@@ -65,6 +51,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # Legacy SDK package 'tools' no longer resolves; cmdline-tools are installed by the action.
+          packages: platform-tools
 
       - name: Install Android 36 SDK Platform & Build-Tools
         shell: bash

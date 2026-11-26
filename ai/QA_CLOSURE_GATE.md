@@ -4,6 +4,12 @@
 
 ---
 
+## V2 additional gates
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
+V2 must pass master spec T01–T23, including parcel custody, concurrent assignment, consolidation completeness, provider exclusivity, COD allocation, cash handover and payout reconciliation, offline recovery and field pilot. Documentation PASS is not runtime PASS. G0 requires local baseline and approved contracts; launch requires separate owner authorization.
+
 ## 1. Verdict Levels
 
 ### PASS
@@ -45,7 +51,8 @@
 
 - server-side pricing.
 - server-side merchant resolution.
-- one-merchant invariant.
+- legacy single-merchant cart and child-order single-merchant invariant.
+- V2 only: atomic parent/children, mandatory idempotency, conserved stock and amounts, no cross-merchant visibility.
 - stock atomicity.
 - coupon validation server-side.
 - loyalty points secure server-side.
@@ -131,7 +138,7 @@ For launch closure, manually verify:
 1. Customer opens marketplace.
 2. Customer views category/product/store.
 3. Customer adds product to cart.
-4. Cart blocks mixed-merchant item or resets intentionally.
+4. Legacy cart blocks mixed-merchant item or resets intentionally; V2 flagged cart accepts multiple merchants and validates each group server-side.
 5. Customer submits checkout with address + phone + geo if available.
 6. Admin sees order.
 7. Merchant sees own order only.

@@ -1,6 +1,15 @@
 # CURRENT PHASE
 
-## Status
+## Active V2 governance status (2026-11-25)
+
+- Phase 0.1 governance alignment prepared in PR #51; effective on reviewed merge.
+- Next permitted phase: **V2 Phase 0.2 — Baseline & Environment Verification**, local/disposable only, after merge or explicit owner authorization of this branch.
+- G0 OPEN. Phase 0.3 contract freeze and V2-01–08 implementation NOT authorized.
+- Read [V2 master spec](../docs/dilmart-2.0/00_MASTER_SPEC.md), [static audit](../docs/dilmart-2.0/01_PHASE_0_REPOSITORY_AUDIT.md), and [Phase 0.2 task](../docs/dilmart-2.0/03_PHASE_0_2_BASELINE_TASK.md).
+- No remote provisioning, production config changes, migrations against live targets, live smoke, deployment, or feature activation.
+- Stop if target identity or governance conflicts. Return evidence and blockers to owner before next phase.
+
+## Status (historical legacy closure)
 
 ```text
 PHASE_3M_MERGED
@@ -21,7 +30,7 @@ READY_FOR_NEXT_DEVELOPMENT_PHASE
 
 ## Active Implementation Phase
 
-None. Awaiting next phase assignment.
+None for runtime implementation. Only the V2 Phase 0.2 verification scope above may proceed after its authorization condition is met.
 
 ---
 

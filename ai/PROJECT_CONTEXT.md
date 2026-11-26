@@ -4,6 +4,10 @@
 
 ---
 
+## V2 transition
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
 ## 1. تعريف المشروع
 
 **DilMart-Store** هو Marketplace مستقل متعدد التجار لبيع المنتجات في العراق، مرتبط استراتيجيًا بمنظومة DilMart لكنه منفصل عنها ككود ومنتج.
@@ -26,7 +30,7 @@
 الإطلاق الحالي مصمم حول:
 
 - Marketplace متعدد التجار.
-- كل طلب مرتبط بتاجر واحد فقط.
+- كل طلب تجاري فرعي مرتبط بتاجر واحد فقط؛ السلة القديمة أحادية التاجر، والطلب الرئيسي متعدد التجار هدف V2.
 - Cash on Delivery هو نمط الدفع الأساسي.
 - Admin يشرف على التجار، المنتجات، الطلبات، التوصيل، والتحصيل.
 - Merchant يدير منتجاته وطلباته وماليته ضمن scope خاص به.
@@ -133,7 +137,7 @@ ai/                          AI governance pack added by this package
 - Checkout server-pricing and atomic stock RPC exist.
 - Admin/Merchant modules are broad.
 - Finance and delivery models are advanced.
-- One-merchant order strategy is correct for launch.
+- One-merchant child order strategy remains mandatory; legacy cart restriction is preserved until V2 activation.
 
 ### Launch Blockers / Risks
 
@@ -148,7 +152,7 @@ ai/                          AI governance pack added by this package
 
 ## 8. One-Merchant Rule
 
-For launch:
+For legacy checkout only:
 
 ```txt
 One cart = one merchant.
@@ -165,7 +169,7 @@ This is not a limitation bug. It is a deliberate business architecture decision 
 - returns/refunds
 - disputes
 
-Any code change must preserve this unless a future Multi-Merchant Checkout phase is formally approved.
+Preserve legacy behavior. V2 master checkout is an agreed target but runtime changes require an authorized implementation phase after G0; child orders remain single-merchant.
 
 ---
 

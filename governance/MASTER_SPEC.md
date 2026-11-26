@@ -51,23 +51,13 @@ Therefore all future work must follow:
 
 Stabilize → Align → Harden → Scale
 
-## 4. Marketplace Constraint
+## 4. Marketplace Constraint — legacy and V2
 
-For the current launch version:
+Legacy checkout: one cart and one order belong to one merchant. Preserve its behavior and regression tests.
 
-One order must belong to one merchant only.
+V2 target: one customer master checkout may contain multiple merchants; each child order belongs to exactly one merchant. Master and children, stock and financial snapshots are created atomically. V2 is a separate governed phase, behind default-off flags; no activation or implementation until authorized in CURRENT_PHASE.
 
-Mixed-merchant carts/orders are explicitly out of scope for launch.
-
-This constraint is intentional because it simplifies:
-
-- Delivery assignment
-- Cash collection
-- Merchant settlement
-- Refund/return handling
-- Dispute resolution
-
-Future multi-merchant checkout may be introduced later as a separate major phase.
+The product reference is [DilMart 2.0 Master Spec](../docs/dilmart-2.0/00_MASTER_SPEC.md). Its technical proposals require G0 verification and contract freeze. Preserve merchant isolation, money/custody integrity, and legacy compatibility.
 
 ## 5. Source of Truth
 
@@ -283,7 +273,7 @@ Every phase must include:
 - Manual QA checklist
 - Closure report
 
-## 16. Phase Roadmap
+## 16. Phase Roadmap — historical legacy phases
 
 ### Phase 1 — Marketplace Stabilization & API Authority
 
@@ -323,11 +313,11 @@ Make merchant and admin panels safe for real businesses.
 Goal:
 Final smoke, security, finance, role-based access, and manual QA closure.
 
-## 17. Non-Goals for Current Launch
+## 17. Non-Goals for Legacy Launch
 
-The following are explicitly out of scope for launch:
+The following are explicitly out of scope for the legacy launch; V2 scope follows its master spec:
 
-- Multi-merchant checkout
+- Multi-merchant checkout (legacy only; required V2 target under separate phase)
 - Production electronic payment gateway
 - Deep DilMart booking integration
 - Barber/salon service upsell

@@ -14,6 +14,12 @@ You are operating as an AI Execution Agent inside a governed system.
 3. /governance/CODING_STANDARDS.md
 4. /governance/SAFETY_RULES.md
 
+## V2 scope and precedence
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
+Root AGENTS.md, environment source of truth and safety rules take precedence for safety/environment identity. The V2 master specification governs target product scope, not permission to execute. CURRENT_PHASE governs permitted work. Historical launch documents remain legacy reference; conflicts outside the explicit V2 exception must be escalated.
+
 ## Execution Rules
 - NEVER work outside CURRENT_PHASE
 - ALWAYS decompose tasks before coding

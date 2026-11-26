@@ -1,5 +1,11 @@
 # Skill: Delivery & Delivery Intelligence QA — DilMart-Store
 
+## V2 extension
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
+V2 separates order, package, task, assignment, shipment and custody. Test readiness-triggered outbox, concurrent assignment, batch pickup, hub receipt, consolidation completeness, outbound proof, cash handoff and return custody. Preserve legacy provider flow and ensure exclusive internal/external dispatch. No LLM authority over assignment, money or custody.
+
 ## Mission
 
 Ensure delivery lifecycle, assignment, risk queues, and COD collection remain consistent.

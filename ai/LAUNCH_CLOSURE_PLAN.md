@@ -1,5 +1,9 @@
 # DilMart-Store Launch Closure Plan
 
+## Scope
+
+Historical legacy closure plan. V2 scope and gates are defined by the V2 master spec and CURRENT_PHASE. Legacy tests remain required; V2 adds multi-merchant and integrated logistics tests.
+
 ## Verdict
 
 Current target should be **Pilot/Beta after P0 closure**, not public launch immediately.
@@ -35,7 +39,7 @@ Current target should be **Pilot/Beta after P0 closure**, not public launch imme
 
 - Checkout smoke tests.
 - Coupon/loyalty tests.
-- Mixed merchant rejection.
+- Mixed merchant rejection in legacy checkout; V2 multi-merchant acceptance and child isolation when authorized.
 - Stock insufficiency.
 - Admin order lifecycle.
 - Merchant own-order visibility.

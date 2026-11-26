@@ -1,5 +1,11 @@
 # Skill: Checkout, Orders & Finance QA — DilMart-Store
 
+## V2 extension
+
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+
+Test mandatory V2 idempotency, stock contention, deterministic fee/discount/COD allocation, partial rejection, cash custody, payout dedupe and reversal. Do not weaken legacy gates.
+
 ## Mission
 
 Protect the highest-risk money/order flows: cart, checkout, pricing, coupon, loyalty, inventory, orders, COD, settlement.
@@ -8,7 +14,7 @@ Protect the highest-risk money/order flows: cart, checkout, pricing, coupon, loy
 
 ### Cart
 
-- One merchant only.
+- Legacy cart: one merchant only. V2 master checkout: multiple merchants allowed only under authorized phase/flag; each child order has exactly one merchant.
 - Hydration must sanitize inconsistent local state.
 - Checkout must revalidate server-side regardless of frontend cart state.
 
@@ -59,7 +65,7 @@ Frontend must not be trusted for:
 - spoofed `user_id` ignored/rejected.
 - points over balance rejected.
 - coupon valid/invalid/expired/minimum amount.
-- mixed-merchant cart blocked.
+- mixed-merchant cart blocked in legacy; V2 validates atomic parent/children, conservation and isolation.
 - stock insufficient rejected.
 - concurrent stock checkout safe.
 - order visible to owning merchant only.
