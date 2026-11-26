@@ -25,7 +25,9 @@ Overall: **PASS WITH NOTES**.
 | Lint baseline | PASS WITH NOTES |
 | Infrastructure follow-up | PASS WITH NOTES |
 
-No production database was opened or changed. No dependencies were upgraded. No lint rules were disabled. No runtime fix was applied.
+No production database was opened or changed by this task. No dependencies were upgraded. No lint rules were disabled. No runtime fix was applied.
+
+Independent review addendum (same date, same PR): a later read-only production catalog query, supplied by the reviewer and not repeated here, counts 62 public ordinary or partitioned tables, all with RLS enabled. The local replay matches that count. Full structural schema equivalence is still unproven. Section 15 records the correction, the startup chronology, the test-execution boundary, stack shutdown, and tracked engineering debt. G0 stays **OPEN**.
 
 ## 1. Baseline identity
 
@@ -57,11 +59,17 @@ Environment role: disposable local database
 
 Before start, another Supabase stack named `oghivndlzlckoschjjfg` was already listening on 54321, 54322, 54324, and 54327. `maxhub-postgres` was on 55432. Those containers were not stopped or reset.
 
-The repository `supabase/config.toml` sets `project_id` to the production ref. That file was not used and was not edited. A separate directory `D:\DilMart-p02a-sb` held a copy of the 175 forward SQL files and a config whose project id is `dilmart-p02a-disposable`, with API 55421, database 55422, shadow 55420, and SMTP 55424. Studio was disabled after the first start failed its Studio health check and rolled that attempt back. Analytics was disabled. No `supabase link` and no `--remote` flag were used.
+The repository `supabase/config.toml` sets `project_id` to the production ref. That file was not used and was not edited. A separate directory `D:\DilMart-p02a-sb` held a copy of the 175 forward SQL files and a config whose project id is `dilmart-p02a-disposable`, with API 55421, database 55422, shadow 55420, and SMTP 55424. Analytics was disabled. No `supabase link` and no `--remote` flag were used.
 
-`supabase status` and `supabase db reset` both reported target `127.0.0.1:55422`. Tests used `http://127.0.0.1:55421` and aborted if the URL was anything else. Docker still published those ports on `0.0.0.0` and `[::]` (listener pid 2412, the Docker engine). That is wider than loopback-only. The stack is unique by project id and port, and it is not the production project, but it is reachable on the machine's other interfaces while it is running.
+Startup chronology, in order. Both failures happened:
 
-The first `supabase start` applied the full migration chain, then failed with `HealthCheckTimeoutError` on `supabase_studio_dilmart-p02a-disposable` and stopped the containers it had created. The second start, with Studio disabled, exited 0 and left the database healthy. The pre-existing stack was still present afterward.
+1. The first `supabase start` exited before a healthy stack because CLI 2.177.1 rejected the disposable config key `[inbucket]` (`inbucket is no longer supported. Use local_smtp`). The disposable config was rewritten to `[local_smtp]`. The repository config was not edited.
+2. The next `supabase start` applied the migration chain, then failed with `HealthCheckTimeoutError` on `supabase_studio_dilmart-p02a-disposable` (Studio reported listening on all interfaces; the CLI health check exceeded 2 seconds). The CLI stopped the containers created for that attempt.
+3. Studio was then disabled in the disposable config only. The following `supabase start` exited 0 and left the database healthy. The pre-existing `oghivndlzlckoschjjfg` stack was still present afterward.
+
+`supabase status` and `supabase db reset` both reported target `127.0.0.1:55422`. Tests used `http://127.0.0.1:55421` and aborted if the URL was anything else. While the disposable stack was running, Docker published those ports on `0.0.0.0` and `[::]` (listener pid 2412, the Docker engine). That is wider than loopback-only.
+
+After verification, `npx supabase stop` was run from `D:\DilMart-p02a-sb` with the project id filter `dilmart-p02a-disposable`. The addendum rechecked on 2026-11-26: `docker ps -a` with that name returned no containers, and ports 55421, 55422, 55420, and 55424 had no listeners. Three Docker volumes remain (`supabase_db_dilmart-p02a-disposable`, `supabase_edge_runtime_dilmart-p02a-disposable`, `supabase_storage_dilmart-p02a-disposable`). They are not published on an interface. This addendum did not stop, reset, or modify the pre-existing Supabase stack, and it did not delete the leftover volumes.
 
 ## 3. Migration replay
 
@@ -101,9 +109,11 @@ The three first-run failures were `ERR_MODULE_NOT_FOUND` for compiled files impo
 
 The remaining failure was `customer-entry categories + featured respect ViewerContext eligibility`: PostgREST returned `The upstream server is timing out` after 181 seconds. The same test passed on the immediate retry. That is a transient local API timeout, not a skipped test and not a schema assertion failure.
 
-The single todo is inside `product-import-confirm-atomic.test.mjs`: a non-slug unique-violation retry path, marked todo because no second unique constraint on `public.products` exists to exercise it. It is not a pass.
+The single todo is inside `product-import-confirm-atomic.test.mjs`: a non-slug unique-violation retry path, marked todo because no second unique constraint on `public.products` exists to exercise it. It remains outstanding. A todo is not a pass.
 
-Demonstrated on this database, among the passing tests: place_order stock decrement and full rollback on insufficient stock, mixed-merchant rejection, inactive merchant rejection, merchandise mismatch, financial snapshot persistence, coupon increment, loyalty spend, checkout-attempt idempotency under concurrency, return and refund RPCs including merchant scope, notification outbox worker recovery, commercial-agreement concurrency, anon and authenticated denial for selected SECURITY DEFINER RPCs, and product public-read RLS cases.
+Execution boundary: run 1 is the only full-suite invocation. It exited 1. Runs 2 and 3 are partial reruns of failed files after a backend build. There is no later full-suite command that exited 0. Passing results below are cumulative across those three invocations. They are not a clean single-suite pass. The todo stays outstanding in that cumulative picture.
+
+Demonstrated on this database, among the tests that passed in those invocations: place_order stock decrement and full rollback on insufficient stock, mixed-merchant rejection, inactive merchant rejection, merchandise mismatch, financial snapshot persistence, coupon increment, loyalty spend, checkout-attempt idempotency under concurrency, return and refund RPCs including merchant scope, notification outbox worker recovery, commercial-agreement concurrency, anon and authenticated denial for selected SECURITY DEFINER RPCs, and product public-read RLS cases. The customer-entry categories case passed only on the single-file retry after a PostgREST timeout.
 
 ## 5. Final schema inventory
 
@@ -139,19 +149,19 @@ Legacy B2B and federated tables dropped by Migration B are absent from the final
 
 ## 6. Schema comparison
 
-Production metadata supplied for this task, not re-queried:
+The original task packet cited 63 public tables. An independent reviewer then ran a fresh read-only production PostgreSQL catalog query and reported 62 public ordinary or partitioned tables, all with RLS enabled. This addendum adopts that fresh count and retires the 63-table reference. This task still did not query production.
 
-| Item | Production reference | Local replay |
+| Item | Fresh production catalog | Local replay |
 |---|---|---|
-| Applied migrations | 175 | 175 |
-| Public tables | 63 | 62 base tables |
-| RLS on those tables | all 63 | all 62 |
-| Public RLS policies | 80 | 80 |
-| PostGIS | available, not enabled | available 3.3.7, not installed |
+| Applied migrations | 175 (prior reference, not re-counted in the fresh query) | 175 |
+| Public ordinary or partitioned tables | 62 | 62 base tables |
+| RLS on those tables | all 62 | all 62 |
+| Public RLS policies | 80 (prior reference) | 80 |
+| PostGIS | available, not enabled (prior reference) | available 3.3.7, not installed |
 
-The policy count and migration count match. The table count does not. Local `information_schema` reports 62 `BASE TABLE` and 3 `VIEW`. Adding the views makes 65, which is not 63, and views are not the objects with RLS in this catalog. So the reference count is one base table higher than this replay.
+The table-count discrepancy is resolved. Local and fresh production counts both are 62, with RLS enabled on each of those tables.
 
-`delivery_recommendations` does not explain it: the drop migration is inside the same 175 files. This task did not query production to name the extra table, and it did not add or drop anything to force the counts together.
+Full structural schema equivalence is not established. The fresh production evidence supplied for this addendum is a table count plus RLS coverage. It does not include a column-by-column, constraint, index, policy, function, trigger, or grant diff against the local catalog. Matching counts are not a schema freeze. Local `information_schema` also reports 3 views. Those views are outside the 62-table ordinary/partitioned count.
 
 ## 7. Financial and transaction assessment
 
@@ -234,31 +244,31 @@ Historical docs and evidence JSON also mention the old host. The CI test `verify
 ### P0
 
 1. G0 decisions D01–D13 remain open. This phase adds local catalog evidence. It does not freeze contracts.
-2. One public table in the production reference count is not in the local replay. Naming it requires an owner-supplied list or a later authorized read. Do not reconcile by editing migrations.
-3. No Store staging project exists. This disposable stack is not staging.
+2. No Store staging project exists. This disposable stack is not staging.
 
 ### P1
 
-1. Six SECURITY DEFINER functions have no `search_path`.
-2. Delivery finance still runs after the delivery RPC commits.
-3. Checkout idempotency is optional unless the environment flag is on.
-4. Lint fails with 449 errors and is outside critical CI.
-5. npm audit has critical advisories. Capacitor 8.6.3 is a non-major fix but is tied to the deferred Android rebuild. Vite, Vitest, Zod, and Capacitor assets fixes are major.
-6. Retired backend hostname remains in admin UI, health identity, import scripts, and smoke-test defaults.
-7. Docker published the disposable database on all interfaces. Future local runs should bind `127.0.0.1` if the CLI allows it.
-8. `test:db-integration` does not build `backend/dist`, so a clean worktree fails three files until `npm run build`.
+1. Full structural schema equivalence between local replay and production is unproven. See ED-01.
+2. Six SECURITY DEFINER functions have no `search_path`. See ED-03.
+3. Delivery finance still runs after the delivery RPC commits. See ED-02.
+4. Checkout idempotency is optional unless the environment flag is on. See ED-02.
+5. Lint fails with 449 errors and is outside critical CI. See ED-05.
+6. npm audit has critical advisories. Capacitor 8.6.3 is a non-major fix but is tied to the deferred Android rebuild. Vite, Vitest, Zod, and Capacitor assets fixes are major. See ED-04.
+7. Retired backend hostname remains in admin UI, health identity, import scripts, and smoke-test defaults. See ED-06.
+8. While it was running, Docker published the disposable database on all interfaces. Future local runs should bind `127.0.0.1` if the CLI allows it. The containers are stopped.
+9. `test:db-integration` does not build `backend/dist`, so a clean worktree fails three files until `npm run build`. The only full-suite run in this phase exited 1. The todo remains outstanding.
 
 ### P2
 
 1. PostGIS is available and not enabled. Do not enable it until a frozen schema needs it.
-2. The product-import unique-violation retry remains a todo, not a live test.
-3. Studio health check timed out on CLI 2.177.1 with the default Studio container. Studio was not required for this proof.
+2. The product-import unique-violation retry remains a todo. See section 4.
+3. Two disposable startup failures are recorded in section 2: the unsupported `[inbucket]` key, then the Studio health-check timeout. Studio was not required for this proof.
 
 ## 12. Decision register
 
 | ID | Update from this phase | Status |
 |---|---|---|
-| D01 | Local replay confirms 175 migrations, 80 policies, PostGIS not installed, and a 62-versus-63 table difference | Evidence improved. Not accepted as freeze. |
+| D01 | Local replay and the fresh production catalog both report 62 public ordinary or partitioned tables with RLS enabled, 175 local migrations, 80 local policies, and PostGIS not installed. Structural equivalence is unproven. | Evidence improved. Not accepted as freeze. |
 | D02 | Submit-time stock decrement and rollback passed on the disposable database. Reservation-versus-decrement is still an open product choice. | Open |
 | D03–D05, D08, D10–D12 | No new operational evidence | Open |
 | D06 | Snapshot and coupon behavior passed for the single-merchant RPC. IQD split rules for a master order are still unwritten. | Open |
@@ -268,7 +278,7 @@ Historical docs and evidence JSON also mention the old host. The CI test `verify
 
 ## 13. Recommendations before Phase 0.3
 
-1. Keep G0 open until the owner accepts the 62-versus-63 table difference or supplies the missing name from an authorized inventory.
+1. Keep G0 open. The 62-table count now matches the fresh production catalog. Do not treat that match as schema freeze. A structural diff is still required before any DDL.
 2. Treat the disposable project id `dilmart-p02a-disposable` as the pattern for local proof. Do not start Supabase with the production ref as `project_id`.
 3. Require `npm run build` before `test:db-integration` in the local runbook so missing `dist` is not mistaken for a database failure.
 4. Add lint as a no-new-errors gate rather than a mass cleanup.
@@ -278,4 +288,30 @@ Historical docs and evidence JSON also mention the old host. The CI test `verify
 
 ## 14. What this phase did not do
 
-No production mutation, no remote migration, no production query, no live smoke from this session, no webhook edit, no mobile rebuild, no dependency upgrade, no lint rewrite, no Phase 0.3, and no V2-01.
+No production mutation, no remote migration, no production query from this task, no live smoke from this session, no webhook edit, no mobile rebuild, no dependency upgrade, no lint rewrite, no Phase 0.3, and no V2-01. The addendum records a reviewer-supplied read-only catalog count. It does not repeat that query.
+
+## 15. Independent review addendum
+
+Recorded on 2026-11-26 against the same report and PR #54. G0 remains **OPEN**. Phase 0.3 and V2-01 remain unstarted.
+
+| Review item | Record |
+|---|---|
+| Fresh production table count | 62 public ordinary or partitioned tables, RLS enabled on all 62. Supplied by the independent reviewer from a read-only catalog query. |
+| Earlier 63-table reference | Retired. Local replay of 62 now matches the fresh count. |
+| Structural equivalence | Not established. Counts matching is not an object-level schema proof. |
+| Startup | Both events occurred, in this order: unsupported `[inbucket]` config key, then Studio `HealthCheckTimeoutError`, then a successful start with Studio disabled. |
+| Tests | Only the first `npm run test:db-integration` was a full suite, and it exited 1. Later passes are partial reruns. Cumulative passes are not a clean full-suite pass. The product-import todo remains outstanding. |
+| Disposable stack | Containers are stopped. Ports 55421, 55422, 55420, and 55424 are not listening. Leftover volumes are not published. The pre-existing Supabase stack was not modified by this addendum. |
+
+## 16. Tracked engineering debt
+
+These items stay open. This addendum does not implement them.
+
+| ID | Area | Debt |
+|---|---|---|
+| ED-01 | Schema | Prove structural equivalence before any V2 DDL: columns, keys, unique and check constraints, indexes, RLS policies, grants, RPC signatures, SECURITY DEFINER, `search_path`, triggers, and extensions. Table-count agreement is already recorded. |
+| ED-02 | Finance | `delivery-operations.service.ts` finance handling runs after `transition_delivery_status` commits. `CHECKOUT_IDEMPOTENCY_REQUIRED` defaults off. The in-process domain event bus swallows handler errors. COD collection, payouts, cancellations, and ledger reversals were not fault-injected. |
+| ED-03 | Security | Six SECURITY DEFINER functions have no `search_path`: `claim_pending_points`, `get_available_points`, `get_order_status`, `handle_order_status_points`, `handle_profile_points_claim`, `increment_coupon_usage`. Hosted Supabase advisor findings were not re-fetched. |
+| ED-04 | Dependencies | Read-only audit: backend 15 (1 critical, 8 high, 6 moderate; 3 direct), frontend 35 (6 critical, 13 high, 16 moderate; 9 direct). No `npm audit fix`. Capacitor patch stays with the deferred Android rebuild. Major fixes for Vite, Vitest, Zod, and Capacitor assets stay deferred. |
+| ED-05 | Lint | 449 errors and 33 warnings. Dominant rule: `@typescript-eslint/no-explicit-any` (446). Critical CI does not run lint. Strategy: no-new-errors baseline. Do not disable rules and do not mass-fix in a feature phase. |
+| ED-06 | Operations | Retired host `dilmart-store-backend.onrender.com` remains in health identity, operator text, admin Jenni and login copy, product-import scripts, OTP readiness scripts, Jenni helper scripts, and tests that default `STORE_BACKEND_URL` or `PUBLIC_BACKEND_URL`. Android rebuild, authentication, CORS, Supabase Auth Hooks, and Jenni webhook acceptance remain pending. |
