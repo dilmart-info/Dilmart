@@ -1,13 +1,13 @@
 # CURRENT PHASE
 
-## Active V2 governance status (2026-11-25)
+## Active V2 governance status (2026-11-26)
 
-- Phase 0.1 governance alignment prepared in PR #51; effective on reviewed merge.
-- Next permitted phase: **V2 Phase 0.2 — Baseline & Environment Verification**, local/disposable only, after merge or explicit owner authorization of this branch.
-- G0 OPEN. Phase 0.3 contract freeze and V2-01–08 implementation NOT authorized.
-- Read [V2 master spec](../docs/dilmart-2.0/00_MASTER_SPEC.md), [static audit](../docs/dilmart-2.0/01_PHASE_0_REPOSITORY_AUDIT.md), and [Phase 0.2 task](../docs/dilmart-2.0/03_PHASE_0_2_BASELINE_TASK.md).
-- No remote provisioning, production config changes, migrations against live targets, live smoke, deployment, or feature activation.
-- Stop if target identity or governance conflicts. Return evidence and blockers to owner before next phase.
+- PRs #51–54 merged; Phase 0.2 and 0.2a accepted with notes. ED-01–06 remain open.
+- Owner approved Phase 0.3A architecture direction and design-only Phase 0.3 scope. Effective after reviewed merge of this governance change.
+- Next permitted work: **Phase 0.3 — Architecture & Contract Freeze**, design/documentation only; start with 0.3B commerce/order contracts after 0.3A review.
+- G0 OPEN. V2-01–08 implementation NOT authorized. No DDL, remote provisioning, production config changes, live smoke, deployment or feature activation.
+- Read [master spec](../docs/dilmart-2.0/00_MASTER_SPEC.md), [database proof](../docs/dilmart-2.0/05_PHASE_0_2A_DATABASE_PROOF_REPORT.md), and [system architecture](../docs/dilmart-2.0/06_SYSTEM_ARCHITECTURE.md).
+- Preserve legacy behavior and existing safety rules. Structural schema comparison and clean full DB suite remain outstanding; no implementation before explicit authorization. Escalate unresolved D01–D13 decisions.
 
 ## Status (historical legacy closure)
 
@@ -30,7 +30,7 @@ READY_FOR_NEXT_DEVELOPMENT_PHASE
 
 ## Active Implementation Phase
 
-None for runtime implementation. Only the V2 Phase 0.2 verification scope above may proceed after its authorization condition is met.
+None for runtime implementation. Only the design/documentation scope above may proceed after its authorization condition is met.
 
 ---
 
