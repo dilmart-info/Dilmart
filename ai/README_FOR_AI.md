@@ -8,7 +8,7 @@
 
 ## V2 phase boundary
 
-DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2/0.2a baseline verification is accepted with notes. Phase 0.3 permits architecture and contract design/documentation only after reviewed merge or explicit owner authorization; G0 remains OPEN. No feature implementation, remote provisioning, DDL, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
 
 ## Required Reading Order
 
