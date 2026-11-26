@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: DilMart-store-backend
+    name: dilmart-store-api
     env: node
     rootDir: backend
     plan: starter
@@ -74,7 +74,7 @@ services:
         sync: false
 
       # Backend URL — set after backend service is deployed, e.g.:
-      # https://DilMart-store-backend.onrender.com/api
+      # https://dilmart-store-api.onrender.com/api
       - key: VITE_STORE_API_BASE_URL
         sync: false
 

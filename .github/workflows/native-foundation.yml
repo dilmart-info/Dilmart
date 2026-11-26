@@ -98,7 +98,7 @@ jobs:
           # Public production endpoints (never bake local .env / quoted secrets into device APKs).
           VITE_SUPABASE_URL="https://ztplxqlthuqkuktbznbo.supabase.co"
           VITE_SUPABASE_PROJECT_ID="ztplxqlthuqkuktbznbo"
-          VITE_STORE_API_BASE_URL="https://DilMart-store-backend.onrender.com/api"
+          VITE_STORE_API_BASE_URL="https://dilmart-store-api.onrender.com/api"
           KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-}"
           KEY="${KEY//$'\r'/}"
           KEY="${KEY%\"}"; KEY="${KEY#\"}"
@@ -210,7 +210,7 @@ jobs:
           set -euo pipefail
           VITE_SUPABASE_URL="https://ztplxqlthuqkuktbznbo.supabase.co"
           VITE_SUPABASE_PROJECT_ID="ztplxqlthuqkuktbznbo"
-          VITE_STORE_API_BASE_URL="https://DilMart-store-backend.onrender.com/api"
+          VITE_STORE_API_BASE_URL="https://dilmart-store-api.onrender.com/api"
           KEY="${VITE_SUPABASE_PUBLISHABLE_KEY:-}"
           KEY="${KEY//$'\r'/}"
           KEY="${KEY%\"}"; KEY="${KEY#\"}"

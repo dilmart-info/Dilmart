@@ -2,7 +2,7 @@
 
 > **AUTHORITATIVE — owner-confirmed operational topology**
 >
-> Effective: **2026-09-01**
+> Effective: **2026-11-26**
 >
 > This file is the canonical environment map for both `cylendralabs-blip/DilMart` and
 > `dilmart-info/Dilmart`.
@@ -45,8 +45,8 @@ PRODUCTION
 CURRENT / LIVE
   GitHub repository : dilmart-info/Dilmart
   Git branch        : main
-  Render service    : DilMart-store-backend
-  Backend URL       : https://DilMart-store-backend.onrender.com
+  Render service    : dilmart-store-api
+  Backend URL       : https://dilmart-store-api.onrender.com
   Supabase project  : DilMart-Store
   Supabase ref      : ztplxqlthuqkuktbznbo
   Supabase URL      : https://ztplxqlthuqkuktbznbo.supabase.co
@@ -74,7 +74,7 @@ CURRENT / LIVE
 - The product/system name may remain **DilMart-Store**.
 - The **canonical GitHub repository** for this Store codebase is `dilmart-info/Dilmart`.
 - `main` is the **current Store code line used by the live Store backend**.
-- `DilMart-store-backend` is the current/live Store Render backend.
+- `dilmart-store-api` is the current/live Store Render backend.
 - `ztplxqlthuqkuktbznbo` is the current/live Store Supabase project.
 - **There is currently no separate Store staging environment.**
 - **Repository identity, branch, deployed service, and database are separate authority dimensions.**
@@ -140,7 +140,7 @@ Then apply these rules:
   `zlmdwhuphuxppxznsgso` unless a task explicitly separates code/deploy/DB actions.
 - DilMart production mutation => must target branch `main`, Render `DilMart-backend`, Supabase
   `yssjhxeybitiycdviyrc`, and requires the normal production authorization gate.
-- DilMart-Store mutation => targets Store `main` / `DilMart-store-backend` / `ztplxqlthuqkuktbznbo` only when
+- DilMart-Store mutation => targets Store `main` / `dilmart-store-api` / `ztplxqlthuqkuktbznbo` only when
   explicitly authorized. **Do not invent a Store staging target.**
 
 If any identifier conflicts with this map, **STOP and ask the owner to reconcile the environment source of

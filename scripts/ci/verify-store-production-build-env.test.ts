@@ -13,7 +13,7 @@ import {
 } from "./verify-store-production-build-env.mjs";
 
 const CANONICAL_ENV = {
-  VITE_STORE_API_BASE_URL: "https://dilmart-store-backend.onrender.com/api",
+  VITE_STORE_API_BASE_URL: "https://dilmart-store-api.onrender.com/api",
   VITE_SUPABASE_PROJECT_ID: "ztplxqlthuqkuktbznbo",
   VITE_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_placeholder_for_tests",
   VITE_SUPABASE_URL: "https://ztplxqlthuqkuktbznbo.supabase.co",
@@ -31,7 +31,7 @@ describe("canonical Production configuration is accepted", () => {
 
   it("tolerates a trailing slash on the API base, which is identical in meaning", () => {
     const result = verifyStoreProductionBuildEnv(
-      withEnv({ VITE_STORE_API_BASE_URL: "https://dilmart-store-backend.onrender.com/api/" }),
+      withEnv({ VITE_STORE_API_BASE_URL: "https://dilmart-store-api.onrender.com/api/" }),
     );
     expect(result.ok).toBe(true);
   });
@@ -67,16 +67,17 @@ describe("the API base must be the same-site Production API", () => {
     ["unconfigured legacy domain", "https://api.store.dilmart.org/api"],
     ["another Render service (Main production)", "https://DilMart-backend.onrender.com/api"],
     ["another Render service (Main staging)", "https://DilMart-backend-staging.onrender.com/api"],
+    ["retired Store backend", "https://dilmart-store-backend.onrender.com/api"],
     ["an arbitrary Render service", "https://other-service.onrender.com/api"],
     ["another DilMart host", "https://api.dilmart.org/api"],
     ["the storefront host itself", "https://store.dilmart.org/api"],
-    ["plain HTTP on the right Render host", "http://dilmart-store-backend.onrender.com/api"],
-    ["an arbitrary path", "https://dilmart-store-backend.onrender.com/v2"],
-    ["the site root", "https://dilmart-store-backend.onrender.com/"],
-    ["a nested path", "https://dilmart-store-backend.onrender.com/api/v1"],
-    ["a look-alike / spoofing host", "https://dilmart-store-backend.onrender.com.attacker.com/api"],
-    ["a subdomain spoofing host", "https://evil.dilmart-store-backend.onrender.com/api"],
-    ["not a URL at all", "dilmart-store-backend.onrender.com/api"],
+    ["plain HTTP on the right Render host", "http://dilmart-store-api.onrender.com/api"],
+    ["an arbitrary path", "https://dilmart-store-api.onrender.com/v2"],
+    ["the site root", "https://dilmart-store-api.onrender.com/"],
+    ["a nested path", "https://dilmart-store-api.onrender.com/api/v1"],
+    ["a look-alike / spoofing host", "https://dilmart-store-api.onrender.com.attacker.com/api"],
+    ["a subdomain spoofing host", "https://evil.dilmart-store-api.onrender.com/api"],
+    ["not a URL at all", "dilmart-store-api.onrender.com/api"],
   ];
 
   for (const [label, value] of rejected) {
@@ -126,11 +127,11 @@ describe("URLs must be canonical, not merely on the right host", () => {
   // only inspect protocol, hostname and pathname. Each of these changes where requests go, or what
   // travels with them, and is baked into the bundle — so each is refused on its own.
   const apiRejected: Array<[string, string, string]> = [
-    ["a non-default port", "https://dilmart-store-backend.onrender.com:444/api", "port"],
-    ["embedded credentials", "https://user:pass@dilmart-store-backend.onrender.com/api", "credentials"],
-    ["a password-only credential", "https://:pass@dilmart-store-backend.onrender.com/api", "credentials"],
-    ["a query string", "https://dilmart-store-backend.onrender.com/api?x=1", "query"],
-    ["a fragment", "https://dilmart-store-backend.onrender.com/api#x", "fragment"],
+    ["a non-default port", "https://dilmart-store-api.onrender.com:444/api", "port"],
+    ["embedded credentials", "https://user:pass@dilmart-store-api.onrender.com/api", "credentials"],
+    ["a password-only credential", "https://:pass@dilmart-store-api.onrender.com/api", "credentials"],
+    ["a query string", "https://dilmart-store-api.onrender.com/api?x=1", "query"],
+    ["a fragment", "https://dilmart-store-api.onrender.com/api#x", "fragment"],
   ];
 
   for (const [label, value, reason] of apiRejected) {
@@ -171,7 +172,7 @@ describe("URLs must be canonical, not merely on the right host", () => {
   it("does not mistake the default https port for an explicit one", () => {
     // new URL() normalises :443 away, so this stays canonical rather than tripping the port check.
     const result = verifyStoreProductionBuildEnv(
-      withEnv({ VITE_STORE_API_BASE_URL: "https://dilmart-store-backend.onrender.com:443/api" }),
+      withEnv({ VITE_STORE_API_BASE_URL: "https://dilmart-store-api.onrender.com:443/api" }),
     );
     expect(result.ok).toBe(true);
   });
