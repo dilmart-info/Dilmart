@@ -75,7 +75,7 @@ deployment failure — the newer commit gets its own CI and its own deployment.
 its environment into the bundle: a wrong value is not a runtime misconfiguration that can be corrected
 later, it is a wrong artifact.
 
-It requires `VITE_STORE_API_BASE_URL` to be `https://dilmart-store-backend.onrender.com/api` (protocol, host and
+It requires `VITE_STORE_API_BASE_URL` to be `https://dilmart-store-api.onrender.com/api` (protocol, host and
 normalised path — a trailing slash is accepted, anything else is not), `VITE_SUPABASE_PROJECT_ID` to be
 `ztplxqlthuqkuktbznbo`, `VITE_SUPABASE_URL` to be that project's host over https, and
 `VITE_SUPABASE_PUBLISHABLE_KEY` to be non-empty. `localhost`, unapproved Render services, spoofed domains, plain

@@ -18,7 +18,7 @@ const WORKFLOW_PATH = resolve(__dirname, "../../.github/workflows/netlify-produc
 const workflow = readFileSync(WORKFLOW_PATH, "utf8").replace(/\r\n/g, "\n");
 
 /** The one existing production site. A new or wrong site id must never appear here. */
-const SITE_ID = "e9925590-a4cb-4e31-a97b-141f45264f24";
+const SITE_ID = "e26515c5-2a78-4299-9a4b-bfee89bceef7";
 
 /** Extracts a top-level `jobs:` entry by name, up to the next job at the same indentation. */
 function jobBlock(name: string): string {
