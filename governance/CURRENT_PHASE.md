@@ -3,11 +3,11 @@
 ## Active V2 governance status (2026-11-26)
 
 - PRs #51–54 merged; Phase 0.2 and 0.2a accepted with notes. ED-01–06 remain open.
-- Owner approved Phase 0.3A architecture direction and design-only Phase 0.3 scope. Effective after reviewed merge of this governance change.
-- Next permitted work: **Phase 0.3 — Architecture & Contract Freeze**, design/documentation only; start with 0.3B commerce/order contracts after 0.3A review.
-- G0 OPEN. V2-01–08 implementation NOT authorized. No DDL, remote provisioning, production config changes, live smoke, deployment or feature activation.
-- Read [master spec](../docs/dilmart-2.0/00_MASTER_SPEC.md), [database proof](../docs/dilmart-2.0/05_PHASE_0_2A_DATABASE_PROOF_REPORT.md), and [system architecture](../docs/dilmart-2.0/06_SYSTEM_ARCHITECTURE.md).
-- Preserve legacy behavior and existing safety rules. Structural schema comparison and clean full DB suite remain outstanding; no implementation before explicit authorization. Escalate unresolved D01–D13 decisions.
+- PRs #55–63 merged; Phase 0.3A–I architecture/design packages recorded. Phase 0.3J roadmap, decision register and G0 gate become effective on reviewed merge of this governance update.
+- Owner approved Phase 0.3J roadmap direction. **Next permitted scope: pre-G0 readiness planning and individually explicitly authorized evidence tasks only**, as defined in [G0 approval gate](../docs/dilmart-2.0/17_G0_APPROVAL_GATE.md). No evidence execution, hosted metadata access, staging provisioning, device changes or remediation implicitly authorized by this merge.
+- G0 OPEN / BLOCKED. V2-01–08 implementation NOT authorized. No DDL, remote provisioning, production config changes, live smoke, deployment or feature activation without separate explicit authorization and applicable gates.
+- Read [master spec](../docs/dilmart-2.0/00_MASTER_SPEC.md), [database proof](../docs/dilmart-2.0/05_PHASE_0_2A_DATABASE_PROOF_REPORT.md), [system architecture](../docs/dilmart-2.0/06_SYSTEM_ARCHITECTURE.md), [unified contracts](../docs/dilmart-2.0/13_DATABASE_API_CONTRACTS.md), [security/QA](../docs/dilmart-2.0/14_SECURITY_STAGING_QA.md), [roadmap](../docs/dilmart-2.0/15_IMPLEMENTATION_ROADMAP.md), [decision register](../docs/dilmart-2.0/16_ARCHITECTURE_DECISION_REGISTER.md) and [G0 gate](../docs/dilmart-2.0/17_G0_APPROVAL_GATE.md).
+- Preserve legacy behavior and existing safety rules. Structural schema comparison, clean full DB suite, physical contracts, finance risk proof, staging and required D01–D13 decisions remain outstanding. Design documentation completion is not physical freeze or runtime acceptance.
 
 ## Status (historical legacy closure)
 
