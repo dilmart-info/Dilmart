@@ -16,7 +16,7 @@ You are operating as an AI Execution Agent inside a governed system.
 
 ## V2 scope and precedence
 
-DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2 is local/read-only baseline verification; no feature implementation, remote provisioning, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
+DilMart 2.0 scope is governed by `docs/dilmart-2.0/00_MASTER_SPEC.md` and `governance/CURRENT_PHASE.md`. Legacy checkout remains single-merchant; V2 permits a multi-merchant master checkout only in an explicitly authorized implementation phase, behind default-off flags. Each merchant child order remains single-merchant. Phase 0.2/0.2a baseline verification is accepted with notes. Phase 0.3 permits architecture and contract design/documentation only after reviewed merge or explicit owner authorization; G0 remains OPEN. No feature implementation, remote provisioning, DDL, live writes, deployment or activation is authorized. Existing safety and environment rules remain binding.
 
 Root AGENTS.md, environment source of truth and safety rules take precedence for safety/environment identity. The V2 master specification governs target product scope, not permission to execute. CURRENT_PHASE governs permitted work. Historical launch documents remain legacy reference; conflicts outside the explicit V2 exception must be escalated.
 
