@@ -305,3 +305,36 @@ Existing expectations updated because this work deliberately changes the contrac
 - Nothing was deployed. No Production data, Supabase project, Render configuration, secrets,
   feature flags or external services were touched. Both migrations were run against a local
   ephemeral container only.
+
+---
+
+# Closure Report — DILMART-V2-P0.2
+
+Date: 2026-11-26
+Verdict: **PASS WITH NOTES**
+G0: **OPEN**
+
+## What was implemented
+
+Documentation only. Phase 0.2 baseline evidence is in `docs/dilmart-2.0/04_PHASE_0_2_BASELINE_REPORT.md`. No application code, migration, flag, or environment change.
+
+## Files changed
+
+- `docs/dilmart-2.0/04_PHASE_0_2_BASELINE_REPORT.md` (added)
+- `governance/CLOSURE_REPORT.md` (this appendix only; the historical product-readiness closure above is unchanged)
+
+## Tests status
+
+Local on SHA `272b027a218b33798e5e5f54b3eeaf48d7214d7e`: frontend build, vitest (1259), arch guard, auth guard, mobile build, and mobile boundary passed. Backend policy (91), commercial (8), and launch-critical (26) passed. `npm run lint` failed with 449 pre-existing errors; critical CI does not run that script. Local migration replay and `test:db-integration` were not run because the Docker daemon was down. GitHub CI on the same SHA: critical CI and Native Foundation succeeded; one Netlify publish attempt failed closed before artifact build (backend binding HTTP 503).
+
+## Edge cases handled
+
+The dirty primary checkout was not reset or merged. Verification used a separate worktree. Database tests were skipped rather than pointed at a live project. Lint failure was recorded and not patched.
+
+## Known limitations
+
+Schema inventory is textual plus CI replay evidence, not a local `pg_catalog` dump. Render deployed SHA was not queried. G0 decisions D01–D13 remain open.
+
+## Risks
+
+Treating this report as permission to start V2-01, or treating green CI as local lint and local schema proof. Staging was proposed and not created.
