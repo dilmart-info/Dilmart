@@ -1,0 +1,56 @@
+name: Pre-G0 Schema Evidence (manual, local only)
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Prepare disposable project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/preg0/supabase/migrations" "$RUNNER_TEMP/schema-evidence"
+          cp supabase/migrations/*.sql "$RUNNER_TEMP/preg0/supabase/migrations/"
+          sed 's/^project_id = .*/project_id = "dilmart-schema-evidence"/' supabase/config.toml > "$RUNNER_TEMP/preg0/supabase/config.toml"
+          grep -qx 'project_id = "dilmart-schema-evidence"' "$RUNNER_TEMP/preg0/supabase/config.toml"
+          git rev-parse HEAD > "$RUNNER_TEMP/schema-evidence/commit.txt"
+          supabase --version > "$RUNNER_TEMP/schema-evidence/cli-version.txt"
+      - name: Replay locally and verify catalog
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/preg0"
+          unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD DATABASE_URL SUPABASE_URL
+          supabase start
+          supabase db reset --local --no-seed
+          supabase migration up --local
+          DB_CONTAINER=supabase_db_dilmart-schema-evidence
+          test "$(docker inspect -f '{{.State.Running}}' "$DB_CONTAINER")" = true
+          docker exec -i "$DB_CONTAINER" psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 < "$GITHUB_WORKSPACE/backend/tests/db-integration/final-schema-gate.sql"
+          docker exec -i "$DB_CONTAINER" psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 --csv < "$GITHUB_WORKSPACE/scripts/audit/schema-fingerprint.sql" > "$RUNNER_TEMP/schema-evidence/local_schema_fingerprints.csv"
+          docker exec -i "$DB_CONTAINER" psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 --csv < "$GITHUB_WORKSPACE/scripts/audit/schema-extended-metadata.sql" > "$RUNNER_TEMP/schema-evidence/local_extended_fingerprints.csv"
+          docker exec "$DB_CONTAINER" psql -X -U postgres -d postgres --csv -c "SELECT current_setting('server_version') AS server_version, current_setting('search_path') AS search_path, current_user AS catalog_role" > "$RUNNER_TEMP/schema-evidence/context.csv"
+          cat "$RUNNER_TEMP/schema-evidence/"*.csv
+      - name: Stop disposable project
+        if: always()
+        shell: bash
+        run: |
+          if [ -d "$RUNNER_TEMP/preg0/supabase" ]; then
+            cd "$RUNNER_TEMP/preg0"
+            supabase stop --no-backup
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: local-schema-evidence
+          path: ${{ runner.temp }}/schema-evidence/
+          retention-days: 3
+          if-no-files-found: error

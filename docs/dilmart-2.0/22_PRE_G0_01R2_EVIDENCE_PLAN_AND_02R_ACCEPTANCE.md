@@ -1,0 +1,11 @@
+# PRE-G0-01R2 evidence plan and PRE-G0-02R acceptance
+
+Baseline: 8d6cc6a456b22e55e27a58b192f0b5c7cd09612a
+Owner authorization: approval in project conversation following PR #66 merge, 2026-11-27.
+G0 OPEN / BLOCKED; no V2 implementation authorization.
+
+## PRE-G0-02R acceptance
+Owner accepted PASS WITH NOTES after independent review of report 21 and job 140175014002 (run 45897529060). Canonical full suite exited 0: 116 tests, 115 pass, 0 fail, 1 TODO. Tested runtime tree equivalent to merged main at report 21 baseline. Windows failures retained in report 19; TODO non-slug unique violation remains untested. Ephemeral CI runner published local service ports on all interfaces; test target loopback. Acceptance applies to this baseline evidence only, not future runtime changes or G0. No requirement or test removed.
+
+## PRE-G0-01R2
+Owner authorizes a separate manual workflow on a GitHub-hosted disposable Linux runner, synthetic database only, and separately authorized read-only production catalog comparisons. No production keys, business rows, hosted writes, deployment, staging provisioning, or existing CI changes. Original twelve-category SQL retained; extended SQL emits counts and hashes only for relevant schemas and additional privileges/types/partitions. Empty categories may be absent; compare explicitly. Capture server version, search path and role; differences require investigation, especially managed schemas and PostgreSQL patch versions. Fingerprints are screening evidence, not a complete structural audit: object-level differences and uncovered properties (including relevant dependencies, sequence ownership, effective privileges, extension configuration) need follow-up. Do not publish raw production metadata. Workflow uses disposable project ID, local Docker database, no production connection. Public artifacts contain synthetic/local fingerprints only. Hosted runner network binding caveat remains; no use on shared/self-hosted runner. Manual run only after reviewed merge; existing required checks unchanged. Review actual run and output, then compare production privately. Remove/disable workflow after evidence collection via separately reviewed change. ED-01 remains OPEN until full comparison and independent review.
