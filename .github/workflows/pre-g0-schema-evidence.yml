@@ -19,7 +19,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/preg0/supabase/migrations" "$RUNNER_TEMP/schema-evidence"
-          cp supabase/migrations/*.sql "$RUNNER_TEMP/preg0/supabase/migrations/"
+          # Copy only tracked migration and Edge Function sources; never copy local env files or CLI linkage.
+          git archive HEAD supabase/migrations supabase/functions | tar -x -C "$RUNNER_TEMP/preg0"
+          test -s "$RUNNER_TEMP/preg0/supabase/functions/create-agent-user/index.ts"
+          test -s "$RUNNER_TEMP/preg0/supabase/functions/notify-order/index.ts"
+          test "$(find "$RUNNER_TEMP/preg0/supabase/migrations" -maxdepth 1 -name '*.sql' | wc -l)" -eq 175
           sed 's/^project_id = .*/project_id = "dilmart-schema-evidence"/' supabase/config.toml > "$RUNNER_TEMP/preg0/supabase/config.toml"
           grep -qx 'project_id = "dilmart-schema-evidence"' "$RUNNER_TEMP/preg0/supabase/config.toml"
           git rev-parse HEAD > "$RUNNER_TEMP/schema-evidence/commit.txt"
@@ -30,7 +34,8 @@ jobs:
           set -euo pipefail
           cd "$RUNNER_TEMP/preg0"
           unset SUPABASE_ACCESS_TOKEN SUPABASE_DB_PASSWORD DATABASE_URL SUPABASE_URL
-          supabase start
+          # Edge Functions are not needed for catalog evidence; source files remain available for config validation.
+          supabase start -x edge-runtime
           supabase db reset --local --no-seed
           supabase migration up --local
           DB_CONTAINER=supabase_db_dilmart-schema-evidence
