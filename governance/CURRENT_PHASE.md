@@ -32,6 +32,12 @@ READY_FOR_NEXT_DEVELOPMENT_PHASE
 
 None for runtime implementation. Only the design/documentation scope above may proceed after its authorization condition is met.
 
+## DRIVER-UI-01 mock preview exception — 2026-11-28
+
+The owner authorized one isolated, synthetic Driver UI preview (`DRIVER-UI-01`) on `prototype/driver-ui-01-foundation`. Allowed work is a separate preview package, its tests, and this scope note. It is not the H2 production package in `docs/dilmart-2.0/driver-ux/CURSOR_IMPLEMENTATION_PLAN.md`.
+
+This exception does not authorize H1–H8 execution, V2-01, backend integration, real authentication, custody, finance, native stack selection, deployment, or production data. G0, ED-01, D09, and UX-09 remain OPEN. Capacitor and SQLCipher remain candidates, not a D09 decision.
+
 ---
 
 ## Preceding Governance / Merged Phases
