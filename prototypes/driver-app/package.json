@@ -1,0 +1,6 @@
+{
+  "name": "dilmart-driver-dev",
+  "private": true,
+  "type": "module",
+  "description": "Isolated synthetic DilMart Driver development application. Not a production build."
+}

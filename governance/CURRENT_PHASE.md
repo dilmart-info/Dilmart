@@ -36,7 +36,13 @@ None for runtime implementation. Only the design/documentation scope above may p
 
 The owner authorized one isolated, synthetic Driver UI preview (`DRIVER-UI-01`) on `prototype/driver-ui-01-foundation`. Allowed work is a separate preview package, its tests, and this scope note. It is not the H2 production package in `docs/dilmart-2.0/driver-ux/CURSOR_IMPLEMENTATION_PLAN.md`.
 
-This exception does not authorize H1–H8 execution, V2-01, backend integration, real authentication, custody, finance, native stack selection, deployment, or production data. G0, ED-01, D09, and UX-09 remain OPEN. Capacitor and SQLCipher remain candidates, not a D09 decision.
+## DRIVER development application exception — 2026-11-28
+
+The owner reviewed that preview and authorized one isolated Driver development application on the same branch: all 54 reference frames, synthetic local behavior, local tests, and an Android debug APK identified as `com.dilmart.driver.dev`.
+
+Capacitor packages already present in this repository are the packaging candidate for that debug APK. This use is not a D09 decision. SQLCipher is not implemented. The application is not part of the customer build, uses no production endpoint, and is not release-signed.
+
+This authorization does not close G0, ED-01, D09, or UX-09. It does not authorize production backend integration, production authentication, real financial transactions, hosted database access, remote migrations, store publishing, or deployment. H1–H8 and V2-01 remain unauthorized.
 
 ---
 
