@@ -1,0 +1,80 @@
+{
+  "version": "1.0-review",
+  "status": "approved direction; implementation bindings proposed",
+  "figma": "https://www.figma.com/design/VP7ObUnxVriELZficZXUyf",
+  "referenceFrame": {
+    "width": 390,
+    "height": 844,
+    "unit": "design px; map to Android dp with responsive layout"
+  },
+  "font": {
+    "family": "Tajawal",
+    "weights": [
+      400,
+      500,
+      700
+    ],
+    "sizes": {
+      "caption": 14,
+      "body": 16,
+      "action": 17,
+      "title": 28,
+      "metric": 36
+    },
+    "status": "sizes proposed from existing screens"
+  },
+  "spacing": [
+    4,
+    8,
+    12,
+    16,
+    24,
+    32
+  ],
+  "radius": {
+    "action": 12,
+    "card": 16
+  },
+  "touch": {
+    "minimumDp": 48,
+    "primaryDp": 56
+  },
+  "light": {
+    "background": "#F3F6F8",
+    "surface": "#FFFFFF",
+    "text": "#142B49",
+    "muted": "#53677B",
+    "primary": "#087E74",
+    "onPrimary": "#FFFFFF",
+    "success": "#15803D",
+    "warning": "#B45309",
+    "danger": "#B91C1C",
+    "successSurface": "#E6F5F1",
+    "warningSurface": "#FFF1D6",
+    "dangerSurface": "#FEE2E2"
+  },
+  "dark": {
+    "background": "#101C2B",
+    "surface": "#203247",
+    "text": "#F1F5F9",
+    "muted": "#CBD5E1",
+    "primary": "#087E74",
+    "onPrimary": "#FFFFFF",
+    "accent": "#73D9C8",
+    "status": "dark semantic status colors require contrast review"
+  },
+  "bindingEvidence": {
+    "collection": "DilMart Driver / Foundations",
+    "bound": [
+      "action/primary",
+      "text/on-action",
+      "radius/action"
+    ],
+    "otherTokens": "proposed; not all bound in Figma"
+  },
+  "accessibility": {
+    "contrast": "WCAG AA target; verify each text/background pair",
+    "status": "not tested",
+    "direction": "RTL; isolate Latin IDs, numbers and amounts; mirror directional icons only"
+  }
+}
