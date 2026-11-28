@@ -1,5 +1,5 @@
 # Native bridge contract (candidate, not a frozen interface)
-Evidence: PR #81 reports 44–46, unmerged; 45 records real Android 12 arm64 102/102 and emulator 98/98, SQLCipher 4.20.0 and platform-reported TEE. 46 records scanner module now installed, UI opened/canceled, no decode; SP-06 BLOCKED. SP-02 true lock OPEN, SP-05 battery OPEN, reboot/push not authorized, F1 unfixed. D09 OPEN. No production stack version frozen.
+Evidence: PR #81 reports 44–46, merged historical evidence; 45 records real Android 12 arm64 102/102 and emulator 98/98, SQLCipher 4.20.0 and platform-reported TEE. 46 records scanner module now installed, UI opened/canceled, no decode; SP-06 BLOCKED. SP-02 true lock OPEN, SP-05 battery OPEN, reboot/push not authorized, F1 unfixed. D09 OPEN. No production stack version frozen.
 | Logical capability | Required contract |
 |---|---|
 | Session | authenticated actor derived natively; atomic/recoverable token and actor transition; no caller actor override |
