@@ -83,8 +83,8 @@ WITH ns AS (
     ('publication_tables'),
     ('event_triggers')
 ), objects AS (
-  SELECT 'g0-a2-02-v1' AS format_version, namespace.nspname AS schema_name, 'schemas' AS category,
-         namespace.nspname AS object_identity,
+  SELECT 'g0-a2-02-v1' AS format_version, namespace.nspname::text AS schema_name, 'schemas'::text AS category,
+         namespace.nspname::text AS object_identity,
          pg_temp.audit_canon(pg_get_userbyid(namespace.nspowner)) AS canonical_definition
   FROM ns joined
   JOIN pg_namespace namespace ON namespace.oid = joined.oid
@@ -96,11 +96,11 @@ WITH ns AS (
   JOIN pg_namespace namespace ON namespace.oid = joined.oid
   CROSS JOIN LATERAL aclexplode(coalesce(namespace.nspacl, acldefault('n', namespace.nspowner))) privilege
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'relations', relation.nspname || '.' || relation.relname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'relations', relation.nspname::text || '.' || relation.relname::text,
          pg_temp.audit_canon(relation.relkind::text, pg_temp.audit_bool(relation.relrowsecurity), pg_temp.audit_bool(relation.relforcerowsecurity), pg_get_userbyid(relation.relowner), pg_temp.audit_sorted(relation.reloptions), pg_temp.audit_extension_owned('pg_class', relation.oid, 0))
   FROM rel relation
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'columns', relation.nspname || '.' || relation.relname || '.' || attribute.attname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'columns', relation.nspname::text || '.' || relation.relname::text || '.' || attribute.attname::text,
          pg_temp.audit_canon(attribute.attnum::text, format_type(attribute.atttypid, attribute.atttypmod), pg_temp.audit_bool(attribute.attnotnull), attribute.attidentity::text, attribute.attgenerated::text, pg_get_expr(default_expression.adbin, default_expression.adrelid), CASE WHEN attribute.attcollation <> 0 THEN attribute.attcollation::regcollation::text ELSE NULL END, pg_temp.audit_extension_owned('pg_attribute', relation.oid, attribute.attnum))
   FROM rel relation
   JOIN pg_attribute attribute ON attribute.attrelid = relation.oid AND attribute.attnum > 0 AND NOT attribute.attisdropped
@@ -109,18 +109,18 @@ WITH ns AS (
   UNION ALL
   SELECT 'g0-a2-02-v1', relation.nspname,
          CASE constraint_row.contype WHEN 'p' THEN 'primary_keys' WHEN 'f' THEN 'foreign_keys' WHEN 'u' THEN 'unique_constraints' WHEN 'c' THEN 'check_constraints' WHEN 'x' THEN 'exclusion_constraints' ELSE 'other_constraints' END,
-         relation.nspname || '.' || relation.relname || '.' || constraint_row.conname,
+         relation.nspname::text || '.' || relation.relname::text || '.' || constraint_row.conname::text,
          pg_temp.audit_canon(constraint_row.contype::text, pg_get_constraintdef(constraint_row.oid, false), pg_temp.audit_bool(constraint_row.convalidated), pg_temp.audit_bool(constraint_row.condeferrable), pg_temp.audit_bool(constraint_row.condeferred))
   FROM rel relation
   JOIN pg_constraint constraint_row ON constraint_row.conrelid = relation.oid
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'indexes', relation.nspname || '.' || index_relation.relname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'indexes', relation.nspname::text || '.' || index_relation.relname::text,
          pg_temp.audit_canon(pg_get_indexdef(index_relation.oid), pg_temp.audit_bool(index_row.indisvalid), pg_temp.audit_bool(index_row.indisready), pg_temp.audit_bool(index_row.indisunique), pg_temp.audit_bool(index_row.indisprimary), pg_temp.audit_extension_owned('pg_class', index_relation.oid, 0))
   FROM rel relation
   JOIN pg_index index_row ON index_row.indrelid = relation.oid
   JOIN pg_class index_relation ON index_relation.oid = index_row.indexrelid
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'policies', relation.nspname || '.' || relation.relname || '.' || policy.polname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'policies', relation.nspname::text || '.' || relation.relname::text || '.' || policy.polname::text,
          pg_temp.audit_canon(policy.polcmd::text, pg_temp.audit_bool(policy.polpermissive), pg_temp.audit_sorted(ARRAY(SELECT CASE WHEN role_oid = 0 THEN 'PUBLIC' ELSE pg_get_userbyid(role_oid) END FROM unnest(policy.polroles) AS role_oid)), pg_get_expr(policy.polqual, policy.polrelid), pg_get_expr(policy.polwithcheck, policy.polrelid))
   FROM rel relation
   JOIN pg_policy policy ON policy.polrelid = relation.oid
@@ -146,25 +146,25 @@ WITH ns AS (
   CROSS JOIN LATERAL aclexplode(default_acl.defaclacl) privilege
   WHERE default_acl.defaclnamespace = 0 OR namespace.oid IS NOT NULL
   UNION ALL
-  SELECT 'g0-a2-02-v1', namespace.nspname, 'routines', namespace.nspname || '.' || routine.proname || '(' || pg_get_function_identity_arguments(routine.oid) || ')',
+  SELECT 'g0-a2-02-v1', namespace.nspname, 'routines', namespace.nspname::text || '.' || routine.proname::text || '(' || pg_get_function_identity_arguments(routine.oid) || ')',
          pg_temp.audit_canon(routine.prokind::text, pg_get_functiondef(routine.oid), pg_get_userbyid(routine.proowner), pg_temp.audit_bool(routine.prosecdef), pg_temp.audit_bool(routine.proleakproof), pg_temp.audit_sorted(routine.proconfig), pg_temp.audit_extension_owned('pg_proc', routine.oid, 0))
   FROM pg_proc routine
   JOIN ns namespace ON namespace.oid = routine.pronamespace
   WHERE routine.prokind IN ('f', 'p', 'w')
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'triggers', relation.nspname || '.' || relation.relname || '.' || trigger_row.tgname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'triggers', relation.nspname::text || '.' || relation.relname::text || '.' || trigger_row.tgname::text,
          pg_temp.audit_canon(pg_get_triggerdef(trigger_row.oid, false), trigger_row.tgenabled::text, pg_temp.audit_extension_owned('pg_trigger', trigger_row.oid, 0))
   FROM rel relation
   JOIN pg_trigger trigger_row ON trigger_row.tgrelid = relation.oid AND NOT trigger_row.tgisinternal
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'views', relation.nspname || '.' || relation.relname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'views', relation.nspname::text || '.' || relation.relname::text,
          pg_temp.audit_canon(relation.relkind::text, pg_get_viewdef(relation.oid, false), pg_temp.audit_extension_owned('pg_class', relation.oid, 0))
   FROM rel relation
   WHERE relation.relkind IN ('v', 'm')
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'sequences', relation.nspname || '.' || relation.relname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'sequences', relation.nspname::text || '.' || relation.relname::text,
          pg_temp.audit_canon(format_type(sequence_row.seqtypid, NULL), sequence_row.seqstart::text, sequence_row.seqincrement::text, sequence_row.seqmin::text, sequence_row.seqmax::text, sequence_row.seqcache::text, pg_temp.audit_bool(sequence_row.seqcycle), pg_get_userbyid(relation.relowner), (
-           SELECT string_agg(owner_namespace.nspname || '.' || owner_relation.relname || '.' || owner_attribute.attname, chr(30) ORDER BY owner_namespace.nspname COLLATE "C", owner_relation.relname COLLATE "C", owner_attribute.attname COLLATE "C")
+           SELECT string_agg(owner_namespace.nspname::text || '.' || owner_relation.relname::text || '.' || owner_attribute.attname::text, chr(30) ORDER BY owner_namespace.nspname COLLATE "C", owner_relation.relname COLLATE "C", owner_attribute.attname COLLATE "C")
            FROM pg_depend dependency
            JOIN pg_class owner_relation ON owner_relation.oid = dependency.refobjid
            JOIN pg_namespace owner_namespace ON owner_namespace.oid = owner_relation.relnamespace
@@ -174,24 +174,24 @@ WITH ns AS (
   FROM rel relation
   JOIN pg_sequence sequence_row ON sequence_row.seqrelid = relation.oid
   UNION ALL
-  SELECT 'g0-a2-02-v1', namespace.nspname, 'enumerations', namespace.nspname || '.' || enum_type.typname,
+  SELECT 'g0-a2-02-v1', namespace.nspname, 'enumerations', namespace.nspname::text || '.' || enum_type.typname::text,
          pg_temp.audit_canon((SELECT string_agg(label.enumlabel, chr(30) ORDER BY label.enumsortorder) FROM pg_enum label WHERE label.enumtypid = enum_type.oid))
   FROM pg_type enum_type
   JOIN ns namespace ON namespace.oid = enum_type.typnamespace
   WHERE enum_type.typtype = 'e'
   UNION ALL
-  SELECT 'g0-a2-02-v1', namespace.nspname, 'domains', namespace.nspname || '.' || domain_type.typname,
+  SELECT 'g0-a2-02-v1', namespace.nspname, 'domains', namespace.nspname::text || '.' || domain_type.typname::text,
          pg_temp.audit_canon(format_type(domain_type.typbasetype, domain_type.typtypmod), pg_temp.audit_bool(domain_type.typnotnull), domain_type.typdefault, (
-           SELECT string_agg(constraint_row.conname || '=' || pg_get_constraintdef(constraint_row.oid, false), chr(30) ORDER BY constraint_row.conname COLLATE "C")
+           SELECT string_agg(constraint_row.conname::text || '=' || pg_get_constraintdef(constraint_row.oid, false), chr(30) ORDER BY constraint_row.conname COLLATE "C")
            FROM pg_constraint constraint_row WHERE constraint_row.contypid = domain_type.oid
          ), pg_temp.audit_extension_owned('pg_type', domain_type.oid, 0))
   FROM pg_type domain_type
   JOIN ns namespace ON namespace.oid = domain_type.typnamespace
   WHERE domain_type.typtype = 'd'
   UNION ALL
-  SELECT 'g0-a2-02-v1', relation.nspname, 'partitions', relation.nspname || '.' || relation.relname,
+  SELECT 'g0-a2-02-v1', relation.nspname, 'partitions', relation.nspname::text || '.' || relation.relname::text,
          pg_temp.audit_canon(CASE WHEN relation.relkind = 'p' THEN pg_get_partkeydef(relation.oid) ELSE NULL END, pg_get_expr(relation.relpartbound, relation.oid), (
-           SELECT string_agg(parent_namespace.nspname || '.' || parent_relation.relname, chr(30) ORDER BY parent_namespace.nspname COLLATE "C", parent_relation.relname COLLATE "C")
+           SELECT string_agg(parent_namespace.nspname::text || '.' || parent_relation.relname::text, chr(30) ORDER BY parent_namespace.nspname COLLATE "C", parent_relation.relname COLLATE "C")
            FROM pg_inherits inheritance
            JOIN pg_class parent_relation ON parent_relation.oid = inheritance.inhparent
            JOIN pg_namespace parent_namespace ON parent_namespace.oid = parent_relation.relnamespace
@@ -206,7 +206,7 @@ WITH ns AS (
   JOIN pg_namespace namespace ON namespace.oid = extension.extnamespace
   UNION ALL
   SELECT 'g0-a2-02-v1', coalesce(member_namespace.nspname, ''), 'extension_members',
-         member.extname || '|' || member.member_kind || '|' || member_namespace.nspname || '.' || member.member_name,
+         member.extname::text || '|' || member.member_kind::text || '|' || member_namespace.nspname::text || '.' || member.member_name::text,
          pg_temp.audit_canon(member.extname, member.member_kind, member.member_name)
   FROM (
     SELECT extension.extname, namespace.nspname AS nspname, 'class' AS member_kind, relation.relname AS member_name
@@ -216,7 +216,7 @@ WITH ns AS (
     JOIN pg_namespace namespace ON namespace.oid = relation.relnamespace
     WHERE dependency.deptype = 'e' AND dependency.refclassid = 'pg_extension'::regclass
     UNION ALL
-    SELECT extension.extname, namespace.nspname, 'routine', routine.proname || '(' || pg_get_function_identity_arguments(routine.oid) || ')'
+    SELECT extension.extname, namespace.nspname, 'routine', routine.proname::text || '(' || pg_get_function_identity_arguments(routine.oid) || ')'
     FROM pg_depend dependency
     JOIN pg_extension extension ON extension.oid = dependency.refobjid
     JOIN pg_proc routine ON dependency.classid = 'pg_proc'::regclass AND routine.oid = dependency.objid
@@ -239,7 +239,7 @@ WITH ns AS (
   WHERE role_row.rolname NOT LIKE 'pg\_%' ESCAPE '\'
   UNION ALL
   SELECT 'g0-a2-02-v1', '', 'role_memberships',
-         parent_role.rolname || '|' || member_role.rolname || '|' || grantor_role.rolname,
+         parent_role.rolname::text || '|' || member_role.rolname::text || '|' || grantor_role.rolname::text,
          pg_temp.audit_canon(pg_temp.audit_bool(membership.admin_option), pg_temp.audit_bool(membership.inherit_option), pg_temp.audit_bool(membership.set_option))
   FROM pg_auth_members membership
   JOIN pg_roles parent_role ON parent_role.oid = membership.roleid
@@ -256,7 +256,7 @@ WITH ns AS (
          pg_temp.audit_canon(pg_get_userbyid(publication.pubowner), pg_temp.audit_bool(publication.puballtables), pg_temp.audit_bool(publication.pubinsert), pg_temp.audit_bool(publication.pubupdate), pg_temp.audit_bool(publication.pubdelete), pg_temp.audit_bool(publication.pubtruncate), pg_temp.audit_bool(publication.pubviaroot))
   FROM pg_publication publication
   UNION ALL
-  SELECT 'g0-a2-02-v1', namespace.nspname, 'publication_tables', publication.pubname || '|' || namespace.nspname || '.' || relation.relname,
+  SELECT 'g0-a2-02-v1', namespace.nspname, 'publication_tables', publication.pubname::text || '|' || namespace.nspname::text || '.' || relation.relname::text,
          pg_temp.audit_canon(publication.pubname, namespace.nspname, relation.relname)
   FROM pg_publication_rel published
   JOIN pg_publication publication ON publication.oid = published.prpubid

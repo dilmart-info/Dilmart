@@ -17,7 +17,7 @@ Metadata-only catalog evidence for ED-01. This does not close ED-01, D09, or G0.
 - Fields are joined with unit separator `U+001F`. List values use `U+001E` and are sorted with `C` collation when order is not meaningful.
 - Backslash, unit separator, and record separator inside a value are escaped before joining. NULL becomes `\N`. Booleans are `true` or `false`.
 - Empty category: `schema_name` blank, `object_identity` `__CATEGORY_EMPTY__`, definition text `g0-a2-02-v1|<category>|__CATEGORY_EMPTY__`.
-- Object identities include the qualifiers needed to keep grants, overloads, publications, and extension members distinct. OIDs and sequence `last_value` are not used.
+- Object identities include the qualifiers needed to keep grants, overloads, publications, and extension members distinct. They are cast to `text` before comparison. PostgreSQL `name` concatenation is limited to 63 bytes and must not be the identity type. OIDs and sequence `last_value` are not used.
 - Extractor `search_path` is `pg_temp, pg_catalog`. Helper functions live in `pg_temp`. Routine `search_path` remains inside `proconfig` and is part of the definition. Catalog text stays schema-qualified because application schemas are not on the extractor path.
 
 ## Comparison
