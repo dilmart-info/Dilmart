@@ -32,6 +32,35 @@ READY_FOR_NEXT_DEVELOPMENT_PHASE
 
 None for runtime implementation. Only the design/documentation scope above may proceed after its authorization condition is met.
 
+## DRIVER-UI-01 mock preview exception — 2026-11-28
+
+The owner authorized one isolated, synthetic Driver UI preview (`DRIVER-UI-01`) on `prototype/driver-ui-01-foundation`. Allowed work is a separate preview package, its tests, and this scope note. It is not the H2 production package in `docs/dilmart-2.0/driver-ux/CURSOR_IMPLEMENTATION_PLAN.md`.
+
+## DRIVER development application exception — 2026-11-28
+
+The owner reviewed that preview and authorized one isolated Driver development application on the same branch: all 54 reference frames, synthetic local behavior, local tests, and an Android debug APK identified as `com.dilmart.driver.dev`.
+
+Capacitor packages already present in this repository are the packaging candidate for that debug APK. This use is not a D09 decision. SQLCipher is not implemented. The application is not part of the customer build, uses no production endpoint, and is not release-signed.
+
+This authorization does not close G0, ED-01, D09, or UX-09. It does not authorize production backend integration, production authentication, real financial transactions, hosted database access, remote migrations, store publishing, or deployment. H1–H8 and V2-01 remain unauthorized.
+
+## DRIVER-02 isolated native development exception — 2026-11-28
+
+The owner authorized one further isolated increment of `com.dilmart.driver.dev` on `prototype/driver-ui-01-foundation`. Device work is limited to the already identified Samsung development phone and to synthetic fixtures.
+
+Allowed on that development application:
+
+- Camera permission and bundled ML Kit barcode scanning for synthetic parcel codes. The Play Services scanner-module download is not the scan path.
+- One-shot foreground location and an in-app route card. No background location service. Coordinates are not sent to a production or third-party service.
+- The repository’s existing `@aparajita/capacitor-secure-storage` for one development actor key.
+- A development-only SQLCipher 4.20.0 store with a non-exportable Android Keystore key, for synthetic tasks and local recovery. This reuses the previously tested library and key-wrapping pattern. It is not the R6 spike harness, not a D09 acceptance, and not a production operation repository.
+- Device connectivity, a local synthetic queue, and a development-only local sync marker. Offline financial and custody finalization stays blocked.
+- Local notifications only. No push credentials.
+
+Dependencies are added only inside `prototypes/driver-app`: `@capacitor-mlkit/barcode-scanning` 8.2.2, `@capacitor/geolocation` 8.x, `@capacitor/local-notifications` 8.x, plus Capacitor packages and secure storage already present in the repository. Gradle adds `net.zetetic:sqlcipher-android` 4.20.0.
+
+This authorization does not close G0, ED-01, D09, or UX-09. It does not authorize production backend integration, production authentication, real financial transactions, hosted database access, remote migrations, store publishing, or deployment. H1–H8 and V2-01 remain unauthorized.
+
 ---
 
 ## Preceding Governance / Merged Phases

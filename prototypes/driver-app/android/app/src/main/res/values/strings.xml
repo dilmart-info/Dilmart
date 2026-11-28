@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DilMart Driver Dev</string>
+    <string name="title_activity_main">DilMart Driver Dev</string>
+    <string name="package_name">com.dilmart.driver.dev</string>
+    <string name="custom_url_scheme">com.dilmart.driver.dev</string>
+</resources>
