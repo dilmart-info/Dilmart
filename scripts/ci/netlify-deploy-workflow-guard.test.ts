@@ -92,6 +92,17 @@ describe("netlify production deploy workflow — trust boundary", () => {
     expect(triggers).toMatch(/workflow_dispatch/);
   });
 
+  it("filters irrelevant workflow_run events while retaining the trust boundary", () => {
+    const triggers = workflow.slice(workflow.indexOf("\non:"), workflow.indexOf("\npermissions:"));
+    expect(triggers).toMatch(/branches:\s*\n\s*- main/);
+    expect(gate).toMatch(/github\.event_name == 'workflow_dispatch'/);
+    expect(gate).toMatch(/github\.event_name == 'workflow_run'/);
+    expect(gate).toMatch(/github\.event\.workflow_run\.event == 'push'/);
+    expect(gate).toMatch(/github\.event\.workflow_run\.head_branch == 'main'/);
+    expect(gate).toMatch(/github\.event\.workflow_run\.head_repository\.full_name == 'dilmart-info\/Dilmart'/);
+    expect(gate).toMatch(/Enforce trust boundary/);
+  });
+
   it("validates the dispatch input as a full commit SHA", () => {
     expect(gate).toMatch(/\^\[0-9a-f\]\{40\}\$/);
   });

@@ -11,9 +11,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v3.2.0
         with:
-          version: latest
+          version: '3.2.0'
+
+      - name: Verify pinned Supabase CLI version
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(supabase --version)"
+          printf 'Supabase CLI: %s\n' "$actual"
+          test "$actual" = "3.2.0"
       - name: Prepare disposable project
         shell: bash
         run: |
