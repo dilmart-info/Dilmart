@@ -164,5 +164,7 @@ export function createState(scenarioId = "pickup") {
     draftPhone: "",
     nav: "home",
     clock: "09:41",
+    position: null,
+    scanNote: "",
   };
 }

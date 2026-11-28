@@ -8,7 +8,7 @@ import { render } from "../www/src/render.js";
 import { nativeAdapters } from "../www/src/adapters.js";
 
 const root = new URL("../www/", import.meta.url);
-const source = ["index.html", "app.css", "src/main.js", "src/reducer.js", "src/render.js", "src/fixtures.js", "src/adapters.js"]
+const source = ["index.html", "app.css", "src/main.js", "src/native.js", "src/reducer.js", "src/render.js", "src/fixtures.js", "src/adapters.js"]
   .map((name) => readFileSync(new URL(name, root), "utf8")).join("\n");
 
 function walk(scenario, actions) {
@@ -52,6 +52,8 @@ test("pickup scenario hides customer and cash-on-delivery", () => {
   const html = render({ ...state, screen: "UI-28", shift: "active" });
   assert.equal(html.includes("07700000000"), false);
   assert.equal(html.includes("سارة"), false);
+  const home = render({ ...state, screen: "UI-01", shift: "active" });
+  assert.equal(home.includes("العهدة النقدية"), false);
 });
 
 test("hybrid flow reaches every reference frame", () => {
@@ -145,8 +147,23 @@ test("offer acceptance does not assign the task", () => {
   assert.equal(state.dialog.title, "ما زال التكليف معلقاً");
 });
 
+test("barcode classification and local sync stay inside the synthetic contract", () => {
+  const base = { ...createState("pickup"), shift: "active", screen: "UI-20" };
+  const invalid = reduce(base, { type: "scan-code", code: "NOT-A-PARCEL" });
+  assert.equal(invalid.screen, "UI-21");
+  assert.equal(invalid.scanNote, "invalid");
+  const once = reduce(base, { type: "scan-code", code: "DM-P-2048" });
+  assert.equal(once.parcels.find((item) => item.id === "DM-P-2048").status, "scanned");
+  const twice = reduce(once, { type: "scan-code", code: "DM-P-2048" });
+  assert.equal(twice.screen, "UI-21");
+  assert.equal(twice.scanNote, "duplicate");
+  const blocked = reduce({ ...createState("cash"), pendingRemit: 1000, held: 1000 }, { type: "local-sync" });
+  assert.equal(blocked.held, 1000);
+  assert.equal(blocked.dialog.title, "لا تُحسم العهدة محلياً");
+});
+
 test("development source does not call production systems", () => {
-  for (const token of ["supabase", "fetch(", "XMLHttpRequest", "geolocation", "ztplxqlthuqkuktbznbo", "yssjhxeybitiycdviyrc"]) {
+  for (const token of ["supabase", "fetch(", "XMLHttpRequest", "navigator.geolocation", "ztplxqlthuqkuktbznbo", "yssjhxeybitiycdviyrc", "zlmdwhuphuxppxznsgso", "maps.google", "fcm.googleapis"]) {
     assert.equal(source.toLowerCase().includes(token.toLowerCase()), false, token);
   }
   assert.equal(nativeAdapters.commands.send().delivered, false);

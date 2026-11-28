@@ -1,4 +1,4 @@
-import { CODE, PHONE, createState } from "./fixtures.js";
+import { CODE, PHONE, SCENARIOS, createState } from "./fixtures.js";
 
 function go(state, screen, extra = {}) {
   if (screen === state.screen) return { ...state, ...extra, error: "" };
@@ -25,6 +25,21 @@ export function reduce(state, action) {
   switch (action.type) {
     case "reset":
       return createState(action.scenario || state.scenario);
+    case "restore": {
+      const saved = action.state;
+      if (!saved || saved.storeVersion !== 1 || !SCENARIOS[saved.scenario]) return state;
+      const next = { ...createState(saved.scenario), ...saved, dialog: null, error: "" };
+      if (next.mode === "pickup") {
+        next.customer = null;
+        next.codExpected = null;
+      }
+      if (!Array.isArray(next.history)) next.history = [];
+      return next;
+    }
+    case "connectivity":
+      return { ...state, offline: action.online === false };
+    case "position":
+      return { ...state, position: action.position || null, location: action.position ? "allowed" : state.location };
     case "scenario":
       return createState(action.scenario);
     case "home":
@@ -101,7 +116,28 @@ export function reduce(state, action) {
     case "scan-ok":
       return { ...state, parcels: nextParcel(state, "scanned"), camera: "allowed" };
     case "scan-bad":
-      return go(state, "UI-21");
+      return go({ ...state, scanNote: "invalid" }, "UI-21");
+    case "camera-deny":
+      return dialog(go({ ...state, camera: "denied", scanNote: "denied" }, "UI-21"), "الكاميرا مرفوضة", "افتح إعدادات التطبيق ثم اسمح بالكاميرا. لم يُعتمد أي رمز.");
+    case "scan-code": {
+      const code = String(action.code || "").trim();
+      const known = state.parcels.some((item) => item.id === code);
+      if (!code || !known) return go({ ...state, scanNote: "invalid" }, "UI-21");
+      const already = state.parcels.some((item) => item.id === code && item.status === "scanned") || action.stored === "duplicate";
+      if (already) return go({ ...state, scanNote: "duplicate" }, "UI-21");
+      return {
+        ...state,
+        camera: "allowed",
+        scanNote: "ok",
+        error: "",
+        parcels: state.parcels.map((item) => (item.id === code ? { ...item, status: "scanned" } : item)),
+      };
+    }
+    case "local-sync":
+      if (state.awaiting === "remit" || state.awaiting === "delivery" || state.pendingRemit > 0) {
+        return dialog(state, "لا تُحسم العهدة محلياً", "التسوية المالية تبقى معلقة حتى تأكيد مخول.");
+      }
+      return { ...state, sync: state.sync.map((item) => ({ ...item, status: "local-confirmed" })) };
     case "partial": {
       const parcels = state.parcels.map((item) => ({ ...item }));
       const missing = parcels.find((item) => item.status === "expected");
@@ -218,15 +254,29 @@ function navScreen(state, id) {
   return home(state);
 }
 
+function screenForAwaiting(state) {
+  if (state.awaiting === "device") return "UI-09";
+  if (state.awaiting === "offer") return "UI-15";
+  if (state.awaiting === "pickup") return "UI-18";
+  if (state.awaiting === "hub-in") return "UI-25";
+  if (state.awaiting === "hub-out") return "UI-27";
+  if (state.awaiting === "delivery") return state.codActual != null && state.codActual !== state.codExpected ? "UI-32" : "UI-31";
+  if (state.awaiting === "remit") return "UI-35";
+  if (state.awaiting === "return") return "UI-40";
+  if (state.awaiting === "sync") return "UI-41";
+  return state.screen;
+}
+
 function confirmServer(state) {
-  if (state.screen === "UI-09" && state.device === "pending") return { ...state, device: "approved", awaiting: null };
-  if (state.screen === "UI-15") {
+  const screen = state.screen === "DEV" ? screenForAwaiting(state) : state.screen;
+  if (screen === "UI-09" && state.device === "pending") return { ...state, device: "approved", awaiting: null };
+  if (screen === "UI-15") {
     const delivery = state.mode === "delivery";
     return go({ ...state, offer: "confirmed", awaiting: null, stage: delivery ? "delivery" : "pickup" }, delivery ? "UI-28" : "UI-19");
   }
-  if (state.screen === "UI-18") return go({ ...state, pickup: "confirmed-sim", awaiting: null, stage: "hub" }, "UI-23");
-  if (state.screen === "UI-25") return go({ ...state, hub: "inbound-sim", awaiting: null }, "UI-26");
-  if (state.screen === "UI-27") {
+  if (screen === "UI-18") return go({ ...state, pickup: "confirmed-sim", awaiting: null, stage: "hub" }, "UI-23");
+  if (screen === "UI-25") return go({ ...state, hub: "inbound-sim", awaiting: null }, "UI-26");
+  if (screen === "UI-27") {
     if (state.mode === "pickup") return go({ ...state, hub: "outbound-sim", awaiting: null, stage: "done" }, "UI-01");
     return go({
       ...state,
@@ -237,7 +287,7 @@ function confirmServer(state) {
       codExpected: state.codExpected ?? state.sealedCod,
     }, "UI-28");
   }
-  if (state.screen === "UI-31" || state.screen === "UI-32") {
+  if (screen === "UI-31" || screen === "UI-32") {
     const actual = state.codActual ?? state.codExpected ?? 0;
     return go({
       ...state,
@@ -247,13 +297,13 @@ function confirmServer(state) {
       codActual: actual,
     }, "UI-33");
   }
-  if (state.screen === "UI-35") {
+  if (screen === "UI-35") {
     return go({ ...state, awaiting: null, held: 0, pendingRemit: 0, receipt: "DM-RCP-1007" }, "UI-36");
   }
-  if (state.screen === "UI-40") {
+  if (screen === "UI-40") {
     return go({ ...state, awaiting: null, returnTask: state.returnTask ? { ...state.returnTask, status: "handed-sim" } : null }, "UI-01");
   }
-  if (state.screen === "UI-41") {
+  if (screen === "UI-41") {
     if (state.scenario === "offline") return go({ ...state, awaiting: null }, "UI-42");
     return go({ ...state, awaiting: null, sync: state.sync.map((item) => ({ ...item, status: "confirmed-sim" })) }, "UI-05");
   }

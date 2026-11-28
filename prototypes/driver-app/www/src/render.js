@@ -35,10 +35,8 @@ function nav(state) {
   return `<nav class="nav" aria-label="التنقل السفلي">${items.map(([id, label]) => `<button type="button" data-nav="${id}" ${current === id ? 'aria-current="page"' : ""}>${label}</button>`).join("")}</nav>`;
 }
 
-function devSlot(state) {
-  const pending = ["UI-09", "UI-15", "UI-18", "UI-25", "UI-27", "UI-31", "UI-32", "UI-35", "UI-40", "UI-41"];
-  if (!pending.includes(state.screen)) return "";
-  return `<section class="dev-slot"><p>أدوات التطوير. رد الخادم هنا محلي ولا يعتمد عملية حقيقية.</p>${button("محاكاة رد الخادم", "server-confirm", "secondary")}</section>`;
+function devSlot() {
+  return "";
 }
 
 function page(state, title, lede, body) {
@@ -60,18 +58,20 @@ const views = {
     const figure = dark ? "8 / 12" : "12 / 18";
     const left = dark ? "4 مهام متبقية" : "6 مهام متبقية • آخر مزامنة الآن";
     const specimen = !dark && state.mode !== "pickup" && state.held === 0 && state.delivery !== "confirmed-sim" && !state.receipt;
-    const held = dark ? 0 : state.mode === "pickup" ? 0 : specimen ? 125000 : state.held;
+    const held = dark ? 0 : specimen ? 125000 : state.held;
+    const money = state.mode === "pickup"
+      ? `<section class="card"><p class="eyebrow">دور الجمع</p><p>هذا الدور لا يعرض عهدة تحصيل.</p>${button("مراجعة إنهاء الوردية", "end-shift", "secondary")}</section>`
+      : `<section class="card"><p class="eyebrow">العهدة النقدية المؤكدة داخل المعاينة</p><p class="figure">${iqd(held)}</p><p class="lede">أرباح اليوم المؤكدة: ${iqd(state.earnings)}</p>${button("مراجعة إنهاء الوردية", "end-shift", "secondary")}</section>`;
     return page(state, dark ? "<bdi>DilMart Driver</bdi>" : "صباح الخير، مندوب DilMart", dark ? `وردية ${modeLine(state)} نشطة` : "متصل • وردية نشطة", `
       <section class="metric"><p class="eyebrow">مهام اليوم</p><p class="figure"><bdi>${figure}</bdi></p><p class="muted">${left}</p></section>
       <section class="card"><p class="lede">المهمة التالية</p><h2>${state.mode === "delivery" ? "تسليم شحنة واحدة" : "استلام 3 طرود"}</h2><p>${esc(state.merchant)} • <bdi>2.4 كم</bdi></p><p class="muted">جاهزة للاستلام • موعد الوصول <bdi>8 دقائق</bdi></p>${button(dark ? "عرض المهمة التالية" : "عرض المهمة", "open-offer")}</section>
-      <section class="card"><p class="eyebrow">العهدة النقدية المؤكدة داخل المعاينة</p><p class="figure">${iqd(held)}</p><p class="lede">أرباح اليوم المؤكدة: ${iqd(state.earnings)}</p>${button("مراجعة إنهاء الوردية", "end-shift", "secondary")}</section>`);
+      ${money}`);
   },
   offer(state) {
     return page(state, "عرض مهمة جديدة", `<bdi>00:32</bdi> • ${modeLine(state)}`, `
       <section class="card"><h2>${esc(state.merchant)}</h2><p class="lede">${state.mode === "delivery" ? "شحنة جاهزة للتسليم" : "3 طرود جاهزة للاستلام"}</p><p><bdi>2.4 كم</bdi> • <bdi>8 دقائق</bdi> تقديرية</p><p>الأجر المتوقع: ${iqd(1500)}</p><p class="muted">لا يتم التعيين قبل تأكيد الخادم</p><p class="muted"><bdi>DM-TASK-2048</bdi></p></section>
       ${button("قبول المهمة", "accept-offer")}
-      ${button("رفض العرض", "decline-offer", "secondary")}
-      ${button("محاكاة انتهاء العرض", "expire-offer", "secondary")}`);
+      ${button("رفض العرض", "decline-offer", "secondary")}`);
   },
   pending(state) {
     return page(state, "جاري تأكيد التكليف", "تم إرسال طلب القبول", `
@@ -114,6 +114,7 @@ const views = {
       <section class="card"><h2>الجهاز</h2><p><bdi>Android</bdi> • جهاز تطوير</p></section>
       <section class="card"><h2>الحساب</h2><p>مندوب ${modeLine(state)}</p><p class="muted"><bdi>${ACTOR}</bdi></p></section>
       ${button(state.device === "approved" ? "متابعة إلى الصلاحيات" : "إرسال طلب تسجيل الجهاز", "device-request")}
+      ${button("أدوات التطوير", "dev", "secondary")}
       <p class="muted">لا تبدأ الوردية قبل اعتماد الجهاز.</p>`);
   },
   permissions() {
@@ -123,7 +124,7 @@ const views = {
       <section class="card"><h2>الإشعارات</h2><p class="muted">لعرض المهام وتحديثات التشغيل</p></section>
       ${button("متابعة إعداد الصلاحيات", "permissions-allow")}
       ${button("محاكاة رفض الموقع", "location-deny", "secondary")}
-      <p class="muted">لن يُطلب إذن حقيقي من الجهاز.</p>`);
+      <p class="muted">تطبيق أندرويد يطلب إذن الجهاز. المعاينة في المتصفح تبقى محلية.</p>`);
   },
   location() {
     return page(arguments[0], "الموقع غير متاح", "لا يمكن بدء الوردية", `
@@ -164,16 +165,24 @@ const views = {
     return page(state, "استلام الطرود", "قائمة التاجر داخل المعاينة", `
       <section class="card">${parcels(state)}${button("مسح رمز الطرد", "open-scanner")}${button("تسجيل استلام جزئي", "partial", "secondary")}${button("تأكيد التسليم بين الطرفين", "handover", "secondary")}</section>`);
   },
-  scanner() {
-    return page(arguments[0], "مسح رمز الطرد", "الكاميرا غير مفتوحة", `
-      <section class="scanner" aria-label="منطقة الماسح التجريبية"><p>معاينة الماسح. لا توجد كاميرا ولا قراءة حقيقية.</p></section>
-      ${button("اعتماد رمز تجريبي", "scan-ok")}
-      ${button("رمز غير صالح", "scan-bad", "secondary")}`);
+  scanner(state) {
+    const note = state.scanNote === "ok" ? banner("success", "ممسوح", "تم تسجيل الرمز محلياً", "الحيازة لا تنتقل قبل تأكيد الطرفين.") : "";
+    const codes = state.parcels.map((item) => `<bdi>${esc(item.id)}</bdi>`).join(" · ");
+    return page(state, "مسح رمز الطرد", "رموز تجريبية فقط", `
+      ${note}
+      <section class="scanner" aria-label="منطقة الماسح"><p>المسح يستخدم كاميرا الجهاز عند تشغيل التطبيق. الرموز المتوقعة: ${codes}</p></section>
+      ${button("مسح بالكاميرا", "scan-live")}
+      <form id="manual-barcode" class="stack card">
+        <label>إدخال الرمز يدوياً<input name="barcode" autocomplete="off" placeholder="DM-P-0000"></label>
+        <button class="secondary" type="submit">اعتماد الإدخال</button>
+      </form>`);
   },
-  "scan-error"() {
-    return page(arguments[0], "تعذر اعتماد الرمز", "لم تتغير الحيازة", `
-      ${banner("danger", "مرفوض", "الرمز غير معتمد", "مكرر أو غير معروف أو منتهي داخل المعاينة.")}
-      ${button("العودة إلى القائمة", "open-pickup")}`);
+  "scan-error"(state) {
+    const reason = state.scanNote === "duplicate" ? "الرمز مكرر ولم يُسجل مرة ثانية." : state.scanNote === "denied" ? "صلاحية الكاميرا مرفوضة." : "الرمز غير موجود في المهمة التجريبية.";
+    return page(state, "تعذر اعتماد الرمز", "لم تتغير الحيازة", `
+      ${banner("danger", "مرفوض", "الرمز غير معتمد", reason)}
+      ${button("العودة إلى القائمة", "open-pickup")}
+      ${button("فتح إعدادات التطبيق", "fake-settings", "secondary")}`);
   },
   partial(state) {
     return page(state, "استلام جزئي", "الكمية الفعلية أقل من المتوقع", `
@@ -332,8 +341,9 @@ const views = {
   },
   nav(state) {
     const place = showsCustomer(state) ? state.customer.area : state.area;
-    return page(state, "الملاحة إلى المحطة", "بدون خريطة خارجية", `
-      <section class="card"><p>${esc(place)}</p><p class="muted">الوقت المتوقع غير محسوم.</p>${button("تعذر تحديث الموقع", "gps-stale", "secondary")}</section>`);
+    const fix = state.position ? `<p>موقع الجهاز: <bdi>${Number(state.position.lat).toFixed(5)}, ${Number(state.position.lng).toFixed(5)}</bdi></p>` : `<p class="muted">لم تُقرأ إحداثيات الجهاز بعد.</p>`;
+    return page(state, "الملاحة إلى المحطة", "عرض داخلي بلا خدمة خرائط", `
+      <section class="card"><p>الوجهة التجريبية: ${esc(place)}</p>${fix}<p class="muted">الوقت المتوقع غير محسوم ولا تُرسل الإحداثيات.</p>${button("تحديث موقع الجهاز", "read-fix", "secondary")}${button("تعذر تحديث الموقع", "gps-stale", "secondary")}</section>`);
   },
   gps() {
     return page(arguments[0], "تعذر تحديث الموقع", "الموقع قديم أو غير معروف", `
@@ -361,8 +371,12 @@ function devScreen(state) {
     ${button("رفض الجهاز", "device-deny", "secondary")}
     ${button("السماح بالموقع", "location-allow", "secondary")}
     ${button("تبديل مؤشر الاتصال", "offline-toggle", "secondary")}
+    ${button("إنهاء العرض تجريبياً", "expire-offer", "secondary")}
+    ${button("مزامنة محلية للعمليات غير المالية", "local-sync", "secondary")}
+    ${button("إشعار مهمة تجريبي", "notify-task", "secondary")}
     ${button("محاكاة رد الخادم", "server-confirm")}
-    ${button("إعادة المعاينة", "reset", "secondary")}</section>`);
+    ${button("إعادة المعاينة", "reset", "secondary")}
+    <p class="muted">الرموز التجريبية: <bdi>DM-P-2048</bdi> <bdi>DM-P-2049</bdi> <bdi>DM-P-2050</bdi></p></section>`);
 }
 
 export function screenTitle(id) {
