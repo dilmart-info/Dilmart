@@ -6,7 +6,7 @@ permissions:
 jobs:
   catalog:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
         with:
@@ -15,6 +15,9 @@ jobs:
         with:
           version: '3.2.0'
 
+      - name: Test the offline inventory comparison
+        shell: bash
+        run: node --test scripts/audit/compare-schema-inventory.test.mjs
       - name: Verify pinned Supabase CLI version
         shell: bash
         run: |
@@ -52,7 +55,16 @@ jobs:
           docker exec -i "$DB_CONTAINER" psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 --csv < "$GITHUB_WORKSPACE/scripts/audit/schema-fingerprint.sql" > "$RUNNER_TEMP/schema-evidence/local_schema_fingerprints.csv"
           docker exec -i "$DB_CONTAINER" psql -X -U postgres -d postgres -v ON_ERROR_STOP=1 --csv < "$GITHUB_WORKSPACE/scripts/audit/schema-extended-metadata.sql" > "$RUNNER_TEMP/schema-evidence/local_extended_fingerprints.csv"
           docker exec "$DB_CONTAINER" psql -X -U postgres -d postgres --csv -c "SELECT current_setting('server_version') AS server_version, current_setting('search_path') AS search_path, current_user AS catalog_role" > "$RUNNER_TEMP/schema-evidence/context.csv"
-          cat "$RUNNER_TEMP/schema-evidence/"*.csv
+          # Definitions stay in a temporary file and are deleted after hashing. Do not print them.
+          docker exec -i "$DB_CONTAINER" psql -q -X -U postgres -d postgres -v ON_ERROR_STOP=1 --csv < "$GITHUB_WORKSPACE/scripts/audit/schema-object-inventory.sql" > "$RUNNER_TEMP/object-inventory-raw.csv"
+          node "$GITHUB_WORKSPACE/scripts/audit/seal-schema-inventory.mjs" "$RUNNER_TEMP/object-inventory-raw.csv" "$RUNNER_TEMP/schema-evidence/local_object_inventory.csv"
+          rm -f "$RUNNER_TEMP/object-inventory-raw.csv"
+          docker exec -i "$DB_CONTAINER" psql -q -X -U postgres -d postgres -v ON_ERROR_STOP=1 --csv < "$GITHUB_WORKSPACE/scripts/audit/schema-object-inventory.sql" > "$RUNNER_TEMP/object-inventory-raw-repeat.csv"
+          node "$GITHUB_WORKSPACE/scripts/audit/seal-schema-inventory.mjs" "$RUNNER_TEMP/object-inventory-raw-repeat.csv" "$RUNNER_TEMP/object-inventory-repeat.csv"
+          rm -f "$RUNNER_TEMP/object-inventory-raw-repeat.csv"
+          cmp "$RUNNER_TEMP/schema-evidence/local_object_inventory.csv" "$RUNNER_TEMP/object-inventory-repeat.csv"
+          rm -f "$RUNNER_TEMP/object-inventory-repeat.csv"
+          cat "$RUNNER_TEMP/schema-evidence/local_schema_fingerprints.csv" "$RUNNER_TEMP/schema-evidence/local_extended_fingerprints.csv" "$RUNNER_TEMP/schema-evidence/context.csv"
       - name: Stop disposable project
         if: always()
         shell: bash
