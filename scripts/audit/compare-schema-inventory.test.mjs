@@ -6,8 +6,12 @@ import {
   FORMAT_VERSION,
   MANDATORY_CATEGORIES,
   applyReview,
+  canonicalField,
+  canonicalJoin,
+  canonicalList,
   compareInventories,
   emptyCanonical,
+  parseCsv,
   parseSealedInventory,
   sealRecords,
   serializeSealed,
@@ -158,7 +162,8 @@ test("duplicate object key", () => {
 
 test("empty category", () => {
   const identical = compare([], []);
-  assert.equal(identical.status, "IDENTICAL");
+  assert.equal(identical.status, "INVALID");
+  assert.match(identical.errors.join("\n"), /no concrete objects/);
   const extra = compare([], [row("column_grants", "public.orders.note|authenticated|SELECT|false|postgres", "SELECT")]);
   assert.equal(extra.differences.some((item) => item.classification === "EXTRA"), true);
   assert.equal(extra.status, "DIFFERENT");
@@ -186,33 +191,96 @@ test("incompatible format version", () => {
 });
 
 test("a reviewed difference is not a pass", () => {
-  const result = applyReview(compare([baseColumn], []), {
-    format: "g0-a2-02-review-v1",
+  const baseline = inventory([baseColumn]);
+  const candidate = inventory([]);
+  const result = compareInventories(baseline, candidate);
+  const difference = result.differences[0];
+  const reviewed = applyReview(result, {
+    format_version: "g0-a2-02-review-v2",
+    baseline_inventory_sha256: sha256(serializeSealed(baseline)),
+    candidate_inventory_sha256: sha256(serializeSealed(candidate)),
     items: [{
       classification: "MISSING",
       schema_name: "public",
       category: "columns",
       object_identity: "public.orders.note",
+      baseline_sha256: difference.baseline_sha256,
+      candidate_sha256: difference.candidate_sha256,
       reason: "synthetic review fixture",
     }],
+  }, {
+    baseline: sha256(serializeSealed(baseline)),
+    candidate: sha256(serializeSealed(candidate)),
   });
-  assert.equal(result.exitCode, 2);
-  assert.equal(result.reviewed.length, 1);
-  assert.equal(result.unexplained.length, 0);
+  assert.equal(reviewed.exitCode, 2);
+  assert.equal(reviewed.reviewed.length, 1);
+  assert.equal(reviewed.unexplained.length, 0);
 });
 
 test("an unmatched review item is invalid", () => {
-  const result = applyReview(compare([baseColumn], [baseColumn]), {
-    format: "g0-a2-02-review-v1",
+  const baseline = inventory([baseColumn]);
+  const candidate = inventory([baseColumn]);
+  const result = applyReview(compareInventories(baseline, candidate), {
+    format_version: "g0-a2-02-review-v2",
+    baseline_inventory_sha256: sha256(serializeSealed(baseline)),
+    candidate_inventory_sha256: sha256(serializeSealed(candidate)),
     items: [{
       classification: "MISSING",
       schema_name: "auth",
       category: "relations",
       object_identity: "auth.users",
+      baseline_sha256: "",
+      candidate_sha256: "",
       reason: "does not match a raw difference",
     }],
+  }, {
+    baseline: sha256(serializeSealed(baseline)),
+    candidate: sha256(serializeSealed(candidate)),
   });
   assert.equal(result.exitCode, 3);
+});
+
+test("review bound to a different inventory is invalid", () => {
+  const result = applyReview(compare([baseColumn], []), {
+    format_version: "g0-a2-02-review-v2",
+    baseline_inventory_sha256: "a".repeat(64),
+    candidate_inventory_sha256: "b".repeat(64),
+    items: [],
+  }, { baseline: "c".repeat(64), candidate: "d".repeat(64) });
+  assert.equal(result.exitCode, 3);
+});
+
+test("serialization keeps null, empty text, escapes, lists, and unicode distinct", () => {
+  assert.equal(canonicalField(null), "\\N");
+  assert.notEqual(canonicalField(null), canonicalField("\\N"));
+  assert.notEqual(canonicalField(null), canonicalField(""));
+  assert.equal(canonicalField("طلب"), "طلب");
+  assert.equal(canonicalField("a\\b"), "a\\\\b");
+  assert.equal(canonicalField("a\u001fb"), "a\\ub");
+  assert.notEqual(canonicalJoin(["a", "b"]), canonicalJoin(["a\u001fb"]));
+  assert.notEqual(canonicalJoin(["a|b", "c"]), canonicalJoin(["a", "b|c"]));
+  assert.equal(canonicalList(["b", "a"]), canonicalList(["a", "b"]));
+  assert.notEqual(canonicalList(["a\u001eb"]), canonicalList(["a", "b"]));
+  const records = inventory([baseColumn]);
+  records[0] = { ...records[0], format_version: "g0-a2-02-v1" };
+  const compared = compareInventories(records, inventory([baseColumn]));
+  assert.equal(compared.status, "INVALID");
+});
+
+test("malformed csv and incompatible postgres majors are rejected", () => {
+  assert.throws(() => parseCsv("\"abc"), /unterminated quote/);
+  assert.throws(() => parseCsv("a\"b,c\n"), /quote inside an unquoted field/);
+  const baseline = inventory([row("extraction_context", "server_version_num=170012", "17.12", ""), baseColumn]);
+  const candidate = inventory([row("extraction_context", "server_version_num=160010", "16.10", ""), baseColumn]);
+  const result = compareInventories(baseline, candidate);
+  assert.equal(result.status, "INVALID");
+  assert.match(result.errors.join("\n"), /PostgreSQL major/);
+  const minor = compareInventories(
+    inventory([row("extraction_context", "server_version_num=170012", "17.12", ""), baseColumn]),
+    inventory([row("extraction_context", "server_version_num=170010", "17.10", ""), baseColumn]),
+  );
+  assert.equal(minor.status, "DIFFERENT");
+  assert.equal(minor.exitCode, 2);
 });
 
 test("sealed CSV round trip and SQL category coverage", () => {
@@ -221,4 +289,7 @@ test("sealed CSV round trip and SQL category coverage", () => {
   assert.equal(compareInventories(parsed, inventory([baseColumn])).status, "IDENTICAL");
   const sql = readFileSync(new URL("./schema-object-inventory.sql", import.meta.url), "utf8");
   for (const category of MANDATORY_CATEGORIES) assert.match(sql, new RegExp(`'${category}'`));
+  assert.doesNotMatch(sql, /CREATE\s+FUNCTION/i);
+  assert.match(sql, /BEGIN TRANSACTION READ ONLY/);
+  assert.match(sql, /routine_grants/);
 });

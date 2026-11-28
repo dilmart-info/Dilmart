@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { applyReview, compareInventories, parseSealedInventory } from "./schema-inventory-lib.mjs";
+import { applyReview, compareInventories, parseSealedInventory, sha256 } from "./schema-inventory-lib.mjs";
 
 const [baselinePath, candidatePath, reviewPath] = process.argv.slice(2);
 if (!baselinePath || !candidatePath) {
@@ -8,13 +8,13 @@ if (!baselinePath || !candidatePath) {
 }
 
 try {
+  const baselineText = readFileSync(baselinePath, "utf8");
+  const candidateText = readFileSync(candidatePath, "utf8");
   const review = reviewPath ? JSON.parse(readFileSync(reviewPath, "utf8")) : null;
   const result = applyReview(
-    compareInventories(
-      parseSealedInventory(readFileSync(baselinePath, "utf8")),
-      parseSealedInventory(readFileSync(candidatePath, "utf8")),
-    ),
+    compareInventories(parseSealedInventory(baselineText), parseSealedInventory(candidateText)),
     review,
+    { baseline: sha256(baselineText), candidate: sha256(candidateText) },
   );
   process.stdout.write(`${JSON.stringify({
     status: result.status,

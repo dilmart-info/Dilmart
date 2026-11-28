@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
-export const FORMAT_VERSION = "g0-a2-02-v1";
+export const FORMAT_VERSION = "g0-a2-02-v2";
+export const REVIEW_FORMAT = "g0-a2-02-review-v2";
 export const EMPTY_IDENTITY = "__CATEGORY_EMPTY__";
 
 export const MANDATORY_CATEGORIES = [
@@ -20,11 +21,14 @@ export const MANDATORY_CATEGORIES = [
   "column_grants",
   "default_privileges",
   "routines",
+  "routine_grants",
   "triggers",
   "views",
   "sequences",
   "enumerations",
   "domains",
+  "types",
+  "type_grants",
   "partitions",
   "extensions",
   "extension_members",
@@ -32,8 +36,10 @@ export const MANDATORY_CATEGORIES = [
   "role_memberships",
   "migrations",
   "publications",
+  "publication_schemas",
   "publication_tables",
   "event_triggers",
+  "extraction_context",
 ];
 
 const SEALED_HEADER = ["format_version", "schema_name", "category", "object_identity", "definition_sha256"];
@@ -47,7 +53,27 @@ export function emptyCanonical(category) {
   return `${FORMAT_VERSION}|${category}|${EMPTY_IDENTITY}`;
 }
 
+export function canonicalField(value) {
+  if (value === null || value === undefined) return "\\N";
+  return String(value).replaceAll("\\", "\\\\").replaceAll("\u001f", "\\u").replaceAll("\u001e", "\\x");
+}
+
+export function canonicalJoin(parts) {
+  return parts.map((part) => canonicalField(part)).join("\u001f");
+}
+
+export function canonicalList(values) {
+  if (values === null || values === undefined) return "\\N";
+  return [...values].map((value) => canonicalField(value)).sort(compareText).join("\u001e");
+}
+
+function compareText(left, right) {
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
 export function parseCsv(text) {
+  if (typeof text !== "string" || text.length === 0) throw new Error("Inventory CSV is empty.");
   const rows = [];
   let row = [];
   let field = "";
@@ -62,6 +88,10 @@ export function parseCsv(text) {
           index += 1;
         } else {
           quoted = false;
+          const next = source[index + 1];
+          if (next !== undefined && next !== "," && next !== "\n" && next !== "\r") {
+            throw new Error("Inventory CSV has trailing characters after a quoted field.");
+          }
         }
       } else {
         field += character;
@@ -69,6 +99,7 @@ export function parseCsv(text) {
       continue;
     }
     if (character === '"') {
+      if (field.length > 0) throw new Error("Inventory CSV has a quote inside an unquoted field.");
       quoted = true;
     } else if (character === ",") {
       row.push(field);
@@ -87,12 +118,12 @@ export function parseCsv(text) {
     row.push(field.endsWith("\r") ? field.slice(0, -1) : field);
     rows.push(row);
   }
+  if (rows.length === 0) throw new Error("Inventory CSV is empty.");
   return rows;
 }
 
 function objectsFromRows(table, header) {
-  const missing = header.filter((name, index) => table[0]?.[index] !== name);
-  if (table.length === 0 || missing.length > 0) {
+  if (table.length === 0 || table[0].length !== header.length || header.some((name, index) => table[0][index] !== name)) {
     throw new Error(`Inventory header must be ${header.join(",")}.`);
   }
   return table.slice(1).map((columns) => {
@@ -145,9 +176,9 @@ export function serializeSealed(records) {
 }
 
 function compareIdentity(left, right) {
-  return left.category.localeCompare(right.category)
-    || left.schema_name.localeCompare(right.schema_name)
-    || left.object_identity.localeCompare(right.object_identity);
+  return compareText(left.category, right.category)
+    || compareText(left.schema_name, right.schema_name)
+    || compareText(left.object_identity, right.object_identity);
 }
 
 function keyOf(record) {
@@ -199,6 +230,14 @@ export function compareInventories(baselineRecords, candidateRecords) {
   const baseline = expand(baselineRecords, "baseline");
   const candidate = expand(candidateRecords, "candidate");
   const errors = [...baseline.errors, ...candidate.errors];
+  if (baseline.objects.size === 0 && candidate.objects.size === 0) {
+    errors.push("Both inventories have no concrete objects.");
+  }
+  const baselineMajor = postgresMajor(baseline.objects);
+  const candidateMajor = postgresMajor(candidate.objects);
+  if (baselineMajor !== null && candidateMajor !== null && baselineMajor !== candidateMajor) {
+    errors.push(`Incompatible PostgreSQL major versions ${baselineMajor} and ${candidateMajor}.`);
+  }
   if (errors.length > 0) {
     return { ok: false, status: "INVALID", exitCode: 3, errors, counts: emptyCounts(), differences: [] };
   }
@@ -217,10 +256,10 @@ export function compareInventories(baselineRecords, candidateRecords) {
   for (const [identity, row] of candidate.objects) {
     if (!baseline.objects.has(identity)) differences.push(difference("EXTRA", null, row));
   }
-  differences.sort((left, right) => left.category.localeCompare(right.category)
-    || left.schema_name.localeCompare(right.schema_name)
-    || left.object_identity.localeCompare(right.object_identity)
-    || left.classification.localeCompare(right.classification));
+  differences.sort((left, right) => compareText(left.category, right.category)
+    || compareText(left.schema_name, right.schema_name)
+    || compareText(left.object_identity, right.object_identity)
+    || compareText(left.classification, right.classification));
   const counts = {
     identical,
     missing: differences.filter((item) => item.classification === "MISSING").length,
@@ -254,11 +293,26 @@ function difference(classification, baseline, candidate) {
   };
 }
 
-export function applyReview(result, review) {
+function postgresMajor(objects) {
+  for (const row of objects.values()) {
+    if (row.category !== "extraction_context" || !row.object_identity.startsWith("server_version_num=")) continue;
+    const version = Number(row.object_identity.slice("server_version_num=".length));
+    if (!Number.isInteger(version)) return null;
+    return Math.floor(version / 10000);
+  }
+  return null;
+}
+
+export function applyReview(result, review, inventoryHashes) {
   if (result.status === "INVALID") return result;
   if (!review) return { ...result, unexplained: result.differences, reviewed: [] };
-  if (review.format !== "g0-a2-02-review-v1" || !Array.isArray(review.items)) {
+  if (review.format_version !== REVIEW_FORMAT || !Array.isArray(review.items)) {
     return { ...result, ok: false, status: "INVALID", exitCode: 3, errors: ["Review file format is unsupported."] };
+  }
+  if (!inventoryHashes
+    || review.baseline_inventory_sha256 !== inventoryHashes.baseline
+    || review.candidate_inventory_sha256 !== inventoryHashes.candidate) {
+    return { ...result, ok: false, status: "INVALID", exitCode: 3, errors: ["Review file is not bound to these inventory hashes."] };
   }
   const unexplained = [];
   const reviewed = [];
@@ -269,6 +323,8 @@ export function applyReview(result, review) {
       && entry.schema_name === item.schema_name
       && entry.category === item.category
       && entry.object_identity === item.object_identity
+      && entry.baseline_sha256 === item.baseline_sha256
+      && entry.candidate_sha256 === item.candidate_sha256
       && entry.reason);
     if (match === -1) unexplained.push(item);
     else {
